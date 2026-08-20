@@ -2,7 +2,7 @@
 
 基线：`5d35e8e`。规格出处：`docs/adr/0017-research-world-redesign.md`（0017）、`docs/adr/0018-endpoints-and-harness.md`（端点）、`docs/adr/0020-graph-and-evidence.md`（图谱）、`docs/adr/0021-review-pipeline.md`（管线）。
 
-对应 issue：G1=#12 G2=#13 G3=#14 G4=#15 G5=#16 G6=#17 G7=#18 G8=#19 G9=#20 G10=#21 G11=#22 G12=#23 G13=#24 G14=#25 G15=#26（github.com/LittleDrinks/ai4sci）。
+对应 issue：G1=#12 G2=#13 G3=#14 G4=#15 G5=#16 G7=#18 G8=#19 G9=#20 G10=#21 G11=#22 G12=#23 G13=#24 G14=#25 G15=#26（github.com/LittleDrinks/ai4sci）。
 
 ## G1 review 无原子断言审计
 规格：claim 是审计单位而非节点；review 启动时把 direction 主张文本与 experiment 结果文本拆成逐条原子断言，审计结果回写状态机与极性边（0017 数据模型）。
@@ -29,11 +29,6 @@
 现状：`ActivityPage.jsx:124-129` eventSummary 兜底把整个 payload JSON.stringify 塞进行内摘要；reviewer 与 tool_result 两类高频事件不命中任何已知键。
 处置：为 reviewer/tool_result 事件加摘要映射；原文收进展开视图。
 
-## G6 对话页 markdown 不换行
-规格：对话是 orchestrator 工作界面（0017 三视图）。
-现状：`web/src/utils/markdown.jsx` 存在但全前端零引用；`ChatPage.jsx:106`、`Inspector.jsx:74` 用 `<p>` 原样渲染，CSS 无 white-space，编号列表糊成一段。
-处置：接入 markdown 组件，或至少 `white-space: pre-wrap`。
-
 ## G7 节点上下文面板平铺无分组
 现状：`ChatPage.jsx:85-89` NodeRail 全量平铺（实测 48 条），ghost 仅淡化仍混入；ContextPane 平铺 payload 全字段。
 处置：按类型分组、ghost 默认收起、当前谱系置顶。
@@ -48,10 +43,10 @@
 现状：`world.py:70` `secrets.token_hex(12)`，仅 project 与首问 question 用内容哈希（`world.py:40,48`）。
 处置：create_node 统一规范化内容哈希 UID。
 
-## G10 runner.py / tools.py / artifacts.py 是死代码
+## G10 执行凭据未接入活路径
 规格：结果审核检查输入边界、代码、环境、日志与产物哈希，以规范化内容哈希复跑（管线·分离执行、结果审核与评分）。
-现状：这三个文件调用 World 不存在的方法、依赖 schema 没有的表；活路径 RunnerClient→runner-controller 无产物哈希、无 replay 校验、无输入边界检查，只有 exit_code==0。
-处置：接入（补 world/db 方法与表）或删除；产物哈希进活路径。
+现状：`artifacts.py` 依赖 schema 没有的表且无调用方；活路径 RunnerClient→runner-controller 无产物哈希、replay 校验和输入边界检查，只有 exit_code==0。
+处置：删除 `artifacts.py`；执行凭据与产物哈希直接进入活路径。
 
 ## G11 规划一次提交全部步骤、步骤执行前无审核
 规格：规划一次只提交一个候选行动，行动经独立审核后原子且幂等地创建一次执行（管线·规划产生行动，行动触发执行）。
