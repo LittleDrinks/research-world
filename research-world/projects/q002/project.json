@@ -1,0 +1,5 @@
+{
+  "name": "q002",
+  "root": "q002",
+  "question": "Is the Riemann hypothesis true?\nThe Riemann hypothesis, one of the great unproven problems in mathematics, addresses the distribution of prime numbers. While no pattern of prime numbers is apparent among all natural numbers, G. F. B. Riemann conjectured that their frequency was related to a complex function called the Riemann zeta function, which he used for “for calculating how many primes there are, up to a cutoff, and at what intervals these primes occur, based on the zeroes of the zeta function,” as Frankie Schembri wrote in Science. “However, Riemann’s formula only holds if one assumes that the real parts of these zeta function zeroes are all equal to one-half”—meaning that all the infinitely many nontrivial zeros lie on a straight line equal to one-half. The Riemann hypothesis has been checked for the first 1,000 quintillion solutions."
+}
