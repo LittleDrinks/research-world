@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "eventb-jml",
+    "title": "A Machine-Checked Proof for a Translation of Event-B Machines to JML",
+    "shortTitle": "A Machine-Checked Proof for a Translation of Event-B Machines ",
+    "authors": "Néstor Cataño, Camilo Rueda, Tim Wahls",
+    "year": 2013,
+    "domain": "Formal verification",
+    "modality": "Formal proof",
+    "category": "formal-proof",
+    "sourceUrl": "https://arxiv.org/abs/1309.2339",
+    "localPath": "raw/eventb-jml/paper.pdf"
+  },
+  "thesis": "We present a machine-checked soundness proof of a translation of Event-B to the Java Modeling Language (JML).",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "eventb-jml-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "How is the reported theorem converted into a machine-checkable proof?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "eventb-jml-d",
+      "kind": "decision",
+      "title": "Fix the formal system",
+      "body": "The translation is based on an operator EventB2Jml that maps Evnet-B events to JML method specifications, and deterministic and non-deterministic assignments to JML method post-conditions.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "eventb-jml-i",
+      "kind": "investigation",
+      "title": "Machine-check the proof",
+      "body": "This translation has previously been implemented as the EventB2Jml tool.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "eventb-jml-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Hence, for any Event-B substitution (whether an event or an assignment) and for the JML method specification obtained by applying EventB2Jml to the substitution, we prove that the semantics of the JML method specification is simulated by the semantics of the substitution.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "eventb-jml-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "We present a machine-checked soundness proof of a translation of Event-B to the Java Modeling Language (JML).",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "eventb-jml-q",
+      "to": "eventb-jml-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "eventb-jml-d",
+      "to": "eventb-jml-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "eventb-jml-i",
+      "to": "eventb-jml-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "eventb-jml-e",
+      "to": "eventb-jml-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

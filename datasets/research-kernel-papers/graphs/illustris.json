@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "illustris",
+    "title": "Introducing the Illustris Project: Simulating the coevolution of dark and visible matter in the Universe",
+    "shortTitle": "Introducing the Illustris Project",
+    "authors": "Mark Vogelsberger, Shy Genel, Volker Springel et al.",
+    "year": 2014,
+    "domain": "Computational science",
+    "modality": "Numerical simulation",
+    "category": "numerical-simulation",
+    "sourceUrl": "https://arxiv.org/abs/1405.2921",
+    "localPath": "raw/illustris/paper.pdf"
+  },
+  "thesis": "Our model predicts a halo mass dependent impact of baryonic effects on the halo mass function and the masses of haloes caused by feedback from supernova and active galactic nuclei.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "illustris-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What does the reported model reveal when the target system is simulated?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "illustris-d",
+      "kind": "decision",
+      "title": "Choose model and boundary conditions",
+      "body": "We introduce the Illustris Project, a series of large-scale hydrodynamical simulations of galaxy formation.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "illustris-i",
+      "kind": "investigation",
+      "title": "Run the numerical experiment",
+      "body": "The highest resolution simulation, Illustris-1, covers a volume of $(106.5\\,{\\rm Mpc})^3$, has a dark mass resolution of ${6.26 \\times 10^{6}\\,{\\rm M}_\\odot}$, and an initial baryonic matter mass resolution of ${1.26 \\times 10^{6}\\,{\\rm M}_\\odot}$.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "illustris-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "In the well-resolved regime the simulation reproduces the observed mix of early-type and late-type galaxies.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "illustris-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "Our model predicts a halo mass dependent impact of baryonic effects on the halo mass function and the masses of haloes caused by feedback from supernova and active galactic nuclei.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "illustris-q",
+      "to": "illustris-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "illustris-d",
+      "to": "illustris-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "illustris-i",
+      "to": "illustris-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "illustris-e",
+      "to": "illustris-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

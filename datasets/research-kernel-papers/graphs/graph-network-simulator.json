@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "graph-network-simulator",
+    "title": "Learning to Simulate Complex Physics with Graph Networks",
+    "shortTitle": "Learning to Simulate Complex Physics with Graph Networks",
+    "authors": "Alvaro Sanchez-Gonzalez, Jonathan Godwin, Tobias Pfaff et al.",
+    "year": 2020,
+    "domain": "Computational science",
+    "modality": "Numerical simulation",
+    "category": "numerical-simulation",
+    "sourceUrl": "https://arxiv.org/abs/2002.09405",
+    "localPath": "raw/graph-network-simulator/paper.pdf"
+  },
+  "thesis": "Our GNS framework advances the state-of-the-art in learned physical simulation, and holds promise for solving a wide range of complex forward and inverse problems.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "graph-network-simulator-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What does the reported model reveal when the target system is simulated?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "graph-network-simulator-d",
+      "kind": "decision",
+      "title": "Choose model and boundary conditions",
+      "body": "Here we present a machine learning framework and model implementation that can learn to simulate a wide variety of challenging physical domains, involving fluids, rigid solids, and deformable materials interacting with one another.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "graph-network-simulator-i",
+      "kind": "investigation",
+      "title": "Run the numerical experiment",
+      "body": "Our model was robust to hyperparameter choices across various evaluation metrics: the main determinants of long-term performance were the number of message-passing steps, and mitigating the accumulation of error by corrupting the training data with noise.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "graph-network-simulator-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Our results show that our model can generalize from single-timestep predictions with thousands of particles during training, to different initial conditions, thousands of timesteps, and at least an order of magnitude more particles at test time.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "graph-network-simulator-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "Our GNS framework advances the state-of-the-art in learned physical simulation, and holds promise for solving a wide range of complex forward and inverse problems.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "graph-network-simulator-q",
+      "to": "graph-network-simulator-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "graph-network-simulator-d",
+      "to": "graph-network-simulator-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "graph-network-simulator-i",
+      "to": "graph-network-simulator-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "graph-network-simulator-e",
+      "to": "graph-network-simulator-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "lorimer-burst",
+    "title": "A bright millisecond radio burst of extragalactic origin",
+    "shortTitle": "A bright millisecond radio burst of extragalactic origin",
+    "authors": "D. R. Lorimer, M. Bailes, M. A. McLaughlin et al.",
+    "year": 2007,
+    "domain": "Observational science",
+    "modality": "Observation",
+    "category": "observation",
+    "sourceUrl": "https://arxiv.org/abs/0709.4301",
+    "localPath": "raw/lorimer-burst/paper.pdf"
+  },
+  "thesis": "Hundreds of similar events could occur every day and act as insightful cosmological probes.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "lorimer-burst-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What phenomenon is supported by the reported observations?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "lorimer-burst-d",
+      "kind": "decision",
+      "title": "Choose instrument and selection",
+      "body": "Pulsar surveys offer one of the few opportunities to monitor even a small fraction (~0.00001) of the radio sky for impulsive burst-like events with millisecond durations.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "lorimer-burst-i",
+      "kind": "investigation",
+      "title": "Acquire and analyze observations",
+      "body": "In analysis of archival survey data, we have discovered a 30-Jy dispersed burst of duration <5 ms located three degrees from the Small Magellanic Cloud.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "lorimer-burst-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Current models for the free electron content in the Universe imply a distance to the burst of <1 Gpc No further bursts are seen in 90-hr of additional observations, implying that it was a singular event such as a supernova or coalescence of relativistic objects.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "lorimer-burst-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "Hundreds of similar events could occur every day and act as insightful cosmological probes.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "lorimer-burst-q",
+      "to": "lorimer-burst-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "lorimer-burst-d",
+      "to": "lorimer-burst-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "lorimer-burst-i",
+      "to": "lorimer-burst-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "lorimer-burst-e",
+      "to": "lorimer-burst-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

@@ -1,0 +1,163 @@
+{
+  "paper": {
+    "id": "amr",
+    "title": "Global burden of bacterial antimicrobial resistance in 2019: a systematic analysis",
+    "shortTitle": "Global AMR burden",
+    "authors": "Antimicrobial Resistance Collaborators",
+    "year": 2022,
+    "domain": "Global health",
+    "modality": "Burden estimation",
+    "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8841637/",
+    "localPath": "raw/amr/fulltext.xml",
+    "category": "human-clinical",
+    "providerId": "PMC8841637"
+  },
+  "thesis": "A global model using two counterfactuals bounds the 2019 mortality burden of bacterial antimicrobial resistance while exposing major uncertainty from sparse surveillance data.",
+  "nodes": [
+    {
+      "id": "a-q",
+      "kind": "question",
+      "title": "What was the global AMR burden in 2019?",
+      "body": "Estimate deaths and DALYs associated with and directly attributable to bacterial antimicrobial resistance across countries and pathogen–drug combinations.",
+      "provenance": "explicit",
+      "locator": "Abstract and introduction"
+    },
+    {
+      "id": "a-d",
+      "kind": "decision",
+      "title": "Use two counterfactuals",
+      "body": "Estimate attributable burden by replacing resistant infection with susceptible infection, and associated burden by replacing it with no infection.",
+      "provenance": "explicit",
+      "locator": "Methods, counterfactual scenarios",
+      "state": "accepted"
+    },
+    {
+      "id": "a-i",
+      "kind": "investigation",
+      "title": "Combine ten estimation steps",
+      "body": "Integrate GBD 2019 estimates, surveillance, clinical, microbiology and pharmaceutical data across five modelling components.",
+      "provenance": "explicit",
+      "locator": "Methods and appendix p.123",
+      "state": "completed",
+      "metric": "204 locations; 88 combinations"
+    },
+    {
+      "id": "a-e1",
+      "kind": "evidence",
+      "title": "Directly attributable deaths",
+      "body": "Under the susceptible-infection counterfactual, an estimated 1.27 million deaths were directly attributable to resistance.",
+      "provenance": "explicit",
+      "locator": "Results, Table 2",
+      "state": "supporting",
+      "metric": "1.27M (0.911–1.71M)"
+    },
+    {
+      "id": "a-e2",
+      "kind": "evidence",
+      "title": "Deaths associated with resistance",
+      "body": "Under the no-infection counterfactual, 4.95 million deaths were associated with bacterial AMR, including directly attributable deaths.",
+      "provenance": "explicit",
+      "locator": "Results, Table 2",
+      "state": "supporting",
+      "metric": "4.95M (3.62–6.57M)"
+    },
+    {
+      "id": "a-c",
+      "kind": "claim",
+      "title": "AMR is a leading global health burden",
+      "body": "Both counterfactuals place bacterial AMR among the largest global causes of mortality, with highest rates in sub-Saharan Africa and South Asia.",
+      "provenance": "explicit",
+      "locator": "Discussion",
+      "state": "supported"
+    },
+    {
+      "id": "a-e3",
+      "kind": "evidence",
+      "title": "Surveillance gaps shape uncertainty",
+      "body": "Nineteen of 204 locations had no data for any modelling component; sparse linked outcome data required shared relative-risk assumptions.",
+      "provenance": "explicit",
+      "locator": "Limitations",
+      "state": "qualifying",
+      "metric": "19 / 204 no data"
+    },
+    {
+      "id": "a-d2",
+      "kind": "decision",
+      "title": "Match measure to intervention",
+      "body": "Use attributable burden for resistance-focused interventions and associated burden for infection-prevention interventions such as vaccination.",
+      "provenance": "explicit",
+      "locator": "Discussion, interpretation of counterfactuals",
+      "state": "accepted"
+    }
+  ],
+  "edges": [
+    {
+      "from": "a-q",
+      "to": "a-d",
+      "relation": "requires",
+      "provenance": "explicit"
+    },
+    {
+      "from": "a-d",
+      "to": "a-i",
+      "relation": "constrains",
+      "provenance": "explicit"
+    },
+    {
+      "from": "a-i",
+      "to": "a-e1",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "a-i",
+      "to": "a-e2",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "a-i",
+      "to": "a-e3",
+      "relation": "exposes",
+      "provenance": "inferred"
+    },
+    {
+      "from": "a-e1",
+      "to": "a-c",
+      "relation": "supports",
+      "provenance": "explicit"
+    },
+    {
+      "from": "a-e2",
+      "to": "a-c",
+      "relation": "supports",
+      "provenance": "explicit"
+    },
+    {
+      "from": "a-e3",
+      "to": "a-c",
+      "relation": "qualifies",
+      "provenance": "explicit"
+    },
+    {
+      "from": "a-e1",
+      "to": "a-d2",
+      "relation": "informs",
+      "provenance": "explicit"
+    },
+    {
+      "from": "a-e2",
+      "to": "a-d2",
+      "relation": "informs",
+      "provenance": "explicit"
+    }
+  ],
+  "openQuestions": [
+    "The paper reports substantial country-level data sparsity and model assumptions; point estimates must remain attached to uncertainty intervals and counterfactual definitions."
+  ],
+  "reconstruction": {
+    "scope": "section-level manual graph",
+    "method": "manual source review",
+    "review": "manually curated"
+  }
+}

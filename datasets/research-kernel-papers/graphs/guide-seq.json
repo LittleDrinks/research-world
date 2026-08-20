@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "guide-seq",
+    "title": "GUIDE-Seq enables genome-wide profiling of off-target cleavage by CRISPR-Cas nucleases",
+    "shortTitle": "GUIDE-Seq enables genome-wide profiling of off-target cleavage",
+    "authors": "TsaiShengdar Q., ZhengZongli, NguyenNhu T. et al.",
+    "year": 2014,
+    "domain": "Experimental biology",
+    "modality": "Wet lab",
+    "category": "wet-lab",
+    "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4320685/",
+    "localPath": "raw/guide-seq/fulltext.xml"
+  },
+  "thesis": "Our experiments define the most rigorous framework for genome-wide identification of RGN off-target effects to date and provide a method for evaluating the safety of these nucleases prior to clinical use.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "guide-seq-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "Which intervention or mechanism produces the reported experimental effect?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "guide-seq-d",
+      "kind": "decision",
+      "title": "Choose construct and controls",
+      "body": "CRISPR RNA-guided nucleases (RGNs) are widely used genome-editing reagents, but methods to delineate their genome-wide off-target cleavage activities have been lacking.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "guide-seq-i",
+      "kind": "investigation",
+      "title": "Run assays against controls",
+      "body": "Here we describe an approach for global detection of DNA double-stranded breaks (DSBs) introduced by RGNs and potentially other nucleases.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "guide-seq-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Finally, GUIDE-Seq revealed that truncated guide RNAs exhibit substantially reduced RGN-induced off-target DSBs.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "guide-seq-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "Our experiments define the most rigorous framework for genome-wide identification of RGN off-target effects to date and provide a method for evaluating the safety of these nucleases prior to clinical use.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "guide-seq-q",
+      "to": "guide-seq-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "guide-seq-d",
+      "to": "guide-seq-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "guide-seq-i",
+      "to": "guide-seq-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "guide-seq-e",
+      "to": "guide-seq-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

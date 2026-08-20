@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "eagle",
+    "title": "The EAGLE project: Simulating the evolution and assembly of galaxies and their environments",
+    "shortTitle": "The EAGLE project",
+    "authors": "Joop Schaye, Robert A. Crain, Richard G. Bower et al.",
+    "year": 2014,
+    "domain": "Computational science",
+    "modality": "Numerical simulation",
+    "category": "numerical-simulation",
+    "sourceUrl": "https://arxiv.org/abs/1407.7040",
+    "localPath": "raw/eagle/paper.pdf"
+  },
+  "thesis": "EAGLE constitutes a valuable new resource for studies of galaxy formation.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "eagle-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What does the reported model reveal when the target system is simulated?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "eagle-d",
+      "kind": "decision",
+      "title": "Choose model and boundary conditions",
+      "body": "The observed galaxy mass function is reproduced to $\\lesssim 0.2$ dex over the full mass range, $10^8 < M_*/M_\\odot \\lesssim 10^{11}$, a level of agreement close to that attained by semi-analytic models, and unprecedented for hydrodynamical simulations.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "eagle-i",
+      "kind": "investigation",
+      "title": "Run the numerical experiment",
+      "body": "We introduce the Virgo Consortium's EAGLE project, a suite of hydrodynamical simulations that follow the formation of galaxies and black holes in representative volumes.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "eagle-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "We compare our results to a representative set of low-redshift observables not considered in the calibration, and find good agreement with the observed galaxy specific star formation rates, passive fractions, Tully-Fisher relation, total stellar luminosities of galaxy clusters, and column density distributions of intergalactic CIV and OVI.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "eagle-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "EAGLE constitutes a valuable new resource for studies of galaxy formation.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "eagle-q",
+      "to": "eagle-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "eagle-d",
+      "to": "eagle-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "eagle-i",
+      "to": "eagle-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "eagle-e",
+      "to": "eagle-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "moleculenet",
+    "title": "MoleculeNet: A Benchmark for Molecular Machine Learning",
+    "shortTitle": "MoleculeNet",
+    "authors": "Zhenqin Wu, Bharath Ramsundar, Evan N. Feinberg et al.",
+    "year": 2017,
+    "domain": "Scientific machine learning",
+    "modality": "Benchmark",
+    "category": "benchmark",
+    "sourceUrl": "https://arxiv.org/abs/1703.00564",
+    "localPath": "raw/moleculenet/paper.pdf"
+  },
+  "thesis": "For quantum mechanical and biophysical datasets, the use of physics-aware featurizations can be more important than choice of particular learning algorithm.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "moleculenet-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "How can the target scientific task be compared under fixed data and evaluation rules?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "moleculenet-d",
+      "kind": "decision",
+      "title": "Freeze tasks and metrics",
+      "body": "However, algorithmic progress has been limited due to the lack of a standard benchmark to compare the efficacy of proposed methods; most new algorithms are benchmarked on different datasets making it challenging to gauge the quality of proposed methods.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "moleculenet-i",
+      "kind": "investigation",
+      "title": "Evaluate reference systems",
+      "body": "MoleculeNet curates multiple public datasets, establishes metrics for evaluation, and offers high quality open-source implementations of multiple previously proposed molecular featurization and learning algorithms (released as part of the DeepChem open source library).",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "moleculenet-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Improved methods and the presence of larger datasets have enabled machine learning algorithms to make increasingly accurate predictions about molecular properties.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "moleculenet-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "For quantum mechanical and biophysical datasets, the use of physics-aware featurizations can be more important than choice of particular learning algorithm.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "moleculenet-q",
+      "to": "moleculenet-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "moleculenet-d",
+      "to": "moleculenet-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "moleculenet-i",
+      "to": "moleculenet-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "moleculenet-e",
+      "to": "moleculenet-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

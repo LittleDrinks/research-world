@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "accelerating-universe",
+    "title": "Observational Evidence from Supernovae for an Accelerating Universe and a Cosmological Constant",
+    "shortTitle": "Observational Evidence from Supernovae for an Accelerating Uni",
+    "authors": "Adam G. Riess, Alexei V. Filippenko, Peter Challis et al.",
+    "year": 1998,
+    "domain": "Observational science",
+    "modality": "Observation",
+    "category": "observation",
+    "sourceUrl": "https://arxiv.org/abs/astro-ph/9805201",
+    "localPath": "raw/accelerating-universe/paper.pdf"
+  },
+  "thesis": "Presently, none of these effects reconciles the data with Omega_Lambda=0 and q_0 > 0.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "accelerating-universe-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What phenomenon is supported by the reported observations?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "accelerating-universe-d",
+      "kind": "decision",
+      "title": "Choose instrument and selection",
+      "body": "Different light curve fitting methods, SN Ia subsamples, and prior constraints unanimously favor eternally expanding models with positive cosmological constant (i.e., Omega_Lambda > 0) and a current acceleration of the expansion (i.e., q_0 < 0).",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "accelerating-universe-i",
+      "kind": "investigation",
+      "title": "Acquire and analyze observations",
+      "body": "We present observations of 10 type Ia supernovae (SNe Ia) between 0.16 < z < 0.62.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "accelerating-universe-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Fixing a ``minimal'' mass density, Omega_M=0.2, results in the weakest detection, Omega_Lambda>0 at the 3.0 sigma confidence level.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "accelerating-universe-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "Presently, none of these effects reconciles the data with Omega_Lambda=0 and q_0 > 0.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "accelerating-universe-q",
+      "to": "accelerating-universe-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "accelerating-universe-d",
+      "to": "accelerating-universe-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "accelerating-universe-i",
+      "to": "accelerating-universe-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "accelerating-universe-e",
+      "to": "accelerating-universe-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

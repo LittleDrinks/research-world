@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "doob-martingale",
+    "title": "A Formalization of Doob's Martingale Convergence Theorems in mathlib",
+    "shortTitle": "A Formalization of Doob's Martingale Convergence Theorems in m",
+    "authors": "Kexing Ying, Rémy Degenne",
+    "year": 2022,
+    "domain": "Formal verification",
+    "modality": "Formal proof",
+    "category": "formal-proof",
+    "sourceUrl": "https://arxiv.org/abs/2212.05578",
+    "localPath": "raw/doob-martingale/paper.pdf"
+  },
+  "thesis": "We present the formalization of Doob's martingale convergence theorems in the mathlib library for the Lean theorem prover.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "doob-martingale-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "How is the reported theorem converted into a machine-checkable proof?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "doob-martingale-d",
+      "kind": "decision",
+      "title": "Fix the formal system",
+      "body": "This work on martingale theory is one of the first developments of probability theory in mathlib, and it builds upon diverse parts of that library such as topology, analysis and most importantly measure theory.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "doob-martingale-i",
+      "kind": "investigation",
+      "title": "Machine-check the proof",
+      "body": "These theorems give conditions under which (sub)martingales converge, almost everywhere or in $L^1$.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "doob-martingale-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "As an application of the convergence theorems, we also present the formalization of Lévy's generalized Borel-Cantelli lemma.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "doob-martingale-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "We present the formalization of Doob's martingale convergence theorems in the mathlib library for the Lean theorem prover.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "doob-martingale-q",
+      "to": "doob-martingale-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "doob-martingale-d",
+      "to": "doob-martingale-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "doob-martingale-i",
+      "to": "doob-martingale-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "doob-martingale-e",
+      "to": "doob-martingale-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

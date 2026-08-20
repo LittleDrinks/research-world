@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "pac-stumps-formal",
+    "title": "A Formal Proof of PAC Learnability for Decision Stumps",
+    "shortTitle": "A Formal Proof of PAC Learnability for Decision Stumps",
+    "authors": "Joseph Tassarotti, Koundinya Vajjha, Anindya Banerjee et al.",
+    "year": 2019,
+    "domain": "Formal verification",
+    "modality": "Formal proof",
+    "category": "formal-proof",
+    "sourceUrl": "https://arxiv.org/abs/1911.00385",
+    "localPath": "raw/pac-stumps-formal/paper.pdf"
+  },
+  "thesis": "We present a formal proof in Lean of probably approximately correct (PAC) learnability of the concept class of decision stumps.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "pac-stumps-formal-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "How is the reported theorem converted into a machine-checkable proof?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "pac-stumps-formal-d",
+      "kind": "decision",
+      "title": "Fix the formal system",
+      "body": "Though such a proof appears simple on paper, analytic and measure-theoretic subtleties arise when carrying it out fully formally.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "pac-stumps-formal-i",
+      "kind": "investigation",
+      "title": "Machine-check the proof",
+      "body": "This classic result in machine learning theory derives a bound on error probabilities for a simple type of classifier.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "pac-stumps-formal-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Our proof is structured so as to separate reasoning about deterministic properties of a learning function from proofs of measurability and analysis of probabilities.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "pac-stumps-formal-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "We present a formal proof in Lean of probably approximately correct (PAC) learnability of the concept class of decision stumps.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "pac-stumps-formal-q",
+      "to": "pac-stumps-formal-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "pac-stumps-formal-d",
+      "to": "pac-stumps-formal-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "pac-stumps-formal-i",
+      "to": "pac-stumps-formal-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "pac-stumps-formal-e",
+      "to": "pac-stumps-formal-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "gencast",
+    "title": "GenCast: Diffusion-based ensemble forecasting for medium-range weather",
+    "shortTitle": "GenCast",
+    "authors": "Ilan Price, Alvaro Sanchez-Gonzalez, Ferran Alet et al.",
+    "year": 2023,
+    "domain": "Computational science",
+    "modality": "Numerical simulation",
+    "category": "numerical-simulation",
+    "sourceUrl": "https://arxiv.org/abs/2312.15796",
+    "localPath": "raw/gencast/paper.pdf"
+  },
+  "thesis": "This work helps open the next chapter in operational weather forecasting, where critical weather-dependent decisions are made with greater accuracy and efficiency.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "gencast-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What does the reported model reveal when the target system is simulated?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "gencast-d",
+      "kind": "decision",
+      "title": "Choose model and boundary conditions",
+      "body": "Here, we introduce GenCast, a probabilistic weather model with greater skill and speed than the top operational medium-range weather forecast in the world, the European Centre for Medium-Range Forecasts (ECMWF)'s ensemble forecast, ENS.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "gencast-i",
+      "kind": "investigation",
+      "title": "Run the numerical experiment",
+      "body": "Weather forecasts are fundamentally uncertain, so predicting the range of probable weather scenarios is crucial for important decisions, from warning the public about hazardous weather, to planning renewable energy use.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "gencast-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "It has greater skill than ENS on 97.4% of 1320 targets we evaluated, and better predicts extreme weather, tropical cyclones, and wind power production.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "gencast-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "This work helps open the next chapter in operational weather forecasting, where critical weather-dependent decisions are made with greater accuracy and efficiency.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "gencast-q",
+      "to": "gencast-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "gencast-d",
+      "to": "gencast-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "gencast-i",
+      "to": "gencast-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "gencast-e",
+      "to": "gencast-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

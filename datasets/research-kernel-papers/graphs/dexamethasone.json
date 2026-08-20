@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "dexamethasone",
+    "title": "Dexamethasone in Hospitalized Patients with Covid-19 — Preliminary Report",
+    "shortTitle": "Dexamethasone in Hospitalized Patients with Covid-19 — Prelimi",
+    "authors": "The RECOVERY Collaborative Group",
+    "year": 2020,
+    "domain": "Human and clinical research",
+    "modality": "Human / clinical",
+    "category": "human-clinical",
+    "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7383595/",
+    "localPath": "raw/dexamethasone/fulltext.xml"
+  },
+  "thesis": "In patients hospitalized with Covid-19, the use of dexamethasone resulted in lower 28-day mortality among those who were receiving either invasive mechanical ventilation or oxygen alone at randomization but not among those receiving no respiratory support.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "dexamethasone-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What effect or association is supported in the studied human population?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "dexamethasone-d",
+      "kind": "decision",
+      "title": "Choose cohort and endpoint",
+      "body": "In this controlled, open-label trial comparing a range of possible treatments in patients who were hospitalized with Covid-19, we randomly assigned patients to receive oral or intravenous dexamethasone (at a dose of 6 mg once daily) for up to 10 days or to receive usual care alone.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "dexamethasone-i",
+      "kind": "investigation",
+      "title": "Measure human outcomes",
+      "body": "Overall, 482 patients (22.9%) in the dexamethasone group and 1110 patients (25.7%) in the usual care group died within 28 days after randomization (age-adjusted rate ratio, 0.83; 95% confidence interval [CI], 0.75 to 0.93; P<0.001).",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "dexamethasone-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "In the dexamethasone group, the incidence of death was lower than that in the usual care group among patients receiving invasive mechanical ventilation (29.3% vs. 41.4%; rate ratio, 0.64; 95% CI, 0.51 to 0.81) and among those receiving oxygen without invasive mechanical ventilation (23.3% vs. 26.2%; rate ratio, 0.82; 95% CI, 0.72 to 0.94) but not among those who were receiving no respiratory support at randomization (17.8% vs. 14.0%; rate ratio, 1.19; 95% CI, 0.91 to 1.55).",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "dexamethasone-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "In patients hospitalized with Covid-19, the use of dexamethasone resulted in lower 28-day mortality among those who were receiving either invasive mechanical ventilation or oxygen alone at randomization but not among those receiving no respiratory support.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "dexamethasone-q",
+      "to": "dexamethasone-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "dexamethasone-d",
+      "to": "dexamethasone-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "dexamethasone-i",
+      "to": "dexamethasone-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "dexamethasone-e",
+      "to": "dexamethasone-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

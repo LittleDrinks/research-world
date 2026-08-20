@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "weatherbench",
+    "title": "WeatherBench: A benchmark dataset for data-driven weather forecasting",
+    "shortTitle": "WeatherBench",
+    "authors": "Stephan Rasp, Peter D. Dueben, Sebastian Scher et al.",
+    "year": 2020,
+    "domain": "Scientific machine learning",
+    "modality": "Benchmark",
+    "category": "benchmark",
+    "sourceUrl": "https://arxiv.org/abs/2002.00469",
+    "localPath": "raw/weatherbench/paper.pdf"
+  },
+  "thesis": "We hope that this dataset will accelerate research in data-driven weather forecasting.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "weatherbench-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "How can the target scientific task be compared under fixed data and evaluation rules?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "weatherbench-d",
+      "kind": "decision",
+      "title": "Freeze tasks and metrics",
+      "body": "First studies show promise but the lack of a common dataset and evaluation metrics make inter-comparison between studies difficult.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "weatherbench-i",
+      "kind": "investigation",
+      "title": "Evaluate reference systems",
+      "body": "We provide data derived from the ERA5 archive that has been processed to facilitate the use in machine learning models.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "weatherbench-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Here we present a benchmark dataset for data-driven medium-range weather forecasting, a topic of high scientific interest for atmospheric and computer scientists alike.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "weatherbench-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "We hope that this dataset will accelerate research in data-driven weather forecasting.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "weatherbench-q",
+      "to": "weatherbench-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "weatherbench-d",
+      "to": "weatherbench-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "weatherbench-i",
+      "to": "weatherbench-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "weatherbench-e",
+      "to": "weatherbench-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

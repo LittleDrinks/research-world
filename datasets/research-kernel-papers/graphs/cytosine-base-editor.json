@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "cytosine-base-editor",
+    "title": "Programmable editing of a target base in genomic DNA without double-stranded DNA cleavage",
+    "shortTitle": "Programmable editing of a target base in genomic DNA without d",
+    "authors": "KomorAlexis C., KimYongjoo B., PackerMichael S. et al.",
+    "year": 2016,
+    "domain": "Experimental biology",
+    "modality": "Wet lab",
+    "category": "wet-lab",
+    "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4873371/",
+    "localPath": "raw/cytosine-base-editor/fulltext.xml"
+  },
+  "thesis": "Base editing expands the scope and efficiency of genome editing of point mutations.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "cytosine-base-editor-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "Which intervention or mechanism produces the reported experimental effect?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "cytosine-base-editor-d",
+      "kind": "decision",
+      "title": "Choose construct and controls",
+      "body": "Current genome-editing technologies introduce double-stranded (ds) DNA breaks at a target locus as the first step to gene correction.1,2 Although most genetic diseases arise from point mutations, current approaches to point mutation correction are inefficient and typically induce an abundance of random insertions and deletions (indels) at the target locus from the cellular response to dsDNA breaks.1,2 Here we report the development of base editing, a new approach to genome editing that enables the direct, irreversible conversion of one target DNA base into another in a programmable manner, without requiring dsDNA backbone cleavage or a donor template.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "cytosine-base-editor-i",
+      "kind": "investigation",
+      "title": "Run assays against controls",
+      "body": "We engineered fusions of CRISPR/Cas9 and a cytidine deaminase enzyme that retain the ability to be programmed with a guide RNA, do not induce dsDNA breaks, and mediate the direct conversion of cytidine to uridine, thereby effecting a C→T (or G→A) substitution.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "cytosine-base-editor-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "In four transformed human and murine cell lines, second- and third-generation base editors that fuse uracil glycosylase inhibitor (UGI), and that use a Cas9 nickase targeting the non-edited strand, manipulate the cellular DNA repair response to favor desired base-editing outcomes, resulting in permanent correction of ∼15-75% of total cellular DNA with minimal (typically ≤ 1%) indel formation.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "cytosine-base-editor-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "Base editing expands the scope and efficiency of genome editing of point mutations.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "cytosine-base-editor-q",
+      "to": "cytosine-base-editor-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "cytosine-base-editor-d",
+      "to": "cytosine-base-editor-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "cytosine-base-editor-i",
+      "to": "cytosine-base-editor-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "cytosine-base-editor-e",
+      "to": "cytosine-base-editor-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

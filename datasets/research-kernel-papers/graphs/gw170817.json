@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "gw170817",
+    "title": "GW170817: Observation of Gravitational Waves from a Binary Neutron Star Inspiral",
+    "shortTitle": "GW170817",
+    "authors": "The LIGO Scientific Collaboration, The Virgo Collaboration",
+    "year": 2017,
+    "domain": "Observational science",
+    "modality": "Observation",
+    "category": "observation",
+    "sourceUrl": "https://arxiv.org/abs/1710.05832",
+    "localPath": "raw/gw170817/paper.pdf"
+  },
+  "thesis": "This unprecedented joint gravitational and electromagnetic observation provides insight into astrophysics, dense matter, gravitation and cosmology.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "gw170817-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What phenomenon is supported by the reported observations?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "gw170817-d",
+      "kind": "decision",
+      "title": "Choose instrument and selection",
+      "body": "On August 17, 2017 at 12:41:04 UTC the Advanced LIGO and Advanced Virgo gravitational-wave detectors made their first observation of a binary neutron star inspiral.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "gw170817-i",
+      "kind": "investigation",
+      "title": "Acquire and analyze observations",
+      "body": "The source was localized within a sky region of 28 deg$^2$ (90% probability) and had a luminosity distance of $40^{+8}_{-14}$ Mpc, the closest and most precisely localized gravitational-wave signal yet.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "gw170817-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "The association with the gamma-ray burst GRB 170817A, detected by Fermi-GBM 1.7 s after the coalescence, corroborates the hypothesis of a neutron star merger and provides the first direct evidence of a link between these mergers and short gamma-ray bursts.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "gw170817-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "This unprecedented joint gravitational and electromagnetic observation provides insight into astrophysics, dense matter, gravitation and cosmology.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "gw170817-q",
+      "to": "gw170817-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "gw170817-d",
+      "to": "gw170817-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "gw170817-i",
+      "to": "gw170817-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "gw170817-e",
+      "to": "gw170817-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

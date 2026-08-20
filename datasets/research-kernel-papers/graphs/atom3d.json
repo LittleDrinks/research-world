@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "atom3d",
+    "title": "ATOM3D: Tasks On Molecules in Three Dimensions",
+    "shortTitle": "ATOM3D",
+    "authors": "Raphael J. L. Townshend, Martin Vögele, Patricia Suriana et al.",
+    "year": 2020,
+    "domain": "Scientific machine learning",
+    "modality": "Benchmark",
+    "category": "benchmark",
+    "sourceUrl": "https://arxiv.org/abs/2012.04035",
+    "localPath": "raw/atom3d/paper.pdf"
+  },
+  "thesis": "Our results indicate that many molecular problems stand to gain from three-dimensional molecular learning, and that there is potential for improvement on many tasks which remain underexplored.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "atom3d-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "How can the target scientific task be compared under fixed data and evaluation rules?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "atom3d-d",
+      "kind": "decision",
+      "title": "Freeze tasks and metrics",
+      "body": "To lower the barrier to entry and facilitate further developments in the field, we also provide a comprehensive suite of tools for dataset processing, model training, and evaluation in our open-source atom3d Python package.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "atom3d-i",
+      "kind": "investigation",
+      "title": "Evaluate reference systems",
+      "body": "To address this, we present ATOM3D, a collection of both novel and existing benchmark datasets spanning several key classes of biomolecules.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "atom3d-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "The specific choice of architecture proves to be critical for performance, with three-dimensional convolutional networks excelling at tasks involving complex geometries, graph networks performing well on systems requiring detailed positional information, and the more recently developed equivariant networks showing significant promise.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "atom3d-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "Our results indicate that many molecular problems stand to gain from three-dimensional molecular learning, and that there is potential for improvement on many tasks which remain underexplored.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "atom3d-q",
+      "to": "atom3d-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "atom3d-d",
+      "to": "atom3d-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "atom3d-i",
+      "to": "atom3d-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "atom3d-e",
+      "to": "atom3d-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

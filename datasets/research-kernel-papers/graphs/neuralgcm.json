@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "neuralgcm",
+    "title": "Neural General Circulation Models for Weather and Climate",
+    "shortTitle": "Neural General Circulation Models for Weather and Climate",
+    "authors": "Dmitrii Kochkov, Janni Yuval, Ian Langmore et al.",
+    "year": 2023,
+    "domain": "Computational science",
+    "modality": "Numerical simulation",
+    "category": "numerical-simulation",
+    "sourceUrl": "https://arxiv.org/abs/2311.07222",
+    "localPath": "raw/neuralgcm/paper.pdf"
+  },
+  "thesis": "Our results show that end-to-end deep learning is compatible with tasks performed by conventional GCMs, and can enhance the large-scale physical simulations that are essential for understanding and predicting the Earth system.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "neuralgcm-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What does the reported model reveal when the target system is simulated?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "neuralgcm-d",
+      "kind": "decision",
+      "title": "Choose model and boundary conditions",
+      "body": "General circulation models (GCMs) are the foundation of weather and climate prediction.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "neuralgcm-i",
+      "kind": "investigation",
+      "title": "Run the numerical experiment",
+      "body": "Recently, machine learning (ML) models trained on reanalysis data achieved comparable or better skill than GCMs for deterministic weather forecasting.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "neuralgcm-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "However, these models have not demonstrated improved ensemble forecasts, or shown sufficient stability for long-term weather and climate simulations.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "neuralgcm-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "Our results show that end-to-end deep learning is compatible with tasks performed by conventional GCMs, and can enhance the large-scale physical simulations that are essential for understanding and predicting the Earth system.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "neuralgcm-q",
+      "to": "neuralgcm-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "neuralgcm-d",
+      "to": "neuralgcm-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "neuralgcm-i",
+      "to": "neuralgcm-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "neuralgcm-e",
+      "to": "neuralgcm-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "planck2018",
+    "title": "Planck 2018 results. VI. Cosmological parameters",
+    "shortTitle": "Planck 2018 results. VI. Cosmological parameters",
+    "authors": "Planck Collaboration, N. Aghanim, Y. Akrami et al.",
+    "year": 2018,
+    "domain": "Observational science",
+    "modality": "Observation",
+    "category": "observation",
+    "sourceUrl": "https://arxiv.org/abs/1807.06209",
+    "localPath": "raw/planck2018/paper.pdf"
+  },
+  "thesis": "The CMB spectra continue to prefer higher lensing amplitudes than predicted in base -$Λ$CDM at over $2\\,σ$, which pulls some parameters that affect the lensing amplitude away from the base-$Λ$CDM model; however, this is not supported by the lensing reconstruction or (in models that also change the background geometry) BAO data. (Abridged)",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "planck2018-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What phenomenon is supported by the reported observations?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "planck2018-d",
+      "kind": "decision",
+      "title": "Choose instrument and selection",
+      "body": "A combined analysis gives dark matter density $Ω_c h^2 = 0.120\\pm 0.001$, baryon density $Ω_b h^2 = 0.0224\\pm 0.0001$, scalar spectral index $n_s = 0.965\\pm 0.004$, and optical depth $τ= 0.054\\pm 0.007$ (in this abstract we quote $68\\,\\%$ confidence regions on measured parameters and $95\\,\\%$ on upper limits).",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "planck2018-i",
+      "kind": "investigation",
+      "title": "Acquire and analyze observations",
+      "body": "The angular acoustic scale is measured to $0.03\\,\\%$ precision, with $100θ_*=1.0411\\pm 0.0003$.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "planck2018-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "We find no compelling evidence for extensions to the base-$Λ$CDM model.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "planck2018-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "The CMB spectra continue to prefer higher lensing amplitudes than predicted in base -$Λ$CDM at over $2\\,σ$, which pulls some parameters that affect the lensing amplitude away from the base-$Λ$CDM model; however, this is not supported by the lensing reconstruction or (in models that also change the background geometry) BAO data. (Abridged)",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "planck2018-q",
+      "to": "planck2018-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "planck2018-d",
+      "to": "planck2018-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "planck2018-i",
+      "to": "planck2018-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "planck2018-e",
+      "to": "planck2018-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

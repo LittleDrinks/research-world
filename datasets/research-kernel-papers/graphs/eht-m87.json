@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "eht-m87",
+    "title": "First M87 Event Horizon Telescope Results. I. The Shadow of the Supermassive Black Hole",
+    "shortTitle": "First M87 Event Horizon Telescope Results. I. The Shadow of th",
+    "authors": "The Event Horizon Telescope Collaboration",
+    "year": 2019,
+    "domain": "Observational science",
+    "modality": "Observation",
+    "category": "observation",
+    "sourceUrl": "https://arxiv.org/abs/1906.11238",
+    "localPath": "raw/eht-m87/paper.pdf"
+  },
+  "thesis": "They also present a new tool to explore gravity in its most extreme limit and on a mass scale that was so far not accessible.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "eht-m87-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What phenomenon is supported by the reported observations?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "eht-m87-d",
+      "kind": "decision",
+      "title": "Choose instrument and selection",
+      "body": "The emission ring is recovered using different calibration and imaging schemes, with its diameter and width remaining stable over four different observations carried out in different days.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "eht-m87-i",
+      "kind": "investigation",
+      "title": "Acquire and analyze observations",
+      "body": "To image and study this phenomenon, we have assembled the Event Horizon Telescope, a global very long baseline interferometry array observing at a wavelength of 1.3 mm.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "eht-m87-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Our radio-wave observations thus provide powerful evidence for the presence of supermassive black holes in centers of galaxies and as the central engines of active galactic nuclei.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "eht-m87-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "They also present a new tool to explore gravity in its most extreme limit and on a mass scale that was so far not accessible.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "eht-m87-q",
+      "to": "eht-m87-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "eht-m87-d",
+      "to": "eht-m87-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "eht-m87-i",
+      "to": "eht-m87-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "eht-m87-e",
+      "to": "eht-m87-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

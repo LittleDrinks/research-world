@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "activity-mortality",
+    "title": "Dose-response associations between accelerometry measured physical activity and sedentary time and all cause mortality: systematic review and harmonised meta-analysis",
+    "shortTitle": "Dose-response associations between accelerometry measured phys",
+    "authors": "EkelundUlf, TarpJakob, Steene-JohannessenJostein et al.",
+    "year": 2019,
+    "domain": "Human and clinical research",
+    "modality": "Human / clinical",
+    "category": "human-clinical",
+    "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6699591/",
+    "localPath": "raw/activity-mortality/fulltext.xml"
+  },
+  "thesis": "Higher levels of total physical activity, at any intensity, and less time spent sedentary, are associated with substantially reduced risk for premature mortality, with evidence of a non-linear dose-response pattern in middle aged and older adults.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "activity-mortality-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What effect or association is supported in the studied human population?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "activity-mortality-d",
+      "kind": "decision",
+      "title": "Choose cohort and endpoint",
+      "body": "Study specific results were summarised using random effects meta-analysis.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "activity-mortality-i",
+      "kind": "investigation",
+      "title": "Measure human outcomes",
+      "body": "Guidelines for meta-analyses and systematic reviews for observational studies and PRISMA guidelines were followed.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "activity-mortality-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Hazards ratios for mortality were 1.00 (referent) in the first quarter (least active), 0.48 (95% confidence interval 0.43 to 0.54) in the second quarter, 0.34 (0.26 to 0.45) in the third quarter, and 0.27 (0.23 to 0.32) in the fourth quarter (most active).",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "activity-mortality-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "Higher levels of total physical activity, at any intensity, and less time spent sedentary, are associated with substantially reduced risk for premature mortality, with evidence of a non-linear dose-response pattern in middle aged and older adults.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "activity-mortality-q",
+      "to": "activity-mortality-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "activity-mortality-d",
+      "to": "activity-mortality-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "activity-mortality-i",
+      "to": "activity-mortality-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "activity-mortality-e",
+      "to": "activity-mortality-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}
