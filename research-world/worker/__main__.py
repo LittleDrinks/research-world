@@ -18,7 +18,7 @@ def main() -> None:
 
 def execute(world, workflow) -> None:
     try:
-        default_engine(world).run(workflow["id"])
+        default_engine(world, workflow["project_id"]).run(workflow["id"])
     except Exception as error:
         world.record_workflow_event(workflow["id"], "control", "workflow_failed", {"error": str(error)})
         world.update_workflow(workflow["id"], "failed", "failed", {"error": str(error)})

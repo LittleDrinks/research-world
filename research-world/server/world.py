@@ -9,6 +9,7 @@ from typing import Callable
 
 from .artifacts import now
 from .db import Database
+from .library import assembly_names
 
 
 NODE_KINDS = {"question", "source", "direction", "experiment"}
@@ -24,10 +25,14 @@ def stable_id(prefix: str, value: object) -> str:
 
 def decode(row: sqlite3.Row) -> dict:
     value = dict(row)
-    for key in ("payload", "rebuttal", "output"):
+    for key in ("payload", "rebuttal", "output", "assembly"):
         if value.get(key):
             value[key] = json.loads(value[key])
     return value
+
+
+def node_text(payload: dict) -> str:
+    return " ".join(str(payload.get(key, "")) for key in ("title", "text", "summary") if payload.get(key))
 
 
 class World:
@@ -36,11 +41,14 @@ class World:
         self.artifacts_root = artifacts
         self.embedding = embedding
 
-    def create_project(self, name: str, root: Path, question: str) -> dict:
+    def create_project(self, name: str, root: Path, question: str, assembly: list[str] | None = None) -> dict:
         project_id = stable_id("project", {"name": name})
-        values = (project_id, name, str(root.resolve()), question, 0, now())
+        names = json.dumps(assembly_names(assembly))
+        values = (project_id, name, str(root.resolve()), question, 0, names, now())
         with self.db.connect() as connection:
-            connection.execute("INSERT INTO projects VALUES(?,?,?,?,?,?)", values)
+            connection.execute(
+                "INSERT INTO projects(id,name,root,question,auto,assembly,created_at) VALUES(?,?,?,?,?,?,?)",
+                values)
             self._insert_question(connection, project_id, question)
         return self.project(project_id)
 
@@ -74,7 +82,7 @@ class World:
         with self.db.connect() as connection:
             connection.execute("INSERT INTO nodes VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", values)
             connection.execute("INSERT OR IGNORE INTO lineages VALUES(?,?,0,0)", (lineage_id, project_id))
-            connection.execute("INSERT INTO node_fts VALUES(?,?,?)", (node_id, project_id, self._node_text(payload)))
+            connection.execute("INSERT INTO node_fts VALUES(?,?,?)", (node_id, project_id, node_text(payload)))
             self._store_embedding(connection, node_id, payload)
         return self.node(node_id)
 
@@ -171,7 +179,7 @@ class World:
     def _store_embedding(self, connection, node_id: str, payload: dict) -> None:
         if self.embedding is None:
             return
-        vector = self.embedding(self._node_text(payload))
+        vector = self.embedding(node_text(payload))
         connection.execute("INSERT INTO node_embeddings VALUES(?,?)", (node_id, json.dumps(vector)))
 
     def embedding_for(self, node_id: str) -> list[float] | None:
@@ -270,9 +278,6 @@ class World:
         with self.db.connect() as connection:
             connection.execute("UPDATE lineages SET rejection_streak=?,auto_paused=? WHERE id=?", (streak, paused, lineage_id))
         return self._one("SELECT * FROM lineages WHERE id=?", (lineage_id,))
-
-    def _node_text(self, payload: dict) -> str:
-        return " ".join(str(payload.get(key, "")) for key in ("title", "text", "summary") if payload.get(key))
 
     def _rows(self, sql: str, params: tuple = ()) -> list[sqlite3.Row]:
         with self.db.connect() as connection:

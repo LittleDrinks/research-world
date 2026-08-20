@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from asyncio import to_thread
 from pathlib import Path
+import json
 import threading
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 from .config import ROOT, load_settings
+from .library import list_packages
 from .orchestrator import WorkflowManager
-from .world import World
+from .world import World, node_text
 from .workflows import default_engine
 
 
@@ -19,6 +20,7 @@ def create_app(world: World) -> FastAPI:
     graph_routes(app, world)
     conversation_routes(app, world)
     workflow_routes(app, world)
+    tool_routes(app, world)
     frontend_routes(app)
     return app
 
@@ -35,7 +37,11 @@ def project_routes(app: FastAPI, world: World) -> None:
     @app.post("/api/v1/projects", status_code=201)
     async def create_project(request: Request):
         value = await request.json()
-        return world.create_project(value["name"], Path(value["root"]), value["question"])
+        try:
+            return world.create_project(value["name"], Path(value["root"]), value["question"],
+                                        value.get("assembly"))
+        except ValueError as error:
+            raise HTTPException(400, str(error)) from error
 
     @app.get("/api/v1/bootstrap")
     async def bootstrap(project_id: str | None = None):
@@ -78,10 +84,11 @@ def conversation_routes(app: FastAPI, world: World) -> None:
     async def messages(project_id: str, node_id: str):
         return world.messages(project_id, node_id)
 
-    @app.post("/api/v1/projects/{project_id}/messages", status_code=201)
+    @app.post("/api/v1/projects/{project_id}/messages")
     async def send_message(project_id: str, request: Request):
         value = await request.json()
-        return await to_thread(manager.assist, project_id, value["node_id"], value["message"])
+        events = relay(manager.assist(project_id, value["node_id"], value["message"]))
+        return StreamingResponse(events, media_type="text/event-stream")
 
     @app.delete("/api/v1/projects/{project_id}/messages", status_code=204)
     async def clear_messages(project_id: str, node_id: str):
@@ -105,14 +112,44 @@ def workflow_routes(app: FastAPI, world: World) -> None:
 
     @app.post("/api/v1/workflows/{workflow_id}/confirm", status_code=202)
     async def confirm(workflow_id: str):
-        run_async(default_engine(world).confirm, workflow_id)
-        return world.workflow(workflow_id)
+        workflow = world.workflow(workflow_id)
+        run_async(default_engine(world, workflow["project_id"]).confirm, workflow_id)
+        return workflow
 
     @app.post("/api/v1/workflows/{workflow_id}/resolve", status_code=202)
     async def resolve(workflow_id: str, request: Request):
         value = await request.json()
-        run_async(default_engine(world).resolve, workflow_id, value["decision"], value["reason"])
-        return world.workflow(workflow_id)
+        workflow = world.workflow(workflow_id)
+        run_async(default_engine(world, workflow["project_id"]).resolve,
+                  workflow_id, value["decision"], value["reason"])
+        return workflow
+
+
+def tool_routes(app: FastAPI, world: World) -> None:
+    @app.get("/api/v1/library")
+    async def library():
+        return list_packages()
+
+    @app.post("/api/v1/tools/graph-query")
+    async def graph_query(request: Request):
+        args = (await request.json())["arguments"]
+        if args["action"] == "get":
+            return graph_node_payload(world, args["project_id"], args["node_id"])
+        if args["action"] == "search":
+            return [node_summary(node) for node in world.search(args["project_id"], args["query"])]
+        raise HTTPException(400, "unknown action")
+
+
+def graph_node_payload(world: World, project_id: str, node_id: str) -> dict:
+    node = get_or_404(world.node, node_id)
+    if node["project_id"] != project_id:
+        raise HTTPException(404, "not found")
+    return node["payload"]
+
+
+def node_summary(node: dict) -> dict:
+    return {"id": node["id"], "kind": node["kind"], "life_state": node["life_state"],
+            "summary": node_text(node["payload"])}
 
 
 NODE_STATE_KEYS = {"parent_id", "lineage_id", "life_state", "direction_status", "working"}
@@ -165,6 +202,18 @@ def slot_view(workflows: list[dict], count: int = 2) -> list[dict]:
 
 def run_async(function, *args) -> None:
     threading.Thread(target=function, args=args, daemon=True).start()
+
+
+def relay(events):
+    try:
+        for event in events:
+            yield sse_frame(event["event"], event["data"])
+    except Exception as error:
+        yield sse_frame("error", {"detail": str(error)})
+
+
+def sse_frame(event: str, data) -> str:
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
 def frontend_routes(app: FastAPI) -> None:

@@ -70,7 +70,8 @@ def project_command(args, world: World):
     if args.action == "list":
         return world.projects()
     value = json.loads(args.file.read_text()) if args.file else json.load(sys.stdin)
-    return world.create_project(value["name"], project_root(value["root"]), value["question"])
+    return world.create_project(value["name"], project_root(value["root"]), value["question"],
+                                value.get("assembly"))
 
 
 def doctor_embedding() -> dict:

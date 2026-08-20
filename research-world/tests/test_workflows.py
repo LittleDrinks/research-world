@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from server.library import resolve_assembly
 from server.workflows import AgentFacade, WorkflowEngine, mmr
 
 
@@ -58,8 +59,8 @@ class FakeHarness:
         self.value = value
         self.call = None
 
-    def json(self, role, instruction, payload):
-        self.call = (role, instruction, payload)
+    def json(self, role, instruction, payload, tools=None, prompt_segments=None):
+        self.call = (role, instruction, payload, tools or [], prompt_segments or [])
         return self.value
 
 
@@ -75,7 +76,7 @@ def admitted_direction(world, project, text="Existing direction"):
 def test_brainstorm_agent_enforces_named_response_contract():
     harness = FakeHarness({"research_directions": []})
     with pytest.raises(ValueError, match="required field 'candidates'"):
-        AgentFacade(harness).brainstorm({"text": "Why?"}, 2)
+        AgentFacade(harness, [], "http://control:8095").brainstorm({"text": "Why?"}, 2)
     assert '"candidates"' in harness.call[1]
     assert harness.call[2] == {"text": "Why?", "count": 2}
 
@@ -173,3 +174,29 @@ def test_double_review_conflict_escalates_to_human(world, project):
     result = service.confirm(workflow["id"])
     assert result["status"] == "waiting_human"
     assert result["payload"]["conflict_node"].startswith("node:")
+
+
+def test_facade_maps_assembly_to_harness_session():
+    harness = FakeHarness({"candidates": [{"text": "x", "quality": 0.1}]})
+    assembly = resolve_assembly(["fs", "graph-query"])
+    AgentFacade(harness, assembly, "http://control:8095/").brainstorm({"text": "Why?"}, 1)
+    _, _, _, tools, segments = harness.call
+    assert {"type": "fs"} in tools
+    webhook = next(tool for tool in tools if tool["type"] == "webhook")
+    assert webhook["name"] == "graph_query"
+    assert webhook["url"] == "http://control:8095/api/v1/tools/graph-query"
+    assert webhook["parameters"]["required"] == ["action", "project_id"]
+    assert segments == [package["prompt_segment"] for package in assembly]
+
+
+def test_pins_inject_node_content_into_agent_context(world, project):
+    pinned = world.create_node(project["id"], "source", {"title": "Kepler 1609"}, life_state="admitted")
+    world.embedding = FakeEmbedding({"Novel": [1, 0]})
+    agents = FakeAgents([{"text": "Novel", "quality": 0.5}])
+    workflow = world.create_workflow(project["id"], world.nodes(project["id"])[0]["id"], "brainstorm",
+                                     {"select": 1, "pins": [pinned["id"]]})
+    engine(world, agents, world.embedding).run(workflow["id"])
+    context = agents.brainstorm_contexts[0]
+    assert context["project_id"] == project["id"]
+    assert context["pins"] == [{"id": pinned["id"], "kind": "source",
+                                "payload": {"title": "Kepler 1609"}}]

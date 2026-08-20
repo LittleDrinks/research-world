@@ -13,6 +13,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 COPY server/ server/
 COPY worker/ worker/
+COPY library/ library/
 COPY --from=web /build/web/dist web/dist
 EXPOSE 8095
 CMD ["rw", "serve", "--host", "0.0.0.0", "--port", "8095"]

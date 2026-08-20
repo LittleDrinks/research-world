@@ -50,14 +50,36 @@ class HarnessClient:
     def __init__(self, url: str):
         self.url = url.rstrip("/")
 
-    def json(self, role: str, instruction: str, payload: dict) -> dict:
-        session = self._request("POST", "/sessions", {"role_prompt": role})
+    def json(self, role: str, instruction: str, payload: dict,
+             tools: list[dict] | None = None, prompt_segments: list[str] | None = None) -> dict:
+        session = self._request("POST", "/sessions",
+                                {"role_prompt": role, "tools": tools or [],
+                                 "prompt_segments": prompt_segments or []})
         prompt = f"{instruction}\nReturn one JSON object and no prose.\n{json.dumps(payload, ensure_ascii=False)}"
         turn = self._request("POST", f"/sessions/{session['id']}/turns", {"prompt": prompt})
-        if turn["status"] != "completed":
-            raise RuntimeError(f"harness turn failed: {turn['status']}")
+        check_turn(turn)
         value = json_object(turn["result_text"] or "")
         return {**value, "_session_id": session["id"], "_turn_id": turn["id"], "_usage": turn["usage"]}
+
+    def stream_text(self, role: str, instruction: str, payload: dict):
+        session = self._request("POST", "/sessions", {"role_prompt": role})
+        prompt = f"{instruction}\n{json.dumps(payload, ensure_ascii=False)}"
+        yield from self._stream_turn(session["id"], prompt)
+
+    def _stream_turn(self, session_id: str, prompt: str):
+        url = f"{self.url}/sessions/{session_id}/turns/stream"
+        with httpx.stream("POST", url, json={"prompt": prompt}, timeout=660) as response:
+            response.raise_for_status()
+            for line in response.iter_lines():
+                if not line.startswith("data: "):
+                    continue
+                event = json.loads(line[6:])
+                if "delta" in event:
+                    yield event["delta"]
+                elif event.get("done"):
+                    check_turn(event["turn"])
+                    return
+        raise RuntimeError("harness stream closed without done")
 
     def trace(self, session_id: str) -> str:
         response = httpx.get(f"{self.url}/sessions/{session_id}/trace", timeout=60)
@@ -68,6 +90,11 @@ class HarnessClient:
         response = httpx.request(method, self.url + path, json=body, timeout=660)
         response.raise_for_status()
         return response.json()
+
+
+def check_turn(turn: dict) -> None:
+    if turn["status"] != "completed":
+        raise RuntimeError(f"harness turn failed: {turn['status']}")
 
 
 def json_object(text: str) -> dict:

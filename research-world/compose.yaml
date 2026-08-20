@@ -4,8 +4,8 @@ services:
       context: .
       target: runtime
     environment:
-      MODEL_API_BASE: ${MODEL_API_BASE:-}
-      MODEL_API_KEY: ${MODEL_API_KEY:-}
+      MODEL_API_BASE: ${baseurl:-}
+      MODEL_API_KEY: ${apikey:-}
       RW_PROJECTS_ROOT: /projects
       RW_DATA_ROOT: /app/data
       RUNNER_CONTROLLER_URL: http://runner-controller:8096
@@ -27,11 +27,13 @@ services:
       target: runtime
     command: ["python", "-m", "worker"]
     environment:
-      MODEL_API_BASE: ${MODEL_API_BASE:-}
-      MODEL_API_KEY: ${MODEL_API_KEY:-}
+      MODEL_API_BASE: ${baseurl:-}
+      MODEL_API_KEY: ${apikey:-}
       RW_PROJECTS_ROOT: /projects
       RW_DATA_ROOT: /app/data
       RUNNER_CONTROLLER_URL: http://runner-controller:8096
+      HARNESS_URL: http://harness:8098
+      RW_TOOL_CALLBACK_URL: http://control:8095
     volumes:
       - rw-data:/app/data
       - ${RW_PROJECTS_ROOT:-./projects}:/projects:ro
@@ -39,6 +41,29 @@ services:
     depends_on:
       control:
         condition: service_healthy
+      harness:
+        condition: service_healthy
+
+  harness:
+    build:
+      context: ..
+      dockerfile: harness/Dockerfile
+    environment:
+      HARNESS_API_BASE: ${baseurl:-}
+      HARNESS_API_KEY: ${apikey:-}
+      HARNESS_MODEL: ${RW_MODEL_NAME:-qwen3.7-flash}
+      HARNESS_DATA: /app/data
+    volumes:
+      - rw-data:/app/data
+    networks: [control, worker-egress]
+    depends_on:
+      control:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8098/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   runner-controller:
     build:
