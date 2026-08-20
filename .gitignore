@@ -29,3 +29,6 @@ benchmarks/**/*.jsonl
 benchmarks/**/*.parquet
 benchmarks/**/*.pt
 benchmarks/**/*.safetensors
+.agents/
+/a.md
+/datasets/research-kernel-papers/raw/
