@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { getBootstrap, postCommand } from "../api";
 
 const EMPTY = { projects: [], nodes: [], edges: [], workflows: [], slots: [] };
+const LAST_PROJECT_KEY = "rw.active_project";
 const WorldContext = createContext(null);
 
 function useWorldState() {
@@ -19,6 +20,7 @@ function useRefresh(state, desiredProject) {
       const result = await getBootstrap(nextId);
       if (desiredProject.current && result.active_project_id !== desiredProject.current) return;
       desiredProject.current = result.active_project_id;
+      localStorage.setItem(LAST_PROJECT_KEY, result.active_project_id);
       state.setData(result);
       state.setProjectId(result.active_project_id);
       state.setError("");
@@ -31,7 +33,7 @@ export function WorldProvider({ children }) {
   const state = useWorldState();
   const desiredProject = useRef("");
   const refresh = useRefresh(state, desiredProject);
-  useEffect(() => { refresh(""); }, []);
+  useEffect(() => { refresh(localStorage.getItem(LAST_PROJECT_KEY) || ""); }, []);
   useEffect(() => {
     const timer = setInterval(() => refresh(state.projectId), 5000);
     return () => clearInterval(timer);

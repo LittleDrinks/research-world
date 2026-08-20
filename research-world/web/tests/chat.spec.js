@@ -14,11 +14,23 @@ function fixture(nodes = [node("node:q", "question"), node("node:d", "direction"
 }
 
 
+function sse(frames) {
+  return `${frames.map(([event, data]) => `event: ${event}\ndata: ${JSON.stringify(data)}`).join("\n\n")}\n\n`;
+}
+
+
+function replySse(deltas, saved) {
+  const frames = [["user", { id: 10, role: "user", content: "（输入）" }],
+    ...deltas.map((delta) => ["delta", delta]), ["done", saved]];
+  return { headers: { "content-type": "text/event-stream" }, body: sse(frames) };
+}
+
+
 async function mockChat(page, body = fixture()) {
   await page.route(/\/api\/v1\/bootstrap/, (route) => route.fulfill({ json: body }));
   await page.route(/\/api\/v1\/projects\/project%3Atest\/messages/, (route) => {
     if (route.request().method() === "GET") return route.fulfill({ json: [{ id: 1, role: "assistant", content: "已带入问题上下文" }] });
-    return route.fulfill({ status: 201, json: { id: 2, role: "assistant", content: "先生成并筛选多个研究方向。", actions: ["brainstorm"] } });
+    return route.fulfill(replySse(["先生成并筛选多个研究方向。"], { id: 2, role: "assistant", content: "先生成并筛选多个研究方向。", actions: ["brainstorm"] }));
   });
 }
 
@@ -29,7 +41,7 @@ test("sends a message with the selected node context", async ({ page }) => {
   await page.route(/\/api\/v1\/projects\/project%3Atest\/messages/, (route) => {
     if (route.request().method() === "GET") return route.fulfill({ json: [{ id: 1, role: "assistant", content: "已带入问题上下文" }] });
     request = route.request().postDataJSON();
-    return route.fulfill({ status: 201, json: { id: 2, role: "assistant", content: "先生成并筛选多个研究方向。" } });
+    return route.fulfill(replySse(["先生成并筛选", "多个研究方向。"], { id: 2, role: "assistant", content: "先生成并筛选多个研究方向。" }));
   });
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/chat");
@@ -39,6 +51,39 @@ test("sends a message with the selected node context", async ({ page }) => {
   await page.getByRole("button", { name: "发送" }).click();
   await expect(page.getByText("先生成并筛选多个研究方向。")).toBeVisible();
   expect(request).toEqual({ node_id: "node:q", message: "下一步做什么？" });
+});
+
+
+test("streams reply deltas and renders the saved message as markdown", async ({ page }) => {
+  await mockChat(page);
+  await page.route(/\/api\/v1\/projects\/project%3Atest\/messages/, (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: [] });
+    return route.fulfill(replySse(["先看文献，", "再做**对照**实验。"],
+      { id: 2, role: "assistant", content: "先看文献，再做**对照**实验。\n\n已按你的要求创建工作流。", workflow: null }));
+  });
+  await page.goto("/chat");
+  await page.getByLabel("消息").fill("怎么开始？");
+  await page.getByRole("button", { name: "发送" }).click();
+  const reply = page.locator(".manager-message.assistant").last();
+  await expect(reply).toContainText("先看文献，再做对照实验。");
+  await expect(reply.locator("strong")).toHaveText("对照");
+  await expect(reply).toContainText("已按你的要求创建工作流。");
+});
+
+
+test("restores the draft when the reply stream reports an error", async ({ page }) => {
+  await mockChat(page);
+  await page.route(/\/api\/v1\/projects\/project%3Atest\/messages/, (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: [] });
+    return route.fulfill({ headers: { "content-type": "text/event-stream" },
+      body: sse([["user", { id: 10, role: "user", content: "分析一下" }], ["delta", "部分"], ["error", { detail: "模型超时" }]]) });
+  });
+  await page.goto("/chat");
+  await page.getByLabel("消息").fill("分析一下");
+  await page.getByRole("button", { name: "发送" }).click();
+  await expect(page.getByRole("alert")).toContainText("模型超时");
+  await expect(page.locator(".manager-message")).toHaveCount(0);
+  await expect(page.getByLabel("消息")).toHaveValue("分析一下");
 });
 
 
@@ -62,7 +107,7 @@ test("refreshes workflow state after an instruction starts work", async ({ page 
   await page.route(/\/api\/v1\/bootstrap/, (route) => { bootstraps += 1; return route.fulfill({ json: fixture() }); });
   await page.route(/\/api\/v1\/projects\/project%3Atest\/messages/, (route) => {
     if (route.request().method() === "GET") return route.fulfill({ json: [] });
-    return route.fulfill({ status: 201, json: { id: 2, role: "assistant", content: "已创建工作流", workflow: { id: "workflow:new" } } });
+    return route.fulfill(replySse(["已创建工作流"], { id: 2, role: "assistant", content: "已创建工作流", workflow: { id: "workflow:new" } }));
   });
   await page.goto("/chat");
   await page.getByLabel("消息").fill("生成三个方向，只保留一个");
@@ -121,8 +166,8 @@ test("keeps the manager chat IME-safe and readable on mobile", async ({ page }) 
   await page.setViewportSize({ width: 390, height: 844 });
   await mockChat(page);
   await page.route(/\/api\/v1\/projects\/project%3Atest\/messages/, (route) => {
-    if (route.request().method() === "POST") sends += 1;
-    return route.fulfill({ status: route.request().method() === "POST" ? 201 : 200, json: route.request().method() === "POST" ? { id: 2, role: "assistant", content: "继续" } : [] });
+    if (route.request().method() === "POST") { sends += 1; return route.fulfill(replySse(["继续"], { id: 2, role: "assistant", content: "继续" })); }
+    return route.fulfill({ json: [] });
   });
   await page.goto("/chat");
   await expect(page.getByRole("button", { name: "生成方向" })).toBeVisible();

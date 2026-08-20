@@ -16,9 +16,21 @@ function fixture() {
 }
 
 
+function sse(frames) {
+  return `${frames.map(([event, data]) => `event: ${event}\ndata: ${JSON.stringify(data)}`).join("\n\n")}\n\n`;
+}
+
+
+function replySse(content) {
+  return { headers: { "content-type": "text/event-stream" },
+    body: sse([["user", { id: 10, role: "user", content: "（输入）" }], ["delta", content],
+      ["done", { id: 1, role: "assistant", content }]]) };
+}
+
+
 async function mockMap(page, body = fixture()) {
   await page.route(/\/api\/v1\/bootstrap/, (route) => route.fulfill({ json: body }));
-  await page.route(/\/api\/v1\/projects\/project%3Atest\/messages/, (route) => route.request().method() === "GET" ? route.fulfill({ json: [] }) : route.fulfill({ status: 201, json: { id: 1, role: "assistant", content: "已带入上下文" } }));
+  await page.route(/\/api\/v1\/projects\/project%3Atest\/messages/, (route) => route.request().method() === "GET" ? route.fulfill({ json: [] }) : route.fulfill(replySse("已带入上下文")));
 }
 
 
@@ -129,8 +141,8 @@ test("keeps node chat IME-safe", async ({ page }) => {
   let sends = 0;
   await mockMap(page);
   await page.route(/\/api\/v1\/projects\/project%3Atest\/messages/, (route) => {
-    if (route.request().method() === "POST") sends += 1;
-    return route.fulfill({ status: route.request().method() === "POST" ? 201 : 200, json: route.request().method() === "POST" ? { id: 1, role: "assistant", content: "继续" } : [] });
+    if (route.request().method() === "POST") { sends += 1; return route.fulfill(replySse("继续")); }
+    return route.fulfill({ json: [] });
   });
   await page.goto("/map");
   const input = page.getByLabel("节点消息");

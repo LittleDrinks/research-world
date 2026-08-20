@@ -1,5 +1,6 @@
 import { Activity, GitBranch, MessageSquare, Play, Send } from "lucide-react";
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { getMessages, sendMessage } from "../api";
 import { useWorld } from "../context/WorldContext";
 
@@ -55,22 +56,33 @@ function NodeChat({ node }) {
   const [messages, setMessages] = useState([]);
   const [value, setValue] = useState("");
   const [sending, setSending] = useState(false);
+  const [streaming, setStreaming] = useState(null);
   useEffect(() => { getMessages(projectId, node.id).then(setMessages).catch((error) => setError(error.message)); }, [projectId, node.id]);
   const submit = async () => {
-    if (!value.trim() || sending) return;
+    const text = value.trim();
+    if (!text || sending) return;
     setSending(true);
+    let finished = null;
     try {
-      const reply = await sendMessage(projectId, { node_id: node.id, message: value });
+      await sendMessage(projectId, { node_id: node.id, message: text }, (event, data) => {
+        if (event === "delta") setStreaming((current) => (current || "") + data);
+        if (event === "done") finished = data;
+        if (event === "error") throw new Error(data.detail || "答复失败");
+      });
       setMessages(await getMessages(projectId, node.id)); setValue("");
-      if (reply.workflow) await refresh(projectId);
+      if (finished?.workflow) await refresh(projectId);
     }
     catch (error) { setError(error.message); }
-    finally { setSending(false); }
+    finally { setSending(false); setStreaming(null); }
   };
   const keyDown = (event) => {
     const composing = event.isComposing || event.nativeEvent?.isComposing || event.keyCode === 229;
     if (event.key === "Enter" && !event.shiftKey && !composing) { event.preventDefault(); submit(); }
   };
-  return <section className="node-chat"><header><MessageSquare size={16} /><b>节点对话</b></header><div className="node-chat-log">{messages.map((message) => <p key={message.id} className={message.role}>{message.content}</p>)}</div>
+  return <section className="node-chat"><header><MessageSquare size={16} /><b>节点对话</b></header>
+    <div className="node-chat-log">{messages.map((message) => message.role === "assistant"
+      ? <div key={message.id} className="markdown"><ReactMarkdown>{message.content}</ReactMarkdown></div>
+      : <p key={message.id} className={message.role}>{message.content}</p>)}
+      {streaming !== null && <div className="markdown"><ReactMarkdown>{streaming}</ReactMarkdown></div>}</div>
     <div className="node-composer"><textarea aria-label="节点消息" value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={keyDown} rows="2" placeholder="围绕当前节点讨论..." /><button className="icon-button" onClick={submit} disabled={sending || !value.trim()} aria-label="发送消息"><Send size={17} /></button></div></section>;
 }

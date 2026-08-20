@@ -24,6 +24,7 @@ function ProjectMap({ data, refresh, setError }) {
   const selected = data.nodes.find((node) => node.id === selectedId) || data.nodes[0];
   const active = activeWorkflow(data.workflows, selected?.id);
   const relations = useMemo(() => graphEdges(data.nodes, data.edges), [data.nodes, data.edges]);
+  const busyIds = useMemo(() => busyNodeIds(data.workflows), [data.workflows]);
   const graph = useMemo(() => overview ? { nodes: data.nodes, edges: relations }
     : branch(data.nodes, relations, selected?.id), [data.nodes, relations, overview, selected?.id]);
   const start = async (node) => {
@@ -34,7 +35,7 @@ function ProjectMap({ data, refresh, setError }) {
     catch (error) { setError(error.message); }
   };
   return <section className="map-page"><MapToolbar data={data} relationCount={relations.length} overview={overview} setOverview={setOverview} refresh={refresh} setError={setError} />
-    <div className="map-workspace"><div className="graph-canvas"><GraphView nodes={graph.nodes} edges={graph.edges} selectedId={selected?.id} onSelect={setSelectedId} newIds={newIds} /></div>
+    <div className="map-workspace"><div className="graph-canvas"><GraphView nodes={graph.nodes} edges={graph.edges} selectedId={selected?.id} onSelect={setSelectedId} newIds={newIds} busyIds={busyIds} /></div>
       <Inspector node={selected} nodes={data.nodes} edges={data.edges} workflow={active} onSelect={setSelectedId} onStart={start} onOpen={(workflow) => openWorkflow(navigate, workflow)} /></div></section>;
 }
 
@@ -60,6 +61,15 @@ function workflowFor(node) {
   return { node_id: node.id, kind, payload: kind === "brainstorm" ? { count: 8, select: 4 } : {} };
 }
 
+
+function busyNodeIds(workflows) {
+  const ids = new Set();
+  workflows.filter((item) => ["queued", "running", "waiting_human"].includes(item.status)).forEach((item) => {
+    ids.add(item.node_id);
+    if (item.payload?.experiment_id) ids.add(item.payload.experiment_id);
+  });
+  return ids;
+}
 
 function activeWorkflow(workflows, nodeId) {
   const active = workflows.filter((item) => ["queued", "running", "waiting_human"].includes(item.status));

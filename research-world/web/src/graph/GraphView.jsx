@@ -10,10 +10,10 @@ const EDGE_TYPES = { signal: SignalEdge };
 const EMPTY_LAYOUT = { signature: "", nodes: [], routes: new Map() };
 
 
-export function GraphView({ nodes, edges, selectedId, onSelect, newIds }) {
+export function GraphView({ nodes, edges, selectedId, onSelect, newIds, busyIds }) {
   const signature = graphSignature(nodes, edges);
   const layout = useGraphLayout(nodes, edges, signature);
-  const flowNodes = useMemo(() => decorateNodes(layout.nodes, nodes, selectedId, newIds), [layout.nodes, nodes, selectedId, newIds]);
+  const flowNodes = useMemo(() => decorateNodes(layout.nodes, nodes, selectedId, newIds, busyIds), [layout.nodes, nodes, selectedId, newIds, busyIds]);
   const flowEdges = useMemo(() => decorateEdges(edges, flowNodes, selectedId, layout.routes), [edges, flowNodes, selectedId, layout.routes]);
   const fit = { padding: .14, maxZoom: 1 };
   return <ReactFlow nodes={flowNodes} edges={flowEdges} nodeTypes={NODE_TYPES} edgeTypes={EDGE_TYPES} onNodeClick={(_, node) => onSelect(node.id)} nodesDraggable={false} nodesConnectable={false} fitView fitViewOptions={fit} minZoom={.15} maxZoom={1.5} proOptions={{ hideAttribution: true }}>
@@ -39,10 +39,10 @@ function useGraphLayout(nodes, edges, signature) {
 }
 
 
-function decorateNodes(layout, nodes, selectedId, newIds) {
+function decorateNodes(layout, nodes, selectedId, newIds, busyIds) {
   const values = new Map(nodes.map((node) => [node.id, node]));
   return layout.map((node) => ({ ...node, selected: node.id === selectedId,
-    data: { ...values.get(node.id), justCompleted: newIds.has(node.id) } }));
+    data: { ...values.get(node.id), working: Boolean(values.get(node.id)?.working) || busyIds?.has(node.id) || false, justCompleted: newIds.has(node.id) } }));
 }
 
 

@@ -1,5 +1,6 @@
 import { Beaker, BookOpen, GitBranch, Lightbulb, MessageSquare, Plus, Save, SendHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { clearConversation, getMessages, materializeDraft, sendMessage, startWorkflow } from "../api";
 import { useWorld } from "../context/WorldContext";
 import "../chat.css";
@@ -48,18 +49,36 @@ function useConversation(projectId, node, refresh, setError) {
 async function sendDraft(projectId, node, draft, setDraft, setMessages, refresh, setError) {
   const content = draft.trim();
   if (!content) return;
-  const pendingId = `draft:${Date.now()}`;
+  const userId = `draft:${Date.now()}`;
+  const replyId = `reply:${Date.now()}`;
   setDraft("");
-  setMessages((items) => [...items, { id: pendingId, role: "user", content }]);
+  setMessages((items) => [...items, { id: userId, role: "user", content }]);
+  let text = "";
+  let finished = null;
+  let serverUserId = null;
   try {
-    const reply = await sendMessage(projectId, { node_id: node.id, message: content });
-    setMessages((items) => [...items, reply]);
-    if (reply.workflow) await refresh(projectId);
+    await sendMessage(projectId, { node_id: node.id, message: content }, (event, data) => {
+      if (event === "user") { serverUserId = data.id; setMessages((items) => items.map((item) => (item.id === userId ? data : item))); }
+      if (event === "delta") { text += data; setMessages((items) => upsertReply(items, replyId, text)); }
+      if (event === "done") finished = data;
+      if (event === "error") throw new Error(data.detail || "答复失败");
+    });
+    if (!finished) throw new Error("连接中断，答复未完成");
+    setMessages((items) => [...items.filter((item) => item.id !== replyId), finished]);
+    if (finished.workflow) await refresh(projectId);
   }
   catch (error) {
-    setMessages((items) => items.filter((item) => item.id !== pendingId));
+    setMessages((items) => items.filter((item) => item.id !== userId && item.id !== replyId && item.id !== serverUserId));
     setDraft(content); setError(error.message);
   }
+}
+
+
+function upsertReply(items, id, content) {
+  const message = { id, role: "assistant", content };
+  return items.some((item) => item.id === id)
+    ? items.map((item) => (item.id === id ? message : item))
+    : [...items, message];
 }
 
 
@@ -100,10 +119,12 @@ function ThreadHeader({ node, workflows, onNew }) {
 
 function MessageLog({ messages, loading }) {
   const end = useRef(null);
-  useEffect(() => { end.current?.scrollIntoView({ block: "end" }); }, [messages.length]);
+  useEffect(() => { end.current?.scrollIntoView({ block: "end" }); }, [messages]);
   return <div className="manager-messages">{loading && <p className="message-placeholder">正在载入...</p>}
     {!loading && !messages.length && <p className="message-placeholder">当前节点尚无对话草稿</p>}
-    {messages.map((message) => <article className={`manager-message ${message.role}`} key={message.id}><span>{message.role === "user" ? "你" : "工作流助手"}</span><p>{message.content}</p></article>)}<div ref={end} /></div>;
+    {messages.map((message) => <article className={`manager-message ${message.role}`} key={message.id}><span>{message.role === "user" ? "你" : "工作流助手"}</span>
+      {message.role === "assistant" ? <div className="markdown"><ReactMarkdown>{message.content}</ReactMarkdown></div> : <p>{message.content}</p>}
+    </article>)}<div ref={end} /></div>;
 }
 
 
