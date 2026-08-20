@@ -1,0 +1,10 @@
+import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+const source = resolve('../../datasets/research-kernel-papers/graphs');
+const target = resolve('public/papers.json');
+const order=['formal-proof','benchmark','numerical-simulation','observation','wet-lab','human-clinical'];
+const files = (await readdir(source)).filter(name => name.endsWith('.json')).sort();
+const papers = await Promise.all(files.map(async name => JSON.parse(await readFile(resolve(source, name), 'utf8'))));
+papers.sort((left,right)=>order.indexOf(left.paper.category)-order.indexOf(right.paper.category)||left.paper.year-right.paper.year||left.paper.title.localeCompare(right.paper.title));
+await writeFile(target, `${JSON.stringify(papers)}\n`);
+console.log(`Built ${papers.length} paper fixtures`);

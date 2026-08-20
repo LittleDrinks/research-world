@@ -1,0 +1,144 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE: only the white Claude mark breathes; the base plate stays still. -->
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claude Mark Breath Prototype</title>
+  <style>
+    :root {
+      --ink: #20201d;
+      --muted: #73736c;
+      --line: #deded7;
+      --paper: #fff;
+      --soft: #f3f3ef;
+      --coral: #d97757;
+      --green: #47705a;
+      --duration: 3.8s;
+      --mark-low: .94;
+      --mark-high: 1.08;
+      color: var(--ink);
+      background: var(--soft);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body { margin: 0; overflow: hidden; }
+    button, input { color: inherit; font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible { outline: 3px solid #315743; outline-offset: 3px; }
+    h1, p { margin: 0; }
+    .app { min-height: 100dvh; display: grid; grid-template-rows: 68px minmax(0, 1fr); }
+    .topbar { z-index: 3; display: flex; align-items: center; gap: 14px; padding: 0 24px; border-bottom: 1px solid var(--line); background: #fffffff2; backdrop-filter: blur(12px); }
+    .brand { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 760; }
+    .brand-mark { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 7px; color: #fff; background: var(--coral); font-size: 20px; }
+    .source { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+    .source b { color: var(--ink); font-weight: 650; }
+    .controls { margin-left: auto; display: flex; align-items: center; gap: 18px; }
+    .range-control { display: grid; grid-template-columns: auto 92px 38px; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; }
+    .range-control output { color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; }
+    input[type="range"] { width: 92px; accent-color: var(--coral); }
+    .icon-button { width: 38px; height: 38px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 7px; background: var(--paper); font-size: 15px; }
+    .icon-button:hover { border-color: #aaa9a2; background: #f8f8f5; }
+    .stage { min-height: 0; display: grid; grid-template-columns: minmax(300px, .72fr) minmax(520px, 1.28fr); overflow: hidden; background: var(--paper); }
+    .copy { z-index: 2; display: grid; align-content: center; padding: 7vh clamp(34px, 7vw, 112px) 12vh; border-right: 1px solid var(--line); background: #f6f6f2; }
+    .eyebrow { display: flex; align-items: center; gap: 8px; color: var(--green); font: 700 11px ui-monospace, SFMono-Regular, Menlo, monospace; text-transform: uppercase; }
+    .eyebrow i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+    .copy h1 { max-width: 520px; margin-top: 18px; font-family: Georgia, "Times New Roman", serif; font-size: 52px; line-height: 1.02; font-weight: 500; letter-spacing: 0; }
+    .copy p { max-width: 440px; margin-top: 22px; color: var(--muted); font-size: 16px; line-height: 1.65; }
+    .thinking { display: flex; align-items: center; gap: 10px; margin-top: 34px; font-size: 13px; font-weight: 700; }
+    .thinking span:last-child { color: var(--coral); }
+    .visual { position: relative; min-width: 0; display: grid; place-items: center; overflow: hidden; background: #fff; }
+    .character { position: relative; width: min(88%, 760px); aspect-ratio: 1371 / 1148; }
+    .base-plate { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+    .claude-mark { position: absolute; left: 23.63%; top: 27.79%; width: 23.63%; height: 28.22%; object-fit: contain; transform-origin: 50% 50%; animation: markBreath var(--duration) cubic-bezier(.45, 0, .3, 1) infinite; will-change: transform; }
+    .paused .claude-mark { animation-play-state: paused; }
+    @keyframes markBreath {
+      0%, 100% { transform: scale(var(--mark-low)); }
+      46%, 58% { transform: scale(var(--mark-high)); }
+    }
+    @media (max-width: 820px) {
+      body { overflow: auto; }
+      .app { grid-template-rows: auto minmax(0, 1fr); }
+      .topbar { min-height: 64px; padding: 12px 16px; }
+      .source, .range-control span { display: none; }
+      .controls { gap: 10px; }
+      .range-control { grid-template-columns: 72px 34px; gap: 4px; }
+      .range-control:first-of-type { display: none; }
+      input[type="range"] { width: 72px; }
+      .stage { min-height: calc(100dvh - 64px); grid-template-columns: 1fr; grid-template-rows: auto minmax(340px, 1fr); overflow: auto; }
+      .copy { padding: 34px 24px 10px; border-right: 0; background: #fff; }
+      .copy h1 { margin-top: 12px; font-size: 38px; }
+      .copy p { margin-top: 12px; font-size: 14px; }
+      .thinking { margin-top: 18px; }
+      .visual { padding-bottom: 20px; }
+      .character { width: min(100%, 520px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .claude-mark { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">✱</span><span>Claude</span></div>
+      <div class="source"><b>Tatman</b> · Anthropic 新吉祥物泄露—奶蛙</div>
+      <div class="controls">
+        <label class="range-control"><span>周期</span><input id="duration" type="range" min="1800" max="6000" step="100" value="3800"><output id="duration-output">3.8s</output></label>
+        <label class="range-control"><span>幅度</span><input id="depth" type="range" min="2" max="14" step="1" value="8"><output id="depth-output">8%</output></label>
+        <button class="icon-button" id="play-toggle" type="button" aria-label="暂停呼吸" title="暂停呼吸">Ⅱ</button>
+      </div>
+    </header>
+    <main class="stage">
+      <section class="copy">
+        <div class="eyebrow"><i></i>Claude is thinking</div>
+        <h1>Give the idea a little room.</h1>
+        <p>正在交叉核对原始论文、实验设定和引用关系，把相互冲突的结果整理进同一条证据链。</p>
+        <div class="thinking"><span>正在核对来源</span><span>•••</span></div>
+      </section>
+      <section class="visual">
+        <figure class="character">
+          <img class="base-plate" src="assets/claude-base.png" alt="静止的橙色 Claude 角色">
+          <img class="claude-mark" src="assets/claude-mark.png" alt="呼吸缩放的白色 Claude 图标">
+        </figure>
+      </section>
+    </main>
+  </div>
+  <script>
+    const root = document.documentElement;
+    const body = document.body;
+    const duration = document.querySelector('#duration');
+    const depth = document.querySelector('#depth');
+    const playToggle = document.querySelector('#play-toggle');
+    let playing = true;
+
+    function updateDuration() {
+      root.style.setProperty('--duration', `${duration.value}ms`);
+      document.querySelector('#duration-output').textContent = `${(duration.value / 1000).toFixed(1)}s`;
+    }
+
+    function updateDepth() {
+      const value = depth.value / 100;
+      root.style.setProperty('--mark-low', 1 - value * .75);
+      root.style.setProperty('--mark-high', 1 + value);
+      document.querySelector('#depth-output').textContent = `${depth.value}%`;
+    }
+
+    function togglePlayback() {
+      playing = !playing;
+      body.classList.toggle('paused', !playing);
+      playToggle.textContent = playing ? 'Ⅱ' : '▶';
+      playToggle.setAttribute('aria-label', playing ? '暂停呼吸' : '继续呼吸');
+      playToggle.title = playing ? '暂停呼吸' : '继续呼吸';
+    }
+
+    duration.addEventListener('input', updateDuration);
+    depth.addEventListener('input', updateDepth);
+    playToggle.addEventListener('click', togglePlayback);
+    addEventListener('keydown', event => event.key === ' ' && togglePlayback());
+    updateDuration();
+    updateDepth();
+  </script>
+</body>
+</html>
