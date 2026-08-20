@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from .clients import EmbeddingClient, EndpointCapabilityError, HarnessClient, RunnerClient
 from .config import load_settings
+from .library import resolve_assembly
 from .world import World
 
 
@@ -30,35 +31,59 @@ def _mmr_score(candidate: dict, selected: list[dict], weight: float) -> float:
 
 
 class AgentFacade:
-    def __init__(self, harness: HarnessClient):
+    def __init__(self, harness: HarnessClient, assembly: list[dict], callback_url: str):
         self.harness = harness
+        self.assembly = assembly
+        self.callback_url = callback_url
+
+    def _call(self, role: str, instruction: str, payload: dict) -> dict:
+        return self.harness.json(role, instruction, payload,
+                                 tools=harness_tools(self.assembly, self.callback_url),
+                                 prompt_segments=prompt_segments(self.assembly))
 
     def brainstorm(self, context: dict, count: int) -> dict:
-        value = self.harness.json("科研构思助手", BRAINSTORM_PROMPT, {**context, "count": count})
+        value = self._call("科研构思助手", BRAINSTORM_PROMPT, {**context, "count": count})
         candidates = required(value, "candidates")
         if not isinstance(candidates, list) or len(candidates) < count:
             raise ValueError(f"harness field 'candidates' must contain at least {count} items")
         return {**value, "candidates": candidates[:count]}
 
     def pairwise(self, left: str, right: str) -> bool:
-        value = self.harness.json("科研新颖性裁决者", PAIR_PROMPT, {"left": left, "right": right})
+        value = self._call("科研新颖性裁决者", PAIR_PROMPT, {"left": left, "right": right})
         return bool(required(value, "duplicate"))
 
     def plan(self, direction: dict) -> dict:
-        value = self.harness.json("科研实验规划者", PLAN_PROMPT, direction)
+        value = self._call("科研实验规划者", PLAN_PROMPT, direction)
         required(value, "steps")
         return value
 
     def review(self, context: dict, reviewer: str) -> dict:
-        value = self.harness.json(f"独立审查者 {reviewer}", REVIEW_PROMPT, context)
+        value = self._call(f"独立审查者 {reviewer}", REVIEW_PROMPT, context)
         for field in ("decision", "quality", "diversity", "rebuttal"):
             required(value, field)
         return value
 
     def reflect(self, context: dict) -> dict:
-        value = self.harness.json("科研反思助手", REFLECT_PROMPT, context)
+        value = self._call("科研反思助手", REFLECT_PROMPT, context)
         required(value, "text")
         return value
+
+
+def harness_tools(packages: list[dict], callback_url: str) -> list[dict]:
+    tools = []
+    for package in packages:
+        if package["name"] == "fs":
+            tools.append({"type": "fs"})
+        for tool in package.get("tools", []):
+            tools.append({"type": "webhook", "name": tool["name"],
+                          "description": tool.get("description", ""),
+                          "parameters": tool.get("parameters") or {"type": "object", "properties": {}},
+                          "url": callback_url.rstrip("/") + tool["path"]})
+    return tools
+
+
+def prompt_segments(packages: list[dict]) -> list[str]:
+    return [package["prompt_segment"] for package in packages if package.get("prompt_segment")]
 
 
 @dataclass
@@ -102,7 +127,7 @@ class WorkflowEngine:
         origin = self.world.set_working(workflow["node_id"], True)
         self.world.update_workflow(workflow["id"], "brainstorm", "running")
         count = int(workflow["payload"].get("count", 8))
-        result = self.agents.brainstorm(agent_context(workflow, origin["payload"]), count)
+        result = self.agents.brainstorm(self._agent_context(workflow, origin["payload"]), count)
         self._record_agent(workflow["id"], "brainstormer", result)
         candidates = result["candidates"]
         try:
@@ -175,7 +200,7 @@ class WorkflowEngine:
         payload = {**workflow["payload"], "experiment_id": experiment["id"]}
         self.world.update_workflow(workflow["id"], "plan", "running", payload)
         self._event(workflow["id"], "control", "experiment_created", {"node_id": experiment["id"]})
-        plan = self.agents.plan(agent_context(workflow, direction["payload"]))
+        plan = self.agents.plan(self._agent_context(workflow, direction["payload"]))
         self._record_agent(workflow["id"], "planner", plan)
         for ordinal, step in enumerate(plan["steps"], 1):
             self.world.add_step(workflow["id"], ordinal, "execute", step, not bool(workflow["auto"]))
@@ -264,7 +289,7 @@ class WorkflowEngine:
         if self.world.workflow(workflow["id"])["status"] == "paused":
             return self.world.workflow(workflow["id"])
         context = {"experiment": experiment["payload"], "outputs": outputs}
-        value = self.agents.reflect(agent_context(workflow, context))
+        value = self.agents.reflect(self._agent_context(workflow, context))
         self._record_agent(workflow["id"], "reflector", value)
         node = self.world.create_node(workflow["project_id"], "direction", {"text": value["text"]},
                                      parent_id=experiment["id"], lineage_id=experiment["lineage_id"])
@@ -290,6 +315,16 @@ class WorkflowEngine:
     def _record_agent(self, workflow_id: str, actor: str, value: dict) -> None:
         self._event(workflow_id, actor, "assistant", value)
 
+    def _agent_context(self, workflow: dict, context: dict) -> dict:
+        pins = [self._pin(node_id) for node_id in workflow["payload"].get("pins", [])]
+        return {**context, "project_id": workflow["project_id"],
+                "instruction": workflow["payload"].get("instruction", ""),
+                "mode": workflow["payload"].get("mode", ""), "pins": pins}
+
+    def _pin(self, node_id: str) -> dict:
+        node = self.world.node(node_id)
+        return {"id": node["id"], "kind": node["kind"], "payload": node["payload"]}
+
     def _event(self, workflow_id: str, actor: str, event_type: str, payload: dict) -> None:
         self.world.record_workflow_event(workflow_id, actor, event_type, payload)
 
@@ -298,22 +333,20 @@ def clean(value: dict) -> dict:
     return {key: item for key, item in value.items() if not key.startswith("_")}
 
 
-def agent_context(workflow: dict, context: dict) -> dict:
-    return {**context, "instruction": workflow["payload"].get("instruction", ""),
-            "mode": workflow["payload"].get("mode", "")}
-
-
 def required(value: dict, field: str):
     if field not in value:
         raise ValueError(f"harness response missing required field '{field}'")
     return value[field]
 
 
-def default_engine(world: World) -> WorkflowEngine:
+def default_engine(world: World, project_id: str) -> WorkflowEngine:
     settings = load_settings()
     if not settings.model_api_base or not settings.model_api_key:
         raise RuntimeError("MODEL_API_BASE and MODEL_API_KEY are required")
-    agents = AgentFacade(HarnessClient(os.getenv("HARNESS_URL", "http://harness:8098")))
+    harness_url = os.getenv("HARNESS_URL", "http://harness:8098")
+    callback_url = os.getenv("RW_TOOL_CALLBACK_URL", "http://control:8095")
+    assembly = resolve_assembly(world.project(project_id)["assembly"])
+    agents = AgentFacade(HarnessClient(harness_url), assembly, callback_url)
     embedding = EmbeddingClient(settings.model_api_base, settings.model_api_key)
     runner = RunnerClient(os.getenv("RUNNER_CONTROLLER_URL", "http://runner-controller:8096"))
     return WorkflowEngine(world, agents, embedding, runner)
@@ -328,7 +361,9 @@ PAIR_PROMPT = (
     "严格返回 {\"duplicate\":true}，duplicate 只能是布尔值。"
 )
 PLAN_PROMPT = (
-    "严格执行 instruction，把输入方向拆为可独立确认的最小实验步骤。严格返回 "
+    "严格执行 instruction，把输入方向拆为可独立确认的最小实验步骤。执行契约：每个步骤都是独立的一次性容器，"
+    "步骤之间不共享任何文件或状态，必须各自自包含；容器文件系统只读，仅 /tmp 可写（64MB、noexec），同一步骤内可用 /tmp 暂存；"
+    "输入数据放 files（base64，挂载于只读 /workspace）；一切结论经 stdout 输出，退出码 0 表示成功。严格返回 "
     "{\"steps\":[{\"image\":\"busybox:1.36\",\"command\":[\"sh\",\"-lc\",\"...\"],"
     "\"files\":{},\"seed\":0,\"limits\":{\"cpus\":1,\"memory_mb\":512,\"pids\":128}}]}。"
 )
