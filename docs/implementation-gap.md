@@ -1,6 +1,6 @@
 # 实现与 ADR 差距
 
-基线：`f1ecf3a` + 工作区（codex 重构进行中）。规格出处：`docs/adr/0017-research-world-redesign.md`（0017）、`docs/adr/graph-and-evidence.md`（图谱）、`docs/adr/review-pipeline.md`（管线）、`docs/adr/endpoints-and-harness.md`（端点）。
+基线：`5d35e8e`。规格出处：`docs/adr/0017-research-world-redesign.md`（0017）、`docs/adr/0018-endpoints-and-harness.md`（端点）、`docs/adr/0020-graph-and-evidence.md`（图谱）、`docs/adr/0021-review-pipeline.md`（管线）。
 
 对应 issue：G1=#12 G2=#13 G3=#14 G4=#15 G5=#16 G6=#17 G7=#18 G8=#19 G9=#20 G10=#21 G11=#22 G12=#23 G13=#24 G14=#25 G15=#26（github.com/LittleDrinks/ai4sci）。
 
