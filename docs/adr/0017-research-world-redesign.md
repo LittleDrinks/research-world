@@ -34,7 +34,7 @@ sources:
 # research-world 重设计：图谱主屏、两条 workflow、auto 闭环
 research-world 从多页控制平面改为知识图谱主屏加三视图，闭环为“命题→实验→反思→新命题”。
 ## 数据模型
-- 节点固定四类：question / source / direction / experiment。result 并入 experiment 负载；claim 不独立成类。
+- 节点固定四类：question / source / direction / experiment。result 并入 experiment 负载；claim 不独立成类——它是审计单位而非节点：review 启动时把 direction 的主张文本与 experiment 的结果文本拆成逐条原子断言，审计结果回写 direction 状态机与极性边。
 - direction 带状态机 `proposed→supported/refuted`，必须承载完整证据链；边带 supports/refutes 极性。
 - pending 虚线节点：agent 开工前 goal 先入图；完工后 admitted 填内容，驳回变幽灵（淡化并保留理由）。被拒 direction 与失败 experiment 全部留图。
 PROV 记录生产过程 [prov]，Micropublications 与 Nanopublications 记录主张、证据和发布信息 [micropublications; nanopublications]；前者不推出后者。因此以少量工作流节点保存事实和来源，以 direction 的状态和极性边保存科学论证，不另造 result 或自由 claim 层。

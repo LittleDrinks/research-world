@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>研究世界 · 设计说明 — 每个决策都有文献支撑</title>
+<style>
+:root {
+  color-scheme: light;
+  --brand-50: #e8f0fe; --brand-100: #d2e3fc; --brand-300: #8ab4f8; --brand-500: #4285f4;
+  --brand-600: #1a73e8; --brand-700: #0b57d0;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb; --gray-300: #d1d5db;
+  --gray-400: #9ca3af; --gray-500: #6b7280; --gray-600: #4b5563; --gray-900: #111827;
+  --bg: #ffffff; --surface: #ffffff; --border: var(--gray-200); --control-border: var(--gray-300);
+  --fg: var(--gray-900); --fg-muted: var(--gray-600); --fg-faint: var(--gray-500);
+  --accent-bg: #111827; --accent-fg: #ffffff;
+  --ok: #1a7f4b; --bad: #b91c1c;
+}
+.dark {
+  color-scheme: dark;
+  --bg: #000000; --surface: #0d0d0d; --border: #1f1f1f; --control-border: #303030;
+  --fg: #f3f4f6; --fg-muted: #9ca3af; --fg-faint: #6b7280;
+  --accent-bg: #f3f4f6; --accent-fg: #111827;
+  --brand-600: #8ab4f8; --brand-700: #8ab4f8;
+  --brand-50: #12203a; --brand-100: #1b2d4d; --gray-50: #0d0d0d; --gray-100: #1a1a1a; --gray-200: #262626;
+  --ok: #4ade80; --bad: #f87171;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased; font-size: 14px; line-height: 1.6;
+}
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+h1, h2 { font-weight: 600; letter-spacing: -0.025em; margin: 0; }
+a { color: var(--brand-700); text-decoration: none; }
+a:hover { text-decoration: underline; }
+:focus-visible { outline: 3px solid rgb(107 114 128 / .4); outline-offset: 2px; }
+
+.nav {
+  position: sticky; top: 0; z-index: 10; height: 56px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
+}
+.nav .brand { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; }
+.nav .mark {
+  width: 28px; height: 28px; border-radius: 8px; background: var(--accent-bg); color: var(--accent-fg);
+  display: grid; place-items: center; font-size: 14px; font-weight: 600;
+}
+.nav .links { display: flex; gap: 18px; align-items: center; font-size: 13px; }
+.nav .links a { color: var(--fg-muted); }
+.icon-btn {
+  width: 40px; height: 40px; border-radius: 6px; border: 1px solid var(--control-border);
+  background: var(--surface); color: var(--fg-muted); cursor: pointer; font-size: 16px;
+  display: grid; place-items: center; transition: color 150ms, border-color 150ms;
+}
+.icon-btn:hover { color: var(--fg); border-color: var(--gray-400); }
+
+.wrap { max-width: 64rem; margin: 0 auto; padding: 0 24px; }
+.hero { text-align: center; padding: 88px 0 56px; }
+.hero .eyebrow {
+  font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--brand-600); margin-bottom: 16px;
+}
+.hero h1 { font-size: clamp(30px, 4.5vw, 40px); line-height: 1.25; }
+.hero h1 .accent { color: var(--brand-600); }
+.hero .sub { margin: 16px auto 0; max-width: 540px; color: var(--fg-muted); font-size: 15px; }
+
+section { padding: 64px 0; border-top: 1px solid var(--border); }
+.sec-head { margin-bottom: 32px; }
+.sec-head .eyebrow {
+  font-size: 13px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--brand-600);
+}
+.sec-head h2 { font-size: 26px; margin-top: 6px; }
+.sec-head p { color: var(--fg-muted); margin: 8px 0 0; max-width: 640px; }
+
+sup.cite { font-size: 10px; line-height: 0; white-space: nowrap; }
+sup.cite a {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--brand-600); padding: 0 1px;
+}
+.figure { margin: 8px 0 4px; overflow-x: auto; }
+.figure svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+
+.notes { margin: 20px auto 0; max-width: 660px; font-size: 13px; color: var(--fg-muted); }
+.notes div { padding: 5px 0 5px 14px; border-left: 2px solid var(--border); margin-bottom: 6px; }
+.notes div b { color: var(--fg); font-weight: 600; }
+
+table.cmp { border-collapse: collapse; margin: 8px auto 0; font-size: 13px; }
+table.cmp th, table.cmp td {
+  border: 1px solid var(--border); padding: 8px 14px; text-align: center;
+}
+table.cmp th { background: var(--gray-50); font-weight: 600; font-size: 12px; }
+table.cmp td:first-child { text-align: left; font-weight: 500; }
+table.cmp .yes { color: var(--ok); font-weight: 600; }
+table.cmp .no { color: var(--fg-faint); }
+table.cmp tr.self td { background: var(--brand-50); font-weight: 600; }
+.tabcap { text-align: center; color: var(--fg-faint); font-size: 12px; margin-top: 10px; }
+
+.gaps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 24px; }
+.gap-item { font-size: 13px; padding: 10px 0 10px 14px; border-left: 2px solid var(--brand-500); color: var(--fg-muted); }
+.gap-item b { color: var(--fg); font-weight: 600; display: block; margin-bottom: 2px; }
+
+ol.refs { padding-left: 0; list-style: none; counter-reset: ref; }
+ol.refs li {
+  counter-increment: ref; padding: 9px 0 9px 42px; position: relative;
+  border-bottom: 1px solid var(--border); font-size: 13px;
+}
+ol.refs li::before {
+  content: counter(ref); position: absolute; left: 0; top: 9px;
+  width: 26px; height: 26px; border-radius: 9999px; border: 1px solid var(--border);
+  display: grid; place-items: center; font-size: 11px; color: var(--fg-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+ol.refs li:target { background: var(--brand-50); border-radius: 8px; }
+ol.refs .where { color: var(--fg-faint); font-size: 12px; margin-left: 8px; }
+
+footer { padding: 48px 0 64px; border-top: 1px solid var(--border); color: var(--fg-faint); font-size: 12px; text-align: center; }
+
+@media (max-width: 720px) { .gaps { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="brand"><span class="mark">研</span>研究世界 · 设计说明</div>
+  <div class="links">
+    <a href="#overview">总览</a>
+    <a href="#model">图谱</a>
+    <a href="#diversity">搜索空间</a>
+    <a href="#review">评审</a>
+    <a href="#ui">界面</a>
+    <a href="#refs">参考文献</a>
+    <button class="icon-btn" id="theme-btn" aria-label="切换深色模式">◐</button>
+  </div>
+</nav>
+
+<header class="hero wrap">
+  <div class="eyebrow">Research World · Design</div>
+  <h1>一张会生长的研究图谱，<br>每个决策都有<span class="accent">文献支撑</span></h1>
+  <p class="sub">人机协作的科研系统：人只与助理对话，agent 的工作在图谱上可见。本页讲清楚它是怎么设计的、为什么这么设计——正文上标数字即支撑文献。</p>
+</header>
+
+<section id="overview">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Overview</div>
+      <h2>闭环：命题 → 实验 → 反思 → 新命题</h2>
+    </div>
+    <div class="figure">
+      <svg viewBox="0 0 960 470" role="img" aria-label="闭环流程图：问题经头脑风暴产生方向候选并经 MMR 入池，其一进入计划-执行-评审-反思闭环；评审把审计结果写回方向的状态机与极性边；反思产出的新方向挂在父方向下同属一个谱系；被 rej 的候选与被驳回的方向进幽灵车道">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/>
+          </marker>
+        </defs>
+        <g font-family="ui-sans-serif, system-ui, sans-serif" font-size="13">
+          <!-- question -->
+          <rect x="30" y="185" width="120" height="60" rx="12" fill="none" stroke="var(--control-border)" stroke-width="1.5"/>
+          <text x="90" y="210" text-anchor="middle" fill="var(--fg)" font-weight="600">question</text>
+          <text x="90" y="230" text-anchor="middle" fill="var(--fg-faint)" font-size="11">研究问题</text>
+          <!-- brainstorm -->
+          <rect x="195" y="187" width="110" height="56" rx="28" fill="var(--brand-50)" stroke="var(--brand-500)" stroke-width="1"/>
+          <text x="250" y="220" text-anchor="middle" fill="var(--brand-700)" font-size="12" font-weight="600">brainstorm</text>
+          <!-- MMR frame with 3 candidates -->
+          <rect x="350" y="55" width="200" height="260" rx="12" fill="none" stroke="var(--brand-500)" stroke-width="1.2" stroke-dasharray="7 4"/>
+          <text x="450" y="42" text-anchor="middle" fill="var(--brand-700)" font-size="11" font-weight="600">MMR 入池：质量分 − 0.2 × max_sim</text>
+          <rect x="370" y="75" width="160" height="48" rx="10" fill="none" stroke="var(--control-border)" stroke-dasharray="5 4"/>
+          <text x="450" y="103" text-anchor="middle" fill="var(--fg-faint)" font-size="12">direction 候选</text>
+          <rect x="370" y="150" width="160" height="56" rx="10" fill="none" stroke="var(--brand-600)" stroke-width="1.8"/>
+          <text x="450" y="173" text-anchor="middle" fill="var(--fg)" font-weight="600" font-size="12">direction</text>
+          <text x="450" y="191" text-anchor="middle" fill="var(--fg-faint)" font-size="10">proposed → supported / refuted</text>
+          <rect x="370" y="232" width="160" height="48" rx="10" fill="none" stroke="var(--gray-300)" stroke-width="1" stroke-dasharray="3 3" opacity="0.8"/>
+          <text x="450" y="255" text-anchor="middle" fill="var(--fg-faint)" font-size="11">direction 候选</text>
+          <text x="450" y="271" text-anchor="middle" fill="var(--bad)" font-size="10">被 rej → 幽灵</text>
+          <!-- loop -->
+          <rect x="600" y="55" width="330" height="220" rx="12" fill="none" stroke="var(--border)" stroke-width="1.5"/>
+          <text x="765" y="79" text-anchor="middle" fill="var(--fg-faint)" font-size="11">plan-execute-review-reflect 闭环</text>
+          <rect x="622" y="92" width="90" height="44" rx="8" fill="none" stroke="var(--control-border)"/>
+          <text x="667" y="119" text-anchor="middle" fill="var(--fg)" font-size="12">plan</text>
+          <rect x="748" y="92" width="115" height="44" rx="8" fill="none" stroke="var(--control-border)"/>
+          <text x="805" y="112" text-anchor="middle" fill="var(--fg)" font-size="12">experiment</text>
+          <text x="805" y="128" text-anchor="middle" fill="var(--fg-faint)" font-size="9">结果为其负载</text>
+          <rect x="748" y="180" width="115" height="44" rx="8" fill="none" stroke="var(--control-border)"/>
+          <text x="805" y="200" text-anchor="middle" fill="var(--fg)" font-size="12">review</text>
+          <text x="805" y="216" text-anchor="middle" fill="var(--fg-faint)" font-size="9">审计 + 打分</text>
+          <rect x="622" y="180" width="90" height="44" rx="8" fill="none" stroke="var(--control-border)"/>
+          <text x="667" y="207" text-anchor="middle" fill="var(--fg)" font-size="12">reflect</text>
+          <!-- ghost lane -->
+          <rect x="370" y="360" width="160" height="52" rx="10" fill="none" stroke="var(--gray-300)" stroke-width="1" stroke-dasharray="3 3" opacity="0.8"/>
+          <text x="450" y="382" text-anchor="middle" fill="var(--fg-faint)" font-size="11">幽灵车道</text>
+          <text x="450" y="399" text-anchor="middle" fill="var(--fg-faint)" font-size="9">驳回 / 失败留图 · 淡化</text>
+          <!-- arrows -->
+          <g stroke="var(--fg-faint)" fill="none" stroke-width="1.5">
+            <line x1="150" y1="215" x2="191" y2="215" marker-end="url(#arr)"/>
+            <line x1="305" y1="215" x2="346" y2="182" marker-end="url(#arr)"/>
+            <line x1="530" y1="160" x2="618" y2="116" marker-end="url(#arr)"/>
+            <line x1="712" y1="114" x2="744" y2="114" marker-end="url(#arr)"/>
+            <line x1="805" y1="136" x2="805" y2="176" marker-end="url(#arr)"/>
+            <line x1="748" y1="202" x2="716" y2="202" marker-end="url(#arr)"/>
+            <line x1="450" y1="280" x2="450" y2="356" stroke="var(--gray-400)" stroke-dasharray="4 4" marker-end="url(#arr)"/>
+            <path d="M 530 200 L 545 200 L 545 393 L 534 393" stroke="var(--gray-400)" stroke-dasharray="4 4" marker-end="url(#arr)"/>
+            <path d="M 370 386 C 240 410, 200 320, 235 248" stroke="var(--gray-400)" stroke-dasharray="4 4" marker-end="url(#arr)"/>
+            <path d="M 770 180 L 770 158 L 578 158 L 578 172 L 534 172" stroke="var(--brand-600)" marker-end="url(#arr)"/>
+            <path d="M 667 224 L 667 326" stroke="var(--brand-600)" marker-end="url(#arr)"/>
+            <path d="M 530 186 L 556 186 L 556 356 L 606 356" stroke="var(--brand-300)" stroke-dasharray="2 3" marker-end="url(#arr)"/>
+          </g>
+          <rect x="610" y="330" width="180" height="52" rx="10" fill="none" stroke="var(--brand-600)" stroke-width="1.2" stroke-dasharray="5 4"/>
+          <text x="700" y="352" text-anchor="middle" fill="var(--brand-700)" font-size="11">① 新 direction 候选</text>
+          <text x="700" y="368" text-anchor="middle" fill="var(--fg-faint)" font-size="9">挂父 direction 下 · 同谱系</text>
+          <text x="674" y="170" text-anchor="middle" fill="var(--brand-600)" font-size="10">审计写回：状态机 + 极性边</text>
+          <text x="442" y="322" text-anchor="end" fill="var(--fg-faint)" font-size="10">候选被 rej</text>
+          <text x="539" y="336" text-anchor="end" fill="var(--fg-faint)" font-size="10">review 驳回</text>
+          <text x="120" y="330" fill="var(--fg-faint)" font-size="10">② 从头重来</text>
+          <text x="100" y="346" fill="var(--fg-faint)" font-size="10">渐进披露失败理由</text>
+        </g>
+      </svg>
+    </div>
+    <div class="notes">
+      <div><b>auto 开：</b>review 通过即自动进入下一轮迭代；同一谱系连续 2 次驳回 → 熔断、升级人工<sup class="cite"><a href="#ref-14">[14]</a></sup>。</div>
+      <div><b>auto 关：</b>direction 启动与每步 plan 执行均需人确认。</div>
+      <div><b>失败经验两条复用路径：</b>reflect 把失败反思成新 direction 候选，挂在父 direction 下、同一谱系（谱系连续驳回 2 次触发熔断）；或从头 brainstorm 开新谱系，但向生成侧渐进披露最小阻断理由，避免重复踩坑<sup class="cite"><a href="#ref-23">[23]</a></sup>。</div>
+    </div>
+  </div>
+</section>
+
+<section id="model">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">01 · Graph Model</div>
+      <h2>图谱：固定四类节点，边带极性</h2>
+      <p>调研了 SWAN<sup class="cite"><a href="#ref-2">[2]</a></sup>、Micropublications<sup class="cite"><a href="#ref-1">[1]</a></sup>、Nanopublication<sup class="cite"><a href="#ref-3">[3]</a></sup>、Discourse Graphs<sup class="cite"><a href="#ref-5">[5]</a></sup>、HEP<sup class="cite"><a href="#ref-7">[7]</a></sup>、Co-Scientist<sup class="cite"><a href="#ref-20">[20]</a></sup>、EvoScientist<sup class="cite"><a href="#ref-23">[23]</a></sup>、SEPIO<sup class="cite"><a href="#ref-4">[4]</a></sup> 等十几个本体与系统：没有一家全占我们要的特性，所以取各家之长组合——</p>
+    </div>
+    <table class="cmp">
+      <thead>
+        <tr><th>系统</th><th>claim 独立成类</th><th>信念状态机</th><th>极性边</th><th>失败留图</th><th>固定少类型</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>SWAN<sup class="cite"><a href="#ref-2">[2]</a></sup></td><td class="yes">✓</td><td class="no">—</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td></tr>
+        <tr><td>Micropublications<sup class="cite"><a href="#ref-1">[1]</a></sup></td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+        <tr><td>Nanopublication<sup class="cite"><a href="#ref-3">[3]</a></sup></td><td class="yes">✓ 唯一内容节点</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+        <tr><td>Discourse Graphs<sup class="cite"><a href="#ref-5">[5]</a></sup></td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+        <tr><td>HEP<sup class="cite"><a href="#ref-7">[7]</a></sup></td><td class="no">✗ 并入 hypothesis</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+        <tr><td>Co-Scientist<sup class="cite"><a href="#ref-20">[20]</a></sup></td><td class="no">✗</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+        <tr><td>EvoScientist<sup class="cite"><a href="#ref-23">[23]</a></sup></td><td class="no">✗</td><td class="yes">✓</td><td class="no">—</td><td class="yes">✓ 失败方向记忆</td><td class="yes">✓</td></tr>
+        <tr><td>SEPIO<sup class="cite"><a href="#ref-4">[4]</a></sup></td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓ 骨架+扩展点</td></tr>
+        <tr class="self"><td>本系统</td><td>✗ 并入 direction</td><td>✓</td><td>✓</td><td>✓ 幽灵车道</td><td>✓ 四类</td></tr>
+      </tbody>
+    </table>
+    <p class="tabcap">— = 该系统未强调。开放 taxonomy 的反面证据：学术话语本体十几个、互相重叠、采用率极低<sup class="cite"><a href="#ref-6">[6]</a></sup>。</p>
+
+    <div class="figure" style="margin-top:44px">
+      <svg viewBox="0 0 960 340" role="img" aria-label="节点生命周期与极性边：证据从实验和来源指向方向，标注支持或反驳；节点从虚线 pending 到工作中，再到 admitted 或 ghost">
+        <defs>
+          <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/>
+          </marker>
+        </defs>
+        <g font-family="ui-sans-serif, system-ui, sans-serif" font-size="13">
+          <text x="40" y="30" fill="var(--fg-muted)" font-size="12" font-weight="600">极性边：证据指向结论</text>
+          <rect x="380" y="60" width="200" height="70" rx="12" fill="none" stroke="var(--brand-600)" stroke-width="1.5"/>
+          <text x="480" y="88" text-anchor="middle" fill="var(--fg)" font-weight="600" font-size="15">direction</text>
+          <text x="480" y="110" text-anchor="middle" fill="var(--fg-faint)" font-size="11">proposed → supported / refuted</text>
+          <rect x="680" y="30" width="150" height="44" rx="10" fill="none" stroke="var(--control-border)"/>
+          <text x="755" y="57" text-anchor="middle" fill="var(--fg)" font-size="12">experiment</text>
+          <rect x="680" y="120" width="150" height="44" rx="10" fill="none" stroke="var(--control-border)"/>
+          <text x="755" y="147" text-anchor="middle" fill="var(--fg)" font-size="12">source</text>
+          <g fill="none" stroke-width="1.5">
+            <line x1="676" y1="52" x2="584" y2="80" stroke="var(--ok)" marker-end="url(#arr2)"/>
+            <text x="625" y="48" text-anchor="middle" fill="var(--ok)" font-size="11">supports</text>
+            <line x1="676" y1="142" x2="584" y2="112" stroke="var(--bad)" stroke-dasharray="5 4" marker-end="url(#arr2)"/>
+            <text x="625" y="152" text-anchor="middle" fill="var(--bad)" font-size="11">refutes</text>
+          </g>
+          <text x="40" y="190" fill="var(--fg-muted)" font-size="12" font-weight="600">节点生命周期</text>
+          <rect x="40" y="210" width="160" height="54" rx="10" fill="none" stroke="var(--brand-600)" stroke-dasharray="6 4" stroke-width="1.5"/>
+          <text x="120" y="233" text-anchor="middle" fill="var(--fg)" font-size="12">pending 虚线</text>
+          <text x="120" y="251" text-anchor="middle" fill="var(--fg-faint)" font-size="10">goal 先于执行入图</text>
+          <line x1="200" y1="237" x2="250" y2="237" stroke="var(--fg-faint)" stroke-width="1.5" marker-end="url(#arr2)"/>
+          <rect x="254" y="210" width="150" height="54" rx="10" fill="none" stroke="var(--control-border)" stroke-width="1.5"/>
+          <circle cx="272" cy="228" r="4" fill="var(--brand-500)"/>
+          <text x="329" y="233" text-anchor="middle" fill="var(--fg)" font-size="12">工作中 · 闪烁</text>
+          <text x="329" y="251" text-anchor="middle" fill="var(--fg-faint)" font-size="10">大屏可观察</text>
+          <line x1="404" y1="225" x2="466" y2="212" stroke="var(--ok)" stroke-width="1.5" marker-end="url(#arr2)"/>
+          <line x1="404" y1="249" x2="466" y2="262" stroke="var(--bad)" stroke-width="1.5" marker-end="url(#arr2)"/>
+          <rect x="470" y="190" width="140" height="46" rx="10" fill="none" stroke="var(--ok)" stroke-width="1.5"/>
+          <text x="540" y="210" text-anchor="middle" fill="var(--ok)" font-size="12">admitted</text>
+          <text x="540" y="226" text-anchor="middle" fill="var(--fg-faint)" font-size="10">填入内容</text>
+          <rect x="470" y="244" width="140" height="46" rx="10" fill="none" stroke="var(--gray-300)" stroke-dasharray="3 3" opacity="0.8"/>
+          <text x="540" y="264" text-anchor="middle" fill="var(--fg-faint)" font-size="12">ghost 幽灵</text>
+          <text x="540" y="280" text-anchor="middle" fill="var(--fg-faint)" font-size="10">驳回理由留图 · 永不删除</text>
+          <text x="680" y="215" fill="var(--fg-muted)" font-size="11">每条结论必须有 parent，</text>
+          <text x="680" y="233" fill="var(--fg-muted)" font-size="11">不允许孤立结论；不够格的</text>
+          <text x="680" y="251" fill="var(--fg-muted)" font-size="11">标 withheld finding 保留</text>
+        </g>
+      </svg>
+    </div>
+    <div class="notes">
+      <div><b>result 不独立成节点：</b>工作流传统（Kepler / AiiDA / Nanopublication）都把结果当实验的产出负载<sup class="cite"><a href="#ref-3">[3]</a></sup>。</div>
+      <div><b>状态机取 agent 工作流派：</b>HEP<sup class="cite"><a href="#ref-7">[7]</a></sup>、Co-Scientist<sup class="cite"><a href="#ref-20">[20]</a></sup>、EvoScientist<sup class="cite"><a href="#ref-23">[23]</a></sup> 都把 claim 并入 hypothesis 加信念状态。</div>
+      <div><b>证据链是硬要求：</b>ARIS 对失败案例的诊断——claim 证据不完整会被静默继承，产出"看似成立实则无据"的结论<sup class="cite"><a href="#ref-9">[9]</a></sup>。</div>
+      <div><b>边必须有极性：</b>无极性的证据图退化为引用列表（IBIS、SWAN 的教训）<sup class="cite"><a href="#ref-2">[2]</a></sup>。</div>
+      <div><b>失败留图：</b>线性叙事丢弃失败分支，后续研究被迫重复踩坑（Storytelling Tax）<sup class="cite"><a href="#ref-8">[8]</a></sup>；EvoScientist 消融实验：去掉失败方向记忆，novelty 显著下降<sup class="cite"><a href="#ref-23">[23]</a></sup>。</div>
+      <div><b>每条结论有 parent</b><sup class="cite"><a href="#ref-12">[12]</a></sup>；不够格的标 withheld finding 作可审记录保留<sup class="cite"><a href="#ref-10">[10]</a></sup>。</div>
+    </div>
+  </div>
+</section>
+
+<section id="diversity">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">02 · Search Space</div>
+      <h2>搜索空间：怎么判重，怎么不收敛</h2>
+      <p>一篇覆盖 5 种框架 × 5 种模型 × 12 个学科的实证研究生成了 219,655 条 idea，结论是：prompt 里写"要新颖"、上更复杂的框架、换更大的模型，都不能拓广探索空间<sup class="cite"><a href="#ref-22">[22]</a></sup>；另一项受控实验证明多 agent 讨论反而导致过早收敛<sup class="cite"><a href="#ref-31">[31]</a></sup>。所以多样性必须是显式机制，不能靠嘱咐。</p>
+    </div>
+
+    <div class="figure">
+      <svg viewBox="0 0 960 190" role="img" aria-label="相似度数轴：小于0.6算新方向，0.6到0.8交LLM成对裁决，大于0.8判重合转reflect">
+        <g font-family="ui-sans-serif, system-ui, sans-serif" font-size="12">
+          <line x1="80" y1="90" x2="880" y2="90" stroke="var(--control-border)" stroke-width="2"/>
+          <rect x="80" y="78" width="416" height="24" fill="var(--brand-50)"/>
+          <rect x="496" y="78" width="208" height="24" fill="none" stroke="var(--gray-400)" stroke-dasharray="4 3"/>
+          <rect x="704" y="78" width="176" height="24" fill="var(--gray-200)"/>
+          <g stroke="var(--fg)" stroke-width="1.5">
+            <line x1="496" y1="66" x2="496" y2="114"/><line x1="704" y1="66" x2="704" y2="114"/>
+          </g>
+          <text x="496" y="56" text-anchor="middle" fill="var(--fg)" font-weight="600">0.6</text>
+          <text x="704" y="56" text-anchor="middle" fill="var(--fg)" font-weight="600">0.8</text>
+          <text x="80" y="120" fill="var(--fg-faint)" font-size="11">0</text>
+          <text x="880" y="120" text-anchor="end" fill="var(--fg-faint)" font-size="11">1.0 · 余弦相似度</text>
+          <text x="288" y="150" text-anchor="middle" fill="var(--brand-700)" font-weight="600">新方向 → 入池</text>
+          <text x="600" y="150" text-anchor="middle" fill="var(--fg-muted)" font-weight="600">灰区 → LLM 成对裁决</text>
+          <text x="792" y="150" text-anchor="middle" fill="var(--fg-muted)" font-weight="600">重合 → reflect/合并</text>
+        </g>
+      </svg>
+    </div>
+    <div class="notes">
+      <div><b>0.8 阈值：</b>Si et al. 组织 100+ 名 NLP 研究者盲评数千条 LLM 生成的 idea，用 embedding 余弦 0.8 做去重；正是这批数据首次量化出"LLM 重复生成时多样性崩塌"<sup class="cite"><a href="#ref-28">[28]</a></sup>。</div>
+      <div><b>灰区交成对裁决：</b>Chain-of-Ideas 在 50 个真实新课题上验证，LLM 两两比较与人评一致率 70.8%，比打分制更贴近人判<sup class="cite"><a href="#ref-30">[30]</a></sup>。</div>
+      <div><b>0.6 阈值：</b>SciMON 用 0.6 触发"检索相近文献 → 反馈重写"，两轮重写后过半 idea 被人评判定更 novel<sup class="cite"><a href="#ref-29">[29]</a></sup>。</div>
+      <div><b>反例：</b>AI Scientist v1 让 LLM 自由宣布 "novel / not novel"，独立复现证明它会把成熟概念误判为 novel——不让 LLM 自判<sup class="cite"><a href="#ref-28">[28]</a></sup>。</div>
+    </div>
+
+    <div class="figure" style="margin-top:48px">
+      <svg viewBox="0 0 960 260" role="img" aria-label="MMR 对比图：左图纯质量排序选出的点挤成一团，右图 MMR 选出的点分散开">
+        <g font-family="ui-sans-serif, system-ui, sans-serif" font-size="12">
+          <text x="240" y="30" text-anchor="middle" fill="var(--fg-muted)" font-weight="600">纯质量排序 top-N</text>
+          <text x="720" y="30" text-anchor="middle" fill="var(--brand-700)" font-weight="600">MMR：质量分 − 0.2 × max_sim</text>
+          <g fill="var(--gray-400)">
+            <circle cx="200" cy="120" r="6"/><circle cx="230" cy="100" r="6"/><circle cx="255" cy="130" r="6"/>
+            <circle cx="215" cy="150" r="6"/><circle cx="245" cy="165" r="6"/><circle cx="275" cy="110" r="6"/>
+            <circle cx="290" cy="145" r="6"/><circle cx="180" cy="90" r="6"/><circle cx="310" cy="200" r="6"/>
+            <circle cx="150" cy="200" r="6"/><circle cx="330" cy="80" r="6"/><circle cx="120" cy="140" r="6"/>
+          </g>
+          <g fill="none" stroke="var(--fg)" stroke-width="2">
+            <circle cx="200" cy="120" r="11"/><circle cx="230" cy="100" r="11"/><circle cx="255" cy="130" r="11"/><circle cx="215" cy="150" r="11"/>
+          </g>
+          <text x="240" y="240" text-anchor="middle" fill="var(--fg-faint)">选中者彼此重复 → 穷举已有空间</text>
+          <g fill="var(--gray-400)">
+            <circle cx="610" cy="120" r="6"/><circle cx="640" cy="100" r="6"/><circle cx="665" cy="130" r="6"/>
+            <circle cx="625" cy="150" r="6"/><circle cx="655" cy="165" r="6"/><circle cx="685" cy="110" r="6"/>
+            <circle cx="700" cy="145" r="6"/><circle cx="590" cy="90" r="6"/><circle cx="720" cy="200" r="6"/>
+            <circle cx="560" cy="200" r="6"/><circle cx="740" cy="80" r="6"/><circle cx="530" cy="140" r="6"/>
+            <circle cx="800" cy="120" r="6"/><circle cx="850" cy="180" r="6"/><circle cx="870" cy="90" r="6"/>
+          </g>
+          <g fill="none" stroke="var(--brand-600)" stroke-width="2">
+            <circle cx="610" cy="120" r="11"/><circle cx="740" cy="80" r="11"/><circle cx="850" cy="180" r="11"/><circle cx="560" cy="200" r="11"/>
+          </g>
+          <text x="720" y="240" text-anchor="middle" fill="var(--brand-700)">选中者彼此远离 → 拓广搜索空间</text>
+          <line x1="480" y1="50" x2="480" y2="230" stroke="var(--border)" stroke-width="1"/>
+        </g>
+      </svg>
+    </div>
+    <div class="notes">
+      <div><b>MMR 的实证：</b>DivAlign 在 95 个真实 AI 研究课题的 benchmark 上对比——MMR 入池保留 99.9% 的质量分，同时把入选 idea 的最近邻相似度从 0.704 降到 0.608<sup class="cite"><a href="#ref-27">[27]</a></sup>。</div>
+      <div><b>生成侧叠加：</b>Verbalized Sampling 让模型显式输出候选概率分布再采样，创意任务多样性提升 1.6–2.1×；但科研场景无实证，零成本叠加、收益不写进假设<sup class="cite"><a href="#ref-24">[24]</a></sup>。</div>
+      <div><b>废止 tournament / Elo：</b>它解"相对排序"，不解"拓广"；219,655 条 idea 的实证里锦标赛演化同样不拓广探索空间<sup class="cite"><a href="#ref-20">[20]</a></sup><sup class="cite"><a href="#ref-22">[22]</a></sup>。</div>
+      <div><b>决策：</b>embedding 初筛（数轴）→ LLM review 细筛（下一节）；升级组件——概念级相似图<sup class="cite"><a href="#ref-25">[25]</a></sup>、关系类型标注<sup class="cite"><a href="#ref-26">[26]</a></sup>、Component / Architectural novelty 区分<sup class="cite"><a href="#ref-23">[23]</a></sup>——后续可插入，不预埋。</div>
+    </div>
+  </div>
+</section>
+
+<section id="review">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">03 · Review</div>
+      <h2>评审：机械审计优先，人只在冲突时介入</h2>
+    </div>
+    <div class="figure">
+      <svg viewBox="0 0 960 300" role="img" aria-label="评审流水线：机械审计三阶段，然后双评审打分，一致则通过，冲突升级人，连续两次驳回熔断">
+        <defs>
+          <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/>
+          </marker>
+        </defs>
+        <g font-family="ui-sans-serif, system-ui, sans-serif" font-size="12">
+          <rect x="30" y="60" width="250" height="140" rx="12" fill="none" stroke="var(--control-border)" stroke-width="1.5"/>
+          <text x="155" y="84" text-anchor="middle" fill="var(--fg)" font-weight="600">① 机械证据审计 · 三阶段</text>
+          <text x="155" y="110" text-anchor="middle" fill="var(--fg-muted)" font-size="11">a. 证据完整性：每条 claim 有证据吗</text>
+          <text x="155" y="130" text-anchor="middle" fill="var(--fg-muted)" font-size="11">b. 结果→claim 映射：证据推得出吗</text>
+          <text x="155" y="150" text-anchor="middle" fill="var(--fg-muted)" font-size="11">c. 逐条核对：措辞超出证据范围吗</text>
+          <text x="155" y="180" text-anchor="middle" fill="var(--bad)" font-size="11">任一失败 → 直接驳回</text>
+          <rect x="340" y="60" width="210" height="140" rx="12" fill="none" stroke="var(--control-border)" stroke-width="1.5"/>
+          <text x="445" y="84" text-anchor="middle" fill="var(--fg)" font-weight="600">② 双评审打分</text>
+          <text x="445" y="110" text-anchor="middle" fill="var(--fg-muted)" font-size="11">质量分 × 多样性分</text>
+          <text x="445" y="130" text-anchor="middle" fill="var(--fg-muted)" font-size="11">两个 reviewer 来自不同模型家族</text>
+          <text x="445" y="150" text-anchor="middle" fill="var(--fg-muted)" font-size="11">客观检查与主观打分分离</text>
+          <text x="445" y="170" text-anchor="middle" fill="var(--fg-muted)" font-size="11">定期用已知坏样本校准</text>
+          <rect x="610" y="60" width="150" height="52" rx="10" fill="none" stroke="var(--ok)" stroke-width="1.5"/>
+          <text x="685" y="82" text-anchor="middle" fill="var(--ok)">一致 → admitted</text>
+          <text x="685" y="100" text-anchor="middle" fill="var(--fg-faint)" font-size="10">auto 开则自动迭代</text>
+          <rect x="610" y="138" width="150" height="52" rx="10" fill="none" stroke="var(--brand-600)" stroke-width="1.5"/>
+          <text x="685" y="160" text-anchor="middle" fill="var(--brand-700)">冲突 → 升级人</text>
+          <text x="685" y="178" text-anchor="middle" fill="var(--fg-faint)" font-size="10">rebuttal 沉淀在节点</text>
+          <rect x="800" y="60" width="140" height="52" rx="10" fill="none" stroke="var(--bad)" stroke-width="1.5"/>
+          <text x="870" y="82" text-anchor="middle" fill="var(--bad)">驳回 ×2 → 熔断</text>
+          <text x="870" y="100" text-anchor="middle" fill="var(--fg-faint)" font-size="10">暂停谱系 · 升级人</text>
+          <g stroke="var(--fg-faint)" fill="none" stroke-width="1.5">
+            <line x1="280" y1="130" x2="336" y2="130" marker-end="url(#arr3)"/>
+            <line x1="550" y1="112" x2="606" y2="88" marker-end="url(#arr3)"/>
+            <line x1="550" y1="146" x2="606" y2="164" marker-end="url(#arr3)"/>
+            <line x1="760" y1="86" x2="796" y2="86" marker-end="url(#arr3)"/>
+          </g>
+          <text x="155" y="250" text-anchor="middle" fill="var(--fg-muted)" font-size="11">评审者会漂移：对 AI 文本接收率</text>
+          <text x="155" y="282" text-anchor="middle" fill="var(--bad)" font-size="26" font-weight="600">1.91×</text>
+          <text x="445" y="250" text-anchor="middle" fill="var(--fg-muted)" font-size="11">Red Queen Gödel Machine 的对抗实验：</text>
+          <text x="445" y="268" text-anchor="middle" fill="var(--fg-muted)" font-size="11">LLM 评审对 AI 生成文本系统性降标准</text>
+        </g>
+      </svg>
+    </div>
+    <div class="notes">
+      <div><b>claim 从哪来：</b>claim 不是节点——review 启动时把 direction 的主张文本和 experiment 的结果文本拆成逐条原子断言作为审计单位；审计结果回写 direction 的状态机（supported / refuted）与极性边。</div>
+      <div><b>三阶段审计</b>取自 ARIS 的声明审计协议；它的对抗评审要求评审者来自不同模型家族，抑制单一模型的系统性偏差<sup class="cite"><a href="#ref-9">[9]</a></sup>。</div>
+      <div><b>分维度分片：</b>一次调用判多个维度会让部分判定失去证据 grounding；按维度拆开判，与专家的一致率显著提升（研究复现 / 法律 / 临床三域验证）<sup class="cite"><a href="#ref-17">[17]</a></sup>。</div>
+      <div><b>防漂移：</b>客观机械检查与主观打分剥离，周期性用已知坏样本校准评审者<sup class="cite"><a href="#ref-21">[21]</a></sup>。</div>
+      <div><b>人是顶层反馈回路</b>（Co-Scientist 的科学家反馈设计）<sup class="cite"><a href="#ref-20">[20]</a></sup>；<b>熔断</b>是"判建议分离"原则：确定性规则监控器命中才升级人，单实例成本 $0.08（LivePlan）<sup class="cite"><a href="#ref-14">[14]</a></sup>。</div>
+    </div>
+  </div>
+</section>
+
+<section id="ui">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">04 · Interface</div>
+      <h2>界面：三视图，轨迹不做成审查界面</h2>
+      <p>Bhambri et al. 逐条核验 agent 轨迹后发现：可读性没问题的 trace 里只有 28% 真的导向正确答案<sup class="cite"><a href="#ref-16">[16]</a></sup>；Kambhampati et al. 进一步指出中间 token 根本不是可信的推理窗口<sup class="cite"><a href="#ref-15">[15]</a></sup>。所以界面展示的全是结构化派生物，原始轨迹只作 drill-down 的最底层<sup class="cite"><a href="#ref-18">[18]</a></sup><sup class="cite"><a href="#ref-11">[11]</a></sup>。</p>
+    </div>
+    <div class="figure">
+      <svg viewBox="0 0 960 330" role="img" aria-label="三视图线框：地图是图谱主屏，对话与助理打磨方案，活动是轨迹流">
+        <g font-family="ui-sans-serif, system-ui, sans-serif" font-size="12">
+          <rect x="30" y="40" width="290" height="220" rx="12" fill="none" stroke="var(--control-border)" stroke-width="1.5"/>
+          <text x="175" y="66" text-anchor="middle" fill="var(--fg)" font-weight="600">地图 · 主屏</text>
+          <g fill="none" stroke="var(--fg-faint)" stroke-width="1.2">
+            <line x1="90" y1="120" x2="150" y2="150"/><line x1="150" y1="150" x2="220" y2="110"/>
+            <line x1="150" y1="150" x2="210" y2="200"/><line x1="220" y1="110" x2="270" y2="150"/>
+          </g>
+          <rect x="70" y="104" width="46" height="30" rx="6" fill="none" stroke="var(--control-border)"/>
+          <rect x="132" y="136" width="46" height="30" rx="6" fill="var(--brand-50)" stroke="var(--brand-500)"/>
+          <rect x="206" y="94" width="46" height="30" rx="6" fill="none" stroke="var(--brand-600)" stroke-dasharray="4 3"/>
+          <rect x="196" y="186" width="46" height="30" rx="6" fill="none" stroke="var(--gray-300)" stroke-dasharray="3 3" opacity="0.7"/>
+          <rect x="256" y="136" width="46" height="30" rx="6" fill="none" stroke="var(--control-border)"/>
+          <text x="175" y="246" text-anchor="middle" fill="var(--fg-faint)" font-size="10">点节点直接发起 workflow</text>
+          <rect x="350" y="40" width="290" height="220" rx="12" fill="none" stroke="var(--control-border)" stroke-width="1.5"/>
+          <text x="495" y="66" text-anchor="middle" fill="var(--fg)" font-weight="600">对话 · 与助理打磨方案</text>
+          <rect x="430" y="86" width="180" height="26" rx="13" fill="var(--gray-100)"/>
+          <rect x="380" y="122" width="200" height="26" rx="4" fill="none" stroke="var(--border)"/>
+          <rect x="450" y="158" width="160" height="26" rx="13" fill="var(--gray-100)"/>
+          <rect x="370" y="216" width="250" height="30" rx="6" fill="none" stroke="var(--control-border)"/>
+          <text x="495" y="206" text-anchor="middle" fill="var(--fg-faint)" font-size="10">产物沉淀为图谱节点后从对话删除</text>
+          <rect x="670" y="40" width="290" height="220" rx="12" fill="none" stroke="var(--control-border)" stroke-width="1.5"/>
+          <text x="815" y="66" text-anchor="middle" fill="var(--fg)" font-weight="600">活动 · 轨迹流</text>
+          <g>
+            <rect x="690" y="86" width="250" height="8" rx="4" fill="var(--brand-100)"/>
+            <rect x="690" y="86" width="60" height="8" rx="4" fill="var(--brand-500)"/>
+            <rect x="690" y="106" width="250" height="8" rx="4" fill="var(--gray-200)"/>
+            <rect x="690" y="106" width="150" height="8" rx="4" fill="var(--gray-400)"/>
+            <rect x="690" y="126" width="250" height="8" rx="4" fill="var(--gray-200)"/>
+            <rect x="690" y="126" width="100" height="8" rx="4" fill="var(--brand-300)"/>
+          </g>
+          <rect x="690" y="150" width="250" height="40" rx="6" fill="none" stroke="var(--border)"/>
+          <text x="700" y="166" fill="var(--fg-faint)" font-size="9" class="mono">TOOL  bash ··· → completed</text>
+          <text x="700" y="182" fill="var(--fg-faint)" font-size="9" class="mono">ASSISTANT ···</text>
+          <text x="815" y="216" text-anchor="middle" fill="var(--fg-faint)" font-size="10">渐进披露：卡片 → 分维度 → 原始证据</text>
+          <text x="815" y="246" text-anchor="middle" fill="var(--fg-faint)" font-size="10">失败归因到具体步骤</text>
+        </g>
+      </svg>
+    </div>
+    <div class="notes">
+      <div><b>失败是一等公民：</b>TRACE 把失败归因到 context 组件 / 具体 step，操作准确率 96%<sup class="cite"><a href="#ref-19">[19]</a></sup>；21,120 条轨迹的实证表明 plan 偏离可度量、周期性提醒可缓解<sup class="cite"><a href="#ref-13">[13]</a></sup>。</div>
+      <div><b>页面取舍：</b>审核、报告、智能体、队列不单独成页——审核并入图谱高亮，报告并入节点负载，队列降级为槽位指示。</div>
+    </div>
+  </div>
+</section>
+
+<section id="gaps">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">05 · Honest Gaps</div>
+      <h2>文献没回答的，自己趟</h2>
+    </div>
+    <div class="gaps">
+      <div class="gap-item"><b>无 MCTS-on-ideas 先例</b>idea 空间的树搜索没有成熟工作，"下一步选哪"先用规则 + 人。</div>
+      <div class="gap-item"><b>rebuttal 无实证</b>对 idea 质量的提升无定量研究，先作记录格式，不承诺收益。</div>
+      <div class="gap-item"><b>人介入时机无定量研究</b>熔断阈值（连续 2 次驳回）是默认值，需实测校准。</div>
+      <div class="gap-item"><b>阈值跨学科漂移</b>0.6 / 0.8 来自 NLP 语料，换学科需重新校准<sup class="cite"><a href="#ref-28">[28]</a></sup>。</div>
+      <div class="gap-item"><b>Verbalized Sampling 未验证</b>科研 idea 场景无实证，零成本叠加<sup class="cite"><a href="#ref-24">[24]</a></sup>。</div>
+      <div class="gap-item"><b>深度重合无法自动判</b>"换汤不换药"靠 review 与人兜底。</div>
+    </div>
+  </div>
+</section>
+
+<section id="refs">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">References</div>
+      <h2>参考文献（31 项）</h2>
+      <p>有公开链接的给链接；其余在 Zotero 库中，标注条目 key。</p>
+    </div>
+    <ol class="refs">
+      <li id="ref-1">Clark, Ciccarese, Goble (2014). Micropublications: a semantic model for claims, evidence, arguments and annotations. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC4530550/">PMC4530550</a></li>
+      <li id="ref-2">Ciccarese et al. (2008). The SWAN biomedical discourse ontology. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC4536833/">PMC4536833</a></li>
+      <li id="ref-3">Groth, Gibson, Velterop (2010). The Anatomy of a Nanopublication. <a href="https://nanopub.net/guidelines/working_draft/">nanopub.net</a><span class="where">Zotero SXDTD7IM</span></li>
+      <li id="ref-4">SEPIO ontology (Monarch Initiative). <a href="https://github.com/sepio-framework/sepio-linkml">GitHub</a></li>
+      <li id="ref-5">Joel Chan. Discourse Graphs for Augmented Knowledge Synthesis. <a href="https://joelchan.me/assets/pdf/Discourse_Graphs_for_Augmented_Knowledge_Synthesis_What_and_Why.pdf">PDF</a></li>
+      <li id="ref-6">Ruiz-Iniesta. 学术话语本体综述. <a href="https://ceur-ws.org/Vol-1155/paper-07.pdf">CEUR-WS 1155</a></li>
+      <li id="ref-7">Takahara, Mizoguchi (2026). Toward Auditable AI Scientists: Hypothesis Evolution Protocol.<span class="where">Zotero AA2UBMVL</span></li>
+      <li id="ref-8">Liu et al. (2026). The Last Human-Written Paper: Agent-Native Research Artifacts.<span class="where">Zotero I2YBY654</span></li>
+      <li id="ref-9">Yang et al. (2026). ARIS: Autonomous Research via Adversarial Multi-Agent Collaboration.<span class="where">Zotero TRYPRM7J</span></li>
+      <li id="ref-10">Zhuang et al. From Trajectories to Evidence: Auditable Experimental Records.<span class="where">Zotero</span></li>
+      <li id="ref-11">Marchioro et al. Workflow Cards: Structured Summaries of Workflow Executions Using Provenance Data.<span class="where">Zotero</span></li>
+      <li id="ref-12">Krebs. F(AI)²R: Who Did What, and Who Checked?<span class="where">Zotero</span></li>
+      <li id="ref-13">Liu, Dehghan et al. From Plan to Action: How Well Do Agents Follow the Plan?<span class="where">Zotero</span></li>
+      <li id="ref-14">Liu et al. LivePlan: Online Monitoring and Corrective Steering of Programming Agents.<span class="where">Zotero</span></li>
+      <li id="ref-15">Kambhampati et al. Stop Anthropomorphizing Intermediate Tokens as Reasoning Traces.<span class="where">Zotero</span></li>
+      <li id="ref-16">Bhambri et al. Interpretable Traces, Unexpected Outcomes.<span class="where">Zotero</span></li>
+      <li id="ref-17">Sharding Prevents LLM Oversight Failures.<span class="where">Zotero</span></li>
+      <li id="ref-18">Lin et al. Agentic Harness Engineering.<span class="where">Zotero</span></li>
+      <li id="ref-19">Zhao et al. TRACE: Trajectory Attribution for Automated Context Engineering.<span class="where">Zotero</span></li>
+      <li id="ref-20">Google (2026). Towards an AI co-scientist. Nature.<span class="where">Zotero PMQ38NSP</span></li>
+      <li id="ref-21">Red Queen Gödel Machine: adversarial reviewer drift on AI-generated text.<span class="where">Zotero</span></li>
+      <li id="ref-22">AI Research Agents Narrow Scientific Exploration（219,655 条 idea 实证）. <a href="https://arxiv.org/abs/2605.27905">arXiv:2605.27905</a><span class="where">Zotero 24W86TAE</span></li>
+      <li id="ref-23">EvoScientist. <a href="https://arxiv.org/abs/2603.08127">arXiv:2603.08127</a><span class="where">Zotero 26YJUMP5</span></li>
+      <li id="ref-24">Verbalized Sampling: How to Mitigate Mode Collapse and Unlock LLM Diversity. <a href="https://arxiv.org/abs/2510.01171">arXiv:2510.01171</a><span class="where">Zotero AIELSLBM</span></li>
+      <li id="ref-25">What Is Novel? A Knowledge-Driven Framework for Bias-Aware Literature Originality Evaluation.<span class="where">Zotero LULT2GFW</span></li>
+      <li id="ref-26">GraphMind: Interactive Novelty Assessment System for Accelerating Scientific Discovery.<span class="where">Zotero 4B69JY2E</span></li>
+      <li id="ref-27">DivAlign: MMR-style de-homogenization for ideation. <a href="https://arxiv.org/abs/2607.28087">arXiv:2607.28087</a></li>
+      <li id="ref-28">Si et al. Can LLMs Generate Novel Research Ideas?（去重阈值 0.8 的人评实验） <a href="https://arxiv.org/abs/2409.04109">arXiv:2409.04109</a></li>
+      <li id="ref-29">SciMON: Scientific Inspiration Machines Optimized for Novelty（重写阈值 0.6）. <a href="https://arxiv.org/abs/2305.14259">arXiv:2305.14259</a></li>
+      <li id="ref-30">Chain-of-Ideas / Idea Arena（成对判定一致率 ~70%）. <a href="https://arxiv.org/abs/2410.13185">arXiv:2410.13185</a></li>
+      <li id="ref-31">Doshi &amp; Hauser (2024). AI assistance lowers collective diversity. Science Advances. <a href="https://doi.org/10.1126/sciadv.adn5290">DOI</a></li>
+    </ol>
+  </div>
+</section>
+
+<footer>
+  研究世界 · 设计说明 · 决策与依据：docs/adr/（0017 为当前设计，其余为主题合并的原则性决策）
+</footer>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var saved = null;
+  try { saved = localStorage.getItem('theme'); } catch (e) {}
+  if (saved === 'dark' || (!saved && matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.classList.add('dark');
+  }
+  document.getElementById('theme-btn').addEventListener('click', function () {
+    root.classList.toggle('dark');
+    try { localStorage.setItem('theme', root.classList.contains('dark') ? 'dark' : 'light'); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>
