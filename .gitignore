@@ -32,3 +32,5 @@ benchmarks/**/*.safetensors
 .agents/
 /a.md
 /datasets/research-kernel-papers/raw/
+/scripts/sub2api-account-4-quota.sh
+/scripts/wake-current-codex-pane.sh
