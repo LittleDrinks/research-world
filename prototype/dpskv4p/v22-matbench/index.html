@@ -1,0 +1,51 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v22 · Matbench 能量链：125 题 Q89 完整命题展示。材料-性能证据链 + 任务级基准。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v22 · Matbench 能量链 · Q89 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:dark;--bg:#0d0b14;--panel:#15121f;--ink:#e8e2f2;--muted:#8e86a3;--line:#2a2340;--violet:#9a7be8;--green:#63c98f;--amber:#d9a75a}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{max-width:1200px;margin:0 auto;padding:20px 20px 90px}
+  small.q{color:var(--violet);font:11px ui-monospace,monospace}h1{font:700 24px Georgia,serif;margin:4px 0}
+  .q{color:var(--muted);max-width:820px}
+  .chain{display:flex;gap:8px;margin:16px 0}.ch{flex:1;padding:9px;border:1px solid var(--line);border-radius:9px;background:var(--panel);font-size:11px}.ch b{display:block;font:10px ui-monospace,monospace;color:var(--violet)}
+  .grid{display:grid;grid-template-columns:1.25fr 1fr;gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  h2{font-size:14px;margin:0 0 10px}
+  svg{width:100%;height:300px}.axis{stroke:#332b4a}.pt{cursor:pointer}.fit{stroke:var(--amber);stroke-width:1.5;stroke-dasharray:5 4;fill:none}
+  .lbl{font:9px ui-monospace,monospace;fill:var(--muted)}
+  .mat{border:1px solid var(--line);border-radius:9px;padding:10px;margin-bottom:8px}.mat h4{margin:0;font-size:12.5px}
+  .mat p{margin:4px 0;color:var(--muted);font-size:11px}.k{color:var(--violet);font:10px ui-monospace,monospace}
+  .delta{font:700 12px ui-monospace,monospace}.good{color:var(--green)}.bad{color:var(--amber)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div><small class="q">125 题 · 完整命题展示 · q089 / Matbench 链（MEMORY 深度演示题）</small><h1>Q89 · 能否把能量转换效率推向理论极限？</h1><p class="q" id="qtext"></p></div>
+  <div class="chain" id="chain"></div>
+  <div class="grid">
+    <section class="card"><h2>材料-性能证据图（mock Matbench 投影）</h2><svg id="svg"></svg><p style="color:var(--muted);font-size:11px">横轴：预测热导 κ_L；纵轴：实测 ZT。虚线为回归拟合。点选材料联动右侧证据链。</p></section>
+    <section class="card"><h2>证据链 · 任务级可复现</h2><div id="mats"></div></section>
+  </div>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const mats=Array.from({length:22},(_,i)=>({id:"MP-"+String(100+i*37),k:1.4+i%7*0.45,zt:0.42+i%9*0.11,mae:0.03+i%4*0.05,task:["matbench_phonons","matbench_log_gvrh","matbench_mp_e_form","matbench_thermal"][i%4],delta:(i%3)*0.08}));let sel=mats[0];
+function render(){const svg=$("svg");const W=560,H=260;const X=m=>40+(m.k-1.2)/(4.2-1.2)*(W-70);const Y=m=>H-30-(m.zt-0.4)/(1.4-0.4)*(H-60);
+ svg.innerHTML=`<line class="axis" x1="40" y1="${H-30}" x2="${W-30}" y2="${H-30}"/><line class="axis" x1="40" y1="20" x2="40" y2="${H-30}"/>
+ <line class="fit" x1="${X({k:1.2,zt:0.4})}" y1="${Y({k:1.2,zt:0.4})}" x2="${X({k:4.2,zt:1.4})}" y2="${Y({k:4.2,zt:1.4})}"/>
+ ${mats.map(m=>`<circle class="pt" data-id="${m.id}" cx="${X(m)}" cy="${Y(m)}" r="${m.id===sel.id?7:4}" fill="${m.id===sel.id?"#9a7be8":"#4a4266"}"/><text class="lbl" x="${X(m)}" y="${Y(m)-9}" text-anchor="middle">${m.id.slice(3)}</text>`).join("")}
+ <text class="lbl" x="${W-130}" y="24">κ_L 预测（W/mK）→</text>`;
+ $("mats").innerHTML=mats.slice(0,10).map(m=>`<div class="mat" data-id="${m.id}"><h4>${m.id} · ${m.task}</h4><p>预测 κ_L ${m.k.toFixed(2)} · 实测 ZT ${m.zt.toFixed(2)} · 模型 MAE ${m.mae.toFixed(2)}</p><span class="k">证据：Matbench 任务折 + 原始结构文件 + 随机种子</span><br><span class="delta ${m.delta<0.12?"good":"bad"}">ΔZT ${m.delta.toFixed(2)} · ${m.delta<0.12?"在模型不确定度内":"超出不确定度，触发复核"}</span></div>`).join("");
+ if(RWUI)RWUI.setState({命题:"Q89",选中:sel.id,材料数:mats.length,规模:`q089 图谱 ${RW.deep(89).nodes} 节点 mock`});}
+function $(id){return document.getElementById(id)}
+document.addEventListener("click",e=>{const c=e.target.closest(".pt,.mat");if(!c)return;sel=mats.find(m=>m.id===c.dataset.id)||sel;render()});
+document.addEventListener("DOMContentLoaded",()=>{document.getElementById("qtext").textContent=RW.QUESTIONS.find(q=>q.id===89).full;
+ document.getElementById("chain").innerHTML=[["Q89 命题","project.json"],["Matbench 检索","source 落库"],["D-xxx 界面损失","proposed"],["E-xxx 高通量 DFT","完成"],["双审复核","进行中"]].map(([t,s],i)=>`<div class="ch"><b>${i+1} · ${s}</b>${t}</div>`).join("");
+ render();RWUI&&RWUI.setState({设计命题:"材料-性能证据链如何落到任务级可复现",挑战对象:"Q89 Matbench 链深度演示",交互:"散点联动材料卡 + 不确定度阈值复核",数据:"Q89 真实命题全文 + 22 条 mock 材料证据"});});
+</script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v17 · 复现凭据卡：局部组件。挑战 G10：执行凭据与产物哈希未接入活路径。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v17 · 复现凭据卡 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:dark;--bg:#0a0c0e;--ink:#e6efe6;--muted:#7d8a7d;--line:#223022;--green:#67d58a;--amber:#d8b15a}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif;padding:26px 18px 90px}
+  .wrap{max-width:1080px;margin:0 auto}
+  h1{font-size:20px;margin:0}.sub{color:var(--muted);font-size:12px}
+  .grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;margin-top:16px}
+  .card{border:1px solid var(--line);border-radius:12px;background:#0e1210;overflow:hidden}
+  .card header{display:flex;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line);font:11px ui-monospace,monospace;color:var(--green)}
+  .row{display:grid;grid-template-columns:130px 1fr auto;gap:10px;padding:9px 14px;border-bottom:1px dashed #1d2a1e;font:12px ui-monospace,monospace}
+  .row b{color:var(--muted);font-weight:600}.row .v{word-break:break-all}
+  .copy{border:1px solid var(--line);background:transparent;color:var(--amber);border-radius:6px;padding:3px 8px;cursor:pointer;font:10px ui-monospace,monospace}
+  .hash-tool{padding:14px}.hash-tool textarea{width:100%;height:80px;background:#0a0e0a;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px;font:12px ui-monospace,monospace}
+  .out{margin-top:8px;min-height:52px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#0a0e0a;font:11px ui-monospace,monospace;color:var(--green);word-break:break-all}
+  button.go{padding:9px 14px;border-radius:8px;background:var(--green);color:#07130a;border:0;font-weight:700;cursor:pointer;margin-top:8px}
+  .replay{margin-top:10px;display:none;padding:10px;border-radius:8px;border:1px solid var(--line);font:11px ui-monospace,monospace;color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>复现凭据卡</h1><p class="sub">执行单元启动时固定：image、command、files、seed、limits，退出码与产物哈希写入凭据。审核质疑 = 新容器按同一凭据确定性重跑（ADR-0020）。</p>
+  <div class="grid">
+    <section class="card"><header><span>EXECUTION CREDENTIAL · E-014</span><span>sha256 寻址</span></header>
+      <div class="row"><b>image</b><span class="v">qwen-science:v12 · Dockerfile hash 3f9c1a</span><button class="copy">复制</button></div>
+      <div class="row"><b>command</b><span class="v">python run_scan.py --seed 20260905 --range 1e6</span><button class="copy">复制</button></div>
+      <div class="row"><b>files</b><span class="v">run_scan.py, data/interval.csv, config.yaml</span><button class="copy">复制</button></div>
+      <div class="row"><b>seed</b><span class="v">20260905</span><button class="copy">复制</button></div>
+      <div class="row"><b>limits</b><span class="v">cpus=2 · memory=4g · pids=256 · timeout=900s</span><button class="copy">复制</button></div>
+      <div class="row"><b>exit_code</b><span class="v" style="color:var(--green)">0</span><button class="copy">复制</button></div>
+      <div class="row" style="border-bottom:0"><b>artifact</b><span class="v">sha256:8f3a2b91c7d4e5f6a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f</span><button class="copy">复制</button></div>
+    </section>
+    <section class="card hash-tool"><header><span>现场验证：真实 SHA-256</span></header>
+      <p style="color:var(--muted);font-size:11px">把任意文本当作产物内容，浏览器用 Web Crypto 计算内容哈希——演示“同一内容同一身份”。</p>
+      <textarea id="txt">image=qwen-science:v12\ncommand=python run_scan.py --seed 20260905</textarea>
+      <button class="go" id="hash">计算 SHA-256</button><div class="out" id="out">等待计算…</div>
+      <button class="go" id="replay" style="background:var(--amber);margin-top:8px">模拟按凭据重跑</button><div class="replay" id="replayOut"></div></section>
+  </div>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+async function sha256(s){const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("")}
+function $(id){return document.getElementById(id)}
+document.addEventListener("click",async e=>{const c=e.target.closest(".copy");if(c){try{await navigator.clipboard.writeText(c.previousElementSibling.textContent);c.textContent="已复制";setTimeout(()=>c.textContent="复制",1200)}catch{}}if(e.target.closest("#hash")){$("out").textContent="计算中…";const h=await sha256($("txt").value);$("out").textContent=h;$("txt").dataset.h=h}if(e.target.closest("#replay")){const r=$("replayOut");r.style.display="block";r.innerHTML="启动一次性容器（cpus=2 · memory=4g · pids=256）…<br>执行 run_scan.py --seed 20260905…<br>exit_code=0 · 产物哈希核对："+($("txt").dataset.h?($("txt").dataset.h.slice(0,16)+"… 一致 ✓"):"先计算哈希再重放")}});
+document.addEventListener("DOMContentLoaded",()=>{RWUI&&RWUI.setState({设计命题:"执行凭据如何在一张卡内完整、可复制、可验证",挑战对象:"G10：执行凭据未接入活路径",交互:"字段复制 + Web Crypto 真实 SHA-256 + 重放演示",数据:"mock 凭据 + 浏览器真实哈希"});});
+</script>
+</body>
+</html>

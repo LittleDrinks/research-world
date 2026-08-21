@@ -1,0 +1,55 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v11 · 人工裁决收件箱：把 waiting_human 从活动流里的一行字升级为可排序、可批量处理的收件箱。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v11 · 人工裁决收件箱 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:light;--bg:#eef1f4;--paper:#fff;--ink:#18202a;--muted:#69758a;--line:#dde3ea;--blue:#2f6fd0;--red:#c0403c;--amber:#b6760e;--green:#337a4b}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{max-width:1080px;margin:0 auto;padding:18px 18px 90px}
+  .head{display:flex;align-items:center;gap:14px}.head h1{font-size:20px;margin:0}
+  .counts{display:flex;gap:8px;margin-left:auto}.counts div{min-width:64px;text-align:center;padding:8px 10px;border-radius:10px;background:var(--paper);border:1px solid var(--line)}
+  .counts b{display:block;font:700 18px ui-monospace,monospace}.counts small{color:var(--muted);font-size:10px}
+  .tabs{display:flex;gap:6px;margin:16px 0 10px}.tab{padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--paper);cursor:pointer;color:var(--muted)}
+  .tab.on{background:var(--ink);color:#fff}
+  .mail{display:grid;grid-template-columns:150px 1fr auto auto;gap:12px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
+  .mail:hover{border-color:#aeb9c7}.mail.read{opacity:.55}
+  .tag{font:10px ui-monospace,monospace;padding:3px 8px;border-radius:999px;width:max-content}
+  .t-conflict{background:#fdeaea;color:var(--red)}.t-confirm{background:#e8f1fd;color:var(--blue)}.t-fuse{background:#fdf3e0;color:var(--amber)}.t-evidence{background:#e6f2e9;color:var(--green)}
+  h4{margin:0;font-size:13px}.mail p{margin:2px 0 0;color:var(--muted);font-size:12px}
+  .time{font:10px ui-monospace,monospace;color:var(--muted);text-align:right}
+  .acts{display:flex;gap:5px}.acts button{padding:6px 9px;border-radius:7px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:11px}
+  .acts .ok{background:var(--green);border-color:var(--green);color:#fff}.acts .no{background:var(--red);border-color:var(--red);color:#fff}
+  .detail{grid-column:1/-1;padding:12px;background:#f6f8fb;border-radius:8px;font-size:12px;display:none}.mail.open .detail{display:block}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="head"><h1>人工裁决收件箱</h1><span style="color:var(--muted);font-size:12px">waiting_human 不是日志，是待办</span><div class="counts" id="counts"></div></div>
+  <div class="tabs" id="tabs"></div>
+  <div id="list"></div>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const KINDS=[["conflict","双审分歧","t-conflict","决定节点准入：入图 / 幽灵隔离"],["confirm","执行确认","t-confirm","auto 关闭时批准本步一次性容器执行"],["fuse","谱系熔断","t-fuse","连续 2 次驳回，是否用新证据解锁"],["evidence","证据补登","t-evidence","湿实验记录缺失，是否接受人工补登"]];
+let items=[];function make(){return Array.from({length:22},(_,i)=>{const k=KINDS[i%4];const p=RW.PROJECTS[(i*7+3)%125];return{id:"H"+String(i+1).padStart(3,"0"),kind:k[0],kindZh:k[1],cls:k[2],project:p.id,title:p.title.slice(0,44),risk:1+((i*5)%5),minutes:(i*13+4)%500,detail:`双审意见已按 reviewer 沉淀。${k[3]}。点击按钮后本地状态改变并计入统计（无后端）。`,status:"open",open:false}})}
+let filter="all";
+function render(){const vis=items.filter(x=>filter==="all"||x.kind===filter).sort((a,b)=>b.risk-a.risk||a.minutes-b.minutes);
+ const c=o=>items.filter(x=>x.status===o).length;
+ $("counts").innerHTML=`<div><b>${c("open")}</b><small>待处理</small></div><div><b>${c("done")}</b><small>已裁决</small></div><div><b>${c("snooze")}</b><small>已推迟</small></div><div><b>${items.length}</b><small>总计</small></div>`;
+ $("list").innerHTML=vis.map(x=>`<div class="mail ${x.status!=="open"?"read":""} ${x.open?"open":""}" data-id="${x.id}">
+  <span class="tag ${x.cls}">${x.kindZh}</span><div><h4>${x.project} · ${x.title}</h4><p>${x.detail}</p></div>
+  <div class="acts">${x.status==="open"?`<button class="ok" data-act="done" data-id="${x.id}">裁决通过</button><button class="no" data-act="reject" data-id="${x.id}">驳回</button><button data-act="snooze" data-id="${x.id}">推迟</button>`:`<button data-act="reopen" data-id="${x.id}">重开</button>`}</div>
+  <div class="time">风险 <b>${"●".repeat(x.risk)}</b><br>${x.minutes} 分钟前</div>
+  <div class="detail">裁决会写入对应节点的 rebuttal 字段，随节点留存；被驳回内容进入幽灵车道供后续相似性匹配。</div></div>`).join("");
+ if(RWUI)RWUI.setState({筛选:filter,待处理:c("open"),已裁决:c("done"),已推迟:c("snooze")});}
+document.addEventListener("click",e=>{const t=e.target.closest(".tab");if(t){filter=t.dataset.f;document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===t));render();return}
+ const b=e.target.closest("[data-act]");if(b){const x=items.find(y=>y.id===b.dataset.id);x.status=b.dataset.act==="reject"?"done":b.dataset.act;x.open=false;render();return}
+ const m=e.target.closest(".mail");if(m){const x=items.find(y=>y.id===m.dataset.id);x.open=!x.open;render()}});
+document.addEventListener("DOMContentLoaded",()=>{items=make();$("tabs").innerHTML=[["all","全部"],...KINDS.map(k=>[k[0],k[1]])].map(([f,l])=>`<div class="tab ${f===filter?"on":""}" data-f="${f}">${l}</div>`).join("");
+ render();RWUI&&RWUI.setState({设计命题:"人工裁决如何成为有 SLA 的收件箱",挑战对象:"waiting_human 在活动流中不可排序",交互:"类型筛选 + 风险排序 + 通过/驳回/推迟 + 重开",数据:"22 条 mock 事项绑定真实 125 题项目"});});
+</script>
+</body>
+</html>

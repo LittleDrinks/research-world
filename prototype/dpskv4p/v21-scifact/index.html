@@ -1,0 +1,58 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v21 · SciFact 抗生素链：125 题 Q21 完整命题展示。证据句绑定到原子主张（ADR-0020 SciFact）。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v21 · SciFact 抗生素链 · Q21 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:light;--bg:#eef4f7;--paper:#fff;--ink:#10212b;--muted:#637a86;--line:#d6e3e9;--blue:#1f6e96;--green:#2f7a55;--red:#b2443b;--amber:#ad7017}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{max-width:1180px;margin:0 auto;padding:20px 20px 90px}
+  .head small{color:var(--blue);font:11px ui-monospace,monospace}h1{font:700 24px Georgia,serif;margin:4px 0}
+  .q{color:var(--muted);max-width:820px}
+  .chain{display:flex;gap:8px;margin:16px 0}.ch{flex:1;padding:9px;border:1px solid var(--line);border-radius:9px;background:var(--paper);font-size:11px}
+  .ch b{display:block;font:10px ui-monospace,monospace;color:var(--blue)}
+  .grid{display:grid;grid-template-columns:1.2fr 1fr;gap:14px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px}
+  h2{font-size:14px;margin:0 0 10px}
+  .abstract{font-size:13px;line-height:1.8}.hit{background:#fff1a8;cursor:pointer;border-radius:3px;padding:0 2px}
+  .hit.on{background:#f7c948;outline:2px solid var(--amber)}
+  .claim{border:1px solid var(--line);border-radius:9px;padding:10px;margin-bottom:8px;cursor:pointer}
+  .claim.on{border-color:var(--blue);background:#f2f9fd}
+  .claim h4{margin:0;font-size:12.5px}.claim p{margin:4px 0;color:var(--muted);font-size:11.5px}
+  .tag{font:10px ui-monospace,monospace;padding:2px 7px;border-radius:5px}
+  .sup{background:#e2f1e6;color:var(--green)}.ref{background:#f8e5e2;color:var(--red)}
+  .src{color:var(--muted);font:10px ui-monospace,monospace}
+  .audit{margin-top:10px;padding:10px;border-radius:9px;background:#f3f8fa;font-size:12px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="head"><small>125 题 · 完整命题展示 · q021 / SciFact 链（MEMORY 深度演示题）</small><h1>Q21 · 能否开发抗生素耐药性的新疗法？</h1><p class="q" id="qtext"></p></div>
+  <div class="chain" id="chain"></div>
+  <div class="grid">
+    <section class="card"><h2>证据句绑定 · 摘要高亮</h2><p class="abstract" id="abstract">Antimicrobial resistance (AMR) is driven by <span class="hit" data-c="0">horizontal gene transfer of resistance plasmids</span> among Enterobacteriaceae. Clinical surveillance shows <span class="hit" data-c="1">colistin resistance remains rare but is rising in ICU isolates</span>. Combination therapy with phage cocktails <span class="hit" data-c="2">restored susceptibility in 78% of MDR isolates in vitro</span>, although in vivo efficacy remains unproven.</p>
+    <div class="audit">绑定规则：review 启动时把 direction/experiment 文本拆成原子主张，逐条绑定 SciFact 证据句；句级高亮是审计单位，不是节点（ADR-0020）。</div></section>
+    <section class="card"><h2>原子主张与裁定</h2><div id="claims"></div><div class="audit" id="verdict"></div></section>
+  </div>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const claims=[
+ {text:"质粒水平基因转移驱动肠杆菌耐药扩散",ev:"0",src:"PMID 37201844 · Lancet Microbe 2025",pol:"sup"},
+ {text:"ICU 分离株中黏菌素耐药率上升但总体罕见",ev:"1",src:"PMID 36811220 · CMI 2024",pol:"sup"},
+ {text:"噬菌体鸡尾酒可在体内清除 MDR 菌株",ev:"2",src:"bioRxiv 2026.04 · 体外实验",pol:"ref"}];
+let sel=0;
+function render(){document.getElementById("claims").innerHTML=claims.map((c,i)=>`<div class="claim ${i===sel?"on":""}" data-c="${i}"><h4>${i+1}. ${c.text}</h4><p>证据句 [${+c.ev+1}] · <span class="src">${c.src}</span></p><span class="tag ${c.pol==="sup"?"sup":"ref"}">${c.pol==="sup"?"supports":"refutes"}</span></div>`).join("");
+ document.querySelectorAll(".hit").forEach(h=>h.classList.toggle("on",+h.dataset.c===sel));
+ document.getElementById("verdict").innerHTML=`<b>裁定（mock）</b>：主张 1、2 被支持；主张 3 只有体外证据却声称体内有效，审计回写 refutes 边，direction 不可从此主张派生。`;
+ if(RWUI)RWUI.setState({命题:"Q21",选中主张:sel+1,支持:2,反驳:1,规模:`q021 图谱 ${RW.deep(21).nodes} 节点 mock`});}
+function $(id){return document.getElementById(id)}
+document.addEventListener("click",e=>{const h=e.target.closest(".hit");if(h){sel=+h.dataset.c;render()}const c=e.target.closest(".claim");if(c){sel=+c.dataset.c;render()}});
+document.addEventListener("DOMContentLoaded",()=>{document.getElementById("qtext").textContent=RW.QUESTIONS.find(q=>q.id===21).full;
+ document.getElementById("chain").innerHTML=[["Q21 命题","project.json"],["source × 3","SciFact 检索"],["D-xxx 耐药假说","proposed"],["E-xxx 噬菌体体外","完成"],["双审","进行中"]].map(([t,s],i)=>`<div class="ch"><b>${i+1} · ${s}</b>${t}</div>`).join("");
+ render();RWUI&&RWUI.setState({设计命题:"证据句如何绑定到原子主张并呈现支持/反驳",挑战对象:"G1 原子断言审计 + SciFact 链",交互:"句级高亮 ↔ 主张卡片联动 + 三态裁定",数据:"Q21 真实命题全文 + 3 条 mock SciFact 证据"});});
+</script>
+</body>
+</html>

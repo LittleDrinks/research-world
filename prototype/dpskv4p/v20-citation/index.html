@@ -1,0 +1,51 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v20 · 引用检查清样：局部组件。挑战 a.md『引用检查：不能生成只能导出；诚信至上』。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v20 · 引用检查清样 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:light;--bg:#e9e5dc;--paper:#fffdf6;--ink:#211d16;--muted:#7d7462;--line:#d3cbb9;--red:#b32d22;--green:#3d6b45}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.6 ui-serif,Georgia,"Songti SC","Noto Serif CJK SC",serif}
+  .wrap{max-width:980px;margin:0 auto;padding:24px 20px 90px}
+  .sheet{background:var(--paper);border:1px solid var(--line);box-shadow:0 12px 40px rgba(60,50,30,.12);padding:26px 30px}
+  h1{font:700 22px Georgia,serif;margin:0}.meta{color:var(--muted);font:11px ui-monospace,monospace;border-bottom:2px solid var(--ink);padding-bottom:8px}
+  .claim{padding:12px 14px;border-left:4px solid var(--line);background:#faf6ec;margin:14px 0;cursor:pointer}
+  .claim.on{border-color:var(--red)}
+  .refs{margin:16px 0}.ref{display:grid;grid-template-columns:34px 1fr auto;gap:10px;padding:8px 6px;border-bottom:1px dashed var(--line);font-size:12px}
+  .num{font:700 13px Georgia,serif}
+  .check{font:10px ui-monospace,monospace;padding:3px 8px;border-radius:5px}.ok{background:#e2efe2;color:var(--green)}.bad{background:#f8e4e0;color:var(--red)}.warn{background:#fbf0d7;color:#96620a}
+  .redpen{border:1.5px solid var(--red);border-radius:8px;padding:10px 12px;color:var(--red);font:12px/1.5 ui-monospace,monospace;display:none;margin-top:10px}
+  button{padding:8px 13px;border-radius:7px;border:1px solid var(--line);background:var(--ink);color:#fff;cursor:pointer;font:13px ui-sans-serif,system-ui,sans-serif;margin-right:6px}
+  button.ghost{background:transparent;color:var(--ink)}
+  .bib{background:#f6f2e7;border:1px solid var(--line);border-radius:8px;padding:12px;font:11px/1.5 ui-monospace,monospace;white-space:pre-wrap;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="sheet"><h1>引用检查清样</h1><div class="meta">诚信至上：引用只导出，不生成 · 会议 &gt; arXiv · 最终发表版优先（a.md）</div>
+    <p style="font-size:13px">检查对象：D-071 生物基聚合物方向的主张文本。点击下划线引用查看判定。</p>
+    <div class="claim on" id="claim">“生物基聚合物在 180 天堆肥条件下可实现 &gt;40% 质量损失<sup>[1]</sup>，其力学性能可通过共混增韧恢复<sup>[2]</sup>，但长期土壤降解路径仍缺乏证据<sup>[3]</sup>。”</div>
+    <div class="refs" id="refs"></div>
+    <button id="check">运行引用检查</button><button class="ghost" id="export" disabled>导出 .bib（只导出）</button>
+    <div class="redpen" id="pen"></div><div class="bib" id="bib" style="display:none"></div>
+  </div>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const refs=[{n:1,text:"Rhim et al., Bio-based PLA degradation under composting, Waste Management, 2025",status:"ok",why:"存在，已核对 DOI，会议/期刊正式版"},
+{n:2,text:"Zhang et al., Toughening of PHA blends, arXiv:2605.11411, 2026",status:"warn",why:"存在，但当前只有 arXiv 预印本；检索是否有会议正式版"},
+{n:3,text:"Li et al., Soil degradation of bioplastics (预印本)",status:"bad",why:"URL 404，DOI 不存在；该引用不能进入 .bib 导出"}];
+let checked=false;
+function $(id){return document.getElementById(id)}
+function render(){if(checked){$("refs").innerHTML=refs.map(r=>`<div class="ref"><span class="num">[${r.n}]</span><span>${r.text}</span><span class="check ${r.status}">${r.status==="ok"?"✓ 可用":r.status==="warn"?"△ 需升级":"✕ 不可用"}</span></div>`).join("");}
+ else{$("refs").innerHTML=refs.map(r=>`<div class="ref"><span class="num">[${r.n}]</span><span>${r.text}</span><span style="color:var(--muted);font:10px ui-monospace,monospace">未检查</span></div>`).join("");}
+ if(RWUI)RWUI.setState({已检查:checked,可用:refs.filter(r=>r.status==="ok").length,需升级:refs.filter(r=>r.status==="warn").length,不可用:refs.filter(r=>r.status==="bad").length});}
+document.addEventListener("click",e=>{if(e.target.closest("#check")){checked=true;$("pen").style.display="block";$("pen").textContent="红笔：引用[3]不可用——系统只允许导出经核对的引用；[2]建议先尝试检索正式发表版本。Agent 不得生成或补全 .bib 条目。";$("export").disabled=false;render()}
+ if(e.target.closest("#export")){const bib=`@article{rhim2025pla,\n  title={Bio-based PLA degradation under composting},\n  journal={Waste Management},\n  year={2025},\n  note={checked by citation inspector 2026-08-21}\n}`;
+ $("bib").style.display="block";$("bib").textContent=bib;const url=URL.createObjectURL(new Blob([bib],{type:"text/plain"}));const a=document.createElement("a");a.href=url;a.download="D-071-refs.bib";a.click();URL.revokeObjectURL(url)}});
+document.addEventListener("DOMContentLoaded",()=>{render();RWUI&&RWUI.setState({设计命题:"引用诚信如何做成清样检查流程",挑战对象:"a.md 引用检查/bib agent 未做",交互:"运行检查 + 三色判定 + 红笔结论 + .bib 导出",数据:"3 条 mock 引用规则"});});
+</script>
+</body>
+</html>

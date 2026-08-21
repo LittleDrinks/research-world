@@ -1,0 +1,55 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v23 · 睡眠证据台：125 题 Q98 完整命题展示。Sleep-EDF + 手表双源人工返回对齐。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v23 · 睡眠证据台 · Q98 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:dark;--bg:#060a16;--panel:#0b1224;--ink:#dfe8f6;--muted:#7282a6;--line:#1b2944;--cyan:#55c7e8;--violet:#8f7be8;--amber:#e0aa55;--green:#65d18e}
+  *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#060a16,#0a1020);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{max-width:1180px;margin:0 auto;padding:20px 20px 90px}
+  small.q{color:var(--cyan);font:11px ui-monospace,monospace}h1{font:700 24px Georgia,serif;margin:4px 0}.q{color:var(--muted);max-width:820px}
+  .chain{display:flex;gap:8px;margin:16px 0}.ch{flex:1;padding:9px;border:1px solid var(--line);border-radius:9px;background:var(--panel);font-size:11px}.ch b{display:block;font:10px ui-monospace,monospace;color:var(--cyan)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  h2{font-size:14px;margin:0 0 10px}
+  svg{width:100%;height:220px}.axis{stroke:#223154}
+  .stage-band{opacity:.92;cursor:pointer}.stage-band:hover{stroke:#fff}
+  .watch{display:flex;align-items:flex-end;gap:3px;height:120px;margin-top:10px}.wbar{flex:1;border-radius:4px 4px 0 0;background:linear-gradient(180deg,var(--violet),#3d3470);cursor:pointer}
+  .legend{font:10px ui-monospace,monospace;color:var(--muted);margin-top:8px}
+  .align{padding:10px;border:1px solid var(--line);border-radius:9px;background:#0d1526;margin-top:10px;font-size:12px}
+  .ok{color:var(--green)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div><small class="q">125 题 · 完整命题展示 · q098 / Sleep-EDF + 手表返回（MEMORY 深度演示题）</small><h1>Q98 · 睡眠是否有助于巩固记忆？</h1><p class="q" id="qtext"></p></div>
+  <div class="chain" id="chain"></div>
+  <div class="grid">
+    <section class="card"><h2>Sleep-EDF · 整夜分期（点击时段联动）</h2><svg id="svg"></svg><div class="legend">W 清醒 · N1 N2 浅睡 · N3 深睡 · REM 快速眼动</div></section>
+    <section class="card"><h2>手表返回 · 心率 / 活动（双源对齐）</h2><div class="watch" id="watch"></div><div class="align" id="align"></div></section>
+  </div>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const STAGES=[["W","#8899bb"],["N1","#5aa0b8"],["N2","#3f6fa8"],["N3","#29418f"],["REM","#7a5ec8"],["W","#8899bb"],["N2","#3f6fa8"],["REM","#7a5ec8"]];
+const mins=[8,26,52,38,24,14,44,34];let sel=3;
+function render(){const svg=$("svg");const total=mins.reduce((a,b)=>a+b,0);let x=30;const bands=[];
+ mins.forEach((m,i)=>{const w=(m/total)*500;bands.push({i,x,w});x+=w});
+ svg.innerHTML=`<line class="axis" x1="30" y1="170" x2="560" y2="170"/><line class="axis" x1="30" y1="30" x2="30" y2="170"/>
+ ${bands.map(b=>`<rect class="stage-band" data-i="${b.i}" x="${b.x}" y="${120-(b.i%3)*10}" width="${b.w}" height="${50+(b.i%3)*10}" fill="${STAGES[b.i][1]}" stroke="${b.i===sel?"#fff":""}" stroke-width="${b.i===sel?2:0}"/><text x="${b.x+b.w/2}" y="108" text-anchor="middle" style="font:9px ui-monospace,monospace;fill:${b.i===sel?"#fff":"#7282a6"}">${STAGES[b.i][0]}</text>`).join("")}
+ <path d="M30,${170-mins.reduce((a,b)=>a+b,0)*0.1} ${Array.from({length:80},(_,i)=>`L${30+i*6.6},${90+Math.sin(i*.7+sel)*34}`).join(" ")}" fill="none" stroke="#55c7e8" stroke-width="1.3" opacity=".8"/>
+ <text x="30" y="20" style="font:10px ui-monospace,monospace;fill:#7282a6">EEG Fpz-Cz · 8 小时</text>`;
+ const watch=$("watch");const hr=Array.from({length:16},(_,i)=>20+Math.round(Math.abs(Math.sin(i*0.9+sel))*38+58));
+ watch.innerHTML=hr.map((v,i)=>`<div class="wbar" data-i="${i}" style="height:${v}%;opacity:${i===Math.floor(sel*2) ? 0.5 : 1}" title="${v} bpm"></div>`).join("");
+ $("align").innerHTML=`<b>双源对齐</b>：Sleep-EDF 时段 <b style="color:var(--cyan)">${STAGES[sel][0]}</b>（${mins[sel]} 分钟）↔ 手表心率 ${hr[Math.floor(sel*2)]} bpm · 活动量 ${sel<3?"低":sel<6?"中":"低"}<br><span class="ok">✓ 时间戳已对齐（偏移 −2.3s，在 30s 容差内）；人工返回的手表数据已登记，等待双审。</span>`;
+ if(RWUI)RWUI.setState({命题:"Q98",选中时段:STAGES[sel][0],对齐偏移:"−2.3s",规模:`q098 图谱 ${RW.deep(98).nodes} 节点 mock`});}
+function $(id){return document.getElementById(id)}
+document.addEventListener("click",e=>{const r=e.target.closest(".stage-band,.wbar");if(!r)return;sel=r.classList.contains("stage-band")?+r.dataset.i:Math.floor(+r.dataset.i/2);render()});
+document.addEventListener("DOMContentLoaded",()=>{document.getElementById("qtext").textContent=RW.QUESTIONS.find(q=>q.id===98).full;
+ document.getElementById("chain").innerHTML=[["Q98 命题","project.json"],["D-xxx 睡眠-记忆假说","proposed"],["E-xxx 整夜监测","完成"],["手表人工返回","本页"],["双审","等待"]].map(([t,s],i)=>`<div class="ch"><b>${i+1} · ${s}</b>${t}</div>`).join("");
+ render();RWUI&&RWUI.setState({设计命题:"多源生理数据如何对齐、联动并保持可审计",挑战对象:"Q98 Sleep-EDF+手表深度演示",交互:"睡眠分期 ↔ 手表数据联动 + 偏移容差提示",数据:"Q98 真实命题全文 + 8 时段 mock"});});
+</script>
+</body>
+</html>

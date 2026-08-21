@@ -1,0 +1,77 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v03 · 审计台账：挑战 /activity 页。append-only 事件账本 + 本周期五问。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v03 · 审计台账 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:dark;--bg:#101713;--panel:#17211b;--ink:#dbe8dc;--muted:#8aa092;--line:#26382c;--gold:#c9a45c;--ok:#6dbd83;--bad:#d77c6c}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{display:grid;grid-template-rows:58px 1fr;height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:0 18px;border-bottom:1px solid var(--line);background:var(--panel)}
+  header b{font-family:Georgia,"Songti SC",serif;font-size:18px;color:var(--gold)}
+  .tabs{margin-left:18px;display:flex;gap:4px}.tab{padding:6px 12px;border-radius:8px;cursor:pointer;color:var(--muted)}.tab.on{background:#223428;color:var(--ink)}
+  .q5{margin-left:auto;display:flex;gap:10px}.q5 div{background:#17211b;border:1px solid var(--line);border-radius:8px;padding:4px 10px;text-align:right;font:10px ui-monospace,monospace}.q5 b{display:block;font-size:14px;color:var(--gold)}
+  .body{display:grid;grid-template-columns:300px 1fr;min-height:0}
+  aside{overflow:auto;padding:14px;border-right:1px solid var(--line);background:var(--panel)}
+  h3{font-size:11px;letter-spacing:.1em;color:var(--muted);margin:14px 0 8px}
+  .q5-card{padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:#111b15}
+  .q5-card b{color:var(--gold);font-size:12px}.q5-card p{margin:4px 0 0;font-size:12px;color:var(--ink)}
+  select,input{padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#0d1410;color:var(--ink);font:inherit;width:100%}
+  main{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .table{overflow:auto;flex:1;padding:10px 18px 70px}
+  table{width:100%;border-collapse:collapse}
+  th{position:sticky;top:0;background:var(--bg);color:var(--muted);font:600 10px ui-monospace,monospace;text-align:left;padding:8px;border-bottom:1px solid var(--line)}
+  td{padding:7px 8px;border-bottom:1px solid #1d2b21;font-size:12px;vertical-align:top}
+  tr.row{cursor:pointer}tr.row:hover{background:#141e18}
+  .type{font:10px ui-monospace,monospace;padding:2px 7px;border-radius:4px}
+  .t-run{color:#7fc3ef;background:#142633}.t-approve{color:var(--ok);background:#14291c}.t-reject{color:var(--bad);background:#301a18}.t-human{color:var(--gold);background:#2b2313}.t-branch{color:#bda3e8;background:#231b30}.t-fuse{color:#e8907e;background:#301d18}
+  .pager{display:flex;gap:8px;align-items:center;padding:10px 18px;border-top:1px solid var(--line);background:var(--panel)}
+  .pager button{padding:6px 12px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);cursor:pointer}
+  .expanded{background:#0d1410;color:#bcd8c2;font:11px ui-monospace,monospace}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><b>审计台账</b><span style="color:var(--muted);font:11px ui-monospace,monospace">APPEND-ONLY · 不可变事件流</span>
+    <div class="tabs" id="tabs"></div><div class="q5"><div>运行中<b id="q-running">0</b></div><div>待人工<b id="q-human">0</b></div><div>事件<b>960</b></div></div></header>
+  <div class="body">
+    <aside>
+      <h3>本周期五问（由事件流投影）</h3>
+      <div class="q5-card"><b>① 新增了什么</b><p id="a1"></p></div>
+      <div class="q5-card"><b>② 失败在哪</b><p id="a2"></p></div>
+      <div class="q5-card"><b>③ 下一步做什么</b><p id="a3"></p></div>
+      <div class="q5-card"><b>④ 上游错误影响了谁</b><p id="a4"></p></div>
+      <div class="q5-card"><b>⑤ 证据是否可复现</b><p id="a5"></p></div>
+      <h3>筛选</h3><select id="fProject"><option value="">全部项目</option></select>
+      <select id="fType" style="margin-top:8px"><option value="">全部事件类型</option><option>run</option><option>approve</option><option>reject</option><option>human</option><option>branch</option><option>fuse</option></select>
+      <select id="fActor" style="margin-top:8px"><option value="">全部 actor</option></select>
+    </aside>
+    <main><div class="table"><table><thead><tr><th>#</th><th>时间</th><th>项目</th><th>类型</th><th>actor</th><th>事件</th></tr></thead><tbody id="rows"></tbody></table></div>
+      <div class="pager"><button id="prev">← 上一页</button><span id="page"></span><button id="next">下一页 →</button><span style="margin-left:auto;color:var(--muted);font:10px ui-monospace,monospace" id="ledger"></span></div>
+    </main>
+  </div>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const st={tab:"window",project:"",type:"",actor:"",page:0,expanded:null};const PER=46;
+const TYPE_ZH={run:"执行",approve:"通过",reject:"驳回",human:"人工",branch:"派生",fuse:"熔断"};
+function filtered(){let ev=RW.EVENTS.filter(e=>(!st.project||e.project===st.project)&&(!st.type||e.type===st.type)&&(!st.actor||e.actor===st.actor));
+ if(st.tab!=="all")ev=ev.filter(e=>e.at<=(st.tab==="day"?240:st.tab==="hour"?60:Number.MAX_SAFE_INTEGER));return ev}
+function render(){const all=filtered();const pages=Math.max(1,Math.ceil(all.length/PER));st.page=Math.min(st.page,pages-1);
+ const rows=all.slice(st.page*PER,(st.page+1)*PER);$("rows").innerHTML=rows.map(e=>`<tr class="row" data-i="${e.seq}"><td>${e.seq}</td><td style="font:11px ui-monospace,monospace;color:var(--muted)">${Math.floor(e.at/60)}h ${Math.floor(e.at%60)}m</td><td style="font:11px ui-monospace,monospace">${e.project}</td><td><span class="type t-${e.type}">${TYPE_ZH[e.type]}</span></td><td style="color:var(--muted)">${e.actor}</td><td>${e.text}</td></tr>${st.expanded===e.seq?`<tr class="expanded"><td></td><td colspan="5"><pre style="margin:0;overflow:auto">${JSON.stringify({...e,payload:{确定性:"mulberry32(20260905)",可回溯:"seq="+e.seq}},null,2)}</pre></td></tr>`:""}`).join("");
+ $("page").textContent=`第 ${st.page+1} / ${pages} 页 · ${all.length} 条`;$("ledger").textContent=`台账余额：${all.length} 条事件可独立回放，阅读成本有界（每页 ${PER} 条）`;
+ if(RWUI)RWUI.setState({时间窗:st.tab==="day"?"24h":st.tab==="hour"?"1h":"全部",筛选:st.project||st.type||st.actor||"无",页:st.page+1,事件数:all.length});}
+function renderMeta(){const runs=RW.EVENTS.filter(e=>e.type==="run").length,rej=RW.EVENTS.filter(e=>e.type==="reject").length,h=RW.EVENTS.filter(e=>e.type==="human").length,f=RW.EVENTS.filter(e=>e.type==="fuse").length;
+ $("a1").textContent=`时间窗内 ${runs} 条执行完成，${RW.EVENTS.filter(e=>e.type==="branch").length} 次派生候选。`;
+ $("a2").textContent=`${rej} 条驳回全部进幽灵车道，理由与抗辩留存。`;$("a3").textContent=`${h} 项等待人工裁决，1 条谱系熔断需新证据解锁。`;
+ $("a4").textContent=`按依赖边可定位受影响后代；示例：q001 的 D-012 被否 → 下游 3 节点待撤销。`;$("a5").textContent=`执行事件全部携带 exit code 与产物哈希，可确定性重放。`;
+ $("q-running").textContent=RW.TOTAL.active;$("q-human").textContent=RW.TOTAL.human;}
+document.addEventListener("click",e=>{const t=e.target.closest(".tab");if(t){st.tab=t.dataset.t;st.page=0;document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===t));render()}const r=e.target.closest("tr.row");if(r){st.expanded=st.expanded===+r.dataset.i?null:+r.dataset.i;render()}if(e.target.closest("#prev")){st.page--;render()}if(e.target.closest("#next")){st.page++;render()}});
+["fProject","fType","fActor"].forEach(id=>document.getElementById(id).addEventListener("change",e=>{st[id.slice(1).toLowerCase()]=e.target.value;st.page=0;render()}));
+document.addEventListener("DOMContentLoaded",()=>{$("tabs").innerHTML=[["window","本周期"],["day","24 小时"],["hour","1 小时"],["all","全部"]].map(([k,l])=>`<div class="tab ${k===st.tab?"on":""}" data-t="${k}">${l}</div>`).join("");
+ $("fProject").innerHTML+=[...new Set(RW.EVENTS.map(e=>e.project))].slice(0,80).sort().map(p=>`<option value="${p}">${p}</option>`).join("");$("fActor").innerHTML+=[...new Set(RW.EVENTS.map(e=>e.actor))].map(a=>`<option>${a}</option>`).join("");renderMeta();render();RWUI&&RWUI.setState({设计命题:"轨迹不可变账本如何直接回答审查五问",挑战对象:"/activity 事件流只读列表",交互:"时间窗 + 三键筛选 + 分页 + 事件负载展开"});});
+</script>
+</body>
+</html>

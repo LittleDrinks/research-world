@@ -1,0 +1,68 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v07 · 湿实验操作台：125 题 Q112 环保塑料完整命题展示。人工返回数据登记，不接后端。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v07 · 湿实验操作台 · Q112 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:light;--bg:#f4f2ec;--paper:#fff;--ink:#20241f;--muted:#6f756a;--line:#d9d6cc;--orange:#d4641a;--orange-soft:#fdecdb;--green:#3c7447;--red:#b23a2e}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{max-width:1180px;margin:0 auto;padding:22px 20px 90px}
+  .head{display:flex;gap:14px;align-items:flex-start}.stamp{margin-left:auto;border:2.5px solid var(--orange);color:var(--orange);font:700 13px ui-monospace,monospace;padding:8px 14px;transform:rotate(2deg);background:var(--orange-soft)}
+  h1{font:700 24px Georgia,"Songti SC",serif;margin:4px 0}
+  .q{max-width:760px;color:var(--muted)}
+  .chain{display:flex;gap:8px;align-items:stretch;margin:18px 0;overflow-x:auto;padding-bottom:6px}
+  .step{flex:1;min-width:130px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--paper)}
+  .step b{font:700 11px ui-monospace,monospace;color:var(--muted)}.step p{margin:5px 0 0;font-size:12px}
+  .step.done{border-color:var(--green);background:#eef5ed}.step.now{border-color:var(--orange);box-shadow:0 0 0 3px var(--orange-soft)}
+  .grid{display:grid;grid-template-columns:1fr 1.2fr;gap:16px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px}
+  h2{font-size:14px;margin:0 0 10px}.form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  label{font:600 10px ui-monospace,monospace;color:var(--muted)}input,select{padding:8px;border:1px solid var(--line);border-radius:7px;font:inherit;width:100%}
+  .photo{grid-column:1/-1;border:1.5px dashed var(--orange);border-radius:8px;padding:12px;text-align:center;color:var(--muted);cursor:pointer;background:#fffbf7}
+  .photo img{max-height:120px;border-radius:6px}
+  button.submit{grid-column:1/-1;padding:10px;background:var(--ink);color:#fff;border:0;border-radius:8px;cursor:pointer;font-weight:700}
+  table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left}
+  th{color:var(--muted);font:600 10px ui-monospace,monospace}
+  .ok{color:var(--green)}.wait{color:var(--orange)}
+  .note{border-left:3px solid var(--orange);padding:8px 10px;background:var(--orange-soft);font-size:11px;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="head"><div><div style="color:var(--muted);font:11px ui-monospace,monospace">125 题 · 完整命题展示 · q112 / project.json 已建</div>
+  <h1>Q112 · 能否制造环境友好的塑料替代品？</h1>
+  <p class="q" id="qtext"></p></div><div class="stamp">湿实验 · 人工返回</div></div>
+  <div class="chain" id="chain"></div>
+  <div class="grid">
+    <section class="card"><h2>首批制片登记 · 人工返回数据</h2><div class="form">
+      <div><label>样本编号</label><input id="sample" value="PLA-2026-011"></div>
+      <div><label>操作人</label><input id="operator" value="王同学 / wet-lab"></div>
+      <div><label>批次</label><select id="batch"><option>批次 A · 玉米淀粉基</option><option>批次 B · PHA 共混</option><option>批次 C · 纤维素增强</option></select></div>
+      <div><label>实验日期</label><input id="date" type="date" value="2026-08-21"></div>
+      <div><label>拉伸强度 MPa</label><input id="tensile" value="18.4"></div>
+      <div><label>180 天降解率 %</label><input id="degrade" value="46.2"></div>
+      <label class="photo" id="photo">📷 点击添加原始照片证据（本地预览，不上传）<input type="file" hidden accept="image/*"></label>
+      <button class="submit" id="submit">登记为实验证据 → 触发机械审查</button>
+    </div><div class="note">原型规则：湿实验不自动生成结论。系统只登记原始数据与照片证据；结果入图需独立 reviewer 对“数据完整性”做机械审计（ADR-0017/0020）。</div></section>
+    <section class="card"><h2>已登记证据（mock，确定性生成）</h2><table><thead><tr><th>样本</th><th>批次</th><th>拉伸 MPa</th><th>降解率</th><th>证据</th><th>状态</th></tr></thead><tbody id="rows"></tbody></table></section>
+  </div>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const Q=()=>RW.QUESTIONS.find(q=>q.id===112);
+const rows=[["PLA-2026-001","A","16.9","38.5","2 张照片 + 仪器读数","已入图"],["PLA-2026-002","A","17.6","40.1","3 张照片","已入图"],["PLA-2026-003","B","14.2","51.8","光谱 PDF","审核中"],["PLA-2026-004","B","15.0","49.3","2 张照片","已入图"],["PLA-2026-005","C","19.1","43.7","拉伸曲线 CSV","已入图"],["PLA-2026-006","C","18.0","45.9","1 张照片","待补证据"]];
+function renderRows(){document.getElementById("rows").innerHTML=rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td class="${r[5].includes("已")?"ok":"wait"}">${r[5]}</td></tr>`).join("")}
+ if(RWUI)RWUI.setState({命题:"Q112",登记样本:rows.length,数据规模:`真实 125 题 · 本命题 ${RW.deep(112).nodes} 节点 mock`});
+document.getElementById("submit").addEventListener("click",()=>{const s=$("sample").value||"UNKNOWN";rows.unshift([s,$("batch").value[2],"+"+$("tensile").value,"+"+$("degrade").value,"1 张照片（本地预览）","待机械审查"]);renderRows();
+ document.getElementById("chain").children[3].className="step done";alert("原型演示：样本已登记为待审证据，机械审查通过后才会影响 direction 状态机。")});
+document.getElementById("photo").addEventListener("click",e=>{if(e.target.tagName!=="INPUT")document.getElementById("photo").querySelector("input").click()});
+document.getElementById("photo").querySelector("input").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{document.getElementById("photo").innerHTML=`<img src="${r.result}"><br><span style="font-size:11px;color:var(--green)">本地预览已生成（未持久化）· ${f.name}</span>`};r.readAsDataURL(f)});
+function $(id){return document.getElementById(id)}
+document.addEventListener("DOMContentLoaded",()=>{document.getElementById("qtext").textContent=Q().full;
+ document.getElementById("chain").innerHTML=[["Q112 命题","已建 project.json"],["D-071 生物基聚合物","supports"],["E-014 首批制片","运行中"],["人工返回数据","本操作台"],["双审机械审计","等待"],["R 反思新方向","未开始"]].map(([t,s],i)=>`<div class="step ${i<2?"done":i===3?"now":""}"><b>${i+1} · ${s}</b><p>${t}</p></div>`).join("");
+ renderRows();RWUI&&RWUI.setState({设计命题:"湿实验数据如何以人工返回闭环进图",挑战对象:"a.md 中『湿实验汇报人类、支持登记数据』未落地",交互:"表单登记 + 照片本地预览 + 证据表",数据:"Q112 真实命题全文 + 6 条 mock 样本"});});
+</script>
+</body>
+</html>
