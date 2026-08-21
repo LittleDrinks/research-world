@@ -1,7 +1,15 @@
+---
+sources:
+  - id: danus
+    title: "Danus: Orchestrating Mathematical Reasoning Agents with Fact-Graph Memory"
+    authors: "Jihao Liu et al."
+    arxiv: "2607.06447"
+    url: https://arxiv.org/abs/2607.06447
+---
 # 审核与执行管线
 
 ## 入图前审核，驳回内容隔离
-行动与结果通过独立审核后才成为默认可检索内容；被驳回内容保留为隔离记录，只在后续入图审核时用于相似性匹配；执行 agent 只收到最小阻断理由，完整内容仅向审核 agent 和人工披露。[HEP](https://arxiv.org/abs/2607.09195) 不让未经 verdict 的假设派生后代，[无外部反馈的自纠不构成独立验证](https://arxiv.org/abs/2310.01798)，[可验证溯源](https://arxiv.org/abs/2607.25637)要求主张、证据、审核者在同一条记录上。
+行动与结果通过独立审核后才成为默认可检索内容；被驳回内容保留为隔离记录，只在后续入图审核时用于相似性匹配；执行 agent 只收到最小阻断理由，完整内容仅向审核 agent 和人工披露。Danus 把 verifier 作为唯一事实写入门，未验证计划与失败路线只作共享感知，不得成为后续证明的依赖 [danus]。[HEP](https://arxiv.org/abs/2607.09195) 不让未经 verdict 的假设派生后代，[无外部反馈的自纠不构成独立验证](https://arxiv.org/abs/2310.01798)，[可验证溯源](https://arxiv.org/abs/2607.25637)要求主张、证据、审核者在同一条记录上。
 
 ## 规划产生行动，行动触发执行
 规划 agent 一次只提交一个候选行动，系统不因前沿为空而自行无界规划；行动通过独立审核后原子且幂等地创建一次执行；规划与执行使用不同会话。[计划遵循可在离散步骤上测量](https://arxiv.org/abs/2604.12147)，[在线监控与纠偏](https://arxiv.org/abs/2608.06701)以步骤为边界，[自主实验系统](https://www.nature.com/articles/s41586-023-06734-w)在执行、观察和下一步选择间建立可观测反馈。
