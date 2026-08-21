@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Kort AI — ASCII Replica</title>
+<style>
+  :root {
+    --ink: #161616;
+    --gray: #6f6f6f;
+    --faint: #a3a3a3;
+    --hair: #e9e9e9;
+    --indigo: #3b328e;
+    --indigo-soft: #746bd4;
+    --indigo-faint: #e4e3fa;
+    --green: #22c55e;
+    --red: #ef4444;
+    --serif: Georgia, "Times New Roman", serif;
+    --sans: Inter, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: #fff;
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1340px; margin: 0 auto; padding: 22px 40px 90px; }
+  canvas { display: block; }
+  h1, h2, h3, h4 { font-family: var(--serif); font-weight: 400; margin: 0; letter-spacing: -.01em; }
+  a { color: inherit; text-decoration: none; cursor: pointer; }
+
+  /* ---------- header ---------- */
+  header.site {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 18px;
+  }
+  .brand { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 7px; }
+  .brand .mark { color: var(--ink); font-size: 16px; }
+  .brand .ai { font-size: 10px; font-weight: 600; border: 1px solid var(--ink); border-radius: 3px; padding: 1px 3px; margin-left: 1px; }
+  header.site nav { display: flex; align-items: center; gap: 26px; font-size: 12.5px; }
+  header.site nav .login {
+    background: #171717; color: #fff; border-radius: 8px; padding: 8px 22px;
+  }
+
+  /* ---------- hero ---------- */
+  .hero-panel {
+    height: 300px; border-radius: 8px; overflow: hidden;
+    background: #fbfbfe; border: 1px solid #f0f0f6;
+  }
+  .hero-panel canvas { width: 100%; height: 100%; }
+  .hero-row {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    padding: 26px 2px 20px;
+  }
+  .hero-row h1 { font-size: 42px; line-height: 1.08; }
+  .hero-row .blurb { max-width: 250px; color: var(--gray); font-size: 11.5px; line-height: 1.55; margin: 0 0 4px; }
+  .sublinks {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair);
+    padding: 12px 2px; font-size: 11.5px; color: var(--gray);
+  }
+  .sublinks .sep { color: #c9c9d9; font-size: 8px; }
+  .sublinks a:hover { color: var(--ink); }
+  .sublinks a.on { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ---------- exchange cards ---------- */
+  .cards {
+    display: grid; grid-auto-flow: column; grid-auto-columns: 350px;
+    gap: 22px; overflow-x: auto; padding: 26px 2px 10px;
+    scrollbar-width: none;
+  }
+  .cards::-webkit-scrollbar { display: none; }
+  .card { border: 1px solid var(--hair); border-radius: 8px; padding: 14px; }
+  .card .date { color: var(--faint); font-size: 10.5px; display: flex; gap: 6px; align-items: center; }
+  .card-img { height: 190px; margin: 8px 0 6px; }
+  .card-img canvas { width: 100%; height: 100%; }
+  .card-tasks { display: flex; align-items: center; justify-content: space-between; }
+  .tasks { display: grid; gap: 3px; }
+  .task { display: flex; align-items: center; gap: 6px; font-size: 9.5px; color: var(--gray); font-family: var(--mono); }
+  .task .bars { display: inline-flex; gap: 1.5px; }
+  .task .bars b { width: 3px; height: 8px; border-radius: 1px; background: #dcdce8; }
+  .task .bars b.f-g { background: var(--green); }
+  .task .bars b.f-r { background: var(--red); }
+  button { font-family: var(--sans); cursor: pointer; }
+  .ghost {
+    border: 1px solid var(--hair); background: #fff; border-radius: 7px;
+    font-size: 10.5px; color: var(--gray); padding: 5px 10px;
+  }
+  .badge { font-size: 9.5px; border-radius: 5px; padding: 2.5px 7px; font-weight: 600; }
+  .badge.up { color: #16a34a; background: #e9f9ef; }
+  .badge.down { color: #dc2626; background: #fdecec; }
+  .card .today { margin: 10px 0 4px; }
+  .card h3 { font-size: 20px; margin: 2px 0 6px; }
+  .card .desc { color: var(--gray); font-size: 10.5px; line-height: 1.55; margin: 0 0 10px; }
+  .card .meta { display: flex; align-items: center; justify-content: space-between; color: var(--faint); font-size: 10px; margin-bottom: 12px; }
+  .avatars { display: inline-flex; align-items: center; gap: 5px; }
+  .avatars i { width: 14px; height: 14px; border-radius: 50%; display: inline-block; margin-left: -6px; border: 1.5px solid #fff; }
+  .expand {
+    border: 0; background: #171717; color: #fff; border-radius: 7px;
+    font-size: 10.5px; padding: 6px 12px;
+  }
+
+  /* ---------- globe section ---------- */
+  .globe-sec { padding-top: 64px; }
+  .globe-sec > h2 { font-size: 30px; margin-bottom: 22px; }
+  .globe-panel {
+    border: 1px solid var(--hair); border-radius: 8px; padding: 26px 30px 18px;
+    display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 20px;
+  }
+  .globe-left { display: flex; flex-direction: column; justify-content: flex-end; }
+  .globe-left .official { font-family: var(--serif); font-size: 17px; letter-spacing: .04em; }
+  .globe-left .official small { display: block; font-family: var(--sans); font-size: 10px; color: var(--gray); letter-spacing: 0; margin-top: 5px; line-height: 1.5; }
+  .globe-mid { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .globe-mid canvas { width: 100%; height: 340px; }
+  .globe-mid .tasks { grid-auto-flow: column; gap: 18px; display: grid; }
+  .globe-right { font-size: 11px; color: var(--gray); }
+  .globe-right h5 { font-size: 11.5px; color: var(--ink); font-weight: 600; margin: 0 0 8px; }
+  .globe-right p { line-height: 1.6; margin: 0 0 12px; font-size: 10.5px; }
+  .toggle { display: flex; align-items: center; gap: 7px; font-size: 10.5px; color: var(--gray); cursor: pointer; user-select: none; }
+  .toggle input { display: none; }
+  .toggle i {
+    width: 26px; height: 15px; border-radius: 9px; background: #d8d8e2; position: relative; transition: background .2s;
+  }
+  .toggle i::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 11px; height: 11px;
+    border-radius: 50%; background: #fff; transition: left .2s;
+  }
+  .toggle input:checked + i { background: var(--indigo); }
+  .toggle input:checked + i::after { left: 13px; }
+  .dotted {
+    border: 1px solid var(--hair); border-radius: 10px;
+    background-image: radial-gradient(#d9d9e6 1px, transparent 1px);
+    background-size: 7px 7px;
+  }
+  .globe-right .dotted { height: 110px; margin-top: 14px; display: flex; align-items: flex-end; padding: 10px; }
+  .globe-right .dotted .avatars { background: rgba(255,255,255,.85); border-radius: 6px; padding: 3px 8px; font-size: 9.5px; }
+  .tabs {
+    grid-column: 1 / -1; display: flex; gap: 34px; border-top: 1px solid var(--hair);
+    padding-top: 13px; margin-top: 6px; font-size: 11.5px; color: var(--gray);
+  }
+  .tabs a.on { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; }
+
+  /* ---------- feature grid ---------- */
+  .features {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;
+    padding-top: 56px;
+  }
+  .feat { border: 1px solid var(--hair); border-radius: 8px; padding: 16px 16px 12px; }
+  .feat h4 { font-size: 16.5px; line-height: 1.25; }
+  .feat-img { height: 120px; margin: 8px 0; }
+  .feat-img canvas { width: 100%; height: 100%; }
+  .feat-bottom { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--hair); padding-top: 10px; }
+  .seg { display: inline-flex; gap: 2px; font-size: 9px; color: var(--faint); font-family: var(--mono); }
+  .seg b { font-weight: 400; padding: 2px 5px; border-radius: 4px; }
+  .seg b.on { background: #f0f0f6; color: var(--ink); }
+
+  /* ---------- why / torus ---------- */
+  .why { padding-top: 72px; }
+  .why-grid { display: grid; grid-template-columns: 330px 1fr; gap: 30px; }
+  .why-head h2 { font-size: 30px; margin-bottom: 14px; }
+  .why-head .sub { font-size: 12px; color: var(--ink); margin-bottom: 8px; }
+  .why-head p { font-size: 10.5px; color: var(--gray); line-height: 1.6; margin: 0 0 14px; }
+  .why-stage { position: relative; min-height: 460px; }
+  .why-stage canvas { width: 100%; height: 460px; }
+  .why-label {
+    position: absolute; left: 0; bottom: 6px;
+    font-family: var(--serif); font-size: 19px; color: var(--ink);
+  }
+  .why-tasks { position: absolute; right: 0; bottom: 6px; }
+  .why-dotted { position: absolute; left: 0; top: 40%; width: 190px; height: 90px; opacity: .7; }
+  .stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px;
+    border-top: 1px solid var(--hair); margin-top: 34px; padding-top: 26px;
+  }
+  .stats b { font-family: var(--serif); font-weight: 400; font-size: 26px; }
+  .stats p { color: var(--faint); font-size: 10px; line-height: 1.55; margin: 6px 0 0; max-width: 240px; }
+  :focus-visible { outline: 3px solid rgb(91 88 214 / .3); outline-offset: 2px; }
+  @media (max-width: 760px) {
+    .page { padding: 16px 16px 64px; }
+    header.site nav { gap: 12px; }
+    header.site nav a:not(.login) { display: none; }
+    .hero-panel { height: 220px; }
+    .hero-row { align-items: flex-start; flex-direction: column; gap: 14px; }
+    .hero-row h1 { font-size: 34px; }
+    .cards { grid-auto-columns: min(86vw, 350px); }
+    .globe-panel { grid-template-columns: 1fr; padding: 20px 16px; }
+    .globe-mid { grid-row: 1; }
+    .globe-mid canvas { height: 280px; }
+    .tabs { overflow-x: auto; gap: 24px; }
+    .features { grid-template-columns: 1fr; }
+    .why-grid { grid-template-columns: 1fr; }
+    .why-stage, .why-stage canvas { min-height: 360px; height: 360px; }
+    .why-dotted { display: none; }
+    .stats { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="site">
+    <div class="brand"><span class="mark">✳</span> Kort <span class="ai">AI</span></div>
+    <nav>
+      <a>See All Features</a>
+      <a>Launch Now</a>
+      <a class="login">Login</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="hero-panel"><canvas id="fx-hero"></canvas></div>
+    <div class="hero-row">
+      <h1>Real Insights<br/>Financial Reports</h1>
+      <p class="blurb">Get ready to take off! The moment has arrived to kickstart your adventure.</p>
+    </div>
+    <div class="sublinks">
+      <a>Explore All Financial Features</a><span class="sep">●</span>
+      <a>Countries</a><span class="sep">●</span>
+      <a>Hot News</a><span class="sep">●</span>
+      <a>Graphs</a><span class="sep">●</span>
+      <a>Company Overview</a><span class="sep">●</span>
+      <a class="on">Manage Investments</a>
+    </div>
+  </section>
+
+  <section class="cards">
+    <article class="card">
+      <div class="date">▦ Nov 10 &nbsp;·&nbsp; 5:00 PM</div>
+      <div class="card-img"><canvas class="fx-sculpt" data-shapes="torus" data-motion="sway" data-angle="0.2" data-tilt="0.28" data-n="8000" data-scale="1.55"></canvas></div>
+      <div class="card-tasks">
+        <div class="tasks">
+          <span class="task"><i class="bars" data-n="3" data-c="g"></i>3/7 · Task A</span>
+          <span class="task"><i class="bars" data-n="0" data-c="g"></i>0/7 · Task B</span>
+          <span class="task"><i class="bars" data-n="2" data-c="r"></i>2/7 · Task C</span>
+        </div>
+        <button class="ghost">⧉ Copy link</button>
+      </div>
+      <div class="today"><span class="badge up">Today &nbsp;+6.6%</span></div>
+      <h3>London Stock Exchange</h3>
+      <p class="desc">The London Stock Exchange, a historic market established in 1801, is known for its global reach and diverse range of listed companies.</p>
+      <div class="meta">
+        <span>◉ London, United Kingdom</span>
+        <span class="avatars"><i style="background:#c7c7e8"></i><i style="background:#8f8cf0"></i><i style="background:#5b58d6"></i>+25 more are engaged</span>
+      </div>
+      <button class="expand">⤢ Expand</button>
+    </article>
+
+    <article class="card">
+      <div class="date">▦ Nov 15 &nbsp;·&nbsp; 3:30 PM</div>
+      <div class="card-img"><canvas class="fx-sculpt" data-shapes="arrowBlob" data-motion="sway" data-angle="0" data-tilt="0.12" data-n="8000" data-scale="1.55"></canvas></div>
+      <div class="card-tasks">
+        <div class="tasks">
+          <span class="task"><i class="bars" data-n="1" data-c="g"></i>1/7 · Task A</span>
+          <span class="task"><i class="bars" data-n="5" data-c="g"></i>5/7 · Task B</span>
+          <span class="task"><i class="bars" data-n="2" data-c="r"></i>2/7 · Task C</span>
+        </div>
+        <button class="ghost">⧉ Copy link</button>
+      </div>
+      <div class="today"><span class="badge down">Today &nbsp;-16.6%</span></div>
+      <h3>Tokyo Stock Exchange</h3>
+      <p class="desc">The Tokyo Stock Exchange is the largest stock market in Asia and has a major global influence on financial markets.</p>
+      <div class="meta">
+        <span>◉ Tokyo, Japan</span>
+        <span class="avatars"><i style="background:#c7c7e8"></i><i style="background:#8f8cf0"></i><i style="background:#5b58d6"></i>+40 more are observing</span>
+      </div>
+      <button class="expand">⤢ Expand</button>
+    </article>
+
+    <article class="card">
+      <div class="date">▦ Nov 20 &nbsp;·&nbsp; 9:00 AM</div>
+      <div class="card-img"><canvas class="fx-sculpt" data-shapes="ribbon" data-motion="sway" data-angle="-0.2" data-tilt="0.18" data-n="8000" data-scale="1.55"></canvas></div>
+      <div class="card-tasks">
+        <div class="tasks">
+          <span class="task"><i class="bars" data-n="4" data-c="g"></i>4/7 · Task A</span>
+          <span class="task"><i class="bars" data-n="6" data-c="g"></i>6/7 · Task B</span>
+          <span class="task"><i class="bars" data-n="1" data-c="r"></i>1/7 · Task C</span>
+        </div>
+        <button class="ghost">⧉ Copy link</button>
+      </div>
+      <div class="today"><span class="badge up">Today &nbsp;+2.1%</span></div>
+      <h3>New York Stock Exchange</h3>
+      <p class="desc">The New York Stock Exchange is the world's largest equities market, tracing its origins to the Buttonwood Agreement of 1792.</p>
+      <div class="meta">
+        <span>◉ New York, United States</span>
+        <span class="avatars"><i style="background:#c7c7e8"></i><i style="background:#8f8cf0"></i><i style="background:#5b58d6"></i>+60 more are engaged</span>
+      </div>
+      <button class="expand">⤢ Expand</button>
+    </article>
+  </section>
+
+  <section class="globe-sec">
+    <h2>Custom Market Predictions across the globe</h2>
+    <div class="globe-panel">
+      <div class="globe-left">
+        <div class="official">OFFICIAL
+          <small>453 market analysis, wall street Quant finance with pin point accuracy</small>
+        </div>
+      </div>
+      <div class="globe-mid">
+        <canvas id="fx-globe" data-shapes="globe" data-n="14000"></canvas>
+        <div class="tasks">
+          <span class="task"><i class="bars" data-n="3" data-c="g"></i>3/7 · Task A</span>
+          <span class="task"><i class="bars" data-n="5" data-c="g"></i>5/7 · Task B</span>
+          <span class="task"><i class="bars" data-n="2" data-c="r"></i>2/7 · Task C</span>
+        </div>
+      </div>
+      <div class="globe-right">
+        <h5>Unlock Global Market Insights with Tailored Predictions</h5>
+        <p>Navigate the financial markets with confidence using our strategic forecasts. We offer in-depth analysis and predictions to help you make informed decisions. Our forecasts cover a wide range of financial instruments and markets, providing you with a comprehensive view of the investment landscape.</p>
+        <label class="toggle"><input type="checkbox"/><i></i>Reminder</label>
+        <div class="dotted">
+          <span class="avatars"><i style="background:#c7c7e8"></i><i style="background:#8f8cf0"></i><i style="background:#5b58d6"></i>See the complete market analysis</span>
+        </div>
+      </div>
+      <div class="tabs">
+        <a class="on">Diversification</a><a>Options</a><a>Equities</a><a>Cryptocurrency</a><a>Hedgefunds</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <article class="feat">
+      <h4>Self-Evolving Market<br/>Understanding</h4>
+      <div class="feat-img"><canvas class="fx-sculpt" data-shapes="pinwheel" data-n="5000"></canvas></div>
+      <div class="feat-bottom">
+        <button class="expand">⤢ Expand</button>
+        <button class="ghost">⧉ Copy link</button>
+        <span class="seg"><b>1D</b><b class="on">7D</b><b>1M</b></span>
+      </div>
+    </article>
+    <article class="feat">
+      <h4>Strategic Adaptation<br/>&amp; Self-Defense</h4>
+      <div class="feat-img"><canvas class="fx-sculpt" data-shapes="ringStack" data-n="5000"></canvas></div>
+      <div class="feat-bottom">
+        <button class="expand">⤢ Expand</button>
+        <button class="ghost">⧉ Copy link</button>
+        <span class="seg"><b>1D</b><b class="on">7D</b><b>1M</b></span>
+      </div>
+    </article>
+    <article class="feat">
+      <h4>Agent-Based Market<br/>Simulation</h4>
+      <div class="feat-img"><canvas class="fx-sculpt" data-shapes="drum" data-n="5000"></canvas></div>
+      <div class="feat-bottom">
+        <button class="expand">⤢ Expand</button>
+        <button class="ghost">⧉ Copy link</button>
+        <span class="seg"><b>1D</b><b class="on">7D</b><b>1M</b></span>
+      </div>
+    </article>
+    <article class="feat">
+      <h4>Execution &amp;<br/>Optimization Layer</h4>
+      <div class="feat-img"><canvas class="fx-sculpt" data-shapes="helmet" data-n="5000"></canvas></div>
+      <div class="feat-bottom">
+        <button class="expand">⤢ Expand</button>
+        <button class="ghost">⧉ Copy link</button>
+        <span class="seg"><b>1D</b><b class="on">7D</b><b>1M</b></span>
+      </div>
+    </article>
+    <article class="feat">
+      <h4>Explainability &amp; Decision<br/>Transparency</h4>
+      <div class="feat-img"><canvas class="fx-sculpt" data-shapes="bust" data-n="5200"></canvas></div>
+      <div class="feat-bottom">
+        <button class="expand">⤢ Expand</button>
+        <button class="ghost">⧉ Copy link</button>
+        <span class="seg"><b>1D</b><b class="on">7D</b><b>1M</b></span>
+      </div>
+    </article>
+    <article class="feat">
+      <h4>Deep, Multi-Layered<br/>Data Integration</h4>
+      <div class="feat-img"><canvas class="fx-sculpt" data-shapes="dna" data-n="5000"></canvas></div>
+      <div class="feat-bottom">
+        <button class="expand">⤢ Expand</button>
+        <button class="ghost">⧉ Copy link</button>
+        <span class="seg"><b>1D</b><b class="on">7D</b><b>1M</b></span>
+      </div>
+    </article>
+  </section>
+
+  <section class="why">
+    <div class="why-grid">
+      <div class="why-head">
+        <h2>Why This Platform Exists</h2>
+        <div class="sub">The market moves fast. Your information shouldn't be slow.</div>
+        <p>We built this so you never miss a shift, an opportunity, or a warning sign. If it impacts your money, it hits your screen first.</p>
+        <label class="toggle"><input type="checkbox"/><i></i>Reminder</label>
+      </div>
+      <div class="why-stage">
+        <canvas id="fx-torus" data-shapes="clover,apple,planet,sphere,planet" data-motion="orbit" data-n="18000"></canvas>
+        <div class="why-dotted dotted"></div>
+        <div class="why-label" id="scramble">Precision-Driven Analytics</div>
+        <div class="why-tasks tasks">
+          <span class="task"><i class="bars" data-n="3" data-c="g"></i>3/7 · Task A</span>
+          <span class="task"><i class="bars" data-n="5" data-c="g"></i>5/7 · Task B</span>
+          <span class="task"><i class="bars" data-n="2" data-c="r"></i>2/7 · Task C</span>
+        </div>
+      </div>
+    </div>
+    <div class="stats">
+      <div><b>88%</b><p>Users say they make faster decisions with our real-time feeds.</p></div>
+      <div><b>34%</b><p>Average increase in market awareness after 7 days of usage.</p></div>
+      <div><b>78%</b><p>Rely on our alerts for time-sensitive market moves.</p></div>
+    </div>
+  </section>
+
+</div>
+<script src="./fx.js"></script>
+</body>
+</html>
