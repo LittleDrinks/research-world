@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import secrets
 import threading
 from pathlib import Path
 
@@ -22,15 +23,20 @@ def create_app(
     runtime: RuntimeClient | None = None,
     agents: AgentRegistry | None = None,
     pipelines: PipelineRegistry | None = None,
+    projects_root: Path | None = None,
 ) -> FastAPI:
-    runtime, agents, pipelines = app_dependencies(world, runtime, agents, pipelines)
+    settings = load_settings()
+    runtime, agents, pipelines = app_dependencies(
+        world, runtime, agents, pipelines, settings
+    )
     app = FastAPI(title="Research World", version="2")
-    register_routes(app, world, runtime, agents, pipelines)
+    register_routes(
+        app, world, runtime, agents, pipelines, projects_root or settings.projects_root
+    )
     return app
 
 
-def app_dependencies(world, runtime, agents, pipelines):
-    settings = load_settings()
+def app_dependencies(world, runtime, agents, pipelines, settings):
     runtime = runtime or RuntimeClient(settings.runtime_url, world)
     agents = agents or AgentRegistry(settings.agents_root)
     pipelines = pipelines or PipelineRegistry(
@@ -39,9 +45,9 @@ def app_dependencies(world, runtime, agents, pipelines):
     return runtime, agents, pipelines
 
 
-def register_routes(app, world, runtime, agents, pipelines) -> None:
+def register_routes(app, world, runtime, agents, pipelines, projects_root) -> None:
     error_handlers(app)
-    project_routes(app, world, pipelines)
+    project_routes(app, world, pipelines, projects_root)
     graph_routes(app, world)
     thread_routes(app, world, runtime, agents)
     runtime_routes(app, world, runtime, agents)
@@ -60,9 +66,9 @@ def error_handlers(app: FastAPI) -> None:
         return JSONResponse({"detail": str(error)}, status_code=400)
 
 
-def project_routes(app: FastAPI, world: World, pipelines: PipelineRegistry) -> None:
+def project_routes(app, world, pipelines, projects_root) -> None:
     health_route(app)
-    project_collection_routes(app, world)
+    project_collection_routes(app, world, projects_root)
     project_state_routes(app, world, pipelines)
 
 
@@ -72,7 +78,7 @@ def health_route(app: FastAPI) -> None:
         return {"ok": True}
 
 
-def project_collection_routes(app: FastAPI, world: World) -> None:
+def project_collection_routes(app, world, projects_root) -> None:
     @app.get("/api/v1/projects")
     async def projects():
         return project_cards(world)
@@ -81,14 +87,34 @@ def project_collection_routes(app: FastAPI, world: World) -> None:
     async def create_project(request: Request):
         value = await request.json()
         try:
-            return world.create_project(
-                value["name"],
-                Path(value["root"]),
-                value["question"],
-                value.get("assembly"),
-            )
+            _validate_project_request(value)
+            workspace = _allocate_workspace(projects_root)
+            return _create_project(world, workspace, value)
         except ValueError as error:
             raise HTTPException(400, str(error)) from error
+
+
+def _validate_project_request(value: dict) -> None:
+    if set(value) != {"name", "question"}:
+        raise ValueError("project requires only name and question")
+    if not all(isinstance(value[key], str) and value[key].strip() for key in value):
+        raise ValueError("project name and question cannot be empty")
+
+
+def _allocate_workspace(projects_root: Path) -> Path:
+    root = Path(projects_root).resolve()
+    root.mkdir(parents=True, exist_ok=True)
+    workspace = root / secrets.token_hex(12)
+    workspace.mkdir(mode=0o700)
+    return workspace
+
+
+def _create_project(world, workspace, value):
+    try:
+        return world.create_project(value["name"], workspace, value["question"])
+    except Exception:
+        workspace.rmdir()
+        raise
 
 
 def project_state_routes(app, world, pipelines) -> None:
