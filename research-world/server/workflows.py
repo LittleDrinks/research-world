@@ -145,29 +145,13 @@ class PipelineEngine:
         self._event(
             run_id, "control", event, {"pipeline_id": run["pipeline_id"]}
         )
-        return self._drive(run_id)
-
-    def confirm(self, run_id: str) -> dict:
-        run = self.world.run(run_id)
-        gate = _frame(run).get("gate")
-        if run["status"] != "waiting_human" or not gate:
-            raise ValueError("run is not waiting for confirmation")
-        if gate["kind"] != "confirm_step":
-            raise ValueError("run is not waiting for step confirmation")
-        return self._drive(run_id, {"kind": "confirm_step"})
-
-    def resolve(self, run_id: str, decision: str, reason: str) -> dict:
-        run = self.world.run(run_id)
-        gate = _frame(run).get("gate")
-        if run["status"] != "waiting_human" or not gate:
-            raise ValueError("run has no human gate")
-        if gate["kind"] == "confirm_step":
-            if decision != "reject":
-                raise ValueError("execution gate only resolves rejection")
-            return self._reject_plan(run, reason)
-        if gate["kind"] != "review" or decision not in {"approve", "reject"}:
-            raise ValueError("run has no matching review decision")
-        signal = {"kind": "review", "decision": decision, "reason": reason, **gate}
+        signal = run["payload"].get("_signal")
+        if (
+            signal
+            and signal.get("decision") == "reject"
+            and signal["kind"] == "confirm_step"
+        ):
+            return self._reject_plan(run, signal["reason"])
         return self._drive(run_id, signal)
 
     def _reject_plan(self, run: dict, reason: str) -> dict:
@@ -672,10 +656,8 @@ def _frame(run: dict) -> dict:
 
 
 def _stage_payload(payload, cursor, values, gate) -> dict:
-    result = {
-        **payload,
-        "_pipeline": {"cursor": cursor, "values": values, "gate": gate},
-    }
+    result = {key: value for key, value in payload.items() if key != "_signal"}
+    result["_pipeline"] = {"cursor": cursor, "values": values, "gate": gate}
     if values.get("experiment"):
         result["experiment_id"] = values["experiment"]
     if gate and gate.get("node_id"):

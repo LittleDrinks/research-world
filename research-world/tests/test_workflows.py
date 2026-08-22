@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from server.app import _run_action, run_view
+from server.app import run_view
 from server.workflows import AgentFacade, PipelineEngine, fail_run, mmr
 
 
@@ -169,6 +169,25 @@ def engine(world, agents, embedding=None, runner=None):
         embedding or FakeEmbedding({}),
         runner or FakeRunner(),
         FakePipelines(),
+    )
+
+
+def worker_resume(world, service, run_id, signal):
+    queued = world.queue_run_signal(run_id, signal)
+    assert queued["status"] == "queued"
+    assert world.claim_run()["id"] == run_id
+    return service.run(run_id)
+
+
+def confirm_step(world, service, run_id):
+    return worker_resume(world, service, run_id, {"kind": "confirm_step"})
+
+
+def resolve_gate(world, service, run_id, decision, reason):
+    run = world.run(run_id)
+    gate = run["payload"]["_pipeline"]["gate"]
+    return worker_resume(
+        world, service, run_id, {**gate, "decision": decision, "reason": reason}
     )
 
 
@@ -345,10 +364,29 @@ def test_manual_research_confirms_start_and_each_step(world, project):
     assert planned["status"] == "waiting_human"
     assert planned["payload"]["experiment_id"].startswith("node:")
     assert runner.calls == []
-    completed = service.confirm(run["id"])
+    queued = world.queue_run_signal(run["id"], {"kind": "confirm_step"})
+    assert queued["payload"]["_signal"] == {"kind": "confirm_step"}
+    with pytest.raises(ValueError, match="no human gate"):
+        world.queue_run_signal(run["id"], {"kind": "confirm_step"})
+    assert world.claim_run()["id"] == run["id"]
+    completed = service.run(run["id"])
     assert completed["status"] == "completed"
+    assert "_signal" not in completed["payload"]
     assert len(runner.calls) == 1
     assert_research_result(world, project, direction, agents)
+
+
+def test_execution_gate_rejects_approval_signal(world, project):
+    direction = admitted_direction(world, project)
+    run = world.create_run(project["id"], direction["id"], research_pipeline())
+    service = engine(world, FakeAgents(), runner=FakeRunner())
+    service.run(run["id"])
+
+    with pytest.raises(ValueError, match="only accepts rejection"):
+        world.queue_run_signal(
+            run["id"],
+            {"kind": "confirm_step", "decision": "approve", "reason": "错误决策"},
+        )
 
 
 def test_manual_research_confirms_every_planned_step(world, project):
@@ -361,9 +399,9 @@ def test_manual_research_confirms_every_planned_step(world, project):
     runner, agents = FakeRunner(), FakeAgents(steps=steps)
     service = engine(world, agents, runner=runner)
     assert service.run(run["id"])["status"] == "waiting_human"
-    assert service.confirm(run["id"])["status"] == "waiting_human"
+    assert confirm_step(world, service, run["id"])["status"] == "waiting_human"
     assert len(runner.calls) == 1
-    assert service.confirm(run["id"])["status"] == "completed"
+    assert confirm_step(world, service, run["id"])["status"] == "completed"
     assert len(runner.calls) == 2
 
 
@@ -374,7 +412,9 @@ def test_manual_research_can_reject_plan_without_refuting_direction(world, proje
     planned = service.run(run["id"])
     experiment_id = planned["payload"]["experiment_id"]
 
-    rejected = service.resolve(run["id"], "reject", "步骤之间错误共享文件")
+    rejected = resolve_gate(
+        world, service, run["id"], "reject", "步骤之间错误共享文件"
+    )
 
     assert rejected["status"] == "paused"
     assert rejected["stage"] == "execute"
@@ -396,7 +436,7 @@ def test_replan_adds_evidence_without_rewriting_terminal_direction(world, projec
     )
     service = engine(world, FakeAgents(), runner=FakeRunner())
     service.run(run["id"])
-    result = service.confirm(run["id"])
+    result = confirm_step(world, service, run["id"])
     assert result["status"] == "completed"
     assert world.node(direction["id"])["direction_status"] == "refuted"
     assert any(edge["polarity"] == "supports" for edge in world.edges(project["id"]))
@@ -433,7 +473,7 @@ def test_rejected_experiment_keeps_double_review(world, project):
     agents = FakeAgents(decisions=["reject", "reject", "approve", "approve"])
     service = engine(world, agents, runner=FakeRunner())
     service.run(run["id"])
-    service.confirm(run["id"])
+    confirm_step(world, service, run["id"])
     experiment = next(
         node for node in world.nodes(project["id"]) if node["kind"] == "experiment"
     )
@@ -448,10 +488,10 @@ def test_double_review_conflict_escalates_to_human(world, project):
         world, FakeAgents(decisions=["approve", "reject"]), runner=FakeRunner()
     )
     service.run(run["id"])
-    result = service.confirm(run["id"])
+    result = confirm_step(world, service, run["id"])
     assert result["status"] == "waiting_human"
     assert result["payload"]["conflict_node"].startswith("node:")
-    assert service.resolve(run["id"], "approve", "人工批准")["status"] == "completed"
+    assert resolve_gate(world, service, run["id"], "approve", "人工批准")["status"] == "completed"
 
 
 def test_agent_session_event_names_owning_stage(world, project):
@@ -525,19 +565,6 @@ def test_failed_run_preserves_payload_and_releases_nodes(world, project):
     assert world.node(direction["id"])["working"] == 0
     assert world.steps(run["id"])[0]["status"] == "failed"
     assert world.run_events(run["id"])[-1]["type"] == "run_failed"
-
-
-def test_background_run_failure_becomes_terminal(world, project):
-    root = world.nodes(project["id"])[0]
-    run = world.create_run(project["id"], root["id"], brainstorm_pipeline())
-    world.set_working(root["id"], True)
-
-    def fail():
-        raise RuntimeError("review failed")
-
-    _run_action(world, run["id"], fail, ())
-    assert world.run(run["id"])["status"] == "failed"
-    assert world.node(root["id"])["working"] == 0
 
 
 def test_direction_review_resumes_from_persisted_node(world, project):
@@ -617,5 +644,5 @@ def test_running_container_step_is_resumable(world, project):
     step = world.steps(run["id"])[0]
     world.update_step(step["id"], "running")
 
-    assert service.confirm(run["id"])["status"] == "completed"
+    assert confirm_step(world, service, run["id"])["status"] == "completed"
     assert len(runner.calls) == 1

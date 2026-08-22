@@ -428,6 +428,31 @@ class World:
             )
         return self.run(run_id)
 
+    def queue_run_signal(self, run_id: str, signal: dict) -> dict:
+        run = self.run(run_id)
+        gate = run["payload"].get("_pipeline", {}).get("gate")
+        if run["status"] != "waiting_human" or not gate:
+            raise ValueError("run has no human gate")
+        _validate_run_signal(gate, signal)
+        payload = {**run["payload"], "_signal": signal}
+        return self._queue_run_signal(run_id, payload, signal)
+
+    def _queue_run_signal(self, run_id: str, payload: dict, signal: dict) -> dict:
+        timestamp = now()
+        with self.db.connect() as connection:
+            cursor = connection.execute(
+                "UPDATE pipeline_runs SET status='queued',payload=?,updated_at=? "
+                "WHERE id=? AND status='waiting_human'",
+                (json.dumps(payload), timestamp, run_id),
+            )
+            if cursor.rowcount != 1:
+                raise ValueError("human gate was already resolved")
+            connection.execute(
+                "INSERT INTO pipeline_events(run_id,actor,type,payload,time) VALUES(?,?,?,?,?)",
+                (run_id, "human", "gate_resolved", json.dumps(signal), timestamp),
+            )
+        return self.run(run_id)
+
     def add_step(
         self, run_id: str, ordinal: int, stage: str, payload: dict, confirm: bool
     ) -> dict:
@@ -584,6 +609,18 @@ def step_values(step_id, run_id, ordinal, stage, payload, confirm) -> tuple:
         None,
         None,
     )
+
+
+def _validate_run_signal(gate: dict, signal: dict) -> None:
+    if signal.get("kind") != gate.get("kind"):
+        raise ValueError("signal does not match human gate")
+    decision = signal.get("decision")
+    if gate["kind"] == "confirm_step" and decision not in {None, "reject"}:
+        raise ValueError("execution gate only accepts rejection")
+    if gate["kind"] == "review" and decision not in {"approve", "reject"}:
+        raise ValueError("review gate requires approve or reject")
+    if decision and not str(signal.get("reason", "")).strip():
+        raise ValueError("human gate decision requires a reason")
 
 
 def _resolve_node(connection, node, approved, reason) -> None:

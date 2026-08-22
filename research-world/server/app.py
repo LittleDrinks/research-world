@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import secrets
-import threading
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -14,7 +13,6 @@ from .library import list_packages
 from .pipelines import PipelineRegistry
 from .runtime_client import RuntimeClient
 from .threads import ThreadManager
-from .workflows import default_engine, fail_run
 from .world import World, node_text
 
 
@@ -286,25 +284,15 @@ def run_collection_routes(app, world, pipelines) -> None:
 def run_control_routes(app: FastAPI, world: World) -> None:
     @app.post("/api/v1/runs/{run_id}/confirm", status_code=202)
     async def confirm(run_id: str):
-        run = world.run(run_id)
-        run_async(
-            world, run_id, default_engine(world, run["project_id"]).confirm, run_id
-        )
-        return run
+        return world.queue_run_signal(run_id, {"kind": "confirm_step"})
 
     @app.post("/api/v1/runs/{run_id}/resolve", status_code=202)
     async def resolve(run_id: str, request: Request):
         value = await request.json()
         run = world.run(run_id)
-        run_async(
-            world,
-            run_id,
-            default_engine(world, run["project_id"]).resolve,
-            run_id,
-            value["decision"],
-            value["reason"],
-        )
-        return run
+        gate = run["payload"].get("_pipeline", {}).get("gate") or {}
+        signal = {**gate, "decision": value["decision"], "reason": value["reason"]}
+        return world.queue_run_signal(run_id, signal)
 
 
 def tool_routes(app: FastAPI, world: World) -> None:
@@ -436,19 +424,6 @@ def slot_view(runs: list[dict], count: int = 2) -> list[dict]:
         {"index": index + 1, "run": active[index] if index < len(active) else None}
         for index in range(count)
     ]
-
-
-def run_async(world, run_id, function, *args) -> None:
-    threading.Thread(
-        target=_run_action, args=(world, run_id, function, args), daemon=True
-    ).start()
-
-
-def _run_action(world, run_id, function, args) -> None:
-    try:
-        function(*args)
-    except Exception as error:  # noqa: BLE001 - background failures are durable.
-        fail_run(world, run_id, error)
 
 
 async def relay(events):
