@@ -405,7 +405,22 @@ def test_two_rejections_pause_lineage(world, project):
     )
     result = service.run(run["id"])
     assert result["status"] == "paused"
+    assert result["stage"] == "review-reflection"
     assert "连续 2 次" in result["payload"]["reason"]
+
+
+def test_rejected_experiment_keeps_double_review(world, project):
+    direction = admitted_direction(world, project)
+    run = world.create_run(project["id"], direction["id"], research_pipeline())
+    agents = FakeAgents(decisions=["reject", "reject", "approve", "approve"])
+    service = engine(world, agents, runner=FakeRunner())
+    service.run(run["id"])
+    service.confirm(run["id"])
+    experiment = next(
+        node for node in world.nodes(project["id"]) if node["kind"] == "experiment"
+    )
+    assert experiment["life_state"] == "ghost"
+    assert experiment["rebuttal"]["reviewer_a"]["rebuttal"] == "A"
 
 
 def test_double_review_conflict_escalates_to_human(world, project):

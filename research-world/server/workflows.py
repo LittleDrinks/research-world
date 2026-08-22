@@ -461,7 +461,8 @@ class PipelineEngine:
             self.world.admit_node(node["id"])
             self._queue_auto_research(run, node, lineage)
         else:
-            self.world.ghost_node(node["id"], reason, node.get("rebuttal"))
+            current = self.world.node(node["id"])
+            self.world.ghost_node(node["id"], reason, current.get("rebuttal"))
         self._pause_lineage(run, lineage, "同一谱系连续 2 次 review 驳回，已升级人工。")
 
     def _queue_auto_research(self, run, node, lineage) -> None:
@@ -478,7 +479,8 @@ class PipelineEngine:
             self.world.add_edge(experiment["id"], direction["id"], "supports")
         else:
             reason = "机械证据审计或双审未通过"
-            self.world.ghost_node(experiment["id"], reason, experiment.get("rebuttal"))
+            current = self.world.node(experiment["id"])
+            self.world.ghost_node(experiment["id"], reason, current.get("rebuttal"))
             self.world.add_edge(experiment["id"], direction["id"], "refutes")
         self._resolve_direction(direction, approved)
         lineage = self.world.register_review(direction["lineage_id"], approved)
@@ -487,7 +489,7 @@ class PipelineEngine:
     def _pause_lineage(self, run, lineage, reason) -> None:
         if lineage["auto_paused"]:
             payload = {**run["payload"], "reason": reason}
-            self.world.update_run(run["id"], "review", "paused", payload)
+            self.world.update_run(run["id"], run["stage"], "paused", payload)
 
     def _resolve_direction(self, direction: dict, approved: bool) -> None:
         if direction["direction_status"] == "proposed":
