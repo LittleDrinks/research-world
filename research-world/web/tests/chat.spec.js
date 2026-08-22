@@ -1,181 +1,232 @@
 import { expect, test } from "@playwright/test";
+import { bootstrap, mockBase, node, run, sse, thread, threadDetail } from "./fixtures";
 
 
-function node(id, kind, state = {}) {
-  return { id, project_id: "project:test", parent_id: null, lineage_id: `lineage:${id}`, kind, payload: { text: `${kind} 节点` },
-    life_state: "admitted", direction_status: kind === "direction" ? "proposed" : null, working: 0, rejection_reason: null, rebuttal: null,
-    created_at: "2026-08-16T00:00:00Z", updated_at: "2026-08-16T00:00:00Z", ...state };
+async function mockChat(page, detail = threadDetail()) {
+  await mockBase(page);
+  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill({ json: detail }));
+  await page.route(/\/api\/v1\/projects\/project%3Atest\/threads/, (route) => route.fulfill({ json: [thread()] }));
 }
 
 
-function fixture(nodes = [node("node:q", "question"), node("node:d", "direction")]) {
-  return { projects: [{ id: "project:test", title: "测试项目", question: "如何验证？", auto: 0, created_at: "2026-08-16T00:00:00Z" }], active_project_id: "project:test",
-    nodes, edges: [], workflows: [], slots: [{ index: 1, workflow: null }, { index: 2, workflow: null }] };
-}
-
-
-function sse(frames) {
-  return `${frames.map(([event, data]) => `event: ${event}\ndata: ${JSON.stringify(data)}`).join("\n\n")}\n\n`;
-}
-
-
-function replySse(deltas, saved) {
-  const frames = [["user", { id: 10, role: "user", content: "（输入）" }],
-    ...deltas.map((delta) => ["delta", delta]), ["done", saved]];
-  return { headers: { "content-type": "text/event-stream" }, body: sse(frames) };
-}
-
-
-async function mockChat(page, body = fixture()) {
-  await page.route(/\/api\/v1\/bootstrap/, (route) => route.fulfill({ json: body }));
-  await page.route(/\/api\/v1\/projects\/project%3Atest\/messages/, (route) => {
-    if (route.request().method() === "GET") return route.fulfill({ json: [{ id: 1, role: "assistant", content: "已带入问题上下文" }] });
-    return route.fulfill(replySse(["先生成并筛选多个研究方向。"], { id: 2, role: "assistant", content: "先生成并筛选多个研究方向。", actions: ["brainstorm"] }));
-  });
-}
-
-
-test("sends a message with the selected node context", async ({ page }) => {
+test("renders project thread messages and sends via the prompts stream", async ({ page }) => {
   let request;
   await mockChat(page);
-  await page.route(/\/api\/v1\/projects\/project%3Atest\/messages/, (route) => {
-    if (route.request().method() === "GET") return route.fulfill({ json: [{ id: 1, role: "assistant", content: "已带入问题上下文" }] });
+  await page.route(/\/api\/v1\/threads\/thread%3At1\/prompts/, (route) => {
     request = route.request().postDataJSON();
-    return route.fulfill(replySse(["先生成并筛选", "多个研究方向。"], { id: 2, role: "assistant", content: "先生成并筛选多个研究方向。" }));
+    return route.fulfill(sse([["delta", { text: "先生成并筛选" }], ["delta", { text: "多个研究方向。" }], ["done", { stop_reason: "end_turn" }]]));
   });
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/chat");
+  await page.goto("/chat/thread%3At1");
   await expect(page.getByText("已带入问题上下文")).toBeVisible();
+  const composer = await page.locator(".composer-wrap").boundingBox();
+  expect(composer.y + composer.height).toBe(await page.evaluate(() => innerHeight));
   await page.screenshot({ path: "test-results/chat-desktop.png" });
   await page.getByLabel("消息").fill("下一步做什么？");
   await page.getByRole("button", { name: "发送" }).click();
   await expect(page.getByText("先生成并筛选多个研究方向。")).toBeVisible();
-  expect(request).toEqual({ node_id: "node:q", message: "下一步做什么？" });
+  expect(request).toEqual({ message: "下一步做什么？" });
 });
 
 
-test("streams reply deltas and renders the saved message as markdown", async ({ page }) => {
-  await mockChat(page);
-  await page.route(/\/api\/v1\/projects\/project%3Atest\/messages/, (route) => {
-    if (route.request().method() === "GET") return route.fulfill({ json: [] });
-    return route.fulfill(replySse(["先看文献，", "再做**对照**实验。"],
-      { id: 2, role: "assistant", content: "先看文献，再做**对照**实验。\n\n已按你的要求创建工作流。", workflow: null }));
-  });
-  await page.goto("/chat");
-  await page.getByLabel("消息").fill("怎么开始？");
-  await page.getByRole("button", { name: "发送" }).click();
-  const reply = page.locator(".manager-message.assistant").last();
-  await expect(reply).toContainText("先看文献，再做对照实验。");
-  await expect(reply.locator("strong")).toHaveText("对照");
-  await expect(reply).toContainText("已按你的要求创建工作流。");
-});
-
-
-test("restores the draft when the reply stream reports an error", async ({ page }) => {
-  await mockChat(page);
-  await page.route(/\/api\/v1\/projects\/project%3Atest\/messages/, (route) => {
-    if (route.request().method() === "GET") return route.fulfill({ json: [] });
-    return route.fulfill({ headers: { "content-type": "text/event-stream" },
-      body: sse([["user", { id: 10, role: "user", content: "分析一下" }], ["delta", "部分"], ["error", { detail: "模型超时" }]]) });
-  });
-  await page.goto("/chat");
-  await page.getByLabel("消息").fill("分析一下");
-  await page.getByRole("button", { name: "发送" }).click();
-  await expect(page.getByRole("alert")).toContainText("模型超时");
-  await expect(page.locator(".manager-message")).toHaveCount(0);
-  await expect(page.getByLabel("消息")).toHaveValue("分析一下");
-});
-
-
-test("starts a new conversation for the current node", async ({ page }) => {
-  let cleared = false;
-  await mockChat(page);
-  await page.route(/\/api\/v1\/projects\/project%3Atest\/messages/, (route) => {
-    if (route.request().method() === "DELETE") { cleared = true; return route.fulfill({ status: 204 }); }
-    return route.fulfill({ json: [{ id: 1, role: "assistant", content: "旧草稿" }] });
-  });
-  await page.goto("/chat");
-  await expect(page.getByText("旧草稿")).toBeVisible();
-  await page.getByRole("button", { name: "新建对话" }).click();
-  await expect.poll(() => cleared).toBe(true);
-  await expect(page.getByText("当前节点尚无对话草稿")).toBeVisible();
-});
-
-
-test("refreshes workflow state after an instruction starts work", async ({ page }) => {
-  let bootstraps = 0;
-  await page.route(/\/api\/v1\/bootstrap/, (route) => { bootstraps += 1; return route.fulfill({ json: fixture() }); });
-  await page.route(/\/api\/v1\/projects\/project%3Atest\/messages/, (route) => {
-    if (route.request().method() === "GET") return route.fulfill({ json: [] });
-    return route.fulfill(replySse(["已创建工作流"], { id: 2, role: "assistant", content: "已创建工作流", workflow: { id: "workflow:new" } }));
-  });
-  await page.goto("/chat");
-  await page.getByLabel("消息").fill("生成三个方向，只保留一个");
-  await page.getByRole("button", { name: "发送" }).click();
-  await expect(page.getByText("已创建工作流")).toBeVisible();
-  await expect.poll(() => bootstraps).toBeGreaterThan(1);
-});
-
-
-test("maps reflection to a brainstorm workflow", async ({ page }) => {
-  let request;
-  const direction = node("node:d", "direction", { direction_status: "supported" });
-  await mockChat(page, fixture([direction]));
-  await page.route(/\/api\/v1\/projects\/project%3Atest\/workflows/, (route) => {
-    request = route.request().postDataJSON();
-    return route.fulfill({ status: 201, json: { id: "workflow:new", ...request } });
-  });
-  await page.goto("/chat");
-  await page.getByRole("button", { name: "反思证据" }).click();
-  await expect.poll(() => request?.kind).toBe("brainstorm");
-  expect(request.node_id).toBe("node:d");
-});
-
-
-test("materializes the draft as a direction and clears the thread", async ({ page }) => {
-  let request;
-  await mockChat(page);
-  await page.route(/\/api\/v1\/projects\/project%3Atest\/drafts\/materialize/, (route) => {
-    request = route.request().postDataJSON();
-    return route.fulfill({ status: 201, json: node("node:new", "direction") });
-  });
-  await page.goto("/chat");
-  await page.getByLabel("消息").fill("检验轨道共振的长期稳定性");
-  await page.getByRole("button", { name: "沉淀方向" }).click();
-  await expect.poll(() => request?.kind).toBe("direction");
-  expect(request.payload.text).toBe("检验轨道共振的长期稳定性");
-  await expect(page.getByText("当前节点尚无对话草稿")).toBeVisible();
-});
-
-
-test("keeps agent work in activity instead of the human conversation", async ({ page }) => {
-  const body = fixture();
-  body.workflows = [{ id: "workflow:active", node_id: "node:q", status: "running",
-    events: [{ type: "assistant", actor: "reviewer-a", payload: { rebuttal: "只应出现在活动中的工作过程" } }] }];
-  await mockChat(page, body);
-  await page.route(/\/api\/v1\/projects\/project%3Atest\/messages/, (route) => route.fulfill({ json: [] }));
-  await page.goto("/chat");
-  await expect(page.getByText("当前节点尚无对话草稿")).toBeVisible();
-  await expect(page.getByText("只应出现在活动中的工作过程")).toHaveCount(0);
-  await expect(page.locator(".manager-message")).toHaveCount(0);
-});
-
-
-test("keeps the manager chat IME-safe and readable on mobile", async ({ page }) => {
+test("keeps the composer IME-safe", async ({ page }) => {
   let sends = 0;
-  await page.setViewportSize({ width: 390, height: 844 });
   await mockChat(page);
-  await page.route(/\/api\/v1\/projects\/project%3Atest\/messages/, (route) => {
-    if (route.request().method() === "POST") { sends += 1; return route.fulfill(replySse(["继续"], { id: 2, role: "assistant", content: "继续" })); }
-    return route.fulfill({ json: [] });
-  });
-  await page.goto("/chat");
-  await expect(page.getByRole("button", { name: "生成方向" })).toBeVisible();
-  await page.screenshot({ path: "test-results/chat-mobile.png", fullPage: true });
+  await page.route(/\/api\/v1\/threads\/thread%3At1\/prompts/, (route) => { sends += 1; return route.fulfill(sse([["done", { stop_reason: "end_turn" }]])); });
+  await page.goto("/chat/thread%3At1");
   const input = page.getByLabel("消息");
   await input.fill("分析当前节点");
   await input.dispatchEvent("keydown", { key: "Enter", isComposing: true });
   await page.waitForTimeout(150);
   expect(sends).toBe(0);
+  await input.dispatchEvent("keydown", { key: "Enter", shiftKey: true });
+  expect(sends).toBe(0);
+  await input.press("Enter");
+  await expect.poll(() => sends).toBe(1);
+});
+
+
+test("searches real nodes on @ and pins the selected node", async ({ page }) => {
+  let pinned;
+  await mockChat(page);
+  await page.route(/\/api\/v1\/tools\/graph-query/, (route) =>
+    route.fulfill({ json: [{ id: "node:d", kind: "direction", life_state: "admitted", summary: "direction 节点 node:d" }] }));
+  await page.route(/\/api\/v1\/threads\/thread%3At1\/nodes$/, (route) => {
+    pinned = route.request().postDataJSON();
+    return route.fulfill({ json: { ...thread(), nodes: [node("node:q", "question"), node("node:d", "direction")] } });
+  });
+  await page.goto("/chat/thread%3At1");
+  await page.getByLabel("消息").fill("参考 @d");
+  await page.locator(".mention-menu button").first().click();
+  await expect(page.getByLabel("消息")).toHaveValue("参考 @node:d ");
+  expect(pinned).toEqual({ node_id: "node:d" });
+  await expect(page.locator(".pin-chip")).toHaveCount(2);
+});
+
+
+test("removes a pinned node through the unpin API", async ({ page }) => {
+  let removed = "";
+  await mockChat(page);
+  await page.route(/\/api\/v1\/threads\/thread%3At1\/nodes\/node%3Aq$/, (route) => {
+    removed = route.request().method();
+    return route.fulfill({ json: { ...thread(), nodes: [] } });
+  });
+  await page.goto("/chat/thread%3At1");
+  await expect(page.locator(".pin-chip")).toHaveCount(1);
+  await page.getByRole("button", { name: /移除/ }).click();
+  expect(removed).toBe("DELETE");
+  await expect(page.locator(".pin-chip")).toHaveCount(0);
+});
+
+
+test("renders run cards linked by thread_id and navigates to the trace", async ({ page }) => {
+  await mockChat(page);
+  await page.goto("/chat/thread%3At1");
+  const card = page.locator(".run-card");
+  await expect(card).toHaveCount(1);
+  await expect(card).toContainText("生成研究方向");
+  await card.locator(".run-card-head").click();
+  await page.locator(".session-row").click();
+  await expect(page).toHaveURL(/\/traces\/run%3Ar1\?session=s-abc&from=thread%3At1/);
+  await expect(page.getByRole("button", { name: "返回对话" })).toBeVisible();
+  await page.getByRole("button", { name: "返回对话" }).click();
+  await expect(page).toHaveURL(/\/chat\/thread%3At1$/);
+});
+
+
+test("launches a pipeline explicitly with the thread id in the payload", async ({ page }) => {
+  let request;
+  await mockChat(page);
+  await page.route(/\/api\/v1\/projects\/project%3Atest\/runs/, (route) => {
+    request = route.request().postDataJSON();
+    return route.fulfill({ status: 201, json: run() });
+  });
+  await page.goto("/chat/thread%3At1");
+  await page.getByLabel("选择流程").selectOption("research");
+  await page.getByRole("button", { name: "启动流程" }).click();
+  await expect.poll(() => request).toBeTruthy();
+  expect(request.pipeline_id).toBe("research");
+  expect(request.node_id).toBe("node:q");
+  expect(request.payload.thread_id).toBe("thread:t1");
+});
+
+
+test("shows an empty state with a create action when no thread exists", async ({ page }) => {
+  await mockBase(page, bootstrap({ threads: [], runs: [] }));
+  await page.route(/\/api\/v1\/projects\/project%3Atest\/threads/, (route) =>
+    route.request().method() === "POST" ? route.fulfill({ status: 201, json: threadDetail() }) : route.fulfill({ json: [] }));
+  await page.goto("/chat");
+  await expect(page.getByText("项目还没有对话")).toBeVisible();
+  await page.locator(".empty-state").getByRole("button", { name: "新建对话" }).click();
+  await expect(page).toHaveURL(/\/chat\/thread%3At1/);
+});
+
+
+test("restores the draft on stream error and stays readable on mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockChat(page);
+  await page.route(/\/api\/v1\/threads\/thread%3At1\/prompts/, (route) =>
+    route.fulfill(sse([["delta", { text: "部分" }], ["error", { detail: "模型超时" }]])));
+  await page.goto("/chat/thread%3At1");
+  await page.getByLabel("消息").fill("分析一下");
+  await page.getByRole("button", { name: "发送" }).click();
+  await expect(page.getByRole("alert")).toContainText("模型超时");
+  await expect(page.getByLabel("消息")).toHaveValue("分析一下");
+  await page.screenshot({ path: "test-results/chat-mobile.png", fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  const toast = await page.getByRole("alert").boundingBox();
+  const mobileBar = await page.locator(".mobile-bar").boundingBox();
+  const composer = await page.locator(".composer-wrap").boundingBox();
+  expect(toast.y + toast.height).toBeLessThanOrEqual(mobileBar.y);
+  expect(mobileBar.y + mobileBar.height).toBeLessThanOrEqual(composer.y);
+  expect(toast.y + toast.height).toBeLessThanOrEqual(composer.y);
+});
+
+
+test("only lists runs bound to the thread id", async ({ page }) => {
+  const foreign = run({ id: "run:r2", node_id: "node:q", payload: {} });
+  await mockBase(page, bootstrap({ runs: [run(), foreign] }));
+  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill({ json: threadDetail() }));
+  await page.goto("/chat/thread%3At1");
+  await expect(page.locator(".run-card")).toHaveCount(1);
+  await expect(page.locator(".run-card")).not.toContainText("run:r2");
+});
+
+
+test("always offers a trace link on run cards, even without sessions", async ({ page }) => {
+  const quiet = run({ id: "run:r9", events: [], steps: [], payload: { thread_id: "thread:t1" } });
+  await mockBase(page, bootstrap({ runs: [quiet] }));
+  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill({ json: threadDetail() }));
+  await page.goto("/chat/thread%3At1");
+  const card = page.locator(".run-card");
+  await expect(card).toHaveCount(1);
+  await expect(card.locator(".run-card-head")).toHaveAttribute("aria-expanded", "false");
+  await card.getByRole("button", { name: "查看轨迹" }).click();
+  await expect(page).toHaveURL(/\/traces\/run%3Ar9\?from=thread%3At1/);
+  await expect(page.getByRole("button", { name: "返回对话" })).toBeVisible();
+});
+
+
+test("waits for the pin to persist before allowing send", async ({ page }) => {
+  let releasePin;
+  const gate = new Promise((resolve) => { releasePin = resolve; });
+  let message;
+  await mockChat(page);
+  await page.route(/\/api\/v1\/tools\/graph-query/, (route) =>
+    route.fulfill({ json: [{ id: "node:d", kind: "direction", life_state: "admitted", summary: "direction 节点 node:d" }] }));
+  await page.route(/\/api\/v1\/threads\/thread%3At1\/nodes$/, async (route) => {
+    await gate;
+    return route.fulfill({ json: { ...thread(), nodes: [node("node:q", "question"), node("node:d", "direction")] } });
+  });
+  await page.route(/\/api\/v1\/threads\/thread%3At1\/prompts/, (route) => {
+    message = route.request().postDataJSON();
+    return route.fulfill(sse([["done", { stop_reason: "end_turn" }]]));
+  });
+  await page.goto("/chat/thread%3At1");
+  await page.getByLabel("消息").fill("参考 @d");
+  await page.locator(".mention-menu button").first().click();
+  await expect(page.getByRole("button", { name: "发送" })).toBeDisabled();
+  await page.getByLabel("消息").press("Enter");
+  await page.waitForTimeout(150);
+  expect(message).toBeUndefined();
+  releasePin();
+  await expect(page.locator(".pin-chip")).toHaveCount(2);
+  await expect(page.getByRole("button", { name: "发送" })).toBeEnabled();
+  await page.getByRole("button", { name: "发送" }).click();
+  await expect.poll(() => message).toEqual({ message: "参考 @node:d" });
+});
+
+
+test("shows an error state with retry when the thread fails to load", async ({ page }) => {
+  let fail = true;
+  await mockBase(page);
+  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) =>
+    fail ? route.fulfill({ status: 404, json: { detail: "not found" } }) : route.fulfill({ json: threadDetail() }));
+  await page.route(/\/api\/v1\/projects\/project%3Atest\/threads/, (route) => route.fulfill({ json: [thread()] }));
+  await page.goto("/chat/thread%3At1");
+  await expect(page.getByText("Thread 载入失败")).toBeVisible();
+  fail = false;
+  await page.getByRole("button", { name: "重试" }).click();
+  await expect(page.getByText("已带入问题上下文")).toBeVisible();
+});
+
+
+test("does not insert the mention when the pin fails", async ({ page }) => {
+  let message;
+  await mockChat(page);
+  await page.route(/\/api\/v1\/tools\/graph-query/, (route) =>
+    route.fulfill({ json: [{ id: "node:d", kind: "direction", life_state: "admitted", summary: "direction 节点 node:d" }] }));
+  await page.route(/\/api\/v1\/threads\/thread%3At1\/nodes$/, (route) => route.fulfill({ status: 409, json: { detail: "节点已锁定" } }));
+  await page.route(/\/api\/v1\/threads\/thread%3At1\/prompts/, (route) => {
+    message = route.request().postDataJSON();
+    return route.fulfill(sse([["done", { stop_reason: "end_turn" }]]));
+  });
+  await page.goto("/chat/thread%3At1");
+  await page.getByLabel("消息").fill("参考 @d");
+  await page.locator(".mention-menu button").first().click();
+  await expect(page.getByRole("alert")).toContainText("节点已锁定");
+  await expect(page.getByLabel("消息")).toHaveValue("参考 @d");
+  await expect(page.locator(".pin-chip")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "发送" })).toBeEnabled();
+  await page.getByLabel("消息").press("Enter");
+  await expect.poll(() => message).toEqual({ message: "参考 @d" });
 });

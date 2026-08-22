@@ -1,15 +1,13 @@
 .projects-page { height: 100%; overflow-y: auto; background: var(--app-shell); }
-.projects-bar { height: 66px; display: flex; align-items: center; justify-content: space-between; padding: 0 max(22px, calc((100vw - 1040px) / 2)); border-bottom: 1px solid var(--line); background: color-mix(in oklab, var(--app-topbar) 85%, transparent); backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); }
+.projects-bar { height: 66px; display: flex; align-items: center; justify-content: space-between; padding: 0 max(22px, calc((100vw - 1040px) / 2)); border-bottom: 1px solid var(--line); background: var(--app-topbar); }
 .projects-brand { display: flex; align-items: center; gap: 10px; }
 .projects-brand > span { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid color-mix(in oklab, var(--accent) 40%, var(--line)); border-radius: 8px; color: var(--accent); background: color-mix(in oklab, var(--accent-soft) 70%, transparent); font-size: 13px; font-weight: 800; }
 .projects-brand b, .projects-brand small { display: block; }
 .projects-brand b { font-size: 14px; color: var(--text-strong); }
 .projects-brand small { margin-top: 2px; color: var(--text-muted); font-size: 10px; }
 .projects-bar > div:last-child { display: flex; align-items: center; gap: 8px; }
-.projects-page > main { width: min(1000px, calc(100% - 44px)); margin: 0 auto; padding: 54px 0 70px; }
-.projects-page > main > header { margin-bottom: 24px; }
-.projects-page > main > header span { color: var(--accent); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
-.projects-page > main h1 { margin-top: 7px; font-size: 25px; }
+.projects-page > main { width: min(1000px, calc(100% - 44px)); margin: 0 auto; padding: 30px 0 70px; }
+.projects-page > .error-toast { width: min(1000px, calc(100% - 44px)); max-width: none; margin: 16px auto 0; }
 .project-list { display: grid; gap: 10px; }
 .project-list > button { width: 100%; min-height: 92px; display: grid; grid-template-columns: minmax(240px, 1fr) 160px 112px 24px; align-items: center; gap: 18px; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--text); background: var(--surface-raised); text-align: left; cursor: pointer; transition: border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard); }
 .project-list > button:hover { border-color: var(--line-strong); box-shadow: 0 4px 14px rgb(16 24 40 / .07); }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { createProject } from "../api";
 import { useWorld } from "../context/WorldContext";
 import { Field, FormActions } from "./Field";
 import { Modal } from "./Modal";
@@ -7,15 +8,19 @@ import { Modal } from "./Modal";
 const EMPTY = { title: "", question: "" };
 
 export function NewProjectDialog({ open, onClose }) {
-  const { command, selectProject } = useWorld();
+  const { selectProject, setError } = useWorld();
   const [form, setForm] = useState(EMPTY);
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const update = (key) => (event) => setForm({ ...form, [key]: event.target.value });
   const submit = async (event) => {
     event.preventDefault(); setSubmitting(true);
-    try { const result = await command("create_project", form); const id = result?.id; if (id) await selectProject(id); setForm(EMPTY); onClose(); navigate("/map"); }
-    catch {}
+    try {
+      const result = await createProject({ name: form.title, question: form.question });
+      if (!result?.id) throw new Error("创建项目响应缺少 id");
+      setForm(EMPTY); onClose();
+      await selectProject(result.id); navigate("/map");
+    } catch (error) { setError(error.message); }
     finally { setSubmitting(false); }
   };
   return <Modal title="新建研究项目" open={open} onClose={onClose}><form onSubmit={submit} className="form-stack">

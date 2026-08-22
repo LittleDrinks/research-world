@@ -7,18 +7,22 @@ async function decode(response) {
 
 
 const json = (method, body) => ({ method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+const enc = encodeURIComponent;
 
 
-export const getBootstrap = (projectId) => fetch(`/api/v1/bootstrap${projectId ? `?project_id=${encodeURIComponent(projectId)}` : ""}`).then(decode);
-export const startWorkflow = (projectId, body) => fetch(`/api/v1/projects/${encodeURIComponent(projectId)}/workflows`, json("POST", body)).then(decode);
-export const confirmWorkflow = (id) => fetch(`/api/v1/workflows/${encodeURIComponent(id)}/confirm`, { method: "POST" }).then(decode);
-export const resolveWorkflow = (id, body) => fetch(`/api/v1/workflows/${encodeURIComponent(id)}/resolve`, json("POST", body)).then(decode);
-export const getMessages = (projectId, nodeId) => fetch(`/api/v1/projects/${encodeURIComponent(projectId)}/messages?node_id=${encodeURIComponent(nodeId)}`).then(decode);
-export const clearConversation = (projectId, nodeId) => fetch(`/api/v1/projects/${encodeURIComponent(projectId)}/messages?node_id=${encodeURIComponent(nodeId)}`, { method: "DELETE" }).then(decode);
+export const getBootstrap = (projectId) => fetch(`/api/v1/bootstrap${projectId ? `?project_id=${enc(projectId)}` : ""}`).then(decode);
+export const createProject = (body) => fetch("/api/v1/projects", json("POST", body)).then(decode);
+export const setProjectAuto = (projectId, auto) => fetch(`/api/v1/projects/${enc(projectId)}`, json("PATCH", { auto })).then(decode);
 
+export const listThreads = (projectId) => fetch(`/api/v1/projects/${enc(projectId)}/threads`).then(decode);
+export const createThread = (projectId, body) => fetch(`/api/v1/projects/${enc(projectId)}/threads`, json("POST", body)).then(decode);
+export const getThread = (threadId) => fetch(`/api/v1/threads/${enc(threadId)}`).then(decode);
+export const restartThread = (threadId) => fetch(`/api/v1/threads/${enc(threadId)}/restart`, { method: "POST" }).then(decode);
+export const pinNode = (threadId, nodeId) => fetch(`/api/v1/threads/${enc(threadId)}/nodes`, json("POST", { node_id: nodeId })).then(decode);
+export const unpinNode = (threadId, nodeId) => fetch(`/api/v1/threads/${enc(threadId)}/nodes/${enc(nodeId)}`, { method: "DELETE" }).then(decode);
 
-export async function sendMessage(projectId, body, onEvent) {
-  const response = await fetch(`/api/v1/projects/${encodeURIComponent(projectId)}/messages`, json("POST", body));
+export async function sendPrompt(threadId, message, onEvent) {
+  const response = await fetch(`/api/v1/threads/${enc(threadId)}/prompts`, json("POST", { message }));
   if (!response.ok) {
     const text = await response.text();
     let detail = text;
@@ -50,12 +54,17 @@ function emitFrame(frame, onEvent) {
   const data = lines.find((line) => line.startsWith("data: "))?.slice(6);
   if (event && data) onEvent(event, JSON.parse(data));
 }
-export const materializeDraft = (projectId, body) => fetch(`/api/v1/projects/${encodeURIComponent(projectId)}/drafts/materialize`, json("POST", body)).then(decode);
-export const setProjectAuto = (projectId, auto) => fetch(`/api/v1/projects/${encodeURIComponent(projectId)}`, json("PATCH", { auto })).then(decode);
 
+export const searchNodes = (projectId, query) => fetch("/api/v1/tools/graph-query", json("POST", { arguments: { action: "search", project_id: projectId, query } })).then(decode);
+export const getNode = (nodeId) => fetch(`/api/v1/nodes/${enc(nodeId)}`).then(decode);
 
-export async function postCommand(type, payload) {
-  if (type !== "create_project") throw new Error("不支持的命令");
-  const root = payload.root || `/projects/${crypto.randomUUID()}`;
-  return fetch("/api/v1/projects", json("POST", { name: payload.title, root, question: payload.question })).then(decode);
-}
+export const getCatalog = (projectId) => fetch(`/api/v1/runtime/catalog?project_id=${enc(projectId)}`).then(decode);
+export const getSession = (sessionId) => fetch(`/api/v1/runtime/sessions/${enc(sessionId)}`).then(decode);
+
+export const listAgents = () => fetch("/api/v1/agents").then(decode);
+export const saveAgent = (agentId, body) => fetch(`/api/v1/agents/${enc(agentId)}`, json("PUT", body)).then(decode);
+
+export const listRuns = (projectId) => fetch(`/api/v1/projects/${enc(projectId)}/runs`).then(decode);
+export const startRun = (projectId, body) => fetch(`/api/v1/projects/${enc(projectId)}/runs`, json("POST", body)).then(decode);
+export const confirmRun = (runId) => fetch(`/api/v1/runs/${enc(runId)}/confirm`, { method: "POST" }).then(decode);
+export const resolveRun = (runId, body) => fetch(`/api/v1/runs/${enc(runId)}/resolve`, json("POST", body)).then(decode);

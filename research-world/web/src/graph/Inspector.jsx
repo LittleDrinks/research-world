@@ -1,34 +1,44 @@
-import { Activity, GitBranch, MessageSquare, Play, Send } from "lucide-react";
-import { useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import { getMessages, sendMessage } from "../api";
+import { Activity, GitBranch, MessageSquare, Play } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { createThread } from "../api";
 import { useWorld } from "../context/WorldContext";
+import { RUN_STATUS, shortId } from "../utils/labels";
 
 
 const LABELS = { question: "问题", source: "来源", direction: "方向", experiment: "实验",
   pending: "待审查", admitted: "已入图", ghost: "已驳回", proposed: "待验证", supported: "已支持", refuted: "已反驳" };
 
 
-export function Inspector({ node, nodes, edges, workflow, onSelect, onStart, onOpen }) {
+export function Inspector({ node, nodes, edges, run, onSelect, onStart, onOpen }) {
   if (!node) return <aside className="inspector inspector-empty">选择节点查看上下文。</aside>;
-  return <aside className="inspector"><div className="inspector-scroll"><NodeHeader node={node} workflow={workflow} onStart={onStart} onOpen={onOpen} />
+  return <aside className="inspector"><div className="inspector-scroll"><NodeHeader node={node} run={run} onStart={onStart} onOpen={onOpen} />
     <NodeRecord node={node} /><Relations node={node} nodes={nodes} edges={edges} onSelect={onSelect} />
-    <Rebuttal node={node} /></div><NodeChat node={node} /></aside>;
+    <Rebuttal node={node} /><DiscussEntry node={node} /></div></aside>;
 }
 
 
-function NodeHeader({ node, workflow, onStart, onOpen }) {
+function NodeHeader({ node, run, onStart, onOpen }) {
   const title = node.payload?.title || node.payload?.text || "未命名节点";
-  const label = workflow?.status === "waiting_human" ? "继续工作流" : "查看工作流";
   return <header className="inspector-header"><div className="eyebrow"><span>{LABELS[node.kind]}</span><span>{LABELS[node.life_state]}</span>{node.direction_status && <span>{LABELS[node.direction_status]}</span>}</div>
     <h1>{title}</h1>{node.rejection_reason && <p className="rejection-reason">{node.rejection_reason}</p>}
-    {workflow && <button className="button primary workflow-start" onClick={() => onOpen(workflow)}><Activity size={16} />{label}</button>}
-    {!workflow && <button className="button primary workflow-start" onClick={() => onStart(node)}><Play size={16} />{startLabel(node)}</button>}</header>;
+    {run && <button className="button primary workflow-start" onClick={() => onOpen(run)}><Activity size={16} />{RUN_STATUS[run.status] || run.status} · 查看轨迹</button>}
+    {!run && <PipelineLauncher node={node} onStart={onStart} />}</header>;
 }
 
 
-function startLabel(node) {
-  return node.kind === "experiment" ? "反思实验" : "发起工作流";
+function PipelineLauncher({ node, onStart }) {
+  const { data } = useWorld();
+  const pipelines = data.pipelines;
+  const [pipelineId, setPipelineId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const effective = pipelines.some((item) => item.id === pipelineId) ? pipelineId : pipelines[0]?.id || "";
+  if (!pipelines.length) return null;
+  const launch = () => { setBusy(true); Promise.resolve(onStart(node, effective)).finally(() => setBusy(false)); };
+  return <div className="pipeline-launcher">
+    <select aria-label="选择流程" value={effective} onChange={(event) => setPipelineId(event.target.value)}>
+      {pipelines.map((pipeline) => <option key={pipeline.id} value={pipeline.id}>{pipeline.name || pipeline.id}</option>)}</select>
+    <button className="button primary" disabled={busy || !effective} onClick={launch}><Play size={15} />发起运行</button></div>;
 }
 
 
@@ -51,38 +61,29 @@ function Rebuttal({ node }) {
 }
 
 
-function NodeChat({ node }) {
-  const { projectId, refresh, setError } = useWorld();
-  const [messages, setMessages] = useState([]);
-  const [value, setValue] = useState("");
-  const [sending, setSending] = useState(false);
-  const [streaming, setStreaming] = useState(null);
-  useEffect(() => { getMessages(projectId, node.id).then(setMessages).catch((error) => setError(error.message)); }, [projectId, node.id]);
-  const submit = async () => {
-    const text = value.trim();
-    if (!text || sending) return;
-    setSending(true);
-    let finished = null;
+function useDiscuss(node) {
+  const { data, projectId, refresh, setError } = useWorld();
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const thread = data.threads.find((item) => item.nodes.some((pinned) => pinned.id === node.id));
+  const open = async () => {
+    if (thread) return navigate(`/chat/${encodeURIComponent(thread.id)}`);
+    setBusy(true);
     try {
-      await sendMessage(projectId, { node_id: node.id, message: text }, (event, data) => {
-        if (event === "delta") setStreaming((current) => (current || "") + data);
-        if (event === "done") finished = data;
-        if (event === "error") throw new Error(data.detail || "答复失败");
-      });
-      setMessages(await getMessages(projectId, node.id)); setValue("");
-      if (finished?.workflow) await refresh(projectId);
-    }
-    catch (error) { setError(error.message); }
-    finally { setSending(false); setStreaming(null); }
+      const created = await createThread(projectId, { node_ids: [node.id] });
+      await refresh(projectId);
+      navigate(`/chat/${encodeURIComponent(created.id)}`);
+    } catch (error) { setError(error.message); }
+    finally { setBusy(false); }
   };
-  const keyDown = (event) => {
-    const composing = event.isComposing || event.nativeEvent?.isComposing || event.keyCode === 229;
-    if (event.key === "Enter" && !event.shiftKey && !composing) { event.preventDefault(); submit(); }
-  };
-  return <section className="node-chat"><header><MessageSquare size={16} /><b>节点对话</b></header>
-    <div className="node-chat-log">{messages.map((message) => message.role === "assistant"
-      ? <div key={message.id} className="markdown"><ReactMarkdown>{message.content}</ReactMarkdown></div>
-      : <p key={message.id} className={message.role}>{message.content}</p>)}
-      {streaming !== null && <div className="markdown"><ReactMarkdown>{streaming}</ReactMarkdown></div>}</div>
-    <div className="node-composer"><textarea aria-label="节点消息" value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={keyDown} rows="2" placeholder="围绕当前节点讨论..." /><button className="icon-button" onClick={submit} disabled={sending || !value.trim()} aria-label="发送消息"><Send size={17} /></button></div></section>;
+  return { thread, busy, open };
+}
+
+
+function DiscussEntry({ node }) {
+  const { thread, busy, open } = useDiscuss(node);
+  const label = thread ? `继续对话 · ${thread.title}` : busy ? "正在创建对话..." : "新建对话并钉入该节点";
+  return <section className="inspector-section"><h2><MessageSquare size={15} />讨论</h2>
+    <button className="button secondary workflow-start" disabled={busy} onClick={open}>{label}</button>
+    <p className="muted mono">{shortId(node.id)}</p></section>;
 }
