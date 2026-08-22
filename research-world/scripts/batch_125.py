@@ -1,4 +1,5 @@
-"""Science 125 题批驱动：生成 project.json、建 project、发起 brainstorm、汇总轻量结果。"""
+"""Science 125 题批驱动：建项目、启动 brainstorm pipeline、汇总结果。"""
+
 from __future__ import annotations
 
 import argparse
@@ -23,8 +24,11 @@ def load_questions() -> list[dict]:
 
 def spec_for(index: int, item: dict) -> dict:
     name = f"q{index:03d}"
-    return {"name": name, "root": name,
-            "question": f"{item['title']}\n{item['full_text']}"}
+    return {
+        "name": name,
+        "root": name,
+        "question": f"{item['title']}\n{item['full_text']}",
+    }
 
 
 def write_project_files(specs: list[dict]) -> None:
@@ -34,7 +38,9 @@ def write_project_files(specs: list[dict]) -> None:
             continue
         directory.mkdir(parents=True)
         path = directory / "project.json"
-        path.write_text(json.dumps(spec, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        path.write_text(
+            json.dumps(spec, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
 
 
 def ensure_projects(client: httpx.Client, specs: list[dict]) -> dict[str, str]:
@@ -57,16 +63,19 @@ def question_node(client: httpx.Client, project_id: str) -> dict:
 
 
 def start_brainstorm(client: httpx.Client, project_id: str, question: str) -> dict:
-    body = {"node_id": question_node(client, project_id)["id"], "kind": "brainstorm",
-            "payload": {"instruction": question}}
-    response = client.post(f"/api/v1/projects/{project_id}/workflows", json=body)
+    body = {
+        "node_id": question_node(client, project_id)["id"],
+        "pipeline_id": "brainstorm",
+        "payload": {"instruction": question},
+    }
+    response = client.post(f"/api/v1/projects/{project_id}/runs", json=body)
     assert response.status_code == 201, response.text
     return response.json()
 
 
 def finished(client: httpx.Client, project_id: str) -> bool:
-    workflows = client.get(f"/api/v1/projects/{project_id}/workflows").json()
-    return bool(workflows) and all(item["status"] in TERMINAL for item in workflows)
+    runs = client.get(f"/api/v1/projects/{project_id}/runs").json()
+    return bool(runs) and all(item["status"] in TERMINAL for item in runs)
 
 
 def wait_batch(client: httpx.Client, ids: dict[str, str], timeout: int) -> list[str]:
@@ -74,7 +83,9 @@ def wait_batch(client: httpx.Client, ids: dict[str, str], timeout: int) -> list[
     deadline = time.monotonic() + timeout
     while pending and time.monotonic() < deadline:
         time.sleep(5)
-        pending = {name: pid for name, pid in pending.items() if not finished(client, pid)}
+        pending = {
+            name: pid for name, pid in pending.items() if not finished(client, pid)
+        }
     return sorted(pending)
 
 
@@ -83,21 +94,25 @@ def report(client: httpx.Client, name: str, project_id: str) -> None:
     directions = [node for node in data["nodes"] if node["kind"] == "direction"]
     admitted = sum(node["life_state"] == "admitted" for node in directions)
     ghost = sum(node["life_state"] == "ghost" for node in directions)
-    statuses = ",".join(item["status"] for item in data["workflows"])
-    print(f"{name}: nodes={len(data['nodes'])} directions={len(directions)} "
-          f"admitted={admitted} ghost={ghost} workflows={statuses}")
+    statuses = ",".join(item["status"] for item in data["runs"])
+    print(
+        f"{name}: nodes={len(data['nodes'])} directions={len(directions)} "
+        f"admitted={admitted} ghost={ghost} runs={statuses}"
+    )
 
 
 def main() -> int:
     args = parser().parse_args()
-    specs = [spec_for(index, item)
-             for index, item in enumerate(load_questions()[: args.limit], 1)]
+    specs = [
+        spec_for(index, item)
+        for index, item in enumerate(load_questions()[: args.limit], 1)
+    ]
     write_project_files(specs)
     with httpx.Client(base_url=API, timeout=60) as client:
         ids = ensure_projects(client, specs)
         for spec in specs:
             start_brainstorm(client, ids[spec["name"]], spec["question"])
-        print(f"started {len(specs)} brainstorm workflows")
+        print(f"started {len(specs)} brainstorm runs")
         if not args.wait:
             return 0
         pending = wait_batch(client, ids, args.timeout)
@@ -112,7 +127,9 @@ def main() -> int:
 def parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="batch_125")
     parser.add_argument("--limit", type=int, default=None, help="只处理前 N 题")
-    parser.add_argument("--wait", action="store_true", help="轮询直到本批 workflow 收敛")
+    parser.add_argument(
+        "--wait", action="store_true", help="轮询直到本批 run 收敛"
+    )
     parser.add_argument("--timeout", type=int, default=3600, help="--wait 的超时秒数")
     return parser
 

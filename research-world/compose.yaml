@@ -7,6 +7,7 @@ services:
       RW_PROJECTS_ROOT: /projects
       RW_DATA_ROOT: /app/data
       RW_AGENTS_ROOT: /app/agents
+      RW_PIPELINES_ROOT: /app/pipelines
       RUNTIME_URL: http://runtime:8098
       RUNNER_CONTROLLER_URL: http://runner-controller:8096
     ports:
@@ -15,6 +16,7 @@ services:
       - rw-kernel-data:/app/data
       - ${RW_PROJECTS_ROOT:-./projects}:/projects
       - ./agents:/app/agents
+      - ./pipelines:/app/pipelines
     networks: [control, worker-egress]
     depends_on:
       runtime:
@@ -34,6 +36,7 @@ services:
       RW_PROJECTS_ROOT: /projects
       RW_DATA_ROOT: /app/data
       RW_AGENTS_ROOT: /app/agents
+      RW_PIPELINES_ROOT: /app/pipelines
       RUNTIME_URL: http://runtime:8098
       RW_EMBEDDING_MODEL: ${RW_EMBEDDING_MODEL:-qwen3.7-text-embedding}
       RUNNER_CONTROLLER_URL: http://runner-controller:8096
@@ -41,6 +44,7 @@ services:
       - rw-kernel-data:/app/data
       - ${RW_PROJECTS_ROOT:-./projects}:/projects:ro
       - ./agents:/app/agents:ro
+      - ./pipelines:/app/pipelines:ro
     networks: [control, worker-egress]
     depends_on:
       control:

@@ -13,6 +13,8 @@ class Settings:
     artifacts: Path
     projects_root: Path
     agents_root: Path
+    pipelines_root: Path
+    pipeline_schema: Path
     runtime_url: str
 
 
@@ -23,5 +25,7 @@ def load_settings() -> Settings:
         artifacts=data / "artifacts",
         projects_root=Path(os.getenv("RW_PROJECTS_ROOT", ROOT / "projects")),
         agents_root=Path(os.getenv("RW_AGENTS_ROOT", ROOT / "agents")),
+        pipelines_root=Path(os.getenv("RW_PIPELINES_ROOT", ROOT / "pipelines")),
+        pipeline_schema=ROOT / "schemas" / "pipeline.schema.json",
         runtime_url=os.getenv("RUNTIME_URL", "http://runtime:8098"),
     )

@@ -9,19 +9,21 @@ from server.workflows import default_engine
 def main() -> None:
     world = default_world()
     while True:
-        workflow = world.claim_workflow()
-        if workflow:
-            execute(world, workflow)
+        run = world.claim_run()
+        if run:
+            execute(world, run)
         else:
             time.sleep(1)
 
 
-def execute(world, workflow) -> None:
+def execute(world, run) -> None:
     try:
-        default_engine(world, workflow["project_id"]).run(workflow["id"])
-    except Exception as error:
-        world.record_workflow_event(workflow["id"], "control", "workflow_failed", {"error": str(error)})
-        world.update_workflow(workflow["id"], "failed", "failed", {"error": str(error)})
+        default_engine(world, run["project_id"]).run(run["id"])
+    except Exception as error:  # noqa: BLE001 - worker persists terminal failures.
+        world.record_run_event(
+            run["id"], "control", "run_failed", {"error": str(error)}
+        )
+        world.update_run(run["id"], "failed", "failed", {"error": str(error)})
 
 
 if __name__ == "__main__":

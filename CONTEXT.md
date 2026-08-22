@@ -16,7 +16,7 @@ _Avoid_: 分支、会话树
 _Avoid_: 固定 workflow kind、任务、job
 **Stage**：Pipeline 的最小执行单元；每个 prompt stage 启动干净 Session，只接收结构化上游引用。
 _Avoid_: 长对话续跑
-**双审**：两个独立 reviewer 一致 approve 才准入；分歧时 workflow 转 waiting_human 由人裁决。
+**双审**：两个独立 reviewer 一致 approve 才准入；分歧时 Pipeline run 转 waiting_human 由人裁决。
 _Avoid_: 打分、多数投票
 **抗辩**：双审意见按 reviewer 沉淀在节点 rebuttal 字段，随节点留存。
 **Research event**：Research Kernel 写入的稀疏项目事实：Pipeline、Stage、Gate、节点与人工决策；科研日志是其投影。

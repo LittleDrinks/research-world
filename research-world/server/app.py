@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from .agents import AgentRegistry
 from .config import ROOT, load_settings
 from .library import list_packages
+from .pipelines import PipelineRegistry
 from .runtime_client import RuntimeClient
 from .threads import ThreadManager
 from .workflows import default_engine
@@ -20,20 +21,33 @@ def create_app(
     world: World,
     runtime: RuntimeClient | None = None,
     agents: AgentRegistry | None = None,
+    pipelines: PipelineRegistry | None = None,
 ) -> FastAPI:
+    runtime, agents, pipelines = app_dependencies(world, runtime, agents, pipelines)
+    app = FastAPI(title="Research World", version="2")
+    register_routes(app, world, runtime, agents, pipelines)
+    return app
+
+
+def app_dependencies(world, runtime, agents, pipelines):
     settings = load_settings()
     runtime = runtime or RuntimeClient(settings.runtime_url, world)
     agents = agents or AgentRegistry(settings.agents_root)
-    app = FastAPI(title="Research World", version="2")
+    pipelines = pipelines or PipelineRegistry(
+        settings.pipelines_root, settings.pipeline_schema
+    )
+    return runtime, agents, pipelines
+
+
+def register_routes(app, world, runtime, agents, pipelines) -> None:
     error_handlers(app)
-    project_routes(app, world)
+    project_routes(app, world, pipelines)
     graph_routes(app, world)
     thread_routes(app, world, runtime, agents)
     runtime_routes(app, world, runtime, agents)
-    workflow_routes(app, world)
+    pipeline_routes(app, world, pipelines)
     tool_routes(app, world)
     frontend_routes(app)
-    return app
 
 
 def error_handlers(app: FastAPI) -> None:
@@ -46,10 +60,10 @@ def error_handlers(app: FastAPI) -> None:
         return JSONResponse({"detail": str(error)}, status_code=400)
 
 
-def project_routes(app: FastAPI, world: World) -> None:
+def project_routes(app: FastAPI, world: World, pipelines: PipelineRegistry) -> None:
     health_route(app)
     project_collection_routes(app, world)
-    project_state_routes(app, world)
+    project_state_routes(app, world, pipelines)
 
 
 def health_route(app: FastAPI) -> None:
@@ -77,10 +91,10 @@ def project_collection_routes(app: FastAPI, world: World) -> None:
             raise HTTPException(400, str(error)) from error
 
 
-def project_state_routes(app: FastAPI, world: World) -> None:
+def project_state_routes(app, world, pipelines) -> None:
     @app.get("/api/v1/bootstrap")
     async def bootstrap(project_id: str | None = None):
-        return bootstrap_data(world, project_id)
+        return bootstrap_data(world, project_id, pipelines)
 
     @app.patch("/api/v1/projects/{project_id}")
     async def update_project(project_id: str, request: Request):
@@ -211,42 +225,56 @@ def agent_routes(app, agents) -> None:
         return agents.save(agent_id, await request.json())
 
 
-def workflow_routes(app: FastAPI, world: World) -> None:
-    workflow_collection_routes(app, world)
-    workflow_control_routes(app, world)
+def pipeline_routes(app: FastAPI, world: World, pipelines: PipelineRegistry) -> None:
+    pipeline_definition_routes(app, pipelines)
+    run_collection_routes(app, world, pipelines)
+    run_control_routes(app, world)
 
 
-def workflow_collection_routes(app: FastAPI, world: World) -> None:
-    @app.get("/api/v1/projects/{project_id}/workflows")
-    async def workflows(project_id: str):
-        return [workflow_view(world, item) for item in world.workflows(project_id)]
+def pipeline_definition_routes(app, pipelines) -> None:
+    @app.get("/api/v1/pipelines")
+    async def all_pipelines():
+        return pipelines.all()
 
-    @app.post("/api/v1/projects/{project_id}/workflows", status_code=201)
-    async def start_workflow(project_id: str, request: Request):
+    @app.put("/api/v1/pipelines/{pipeline_id}")
+    async def save_pipeline(pipeline_id: str, request: Request):
+        return pipelines.save(pipeline_id, await request.json())
+
+
+def run_collection_routes(app, world, pipelines) -> None:
+    @app.get("/api/v1/projects/{project_id}/runs")
+    async def runs(project_id: str):
+        return [run_view(world, item) for item in world.runs(project_id)]
+
+    @app.post("/api/v1/projects/{project_id}/runs", status_code=201)
+    async def start_run(project_id: str, request: Request):
         value = await request.json()
-        return world.create_workflow(
-            project_id, value["node_id"], value["kind"], value.get("payload")
+        return world.create_run(
+            project_id,
+            value["node_id"],
+            pipelines.get(value["pipeline_id"]),
+            value.get("payload"),
         )
 
 
-def workflow_control_routes(app: FastAPI, world: World) -> None:
-    @app.post("/api/v1/workflows/{workflow_id}/confirm", status_code=202)
-    async def confirm(workflow_id: str):
-        workflow = world.workflow(workflow_id)
-        run_async(default_engine(world, workflow["project_id"]).confirm, workflow_id)
-        return workflow
+def run_control_routes(app: FastAPI, world: World) -> None:
+    @app.post("/api/v1/runs/{run_id}/confirm", status_code=202)
+    async def confirm(run_id: str):
+        run = world.run(run_id)
+        run_async(default_engine(world, run["project_id"]).confirm, run_id)
+        return run
 
-    @app.post("/api/v1/workflows/{workflow_id}/resolve", status_code=202)
-    async def resolve(workflow_id: str, request: Request):
+    @app.post("/api/v1/runs/{run_id}/resolve", status_code=202)
+    async def resolve(run_id: str, request: Request):
         value = await request.json()
-        workflow = world.workflow(workflow_id)
+        run = world.run(run_id)
         run_async(
-            default_engine(world, workflow["project_id"]).resolve,
-            workflow_id,
+            default_engine(world, run["project_id"]).resolve,
+            run_id,
             value["decision"],
             value["reason"],
         )
-        return workflow
+        return run
 
 
 def tool_routes(app: FastAPI, world: World) -> None:
@@ -299,21 +327,24 @@ UPDATE_KEYS = {
 }
 
 
-def bootstrap_data(world: World, project_id: str | None) -> dict:
+def bootstrap_data(
+    world: World, project_id: str | None, pipelines: PipelineRegistry | None = None
+) -> dict:
     projects = project_cards(world)
     selected = project_id or (projects[0]["id"] if projects else None)
     if not selected:
         return empty_bootstrap()
     get_or_404(world.project, selected)
-    workflows = [workflow_view(world, item) for item in world.workflows(selected)]
+    runs = [run_view(world, item) for item in world.runs(selected)]
     return {
         "projects": projects,
         "active_project_id": selected,
         "nodes": world.nodes(selected),
         "edges": world.edges(selected),
-        "workflows": workflows,
+        "runs": runs,
+        "pipelines": pipelines.all() if pipelines else [],
         "threads": world.threads(selected),
-        "slots": slot_view(workflows),
+        "slots": slot_view(runs),
     }
 
 
@@ -323,7 +354,8 @@ def empty_bootstrap() -> dict:
         "active_project_id": None,
         "nodes": [],
         "edges": [],
-        "workflows": [],
+        "runs": [],
+        "pipelines": [],
         "threads": [],
         "slots": [],
     }
@@ -338,7 +370,7 @@ def project_cards(world: World) -> list[dict]:
                 **project,
                 "title": project["name"],
                 "node_count": len(nodes),
-                "workflow_count": len(world.workflows(project["id"])),
+                "run_count": len(world.runs(project["id"])),
             }
         )
     return cards
@@ -356,22 +388,22 @@ def get_or_404(getter, value: str):
         raise HTTPException(404, "not found") from error
 
 
-def workflow_view(world: World, workflow: dict) -> dict:
+def run_view(world: World, run: dict) -> dict:
     return {
-        **workflow,
-        "steps": world.steps(workflow["id"]),
-        "events": world.workflow_events(workflow["id"]),
+        **run,
+        "steps": world.steps(run["id"]),
+        "events": world.run_events(run["id"]),
     }
 
 
-def slot_view(workflows: list[dict], count: int = 2) -> list[dict]:
+def slot_view(runs: list[dict], count: int = 2) -> list[dict]:
     active = [
         item
-        for item in workflows
+        for item in runs
         if item["status"] in {"queued", "running", "waiting_human"}
     ]
     return [
-        {"index": index + 1, "workflow": active[index] if index < len(active) else None}
+        {"index": index + 1, "run": active[index] if index < len(active) else None}
         for index in range(count)
     ]
 
@@ -407,4 +439,5 @@ def frontend_routes(app: FastAPI) -> None:
 
 settings = load_settings()
 world = World(settings.database, settings.artifacts)
-app = create_app(world, RuntimeClient(settings.runtime_url, world))
+runtime = RuntimeClient(settings.runtime_url, world)
+app = create_app(world, runtime)

@@ -1,0 +1,28 @@
+id: brainstorm
+name: 生成研究方向
+stages:
+  - id: generate
+    type: prompt
+    agent: research-assistant
+    output: candidates
+  - id: deduplicate
+    type: tool
+    tool: graph-deduplicate
+    policy:
+      name: cosine-threshold
+      params: {block: 0.8, review: 0.6}
+  - id: select
+    type: tool
+    tool: candidate-select
+    policy:
+      name: mmr
+      params: {weight: 0.2}
+  - id: review
+    type: prompt
+    agent: independent-reviewer
+    repeat: 2
+    policy: unanimous-review
+    on:
+      approve: {action: admit}
+      reject: {action: ghost}
+      conflict: {action: wait_human}

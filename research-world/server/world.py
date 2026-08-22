@@ -18,7 +18,7 @@ DIRECTION_STATES = {"proposed", "supported", "refuted"}
 
 def decode(row: sqlite3.Row) -> dict:
     value = dict(row)
-    for key in ("payload", "rebuttal", "output", "assembly"):
+    for key in ("payload", "rebuttal", "output", "assembly", "definition_snapshot"):
         if value.get(key):
             value[key] = json.loads(value[key])
     return value
@@ -324,10 +324,10 @@ class World:
         if thread["project_id"] != node["project_id"]:
             raise ValueError("thread node belongs to another project")
 
-    def active_workflow(self, project_id: str, node_id: str) -> dict | None:
+    def active_run(self, project_id: str, node_id: str) -> dict | None:
         active = [
             item
-            for item in self.workflows(project_id)
+            for item in self.runs(project_id)
             if item["status"] in {"queued", "running", "waiting_human"}
         ]
         associated = next(
@@ -342,70 +342,69 @@ class World:
             (item for item in active if item["node_id"] == node_id), None
         )
 
-    def create_workflow(
-        self, project_id: str, node_id: str, kind: str, payload: dict | None = None
+    def create_run(
+        self, project_id: str, node_id: str, pipeline: dict, payload: dict | None = None
     ) -> dict:
         project, node = self.project(project_id), self.node(node_id)
         if node["project_id"] != project_id:
-            raise ValueError("workflow node belongs to another project")
-        if active := self.active_workflow(project_id, node_id):
+            raise ValueError("pipeline node belongs to another project")
+        if active := self.active_run(project_id, node_id):
             return active
-        workflow_id = f"workflow:{secrets.token_hex(12)}"
-        values = workflow_values(workflow_id, project, node, kind, payload)
+        run_id = f"run:{secrets.token_hex(12)}"
+        values = run_values(run_id, project, node, pipeline, payload)
         with self.db.connect() as connection:
             connection.execute(
-                "INSERT INTO workflows VALUES(?,?,?,?,?,?,?,?,?,?,?)", values
+                "INSERT INTO pipeline_runs VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", values
             )
             connection.execute(
                 "INSERT OR IGNORE INTO lineages VALUES(?,?,0,0)",
                 (node["lineage_id"], project_id),
             )
-        return self.workflow(workflow_id)
+        return self.run(run_id)
 
-    def workflow(self, workflow_id: str) -> dict:
-        return self._one("SELECT * FROM workflows WHERE id=?", (workflow_id,))
+    def run(self, run_id: str) -> dict:
+        return self._one("SELECT * FROM pipeline_runs WHERE id=?", (run_id,))
 
-    def workflows(self, project_id: str | None = None) -> list[dict]:
+    def runs(self, project_id: str | None = None) -> list[dict]:
         sql = (
-            "SELECT * FROM workflows"
+            "SELECT * FROM pipeline_runs"
             + (" WHERE project_id=?" if project_id else "")
             + " ORDER BY created_at DESC"
         )
         return self._many(sql, (project_id,) if project_id else ())
 
-    def claim_workflow(self) -> dict | None:
-        sql = "UPDATE workflows SET status='running',updated_at=? WHERE id=(SELECT id FROM workflows WHERE status='queued' ORDER BY created_at LIMIT 1) RETURNING *"
+    def claim_run(self) -> dict | None:
+        sql = "UPDATE pipeline_runs SET status='running',updated_at=? WHERE id=(SELECT id FROM pipeline_runs WHERE status='queued' ORDER BY created_at LIMIT 1) RETURNING *"
         with self.db.connect() as connection:
             row = connection.execute(sql, (now(),)).fetchone()
         return decode(row) if row else None
 
-    def update_workflow(
-        self, workflow_id: str, stage: str, status: str, payload: dict | None = None
+    def update_run(
+        self, run_id: str, stage: str, status: str, payload: dict | None = None
     ) -> dict:
-        current = self.workflow(workflow_id)
+        current = self.run(run_id)
         value = payload if payload is not None else current["payload"]
         with self.db.connect() as connection:
             connection.execute(
-                "UPDATE workflows SET stage=?,status=?,payload=?,updated_at=? WHERE id=?",
-                (stage, status, json.dumps(value), now(), workflow_id),
+                "UPDATE pipeline_runs SET stage=?,status=?,payload=?,updated_at=? WHERE id=?",
+                (stage, status, json.dumps(value), now(), run_id),
             )
-        return self.workflow(workflow_id)
+        return self.run(run_id)
 
     def add_step(
-        self, workflow_id: str, ordinal: int, stage: str, payload: dict, confirm: bool
+        self, run_id: str, ordinal: int, stage: str, payload: dict, confirm: bool
     ) -> dict:
         step_id = f"step:{secrets.token_hex(12)}"
-        values = step_values(step_id, workflow_id, ordinal, stage, payload, confirm)
+        values = step_values(step_id, run_id, ordinal, stage, payload, confirm)
         with self.db.connect() as connection:
             connection.execute(
-                "INSERT INTO workflow_steps VALUES(?,?,?,?,?,?,?,?,?,?)", values
+                "INSERT INTO pipeline_steps VALUES(?,?,?,?,?,?,?,?,?,?)", values
             )
-        return self._one("SELECT * FROM workflow_steps WHERE id=?", (step_id,))
+        return self._one("SELECT * FROM pipeline_steps WHERE id=?", (step_id,))
 
-    def steps(self, workflow_id: str) -> list[dict]:
+    def steps(self, run_id: str) -> list[dict]:
         return self._many(
-            "SELECT * FROM workflow_steps WHERE workflow_id=? ORDER BY ordinal",
-            (workflow_id,),
+            "SELECT * FROM pipeline_steps WHERE run_id=? ORDER BY ordinal", (run_id,)
         )
 
     def update_step(
@@ -415,7 +414,7 @@ class World:
         completed = now() if status in {"completed", "failed"} else None
         with self.db.connect() as connection:
             connection.execute(
-                "UPDATE workflow_steps SET status=?,output=COALESCE(?,output),started_at=COALESCE(?,started_at),completed_at=COALESCE(?,completed_at) WHERE id=?",
+                "UPDATE pipeline_steps SET status=?,output=COALESCE(?,output),started_at=COALESCE(?,started_at),completed_at=COALESCE(?,completed_at) WHERE id=?",
                 (
                     status,
                     json.dumps(output) if output is not None else None,
@@ -424,25 +423,24 @@ class World:
                     step_id,
                 ),
             )
-        return self._one("SELECT * FROM workflow_steps WHERE id=?", (step_id,))
+        return self._one("SELECT * FROM pipeline_steps WHERE id=?", (step_id,))
 
-    def record_workflow_event(
-        self, workflow_id: str, actor: str, event_type: str, payload: dict
+    def record_run_event(
+        self, run_id: str, actor: str, event_type: str, payload: dict
     ) -> dict:
-        values = (workflow_id, actor, event_type, json.dumps(payload), now())
+        values = (run_id, actor, event_type, json.dumps(payload), now())
         with self.db.connect() as connection:
             cursor = connection.execute(
-                "INSERT INTO workflow_events(workflow_id,actor,type,payload,time) VALUES(?,?,?,?,?)",
+                "INSERT INTO pipeline_events(run_id,actor,type,payload,time) VALUES(?,?,?,?,?)",
                 values,
             )
         return self._one(
-            "SELECT * FROM workflow_events WHERE id=?", (cursor.lastrowid,)
+            "SELECT * FROM pipeline_events WHERE id=?", (cursor.lastrowid,)
         )
 
-    def workflow_events(self, workflow_id: str) -> list[dict]:
+    def run_events(self, run_id: str) -> list[dict]:
         return self._many(
-            "SELECT * FROM workflow_events WHERE workflow_id=? ORDER BY id",
-            (workflow_id,),
+            "SELECT * FROM pipeline_events WHERE run_id=? ORDER BY id", (run_id,)
         )
 
     def register_review(self, lineage_id: str, approved: bool) -> dict:
@@ -495,17 +493,17 @@ def node_direction_status(kind: str, state: dict) -> str | None:
     )
 
 
-def workflow_values(workflow_id, project, node, kind, payload) -> tuple:
-    status = "queued" if project["auto"] or kind == "brainstorm" else "waiting_human"
+def run_values(run_id, project, node, pipeline, payload) -> tuple:
     timestamp = now()
     return (
-        workflow_id,
+        run_id,
         project["id"],
         node["id"],
         node["lineage_id"],
-        kind,
+        pipeline["id"],
+        json.dumps(pipeline),
         "created",
-        status,
+        "queued",
         json.dumps(payload or {}),
         project["auto"],
         timestamp,
@@ -513,10 +511,10 @@ def workflow_values(workflow_id, project, node, kind, payload) -> tuple:
     )
 
 
-def step_values(step_id, workflow_id, ordinal, stage, payload, confirm) -> tuple:
+def step_values(step_id, run_id, ordinal, stage, payload, confirm) -> tuple:
     return (
         step_id,
-        workflow_id,
+        run_id,
         ordinal,
         stage,
         "pending",
