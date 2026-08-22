@@ -728,7 +728,7 @@ def default_engine(world: World, project_id: str) -> PipelineEngine:
 def fail_run(world: World, run_id: str, error: Exception) -> dict:
     run = world.run(run_id)
     _fail_running_steps(world, run_id, error)
-    _release_run_nodes(world, run)
+    _release_run_nodes(world, run, error)
     payload = {**run["payload"], "error": str(error)}
     world.record_run_event(run_id, "control", "run_failed", {"error": str(error)})
     return world.update_run(run_id, "failed", "failed", payload)
@@ -744,10 +744,25 @@ def _fail_running_steps(world: World, run_id: str, error: Exception) -> None:
         world.record_run_event(run_id, "runner", "tool_result", payload)
 
 
-def _release_run_nodes(world: World, run: dict) -> None:
-    node_ids = {run["node_id"], run["payload"].get("experiment_id")}
-    for node_id in node_ids - {None}:
-        world.set_working(node_id, False)
+def _release_run_nodes(world: World, run: dict, error: Exception) -> None:
+    world.set_working(run["node_id"], False)
+    for node_id in _owned_pending_nodes(run):
+        node = world.node(node_id)
+        if node["life_state"] == "pending":
+            world.ghost_node(node_id, f"运行失败：{error}")
+        else:
+            world.set_working(node_id, False)
+
+
+def _owned_pending_nodes(run: dict) -> set[str]:
+    payload = run["payload"]
+    values = payload.get("_pipeline", {}).get("values", {})
+    items = values.get("directions", [])
+    direction_ids = {
+        item.get("node_id") for item in items if isinstance(item, dict)
+    }
+    fixed = {payload.get("experiment_id"), values.get("experiment")}
+    return (direction_ids | fixed) - {None, run["node_id"]}
 
 
 def _pipeline_agents(pipeline: dict) -> set[str]:
