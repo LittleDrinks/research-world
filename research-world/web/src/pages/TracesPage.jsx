@@ -56,7 +56,8 @@ function HumanGate({ run, busy, act }) {
     <button className="button primary" disabled={busy} onClick={() => act(() => resolveRun(run.id, { decision: "approve", reason: "人工批准" }))}><ThumbsUp size={14} />批准</button>
     <button className="button secondary" disabled={busy} onClick={() => act(() => resolveRun(run.id, { decision: "reject", reason: "人工驳回" }))}><ThumbsDown size={14} />驳回</button></div>;
   return <div className="run-actions">
-    <button className="button primary" disabled={busy} onClick={() => act(() => confirmRun(run.id))}><Check size={15} />确认继续</button></div>;
+    <button className="button primary" disabled={busy} onClick={() => act(() => confirmRun(run.id))}><Check size={15} />确认继续</button>
+    <button className="button secondary" disabled={busy} onClick={() => act(() => resolveRun(run.id, { decision: "reject", reason: "人工驳回实验计划" }))}><ThumbsDown size={14} />驳回计划</button></div>;
 }
 
 

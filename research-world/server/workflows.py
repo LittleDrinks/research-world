@@ -160,11 +160,28 @@ class PipelineEngine:
         run = self.world.run(run_id)
         gate = _frame(run).get("gate")
         if run["status"] != "waiting_human" or not gate:
-            raise ValueError("run has no review conflict")
+            raise ValueError("run has no human gate")
+        if gate["kind"] == "confirm_step":
+            if decision != "reject":
+                raise ValueError("execution gate only resolves rejection")
+            return self._reject_plan(run, reason)
         if gate["kind"] != "review" or decision not in {"approve", "reject"}:
             raise ValueError("run has no matching review decision")
         signal = {"kind": "review", "decision": decision, "reason": reason, **gate}
         return self._drive(run_id, signal)
+
+    def _reject_plan(self, run: dict, reason: str) -> dict:
+        frame = _frame(run)
+        self.world.ghost_node(run["payload"]["experiment_id"], reason)
+        self.world.set_working(run["node_id"], False)
+        payload = _stage_payload(
+            {**run["payload"], "reason": reason},
+            frame["cursor"],
+            frame["values"],
+            None,
+        )
+        event = {"actor": "human", "type": "plan_rejected", "payload": {"reason": reason}}
+        return self.world.transition_run(run["id"], run["stage"], "paused", payload, event)
 
     def _drive(self, run_id: str, signal: dict | None = None) -> dict:
         while True:

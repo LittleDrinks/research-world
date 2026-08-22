@@ -46,6 +46,7 @@ GraphMind 将新颖性审核放在交互式图谱中 [graphmind]；实证研究�
 ## auto 模式
 - 开：reflect 产 direction 直接进 review；review 过即自动启动 research run 自主迭代。
 - 关：direction 启动与每步 plan 执行均需人确认。
+- 人工可驳回未执行的 plan；run 暂停、experiment 变 ghost、direction 释放 working，不产生 supports/refutes 边。
 - 熔断：同一谱系 review 连续驳回 2 次，auto 暂停该谱系并升级人。
 EvoScientist 将失败方向作为后续搜索的显式记忆 [evoscientist]，Co-Scientist 将提出、执行和复核连接为受反馈约束的研究循环 [co-scientist]。幽灵车道保留失败的适用范围，熔断则避免同一谱系在无新证据时空转。
 ## 恢复

@@ -367,6 +367,24 @@ def test_manual_research_confirms_every_planned_step(world, project):
     assert len(runner.calls) == 2
 
 
+def test_manual_research_can_reject_plan_without_refuting_direction(world, project):
+    direction = admitted_direction(world, project)
+    run = world.create_run(project["id"], direction["id"], research_pipeline())
+    service = engine(world, FakeAgents(), runner=FakeRunner())
+    planned = service.run(run["id"])
+    experiment_id = planned["payload"]["experiment_id"]
+
+    rejected = service.resolve(run["id"], "reject", "步骤之间错误共享文件")
+
+    assert rejected["status"] == "paused"
+    assert rejected["stage"] == "execute"
+    assert rejected["payload"]["_pipeline"]["gate"] is None
+    assert world.node(experiment_id)["life_state"] == "ghost"
+    assert world.node(direction["id"])["direction_status"] == "proposed"
+    assert world.node(direction["id"])["working"] == 0
+    assert world.edges(project["id"]) == []
+
+
 def test_replan_adds_evidence_without_rewriting_terminal_direction(world, project):
     direction = admitted_direction(world, project)
     world.update_node(direction["id"], direction_status="refuted")

@@ -34,11 +34,19 @@ test("marks sessions unavailable instead of fabricating them", async ({ page }) 
 
 test("confirms a waiting run through the real API", async ({ page }) => {
   let confirmed = false;
+  let rejected;
   await mockBase(page, bootstrap({ runs: [run({ status: "waiting_human" })] }));
   await page.route(/\/api\/v1\/runs\/run%3Ar1\/confirm/, (route) => { confirmed = true; return route.fulfill({ status: 202, json: run() }); });
+  await page.route(/\/api\/v1\/runs\/run%3Ar1\/resolve/, (route) => {
+    rejected = route.request().postDataJSON(); return route.fulfill({ status: 202, json: run() });
+  });
   await page.goto("/traces/run%3Ar1");
   await expect(page.getByRole("button", { name: "批准" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "驳回" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "驳回", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "驳回计划" })).toBeVisible();
+  await page.getByRole("button", { name: "驳回计划" }).click();
+  await expect.poll(() => rejected).toEqual({ decision: "reject", reason: "人工驳回实验计划" });
+  await page.reload();
   await page.getByRole("button", { name: "确认继续" }).click();
   await expect.poll(() => confirmed).toBe(true);
   await expect(page.getByRole("button", { name: "确认继续" })).toBeDisabled();
