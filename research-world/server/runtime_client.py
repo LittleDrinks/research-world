@@ -147,7 +147,7 @@ class KernelClient:
         return None
 
     def _node(self, node_id: str) -> dict:
-        node = self.world.node(node_id)
+        node = self.world.node(_canonical_node_id(node_id))
         if node["project_id"] != self.project_id:
             raise PermissionError("node belongs to another project")
         return node
@@ -192,6 +192,11 @@ def _websocket_url(value: str) -> str:
     scheme = "wss" if parsed.scheme in {"https", "wss"} else "ws"
     path = parsed.path.rstrip("/") + "/acp/"
     return urlunsplit((scheme, parsed.netloc, path, "", ""))
+
+
+def _canonical_node_id(value: str) -> str:
+    node_id = value.lstrip("@")
+    return node_id if node_id.startswith("node:") else f"node:{node_id}"
 
 
 def _prompt_blocks(message: str, node_ids: list[str]) -> list:

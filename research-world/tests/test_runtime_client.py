@@ -34,10 +34,11 @@ def test_prompt_resources_are_node_ids():
 async def test_kernel_client_exposes_project_nodes(world, project):
     node = world.nodes(project["id"])[0]
     client = KernelClient(world, project["id"])
-    content = await client.read_text_file("session", f"@{node['id']}")
+    bare_id = node["id"].removeprefix("node:")
+    content = await client.read_text_file("session", f"@{bare_id}")
     assert json.loads(content.content)["id"] == node["id"]
     result = await client.ext_method(
-        "research/graph_query", {"action": "get", "node_id": node["id"]}
+        "research/graph_query", {"action": "get", "node_id": bare_id}
     )
     assert result["id"] == node["id"]
 
