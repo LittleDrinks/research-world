@@ -15,8 +15,8 @@ from server.runtime_client import (
 
 
 def test_runtime_url_uses_acp_websocket():
-    assert _websocket_url("http://runtime:8098") == "ws://runtime:8098/acp"
-    assert _websocket_url("https://runtime.test/base") == "wss://runtime.test/base/acp"
+    assert _websocket_url("http://runtime:8098") == "ws://runtime:8098/acp/"
+    assert _websocket_url("https://runtime.test/base") == "wss://runtime.test/base/acp/"
 
 
 def test_json_object_repairs_fenced_model_output():

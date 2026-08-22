@@ -190,7 +190,7 @@ def _update_event(update):
 def _websocket_url(value: str) -> str:
     parsed = urlsplit(value)
     scheme = "wss" if parsed.scheme in {"https", "wss"} else "ws"
-    path = parsed.path.rstrip("/") + "/acp"
+    path = parsed.path.rstrip("/") + "/acp/"
     return urlunsplit((scheme, parsed.netloc, path, "", ""))
 
 
