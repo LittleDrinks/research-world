@@ -48,6 +48,10 @@ GraphMind 将新颖性审核放在交互式图谱中 [graphmind]；实证研究�
 - 关：direction 启动与每步 plan 执行均需人确认。
 - 熔断：同一谱系 review 连续驳回 2 次，auto 暂停该谱系并升级人。
 EvoScientist 将失败方向作为后续搜索的显式记忆 [evoscientist]，Co-Scientist 将提出、执行和复核连接为受反馈约束的研究循环 [co-scientist]。幽灵车道保留失败的适用范围，熔断则避免同一谱系在无新证据时空转。
+## 恢复
+- Worker 对 `running` run 续期；租约过期后其他 Worker 可原子领取并从 run 快照继续。
+- stage 内每次产生节点、审查结论或实验计划后更新 `_pipeline` 检查点；恢复只执行检查点之后的动作。
+- 实验步骤以 `(run_id, ordinal)` 幂等创建；已完成步骤读取持久输出，未完成步骤重新执行。
 ## 三视图（其余删除）
 - 地图（主屏）：知识图谱式 kanban；科研日志是地图的时间视图；非 admitted 节点淡化。
 - 对话：Project 下的 Thread；节点通过 `@node_id` 作为资源引用钉入，不拥有消息。

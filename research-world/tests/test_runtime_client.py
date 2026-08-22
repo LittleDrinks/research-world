@@ -19,18 +19,22 @@ class RetryingRuntime(RuntimeClient):
     def __init__(self, outputs):
         self.outputs = outputs
         self.prompts = []
+        self.launch_values = []
         self.project_id = "project:test"
 
     async def launch(self, agent_spec, workspace, **values):
+        self.launch_values.append(values)
         return "session:test"
 
     async def prompt(self, session_id, message, project_id=None):
         self.prompts.append(message)
 
     async def inspect(self, session_id):
+        if not self.prompts:
+            return {"session": {"id": session_id}, "turns": []}
         output = self.outputs[len(self.prompts) - 1]
         turn = {"id": f"turn:{len(self.prompts)}", "output": output, "events": []}
-        return {"turns": [turn]}
+        return {"session": {"id": session_id}, "turns": [turn]}
 
     def _workspace(self):
         return "/workspace"
@@ -60,6 +64,18 @@ async def test_json_retries_malformed_output_in_same_session():
     result = await runtime._json({}, "compare", {}, ("duplicate",))
     assert result["duplicate"] is True
     assert "valid JSON object" in runtime.prompts[1]
+
+
+@pytest.mark.asyncio
+async def test_json_reuses_completed_operation_without_prompting():
+    runtime = RetryingRuntime(['{"duplicate":false}'])
+    runtime.prompts.append("already completed")
+
+    result = await runtime._json({}, "compare", {}, ("duplicate",), "run:1:review")
+
+    assert result["duplicate"] is False
+    assert runtime.prompts == ["already completed"]
+    assert runtime.launch_values[0]["session_id"].startswith("s-op-")
 
 
 def test_prompt_resources_are_node_ids():

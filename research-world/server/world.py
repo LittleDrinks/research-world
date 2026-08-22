@@ -4,6 +4,7 @@ import json
 import secrets
 import sqlite3
 from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from .artifacts import now
@@ -14,6 +15,7 @@ NODE_KINDS = {"question", "source", "direction", "experiment"}
 LIFE_STATES = {"pending", "admitted", "ghost"}
 EDGE_POLARITIES = {"supports", "refutes"}
 DIRECTION_STATES = {"proposed", "supported", "refuted"}
+RUN_LEASE_SECONDS = 30
 
 
 def decode(row: sqlite3.Row) -> dict:
@@ -374,10 +376,24 @@ class World:
         return self._many(sql, (project_id,) if project_id else ())
 
     def claim_run(self) -> dict | None:
-        sql = "UPDATE pipeline_runs SET status='running',updated_at=? WHERE id=(SELECT id FROM pipeline_runs WHERE status='queued' ORDER BY created_at LIMIT 1) RETURNING *"
+        sql = """UPDATE pipeline_runs SET status='running',updated_at=? WHERE id=(
+        SELECT id FROM pipeline_runs WHERE status='queued' OR
+        (status='running' AND updated_at<?)
+        ORDER BY CASE status WHEN 'queued' THEN 0 ELSE 1 END,created_at LIMIT 1
+        ) RETURNING *"""
+        timestamp = now()
+        expired = (datetime.now(UTC) - timedelta(seconds=RUN_LEASE_SECONDS)).isoformat()
         with self.db.connect() as connection:
-            row = connection.execute(sql, (now(),)).fetchone()
+            row = connection.execute(sql, (timestamp, expired)).fetchone()
         return decode(row) if row else None
+
+    def touch_run(self, run_id: str) -> bool:
+        with self.db.connect() as connection:
+            cursor = connection.execute(
+                "UPDATE pipeline_runs SET updated_at=? WHERE id=? AND status='running'",
+                (now(), run_id),
+            )
+        return cursor.rowcount == 1
 
     def update_run(
         self, run_id: str, stage: str, status: str, payload: dict | None = None
@@ -391,6 +407,27 @@ class World:
             )
         return self.run(run_id)
 
+    def transition_run(
+        self, run_id: str, stage: str, status: str, payload: dict, event: dict
+    ) -> dict:
+        timestamp = now()
+        with self.db.connect() as connection:
+            connection.execute(
+                "UPDATE pipeline_runs SET stage=?,status=?,payload=?,updated_at=? WHERE id=?",
+                (stage, status, json.dumps(payload), timestamp, run_id),
+            )
+            connection.execute(
+                "INSERT INTO pipeline_events(run_id,actor,type,payload,time) VALUES(?,?,?,?,?)",
+                (
+                    run_id,
+                    event["actor"],
+                    event["type"],
+                    json.dumps(event["payload"]),
+                    timestamp,
+                ),
+            )
+        return self.run(run_id)
+
     def add_step(
         self, run_id: str, ordinal: int, stage: str, payload: dict, confirm: bool
     ) -> dict:
@@ -398,9 +435,13 @@ class World:
         values = step_values(step_id, run_id, ordinal, stage, payload, confirm)
         with self.db.connect() as connection:
             connection.execute(
-                "INSERT INTO pipeline_steps VALUES(?,?,?,?,?,?,?,?,?,?)", values
+                "INSERT OR IGNORE INTO pipeline_steps VALUES(?,?,?,?,?,?,?,?,?,?)",
+                values,
             )
-        return self._one("SELECT * FROM pipeline_steps WHERE id=?", (step_id,))
+        return self._one(
+            "SELECT * FROM pipeline_steps WHERE run_id=? AND ordinal=?",
+            (run_id, ordinal),
+        )
 
     def steps(self, run_id: str) -> list[dict]:
         return self._many(
@@ -443,16 +484,35 @@ class World:
             "SELECT * FROM pipeline_events WHERE run_id=? ORDER BY id", (run_id,)
         )
 
-    def register_review(self, lineage_id: str, approved: bool) -> dict:
-        lineage = self._one("SELECT * FROM lineages WHERE id=?", (lineage_id,))
-        streak = 0 if approved else lineage["rejection_streak"] + 1
-        paused = int(streak >= 2)
+    def resolve_direction_review(
+        self, node_id: str, approved: bool, reason: str
+    ) -> dict:
         with self.db.connect() as connection:
-            connection.execute(
-                "UPDATE lineages SET rejection_streak=?,auto_paused=? WHERE id=?",
-                (streak, paused, lineage_id),
-            )
-        return self._one("SELECT * FROM lineages WHERE id=?", (lineage_id,))
+            row = connection.execute(
+                "SELECT * FROM nodes WHERE id=?", (node_id,)
+            ).fetchone()
+            node = decode(row)
+            changed = node["life_state"] == "pending"
+            if changed:
+                _resolve_node(connection, node, approved, reason)
+                lineage = _register_review(connection, node["lineage_id"], approved)
+            else:
+                lineage = _lineage(connection, node["lineage_id"])
+        return {"changed": changed, "node": self.node(node_id), "lineage": lineage}
+
+    def resolve_experiment_review(
+        self, experiment_id: str, direction_id: str, approved: bool, payload: dict
+    ) -> dict:
+        with self.db.connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM nodes WHERE id=?", (experiment_id,)
+            ).fetchone()
+            experiment = decode(row)
+            changed = experiment["life_state"] == "pending"
+            if changed:
+                _resolve_experiment(connection, experiment, direction_id, approved, payload)
+            lineage = _lineage(connection, experiment["lineage_id"])
+        return {"changed": changed, "lineage": lineage}
 
     def _rows(self, sql: str, params: tuple = ()) -> list[sqlite3.Row]:
         with self.db.connect() as connection:
@@ -524,3 +584,53 @@ def step_values(step_id, run_id, ordinal, stage, payload, confirm) -> tuple:
         None,
         None,
     )
+
+
+def _resolve_node(connection, node, approved, reason) -> None:
+    life_state = "admitted" if approved else "ghost"
+    rejection = None if approved else reason.strip()
+    connection.execute(
+        "UPDATE nodes SET life_state=?,working=0,rejection_reason=?,updated_at=? WHERE id=?",
+        (life_state, rejection, now(), node["id"]),
+    )
+
+
+def _resolve_experiment(connection, experiment, direction_id, approved, payload):
+    _resolve_node(connection, experiment, approved, "机械证据审计或双审未通过")
+    connection.execute(
+        "UPDATE nodes SET payload=? WHERE id=?", (json.dumps(payload), experiment["id"])
+    )
+    polarity = "supports" if approved else "refutes"
+    connection.execute(
+        "INSERT OR IGNORE INTO edges VALUES(?,?,?,?)",
+        (experiment["id"], direction_id, polarity, now()),
+    )
+    _resolve_direction(connection, direction_id, approved)
+    _register_review(connection, experiment["lineage_id"], approved)
+
+
+def _resolve_direction(connection, node_id, approved) -> None:
+    state = "supported" if approved else "refuted"
+    connection.execute(
+        "UPDATE nodes SET direction_status=CASE WHEN direction_status='proposed' "
+        "THEN ? ELSE direction_status END,working=0,updated_at=? WHERE id=?",
+        (state, now(), node_id),
+    )
+
+
+def _register_review(connection, lineage_id, approved) -> dict:
+    lineage = _lineage(connection, lineage_id)
+    streak = 0 if approved else lineage["rejection_streak"] + 1
+    paused = int(streak >= 2)
+    connection.execute(
+        "UPDATE lineages SET rejection_streak=?,auto_paused=? WHERE id=?",
+        (streak, paused, lineage_id),
+    )
+    return {**lineage, "rejection_streak": streak, "auto_paused": paused}
+
+
+def _lineage(connection, lineage_id) -> dict:
+    row = connection.execute(
+        "SELECT * FROM lineages WHERE id=?", (lineage_id,)
+    ).fetchone()
+    return decode(row)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 from contextlib import asynccontextmanager
 from urllib.parse import urlsplit, urlunsplit
@@ -75,12 +76,26 @@ class RuntimeClient:
         return "".join(parts)
 
     def json(
-        self, agent_spec: dict, instruction: str, payload: dict, required: tuple[str, ...]
+        self,
+        agent_spec: dict,
+        instruction: str,
+        payload: dict,
+        required: tuple[str, ...],
+        operation_id: str | None = None,
     ) -> dict:
-        return asyncio.run(self._json(agent_spec, instruction, payload, required))
+        return asyncio.run(
+            self._json(agent_spec, instruction, payload, required, operation_id)
+        )
 
-    async def _json(self, agent_spec, instruction, payload, required):
-        session_id = await self.launch(agent_spec, self._workspace())
+    async def _json(
+        self, agent_spec, instruction, payload, required, operation_id=None
+    ):
+        requested = _operation_session_id(operation_id) if operation_id else None
+        session_id = await self.launch(
+            agent_spec, self._workspace(), session_id=requested
+        )
+        if cached := _cached_json(await self.inspect(session_id), required, session_id):
+            return cached
         prompt = f"{instruction}\nReturn one JSON object and no prose.\n{json.dumps(payload, ensure_ascii=False)}"
         for _ in range(2):
             await self.prompt(session_id, prompt, self.project_id)
@@ -223,6 +238,21 @@ def _json_result(value: dict, session_id: str, turn: dict) -> dict:
         "_turn_id": turn["id"],
         "_usage": _turn_usage(turn),
     }
+
+
+def _cached_json(
+    view: dict, required: tuple[str, ...], session_id: str
+) -> dict | None:
+    for turn in reversed(view.get("turns", [])):
+        value, missing = _validated_json(turn.get("output") or "", required)
+        if not missing:
+            return _json_result(value, session_id, turn)
+    return None
+
+
+def _operation_session_id(operation_id: str) -> str:
+    digest = hashlib.sha256(operation_id.encode()).hexdigest()
+    return f"s-op-{digest[:32]}"
 
 
 def _validated_json(output: str, required: tuple[str, ...]) -> tuple[dict, list[str]]:

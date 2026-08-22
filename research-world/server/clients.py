@@ -9,6 +9,7 @@ class RunnerClient:
 
     def run(self, step: dict) -> dict:
         spec = {
+            "execution_id": step["execution_id"],
             "image": step["image"],
             "command": step["command"],
             "files": step.get("files", {}),

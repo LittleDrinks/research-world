@@ -98,21 +98,21 @@ class FakeAgents:
     def validate(self, pipeline):
         return None
 
-    def brainstorm(self, context, count, agent=None):
+    def brainstorm(self, context, count, agent=None, operation_id=None):
         self.brainstorm_contexts.append(context)
         self.agent_ids.append(("brainstorm", agent))
         return {"candidates": self.candidates[:count]}
 
-    def pairwise(self, left, right):
+    def pairwise(self, left, right, operation_id=None):
         self.pairs.append((left, right))
         return {"duplicate": True}
 
-    def plan(self, direction, agent=None):
+    def plan(self, direction, agent=None, operation_id=None):
         self.plan_contexts.append(direction)
         self.agent_ids.append(("plan", agent))
         return {"steps": self.steps}
 
-    def review(self, context, reviewer, agent=None):
+    def review(self, context, reviewer, agent=None, operation_id=None):
         self.agent_ids.append(("review", agent))
         decision = self.decisions.pop(0) if self.decisions else "approve"
         return {
@@ -122,7 +122,7 @@ class FakeAgents:
             "rebuttal": reviewer,
         }
 
-    def reflect(self, context, agent=None):
+    def reflect(self, context, agent=None, operation_id=None):
         self.reflect_contexts.append(context)
         self.agent_ids.append(("reflect", agent))
         return {"text": "Reflected direction"}
@@ -133,8 +133,8 @@ class FakeRuntime:
         self.value = value
         self.call = None
 
-    def json(self, agent_spec, instruction, payload, required):
-        self.call = (agent_spec, instruction, payload, required)
+    def json(self, agent_spec, instruction, payload, required, operation_id=None):
+        self.call = (agent_spec, instruction, payload, required, operation_id)
         return self.value
 
 
@@ -517,3 +517,84 @@ def test_background_run_failure_becomes_terminal(world, project):
     _run_action(world, run["id"], fail, ())
     assert world.run(run["id"])["status"] == "failed"
     assert world.node(root["id"])["working"] == 0
+
+
+def test_direction_review_resumes_from_persisted_node(world, project):
+    root = world.nodes(project["id"])[0]
+    run = world.create_run(project["id"], root["id"], brainstorm_pipeline())
+    values = {
+        "origin": root["id"],
+        "directions": [{"text": "Stable candidate", "quality": 0.8}],
+    }
+    payload = {"_pipeline": {"cursor": 3, "values": values, "gate": None}}
+    world.update_run(run["id"], "review", "running", payload)
+    agents = FakeAgents(decisions=["approve", "approve"])
+    service = engine(world, agents)
+    stage_spec = brainstorm_pipeline()["stages"][3]
+
+    service._review_direction(stage_spec, world.run(run["id"]), values, 0)
+    result = service.run(run["id"])
+
+    directions = [
+        node for node in world.nodes(project["id"]) if node["kind"] == "direction"
+    ]
+    assert result["status"] == "completed"
+    assert len(directions) == 1
+    assert directions[0]["life_state"] == "admitted"
+    assert agents.agent_ids.count(("review", "reviewer")) == 2
+
+
+def test_direction_resolution_is_idempotent(world, project):
+    node = world.create_node(project["id"], "direction", {"text": "candidate"})
+
+    first = world.resolve_direction_review(node["id"], False, "rejected")
+    second = world.resolve_direction_review(node["id"], False, "rejected")
+
+    assert first["changed"] is True
+    assert second["changed"] is False
+    assert second["lineage"]["rejection_streak"] == 1
+
+
+def test_plan_resume_reuses_checkpoint_and_partial_steps(
+    world, project, monkeypatch
+):
+    direction = admitted_direction(world, project)
+    steps = [
+        {"image": "busybox:1.36", "command": ["echo", "one"]},
+        {"image": "busybox:1.36", "command": ["echo", "two"]},
+    ]
+    run = world.create_run(project["id"], direction["id"], research_pipeline())
+    agents, service = FakeAgents(steps=steps), None
+    service = engine(world, agents, runner=FakeRunner())
+    add_step = world.add_step
+    calls = 0
+
+    def interrupted(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise RuntimeError("worker stopped")
+        return add_step(*args, **kwargs)
+
+    monkeypatch.setattr(world, "add_step", interrupted)
+    with pytest.raises(RuntimeError, match="worker stopped"):
+        service.run(run["id"])
+    monkeypatch.setattr(world, "add_step", add_step)
+
+    result = service.run(run["id"])
+    assert result["status"] == "waiting_human"
+    assert len(world.steps(run["id"])) == 2
+    assert len(agents.plan_contexts) == 1
+
+
+def test_running_container_step_is_resumable(world, project):
+    direction = admitted_direction(world, project)
+    run = world.create_run(project["id"], direction["id"], research_pipeline())
+    runner = FakeRunner()
+    service = engine(world, FakeAgents(), runner=runner)
+    service.run(run["id"])
+    step = world.steps(run["id"])[0]
+    world.update_step(step["id"], "running")
+
+    assert service.confirm(run["id"])["status"] == "completed"
+    assert len(runner.calls) == 1

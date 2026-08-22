@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 import uuid
 from collections import defaultdict
 from pathlib import Path
@@ -37,9 +38,14 @@ class Runtime:
     async def launch(self, value: dict[str, Any]) -> dict[str, Any]:
         workspace = _workspace(value["workspace"])
         spec = AgentSpec.parse(value["agent_spec"])
+        session_id = _session_id(value.get("session_id"))
+        if self.trace.path(session_id).exists():
+            _validate_existing_session(
+                self.inspect(session_id)["session"], _launch_identity(spec, workspace, value)
+            )
+            return {"session_id": session_id}
         recognized = await self.recognize(str(workspace))
         _validate_spec(spec, recognized)
-        session_id = f"s-{uuid.uuid4().hex}"
         meta = _session_meta(
             spec, workspace, value, _skill_snapshots(spec, workspace), recognized
         )
@@ -195,6 +201,30 @@ def _workspace(value: str) -> Path:
     if not path.is_absolute() or not path.is_dir():
         raise ValueError("workspace must be an existing directory")
     return path
+
+
+def _session_id(value: str | None) -> str:
+    session_id = value or f"s-{uuid.uuid4().hex}"
+    if not re.fullmatch(r"s-[A-Za-z0-9_-]{1,64}", session_id):
+        raise ValueError("invalid session id")
+    return session_id
+
+
+def _validate_existing_session(current: dict, expected: dict) -> None:
+    current_spec = AgentSpec.parse(current["agent_spec"]).snapshot()
+    same_spec = current_spec == expected["agent_spec"]
+    keys = ("workspace", "parent", "mode")
+    if not same_spec or any(current.get(key) != expected.get(key) for key in keys):
+        raise ValueError("session id belongs to a different launch")
+
+
+def _launch_identity(spec, workspace, value) -> dict:
+    return {
+        "workspace": str(workspace),
+        "agent_spec": spec.snapshot(),
+        "parent": value.get("parent"),
+        "mode": value.get("mode", "resume"),
+    }
 
 
 def _validate_spec(spec: AgentSpec, recognized: dict) -> None:

@@ -61,6 +61,34 @@ async def test_prompt_and_resume_are_derived_from_trace(tmp_path, monkeypatch):
     ] == ["one", "first", "two"]
 
 
+async def test_launch_with_same_session_id_is_idempotent(tmp_path, monkeypatch):
+    monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
+    monkeypatch.setenv("RUNTIME_API_KEY", "secret")
+    monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
+    runtime = Runtime(tmp_path / "data", {"openai-compatible": FakeProvider([])})
+    value = {
+        "workspace": str(tmp_path),
+        "agent_spec": spec(),
+        "session_id": "s-operation_1",
+    }
+
+    assert await runtime.launch(value) == {"session_id": "s-operation_1"}
+    assert await runtime.launch(value) == {"session_id": "s-operation_1"}
+    assert len(runtime.inspect("s-operation_1")["events"]) == 1
+
+
+async def test_launch_rejects_reusing_session_for_other_spec(tmp_path, monkeypatch):
+    monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
+    monkeypatch.setenv("RUNTIME_API_KEY", "secret")
+    monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
+    runtime = Runtime(tmp_path / "data", {"openai-compatible": FakeProvider([])})
+    value = {"workspace": str(tmp_path), "agent_spec": spec(), "session_id": "s-op"}
+    await runtime.launch(value)
+
+    with pytest.raises(ValueError, match="different launch"):
+        await runtime.launch({**value, "agent_spec": spec(instructions="changed")})
+
+
 async def test_skill_body_is_disclosed_only_after_tool_call(tmp_path, monkeypatch):
     monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
     monkeypatch.setenv("RUNTIME_API_KEY", "secret")

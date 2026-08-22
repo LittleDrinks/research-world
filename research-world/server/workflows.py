@@ -51,15 +51,26 @@ class AgentFacade:
             self.agents.get(agent_id)
 
     def _call(
-        self, agent_id: str, instruction: str, payload: dict, required: tuple[str, ...]
+        self,
+        agent_id: str,
+        instruction: str,
+        payload: dict,
+        required: tuple[str, ...],
+        operation_id: str | None = None,
     ) -> dict:
         return self.runtime.json(
-            self.agents.get(agent_id), instruction, payload, required
+            self.agents.get(agent_id), instruction, payload, required, operation_id
         )
 
-    def brainstorm(self, context: dict, count: int, agent: str) -> dict:
+    def brainstorm(
+        self, context: dict, count: int, agent: str, operation_id: str | None = None
+    ) -> dict:
         value = self._call(
-            agent, BRAINSTORM_PROMPT, {**context, "count": count}, ("candidates",)
+            agent,
+            BRAINSTORM_PROMPT,
+            {**context, "count": count},
+            ("candidates",),
+            operation_id,
         )
         candidates = required(value, "candidates")
         if not isinstance(candidates, list) or len(candidates) < count:
@@ -68,32 +79,41 @@ class AgentFacade:
             )
         return {**value, "candidates": candidates[:count]}
 
-    def pairwise(self, left: str, right: str) -> dict:
+    def pairwise(self, left: str, right: str, operation_id: str | None = None) -> dict:
         value = self._call(
             "independent-reviewer",
             PAIR_PROMPT,
             {"left": left, "right": right},
             ("duplicate",),
+            operation_id,
         )
         duplicate = required(value, "duplicate")
         if not isinstance(duplicate, bool):
             raise ValueError("runtime field 'duplicate' must be boolean")
         return value
 
-    def plan(self, direction: dict, agent: str) -> dict:
-        value = self._call(agent, PLAN_PROMPT, direction, ("steps",))
+    def plan(self, direction: dict, agent: str, operation_id: str | None = None) -> dict:
+        value = self._call(agent, PLAN_PROMPT, direction, ("steps",), operation_id)
         required(value, "steps")
         return value
 
-    def review(self, context: dict, reviewer: str, agent: str) -> dict:
+    def review(
+        self, context: dict, reviewer: str, agent: str, operation_id: str | None = None
+    ) -> dict:
         fields = ("decision", "quality", "diversity", "rebuttal")
         value = self._call(
-            agent, REVIEW_PROMPT, {**context, "reviewer": reviewer}, fields
+            agent,
+            REVIEW_PROMPT,
+            {**context, "reviewer": reviewer},
+            fields,
+            operation_id,
         )
         return value
 
-    def reflect(self, context: dict, agent: str) -> dict:
-        return self._call(agent, REFLECT_PROMPT, context, ("text",))
+    def reflect(
+        self, context: dict, agent: str, operation_id: str | None = None
+    ) -> dict:
+        return self._call(agent, REFLECT_PROMPT, context, ("text",), operation_id)
 
 
 @dataclass
@@ -121,8 +141,9 @@ class PipelineEngine:
         run = self.world.run(run_id)
         self.primitives.validate(run["definition_snapshot"])
         self.agents.validate(run["definition_snapshot"])
+        event = "run_resumed" if self.world.run_events(run_id) else "run_started"
         self._event(
-            run_id, "control", "run_started", {"pipeline_id": run["pipeline_id"]}
+            run_id, "control", event, {"pipeline_id": run["pipeline_id"]}
         )
         return self._drive(run_id)
 
@@ -175,15 +196,21 @@ class PipelineEngine:
         payload = _stage_payload(run["payload"], cursor, values, gate)
         status = "waiting_human" if gate else "running"
         event = "gate_waiting" if gate else "stage_completed"
-        self._event(run["id"], "control", event, {"stage": stage["id"]})
-        return self.world.update_run(run["id"], stage["id"], status, payload)
+        return self.world.transition_run(
+            run["id"],
+            stage["id"],
+            status,
+            payload,
+            {"actor": "control", "type": event, "payload": {"stage": stage["id"]}},
+        )
 
     def _generate_directions(self, stage: dict, context: dict) -> dict:
         run = context["run"]
         origin = self.world.set_working(run["node_id"], True)
         count = int(run["payload"].get("count", 8))
         context = self._agent_context(run, origin["payload"])
-        result = self.agents.brainstorm(context, count, stage["agent"])
+        operation = f"{run['id']}:{stage['id']}:brainstorm"
+        result = self.agents.brainstorm(context, count, stage["agent"], operation)
         self._record_agent(run["id"], "brainstormer", result)
         values = {"origin": origin["id"], "candidates": result["candidates"]}
         return _stage_result(run, values)
@@ -256,7 +283,8 @@ class PipelineEngine:
         review = float(params.get("review", 0.6))
         if score < review:
             return False
-        result = self.agents.pairwise(candidate["text"], match["text"])
+        operation = f"{run['id']}:deduplicate:{candidate['text']}:{match['text']}"
+        result = self.agents.pairwise(candidate["text"], match["text"], operation)
         self._record_agent(run["id"], "deduplicator", result)
         return result["duplicate"]
 
@@ -264,7 +292,9 @@ class PipelineEngine:
         reason = (
             f"与“{match['text']}”重合（cos={score:.2f}），已阻断并转入 reflect/合并。"
         )
-        node = self._candidate_node(run, origin, candidate, "ghost")
+        node = self._blocked_node(run, origin, candidate)
+        if node["rejection_reason"]:
+            return
         self.world.update_node(node["id"], rejection_reason=reason)
         self._event(
             run["id"],
@@ -272,6 +302,20 @@ class PipelineEngine:
             "candidate_blocked",
             {"node_id": node["id"], "reason": reason},
         )
+
+    def _blocked_node(self, run, origin, candidate) -> dict:
+        existing = next(
+            (
+                node
+                for node in self.world.nodes(run["project_id"])
+                if node["kind"] == "direction"
+                and node["life_state"] == "ghost"
+                and node["parent_id"] == origin["id"]
+                and node["payload"].get("text") == candidate["text"]
+            ),
+            None,
+        )
+        return existing or self._candidate_node(run, origin, candidate, "ghost")
 
     def _candidate_node(self, run, origin, candidate, life_state="pending") -> dict:
         lineage = f"lineage:{secrets.token_hex(12)}"
@@ -302,6 +346,7 @@ class PipelineEngine:
                 return waiting
             index += 1
             values[key] = index
+            self._checkpoint(run["id"], values)
         if values.get("origin"):
             self.world.set_working(values["origin"], False)
         return _stage_result(run, values)
@@ -310,7 +355,12 @@ class PipelineEngine:
         item = values["directions"][index]
         node = self._direction_node(run, values, item)
         values["directions"][index] = {"node_id": node["id"]}
-        outcome = self._double_review(run, node, "direction", agent=stage["agent"])
+        self._checkpoint(run["id"], values)
+        if node["life_state"] != "pending":
+            return None
+        found, outcome = _stored_review(node)
+        if not found:
+            outcome = self._double_review(run, node, "direction", agent=stage["agent"])
         if outcome is None:
             gate = {"kind": "review", "node_id": node["id"]}
             return _stage_result(run, values, "conflict", gate)
@@ -339,18 +389,27 @@ class PipelineEngine:
         self._resolve_node(run, node, approved, reason)
 
     def _plan_experiment(self, stage: dict, context: dict) -> dict:
-        run = context["run"]
+        run, values = context["run"], dict(context["values"])
         direction = self.world.set_working(run["node_id"], True)
+        experiment = self._experiment(run, direction, values)
+        values["experiment"] = experiment["id"]
+        self._checkpoint(run["id"], values)
+        values["plan"] = self._plan(run, direction, stage["agent"], values)
+        self._checkpoint(run["id"], values)
+        steps = self._ensure_steps(run, values["plan"])
+        return _stage_result(
+            run, {"experiment": experiment["id"], "steps": steps}, drop=("plan",)
+        )
+
+    def _experiment(self, run, direction, values) -> dict:
+        node_id = values.get("experiment") or run["payload"].get("experiment_id")
+        if node_id:
+            return self.world.node(node_id)
         experiment = self._new_experiment(run, direction)
         self._event(
-            run["id"],
-            "control",
-            "experiment_created",
-            {"node_id": experiment["id"]},
+            run["id"], "control", "experiment_created", {"node_id": experiment["id"]}
         )
-        steps = self._plan_steps(run, direction, stage["agent"])
-        values = {"experiment": experiment["id"], "steps": steps}
-        return _stage_result(run, values)
+        return experiment
 
     def _new_experiment(self, run: dict, direction: dict) -> dict:
         experiment = self.world.create_node(
@@ -365,17 +424,22 @@ class PipelineEngine:
         self.world.update_run(run["id"], run["stage"], "running", payload)
         return experiment
 
-    def _plan_steps(self, run: dict, direction: dict, agent: str) -> list[str]:
+    def _plan(self, run: dict, direction: dict, agent: str, values: dict) -> list:
+        if values.get("plan") is not None:
+            return values["plan"]
         context = self._agent_context(run, direction["payload"])
-        plan = self.agents.plan(context, agent)
+        plan = self.agents.plan(context, agent, f"{run['id']}:plan")
         self._record_agent(run["id"], "planner", plan)
-        ids = []
-        for ordinal, step in enumerate(plan["steps"], 1):
+        return plan["steps"]
+
+    def _ensure_steps(self, run: dict, plan: list[dict]) -> list[str]:
+        steps = []
+        for ordinal, payload in enumerate(plan, 1):
             saved = self.world.add_step(
-                run["id"], ordinal, "execute", step, not bool(run["auto"])
+                run["id"], ordinal, "execute", payload, not bool(run["auto"])
             )
-            ids.append(saved["id"])
-        return ids
+            steps.append(saved["id"])
+        return steps
 
     def _execute_experiment(self, stage: dict, context: dict) -> dict:
         run, signal = context["run"], context.get("signal")
@@ -392,12 +456,15 @@ class PipelineEngine:
 
     def _pending_steps(self, run_id: str) -> list[dict]:
         return [
-            step for step in self.world.steps(run_id) if step["status"] == "pending"
+            step
+            for step in self.world.steps(run_id)
+            if step["status"] in {"pending", "running"}
         ]
 
     def _execute_step(self, run: dict, step: dict) -> None:
         self.world.update_step(step["id"], "running")
-        output = self.runner.run(step["payload"])
+        payload = {**step["payload"], "execution_id": step["id"]}
+        output = self.runner.run(payload)
         status = "completed" if output.get("exit_code") == 0 else "failed"
         self.world.update_step(step["id"], status, output)
         self._event(
@@ -407,6 +474,9 @@ class PipelineEngine:
     def _review_experiment(self, stage: dict, context: dict) -> dict:
         run, values = context["run"], context["values"]
         experiment = self.world.node(values["experiment"])
+        if experiment["life_state"] != "pending":
+            outcome = "approve" if experiment["life_state"] == "admitted" else "reject"
+            return _stage_result(run, outcome=outcome)
         if signal := context.get("signal"):
             return self._resume_experiment_review(
                 stage, run, experiment, values, signal
@@ -414,7 +484,9 @@ class PipelineEngine:
         outputs = values["outputs"]
         mechanical = all(output and output.get("exit_code") == 0 for output in outputs)
         extra = {"mechanical": mechanical, "outputs": outputs}
-        outcome = self._review_evidence(run, experiment, extra, stage["agent"])
+        found, outcome = _stored_review(experiment)
+        if not found:
+            outcome = self._review_evidence(run, experiment, extra, stage["agent"])
         if outcome is None:
             gate = {"kind": "review", "node_id": experiment["id"]}
             return _stage_result(run, outcome="conflict", gate=gate)
@@ -442,7 +514,12 @@ class PipelineEngine:
 
     def _double_review(self, run, node, subject, extra=None, agent=None) -> bool | None:
         context = {"subject": subject, "node": node["payload"], **(extra or {})}
-        reviews = [self.agents.review(context, name, agent) for name in ("A", "B")]
+        reviews = [
+            self.agents.review(
+                context, name, agent, f"{run['id']}:{subject}:{node['id']}:{name}"
+            )
+            for name in ("A", "B")
+        ]
         for name, review in zip(("A", "B"), reviews, strict=True):
             event = {**review, "node_id": node["id"], "subject": subject}
             self._record_agent(run["id"], f"reviewer-{name.lower()}", event)
@@ -456,13 +533,10 @@ class PipelineEngine:
         return decisions[0]
 
     def _resolve_node(self, run, node, approved: bool, reason: str) -> None:
-        lineage = self.world.register_review(node["lineage_id"], approved)
+        result = self.world.resolve_direction_review(node["id"], approved, reason)
+        lineage, current = result["lineage"], result["node"]
         if approved:
-            self.world.admit_node(node["id"])
-            self._queue_auto_research(run, node, lineage)
-        else:
-            current = self.world.node(node["id"])
-            self.world.ghost_node(node["id"], reason, current.get("rebuttal"))
+            self._queue_auto_research(run, current, lineage)
         self._pause_lineage(run, lineage, "同一谱系连续 2 次 review 驳回，已升级人工。")
 
     def _queue_auto_research(self, run, node, lineage) -> None:
@@ -474,16 +548,10 @@ class PipelineEngine:
     def _resolve_experiment(self, run, experiment, approved, outputs) -> None:
         direction = self.world.node(run["node_id"])
         payload = {**experiment["payload"], "outputs": outputs}
-        if approved:
-            self.world.admit_node(experiment["id"], payload)
-            self.world.add_edge(experiment["id"], direction["id"], "supports")
-        else:
-            reason = "机械证据审计或双审未通过"
-            current = self.world.node(experiment["id"])
-            self.world.ghost_node(experiment["id"], reason, current.get("rebuttal"))
-            self.world.add_edge(experiment["id"], direction["id"], "refutes")
-        self._resolve_direction(direction, approved)
-        lineage = self.world.register_review(direction["lineage_id"], approved)
+        result = self.world.resolve_experiment_review(
+            experiment["id"], direction["id"], approved, payload
+        )
+        lineage = result["lineage"]
         self._pause_lineage(run, lineage, "同一谱系连续 2 次驳回")
 
     def _pause_lineage(self, run, lineage, reason) -> None:
@@ -491,21 +559,17 @@ class PipelineEngine:
             payload = {**run["payload"], "reason": reason}
             self.world.update_run(run["id"], run["stage"], "paused", payload)
 
-    def _resolve_direction(self, direction: dict, approved: bool) -> None:
-        if direction["direction_status"] == "proposed":
-            state = "supported" if approved else "refuted"
-            self.world.update_node(
-                direction["id"], direction_status=state, working=False
-            )
-        else:
-            self.world.set_working(direction["id"], False)
-
     def _reflect_direction(self, stage: dict, context: dict) -> dict:
-        run, values = context["run"], context["values"]
+        run, values = context["run"], dict(context["values"])
+        if values.get("directions"):
+            return _stage_result(run, {"directions": values["directions"]})
         experiment = self.world.node(values["experiment"])
         outputs = values["outputs"]
         context = {"experiment": experiment["payload"], "outputs": outputs}
-        value = self.agents.reflect(self._agent_context(run, context), stage["agent"])
+        operation = f"{run['id']}:{stage['id']}:reflect"
+        value = self.agents.reflect(
+            self._agent_context(run, context), stage["agent"], operation
+        )
         self._record_agent(run["id"], "reflector", value)
         node = self.world.create_node(
             run["project_id"],
@@ -514,17 +578,26 @@ class PipelineEngine:
             parent_id=experiment["id"],
             lineage_id=experiment["lineage_id"],
         )
-        return _stage_result(run, {"directions": [{"node_id": node["id"]}]})
+        directions = [{"node_id": node["id"]}]
+        self._checkpoint(run["id"], {**values, "directions": directions})
+        return _stage_result(run, {"directions": directions})
 
     def _complete(self, run_id: str) -> dict:
-        self._event(run_id, "control", "run_completed", {})
-        return self.world.update_run(run_id, "complete", "completed")
+        run = self.world.run(run_id)
+        event = {"actor": "control", "type": "run_completed", "payload": {}}
+        return self.world.transition_run(
+            run_id, "complete", "completed", run["payload"], event
+        )
 
     def _pause(self, run_id: str, reason: str) -> dict:
-        self._event(run_id, "control", "run_paused", {"reason": reason})
-        return self.world.update_run(run_id, "paused", "paused", {"reason": reason})
+        run = self.world.run(run_id)
+        payload = {**run["payload"], "reason": reason}
+        event = {"actor": "control", "type": "run_paused", "payload": {"reason": reason}}
+        return self.world.transition_run(run_id, "paused", "paused", payload, event)
 
     def _record_agent(self, run_id: str, actor: str, value: dict) -> None:
+        if self._agent_event_exists(run_id, actor, value.get("_session_id")):
+            return
         payload = {
             "stage_id": self.world.run(run_id)["stage"],
             "session_id": value.get("_session_id"),
@@ -532,6 +605,22 @@ class PipelineEngine:
             "usage": value.get("_usage", {}),
         }
         self._event(run_id, actor, "agent_session", payload)
+
+    def _agent_event_exists(self, run_id, actor, session_id) -> bool:
+        return bool(session_id) and any(
+            item["actor"] == actor
+            and item["type"] == "agent_session"
+            and item["payload"].get("session_id") == session_id
+            for item in self.world.run_events(run_id)
+        )
+
+    def _checkpoint(self, run_id: str, values: dict) -> dict:
+        run = self.world.run(run_id)
+        if run["status"] == "paused":
+            return run
+        frame = _frame(run)
+        payload = _stage_payload(run["payload"], frame["cursor"], values, None)
+        return self.world.update_run(run_id, run["stage"], "running", payload)
 
     def _agent_context(self, run: dict, context: dict) -> dict:
         pins = [self._pin(node_id) for node_id in run["payload"].get("pins", [])]
@@ -607,6 +696,15 @@ def clean(value: dict) -> dict:
 
 def _without_vector(value: dict) -> dict:
     return {key: item for key, item in value.items() if key != "vector"}
+
+
+def _stored_review(node: dict) -> tuple[bool, bool | None]:
+    rebuttal = node.get("rebuttal") or {}
+    reviews = [rebuttal.get("reviewer_a"), rebuttal.get("reviewer_b")]
+    if not all(reviews):
+        return False, None
+    decisions = [review.get("decision") == "approve" for review in reviews]
+    return True, decisions[0] if decisions[0] == decisions[1] else None
 
 
 def required(value: dict, field: str):

@@ -2,15 +2,20 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import json
+import os
 import secrets
 import subprocess
 import tempfile
 import time
+from collections import defaultdict
 from pathlib import Path
+from threading import Lock
 
 from fastapi import FastAPI
 
 app = FastAPI(title="Research World Runner Controller")
+EXECUTION_LOCKS: defaultdict[str, Lock] = defaultdict(Lock)
 
 
 @app.get("/health")
@@ -41,7 +46,27 @@ def doctor() -> dict:
 
 @app.post("/run")
 def run(spec: dict) -> dict:
-    return run_container(spec)
+    execution_id = spec.pop("execution_id")
+    return run_once(execution_id, spec)
+
+
+def run_once(execution_id: str, spec: dict) -> dict:
+    target = execution_path(execution_id)
+    with EXECUTION_LOCKS[execution_id]:
+        if target.exists():
+            return json.loads(target.read_text(encoding="utf-8"))
+        result = {**run_container(spec), "execution_id": execution_id}
+        target.parent.mkdir(parents=True, exist_ok=True)
+        temporary = target.with_suffix(".tmp")
+        temporary.write_text(json.dumps(result), encoding="utf-8")
+        temporary.replace(target)
+        return result
+
+
+def execution_path(execution_id: str) -> Path:
+    digest = hashlib.sha256(execution_id.encode()).hexdigest()
+    root = Path(os.getenv("RW_DATA_ROOT", "/app/data"))
+    return root / "executions" / f"{digest}.json"
 
 
 @app.post("/build")
