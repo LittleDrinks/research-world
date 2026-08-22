@@ -330,9 +330,11 @@ def _prompt_content(blocks):
 
 
 def _provider_context(meta, events):
+    options = meta["agent_spec"].get("options", {})
     return {
         "workspace": meta["workspace"],
-        "sandbox": meta["agent_spec"].get("options", {}).get("sandbox", "read-only"),
+        "sandbox": options.get("sandbox", "read-only"),
+        "reasoning_effort": options.get("reasoning_effort", "medium"),
         "provider_session_id": _provider_session(events),
     }
 

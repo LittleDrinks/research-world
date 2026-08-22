@@ -22,7 +22,7 @@ sources:
 | 向量化 | endpoint、texts | vectors | `runtime/embed` extension |
 ACP Python SDK 负责连接、schema 与 HTTP/WebSocket 传输。Web 通过 Research Kernel 使用同一 ACP Client；Runtime 不暴露第二套 REST 会话协议。
 ## 内部所有权
-`providers` 处理 OpenAI 兼容端点与 Codex CLI；`skills` 解析 `SKILL.md`；`mcp` 解析工作区配置并执行所选 server；`tools` 执行文件与渐进披露工具；`trace` 写入并重放 Session；`acp` 只翻译外部协议。外部调用方不感知这些目录。
+`providers` 处理 OpenAI 兼容端点与 Codex CLI；Codex adapter 以 AgentSpec 的模型、推理强度与沙箱覆盖宿主默认值，单次调用 300 秒无结果即终止。`skills` 解析 `SKILL.md`；`mcp` 解析工作区配置并执行所选 server；`tools` 执行文件与渐进披露工具；`trace` 写入并重放 Session；`acp` 只翻译外部协议。外部调用方不感知这些目录。
 本机 Codex 0.149.0 没有 ACP 子命令，作为 Runtime 内部 CLI adapter 使用 `codex exec --json`；它不是新的外部边界。
 ## Session 与 Trace
 Trace 是 Session 的唯一事实源，不建消息数据库。凡进入模型的内容都写入 Trace；凭证、授权头与私有环境变量永不写入。事件为 `session_meta`、`turn_start`、`model_request`、`model_response`、`tool_call`、`tool_result`、`child_session`、`turn_end`、`error`。

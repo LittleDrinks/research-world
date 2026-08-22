@@ -11,11 +11,12 @@ from .base import Emit, ModelResult
 class CodexProvider:
     id = "codex"
 
-    def __init__(self, executable: str = "codex"):
+    def __init__(self, executable: str = "codex", timeout: float = 300.0):
         resolved = shutil.which(executable)
         if not resolved:
             raise RuntimeError("codex executable not found")
         self.executable = resolved
+        self.timeout = timeout
 
     @classmethod
     def detected(cls) -> CodexProvider | None:
@@ -32,7 +33,7 @@ class CodexProvider:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        return await _collect(process, _latest_user(messages), emit)
+        return await _collect(process, _latest_user(messages), emit, self.timeout)
 
     async def embed(self, model: str, texts: list[str]) -> list[list[float]]:
         raise RuntimeError("Codex CLI does not expose embeddings")
@@ -40,15 +41,24 @@ class CodexProvider:
     def _command(self, model: str, context: dict[str, Any]) -> list[str]:
         common = [self.executable, "-a", "never", "exec"]
         session_id = context.get("provider_session_id")
-        options = ["--json", "--skip-git-repo-check", "-m", model]
+        effort = context.get("reasoning_effort", "medium")
+        override = f'model_reasoning_effort="{effort}"'
+        options = ["--json", "--skip-git-repo-check", "-m", model, "-c", override]
         if session_id:
             return [*common, "resume", *options, session_id, "-"]
         sandbox = context.get("sandbox", "read-only")
         return [*common, *options, "-s", sandbox, "-"]
 
 
-async def _collect(process, prompt: str, emit: Emit) -> ModelResult:
-    stdout, stderr = await process.communicate(prompt.encode())
+async def _collect(process, prompt: str, emit: Emit, timeout: float) -> ModelResult:
+    try:
+        stdout, stderr = await asyncio.wait_for(
+            process.communicate(prompt.encode()), timeout
+        )
+    except TimeoutError as error:
+        process.kill()
+        await process.wait()
+        raise RuntimeError(f"codex timed out after {timeout:g}s") from error
     if process.returncode:
         raise RuntimeError(
             f"codex exited {process.returncode}: {stderr.decode()[-500:]}"
