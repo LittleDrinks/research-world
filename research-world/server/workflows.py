@@ -745,10 +745,21 @@ def default_engine(world: World, project_id: str) -> PipelineEngine:
 
 def fail_run(world: World, run_id: str, error: Exception) -> dict:
     run = world.run(run_id)
+    _fail_running_steps(world, run_id, error)
     _release_run_nodes(world, run)
     payload = {**run["payload"], "error": str(error)}
     world.record_run_event(run_id, "control", "run_failed", {"error": str(error)})
     return world.update_run(run_id, "failed", "failed", payload)
+
+
+def _fail_running_steps(world: World, run_id: str, error: Exception) -> None:
+    output = {"exit_code": 1, "stdout": "", "stderr": str(error)}
+    for step in world.steps(run_id):
+        if step["status"] != "running":
+            continue
+        world.update_step(step["id"], "failed", output)
+        payload = {"step_id": step["id"], **output}
+        world.record_run_event(run_id, "runner", "tool_result", payload)
 
 
 def _release_run_nodes(world: World, run: dict) -> None:

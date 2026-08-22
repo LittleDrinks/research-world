@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import hashlib
 import json
 import os
@@ -55,12 +56,24 @@ def run_once(execution_id: str, spec: dict) -> dict:
     with EXECUTION_LOCKS[execution_id]:
         if target.exists():
             return json.loads(target.read_text(encoding="utf-8"))
-        result = {**run_container(spec), "execution_id": execution_id}
+        result = {**execution_result(spec), "execution_id": execution_id}
         target.parent.mkdir(parents=True, exist_ok=True)
         temporary = target.with_suffix(".tmp")
         temporary.write_text(json.dumps(result), encoding="utf-8")
         temporary.replace(target)
         return result
+
+
+def execution_result(spec: dict) -> dict:
+    try:
+        return run_container(spec)
+    except ValueError as error:
+        return {
+            "exit_code": 2,
+            "stdout": "",
+            "stderr": f"invalid execution input: {error}",
+            "usage": {"wall_ms": 0},
+        }
 
 
 def execution_path(execution_id: str) -> Path:
@@ -110,10 +123,17 @@ def lock_image(tag: str) -> str:
 
 
 def write_files(root: Path, files: dict[str, str]) -> None:
+    root = root.resolve()
     for name, content in files.items():
-        target = root / name
+        target = (root / name).resolve()
+        if not target.is_relative_to(root) or target == root:
+            raise ValueError(f"file path escapes workspace: {name}")
+        try:
+            value = base64.b64decode(content, validate=True)
+        except (binascii.Error, UnicodeError, ValueError) as error:
+            raise ValueError(f"file is not valid base64: {name}") from error
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(base64.b64decode(content))
+        target.write_bytes(value)
 
 
 def run_container(spec: dict) -> dict:

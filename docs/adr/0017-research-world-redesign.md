@@ -53,6 +53,7 @@ EvoScientist 将失败方向作为后续搜索的显式记忆 [evoscientist]，C
 - Worker 对 `running` run 续期；租约过期后其他 Worker 可原子领取并从 run 快照继续。
 - stage 内每次产生节点、审查结论或实验计划后更新 `_pipeline` 检查点；恢复只执行检查点之后的动作。
 - 实验步骤以 `(run_id, ordinal)` 幂等创建；已完成步骤读取持久输出，未完成步骤重新执行。
+- runner 将非法输入记录为非零执行结果；run 进入终态前，所有已启动 step 必须进入 completed 或 failed。
 ## 三视图（其余删除）
 - 地图（主屏）：知识图谱式 kanban；科研日志是地图的时间视图；非 admitted 节点淡化。
 - 对话：Project 下的 Thread；节点通过 `@node_id` 作为资源引用钉入，不拥有消息。

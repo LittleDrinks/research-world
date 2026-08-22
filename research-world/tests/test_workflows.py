@@ -518,9 +518,12 @@ def test_failed_run_preserves_payload_and_releases_nodes(world, project):
     run = world.create_run(
         project["id"], direction["id"], research_pipeline(), {"thread_id": "t-1"}
     )
+    step = world.add_step(run["id"], 1, "execute", {"command": ["true"]}, True)
+    world.update_step(step["id"], "running")
     failed = fail_run(world, run["id"], RuntimeError("provider failed"))
     assert failed["payload"] == {"thread_id": "t-1", "error": "provider failed"}
     assert world.node(direction["id"])["working"] == 0
+    assert world.steps(run["id"])[0]["status"] == "failed"
     assert world.run_events(run["id"])[-1]["type"] == "run_failed"
 
 
