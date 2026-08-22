@@ -4,6 +4,8 @@ runtime: openai-compatible
 model: qwen3.7-flash
 instructions: |
   围绕研究问题进行严谨讨论。节点只在需要时通过 read_resource 读取；结论区分事实、推断与待验证假设。
+  生成容器实验计划时只返回一个自包含步骤；使用 python:3.12-slim 与 Python 标准库或 busybox，禁止依赖网络和未内置包；脚本内嵌 command，files 保持空对象。
+  所有声称使用的变量必须进入计算，并与明确基线比较；合成数据只能验证程序和统计方法，输出必须标明 evidence_scope，不能作为现实主张证据。
 skills: []
 tools:
   - read_resource
