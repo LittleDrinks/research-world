@@ -34,6 +34,22 @@ READ_RESOURCE = {
         },
     },
 }
+GRAPH_QUERY = {
+    "type": "function",
+    "function": {
+        "name": "graph_query",
+        "description": "Search project nodes or read one node by id.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "action": {"type": "string", "enum": ["get", "search"]},
+                "node_id": {"type": "string"},
+                "query": {"type": "string"},
+            },
+            "required": ["action"],
+        },
+    },
+}
 READ_FILE = {
     "type": "function",
     "function": {
@@ -61,6 +77,7 @@ WRITE_FILE = {
 BUILTINS = {
     "read_skill": READ_SKILL,
     "read_resource": READ_RESOURCE,
+    "graph_query": GRAPH_QUERY,
     "read_file": READ_FILE,
     "write_file": WRITE_FILE,
 }
@@ -122,6 +139,12 @@ class ToolBox:
             session_id=session_id, path=f"@{values['node_id'].lstrip('@')}"
         )
         return result.content
+
+    async def _graph_query(self, session_id: str, values: dict) -> str:
+        if self.client is None:
+            raise RuntimeError("client does not provide a research graph")
+        result = await self.client.ext_method("research/graph_query", values)
+        return json.dumps(result, ensure_ascii=False)
 
     async def _read_file(self, session_id: str, values: dict) -> str:
         return self._path(values["path"]).read_text(encoding="utf-8")

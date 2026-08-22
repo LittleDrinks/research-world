@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
+import os
 import sys
 from pathlib import Path
 
-import httpx
-
 from .app import app
-from .clients import EmbeddingClient
 from .config import load_settings
+from .runtime_client import RuntimeClient
 from .world import World
 
 
@@ -50,7 +50,7 @@ def main(argv=None, world: World | None = None, output=None, error=None) -> int:
         value = dispatch(args, world or default_world())
         print(json.dumps({"ok": True, "data": value}), file=output)
         return 0
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - CLI renders failures as JSON.
         print(json.dumps({"ok": False, "error": str(exc)}), file=error)
         return 2
 
@@ -70,15 +70,18 @@ def project_command(args, world: World):
     if args.action == "list":
         return world.projects()
     value = json.loads(args.file.read_text()) if args.file else json.load(sys.stdin)
-    return world.create_project(value["name"], project_root(value["root"]), value["question"],
-                                value.get("assembly"))
+    return world.create_project(
+        value["name"],
+        project_root(value["root"]),
+        value["question"],
+        value.get("assembly"),
+    )
 
 
 def doctor_embedding() -> dict:
     settings = load_settings()
-    if not settings.model_api_base or not settings.model_api_key:
-        raise RuntimeError("MODEL_API_BASE and MODEL_API_KEY are required")
-    vector = EmbeddingClient(settings.model_api_base, settings.model_api_key)("orbit")
+    model = os.getenv("RW_EMBEDDING_MODEL", "qwen3.7-text-embedding")
+    vector = asyncio.run(RuntimeClient(settings.runtime_url).embed(model, ["orbit"]))[0]
     return {"ok": True, "dimensions": len(vector)}
 
 
@@ -89,6 +92,7 @@ def project_root(value: str) -> Path:
 
 def serve(args):
     import uvicorn
+
     uvicorn.run(app, host=args.host, port=args.port)
     return {"stopped": True}
 

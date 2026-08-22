@@ -3,7 +3,6 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-
 SCHEMA = """
 PRAGMA foreign_keys=ON;
 CREATE TABLE IF NOT EXISTS projects(
@@ -32,12 +31,21 @@ CREATE VIRTUAL TABLE IF NOT EXISTS node_fts USING fts5(
 CREATE TABLE IF NOT EXISTS node_embeddings(
   node_id TEXT PRIMARY KEY REFERENCES nodes(id) ON DELETE CASCADE, vector TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS messages(
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+CREATE TABLE IF NOT EXISTS threads(
+  id TEXT PRIMARY KEY,
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  session_id TEXT NOT NULL UNIQUE,
+  agent_id TEXT NOT NULL,
+  archived INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS thread_nodes(
+  thread_id TEXT NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
   node_id TEXT NOT NULL REFERENCES nodes(id) ON DELETE CASCADE,
-  role TEXT NOT NULL CHECK(role IN ('user','assistant')),
-  content TEXT NOT NULL, created_at TEXT NOT NULL
+  pinned_at TEXT NOT NULL,
+  PRIMARY KEY(thread_id,node_id)
 );
 CREATE TABLE IF NOT EXISTS lineages(
   id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,

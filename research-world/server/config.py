@@ -4,7 +4,6 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -13,8 +12,8 @@ class Settings:
     database: Path
     artifacts: Path
     projects_root: Path
-    model_api_base: str | None
-    model_api_key: str | None
+    agents_root: Path
+    runtime_url: str
 
 
 def load_settings() -> Settings:
@@ -23,6 +22,6 @@ def load_settings() -> Settings:
         database=data / "research-world.db",
         artifacts=data / "artifacts",
         projects_root=Path(os.getenv("RW_PROJECTS_ROOT", ROOT / "projects")),
-        model_api_base=os.getenv("MODEL_API_BASE"),
-        model_api_key=os.getenv("MODEL_API_KEY"),
+        agents_root=Path(os.getenv("RW_AGENTS_ROOT", ROOT / "agents")),
+        runtime_url=os.getenv("RUNTIME_URL", "http://runtime:8098"),
     )

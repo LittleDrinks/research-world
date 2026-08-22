@@ -13,6 +13,7 @@ from .skills import discover_skills
 TOOLS = (
     {"id": "read_skill", "name": "读取 Skill"},
     {"id": "read_resource", "name": "读取引用节点"},
+    {"id": "graph_query", "name": "查询研究图谱"},
     {"id": "read_file", "name": "读取工作区文件"},
     {"id": "write_file", "name": "写入工作区文件"},
 )

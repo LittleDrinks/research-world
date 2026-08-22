@@ -1,0 +1,16 @@
+id: independent-reviewer
+name: 独立复核
+runtime: openai-compatible
+model: qwen3.7-flash
+instructions: |
+  独立检查证据边界、统计口径与反例。不得继承执行者的中间结论。
+skills: []
+tools:
+  - read_resource
+  - graph_query
+mcp_servers: []
+options:
+  reasoning_effort: high
+  sandbox: read-only
+  max_rounds: 8
+  token_budget: 120000

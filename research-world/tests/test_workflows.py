@@ -21,7 +21,11 @@ class FakeRunner:
 
     def run(self, step):
         self.calls.append(step)
-        return {"exit_code": self.exit_code, "stdout": "measured", "usage": {"wall_ms": 10}}
+        return {
+            "exit_code": self.exit_code,
+            "stdout": "measured",
+            "usage": {"wall_ms": 10},
+        }
 
 
 class FakeAgents:
@@ -47,14 +51,19 @@ class FakeAgents:
 
     def review(self, context, reviewer):
         decision = self.decisions.pop(0) if self.decisions else "approve"
-        return {"decision": decision, "quality": 0.8, "diversity": 0.7, "rebuttal": reviewer}
+        return {
+            "decision": decision,
+            "quality": 0.8,
+            "diversity": 0.7,
+            "rebuttal": reviewer,
+        }
 
     def reflect(self, context):
         self.reflect_contexts.append(context)
         return {"text": "Reflected direction"}
 
 
-class FakeHarness:
+class FakeRuntime:
     def __init__(self, value):
         self.value = value
         self.call = None
@@ -65,7 +74,9 @@ class FakeHarness:
 
 
 def engine(world, agents, embedding=None, runner=None):
-    return WorkflowEngine(world, agents, embedding or FakeEmbedding({}), runner or FakeRunner())
+    return WorkflowEngine(
+        world, agents, embedding or FakeEmbedding({}), runner or FakeRunner()
+    )
 
 
 def admitted_direction(world, project, text="Existing direction"):
@@ -74,33 +85,51 @@ def admitted_direction(world, project, text="Existing direction"):
 
 
 def test_brainstorm_agent_enforces_named_response_contract():
-    harness = FakeHarness({"research_directions": []})
+    runtime = FakeRuntime({"research_directions": []})
     with pytest.raises(ValueError, match="required field 'candidates'"):
-        AgentFacade(harness, [], "http://control:8095").brainstorm({"text": "Why?"}, 2)
-    assert '"candidates"' in harness.call[1]
-    assert harness.call[2] == {"text": "Why?", "count": 2}
+        AgentFacade(runtime, []).brainstorm({"text": "Why?"}, 2)
+    assert '"candidates"' in runtime.call[1]
+    assert runtime.call[2] == {"text": "Why?", "count": 2}
 
 
 def test_mmr_balances_quality_and_similarity():
-    candidates = [{"text": "a", "quality": 0.9, "vector": [1, 0]},
-                  {"text": "b", "quality": 0.88, "vector": [0.99, 0.01]},
-                  {"text": "c", "quality": 0.8, "vector": [0, 1]}]
+    candidates = [
+        {"text": "a", "quality": 0.9, "vector": [1, 0]},
+        {"text": "b", "quality": 0.88, "vector": [0.99, 0.01]},
+        {"text": "c", "quality": 0.8, "vector": [0, 1]},
+    ]
     assert [item["text"] for item in mmr(candidates, 2)] == ["a", "c"]
 
 
 def test_brainstorm_blocks_duplicates_and_admits_selected(world, project):
     existing = admitted_direction(world, project)
-    world.embedding = FakeEmbedding({"Existing direction": [1, 0], "Duplicate": [1, 0], "Novel": [0, 1]})
+    world.embedding = FakeEmbedding(
+        {"Existing direction": [1, 0], "Duplicate": [1, 0], "Novel": [0, 1]}
+    )
     world.update_node(existing["id"], payload={"text": "Existing direction"})
-    agents = FakeAgents([{"text": "Duplicate", "quality": 0.9}, {"text": "Novel", "quality": 0.8}])
-    workflow = world.create_workflow(project["id"], world.nodes(project["id"])[0]["id"], "brainstorm",
-                                     {"select": 2, "instruction": "只考虑长期稳定性"})
+    agents = FakeAgents(
+        [{"text": "Duplicate", "quality": 0.9}, {"text": "Novel", "quality": 0.8}]
+    )
+    workflow = world.create_workflow(
+        project["id"],
+        world.nodes(project["id"])[0]["id"],
+        "brainstorm",
+        {"select": 2, "instruction": "只考虑长期稳定性"},
+    )
     result = engine(world, agents, world.embedding).run(workflow["id"])
-    directions = [node for node in world.nodes(project["id"]) if node["kind"] == "direction"]
+    directions = [
+        node for node in world.nodes(project["id"]) if node["kind"] == "direction"
+    ]
     assert result["status"] == "completed"
     assert world.workflow_events(workflow["id"])[1]["actor"] == "brainstormer"
-    assert any(node["life_state"] == "ghost" and "cos=1.00" in node["rejection_reason"] for node in directions)
-    assert any(node["payload"]["text"] == "Novel" and node["life_state"] == "admitted" for node in directions)
+    assert any(
+        node["life_state"] == "ghost" and "cos=1.00" in node["rejection_reason"]
+        for node in directions
+    )
+    assert any(
+        node["payload"]["text"] == "Novel" and node["life_state"] == "admitted"
+        for node in directions
+    )
     assert agents.brainstorm_contexts[0]["instruction"] == "只考虑长期稳定性"
 
 
@@ -109,15 +138,21 @@ def test_gray_similarity_uses_pairwise_judge(world, project):
     vectors = {"Existing direction": [1, 0], "Gray": [0.7, 0.714]}
     world.embedding = FakeEmbedding(vectors)
     agents = FakeAgents([{"text": "Gray", "quality": 0.7}])
-    workflow = world.create_workflow(project["id"], world.nodes(project["id"])[0]["id"], "brainstorm")
+    workflow = world.create_workflow(
+        project["id"], world.nodes(project["id"])[0]["id"], "brainstorm"
+    )
     engine(world, agents, world.embedding).run(workflow["id"])
     assert agents.pairs == [("Gray", "Existing direction")]
 
 
 def test_manual_research_confirms_start_and_each_step(world, project):
     direction = admitted_direction(world, project)
-    workflow = world.create_workflow(project["id"], direction["id"], "plan-execute-review-reflect",
-                                     {"instruction": "先扫描步长敏感性"})
+    workflow = world.create_workflow(
+        project["id"],
+        direction["id"],
+        "plan-execute-review-reflect",
+        {"instruction": "先扫描步长敏感性"},
+    )
     runner = FakeRunner()
     agents = FakeAgents()
     service = engine(world, agents, runner=runner)
@@ -136,8 +171,12 @@ def test_manual_research_confirms_start_and_each_step(world, project):
 def test_replan_adds_evidence_without_rewriting_terminal_direction(world, project):
     direction = admitted_direction(world, project)
     world.update_node(direction["id"], direction_status="refuted")
-    workflow = world.create_workflow(project["id"], direction["id"], "plan-execute-review-reflect",
-                                     {"instruction": "更换积分器后重新验证", "mode": "replan"})
+    workflow = world.create_workflow(
+        project["id"],
+        direction["id"],
+        "plan-execute-review-reflect",
+        {"instruction": "更换积分器后重新验证", "mode": "replan"},
+    )
     service = engine(world, FakeAgents(), runner=FakeRunner())
     service.confirm(workflow["id"])
     result = service.confirm(workflow["id"])
@@ -149,9 +188,13 @@ def test_replan_adds_evidence_without_rewriting_terminal_direction(world, projec
 def test_auto_review_starts_next_iteration(world, project):
     world.set_auto(project["id"], True)
     direction = admitted_direction(world, project)
-    workflow = world.create_workflow(project["id"], direction["id"], "plan-execute-review-reflect")
+    workflow = world.create_workflow(
+        project["id"], direction["id"], "plan-execute-review-reflect"
+    )
     result = engine(world, FakeAgents(), runner=FakeRunner()).run(workflow["id"])
-    queued = [item for item in world.workflows(project["id"]) if item["status"] == "queued"]
+    queued = [
+        item for item in world.workflows(project["id"]) if item["status"] == "queued"
+    ]
     assert result["status"] == "completed"
     assert len(queued) == 1
 
@@ -159,8 +202,14 @@ def test_auto_review_starts_next_iteration(world, project):
 def test_two_rejections_pause_lineage(world, project):
     world.set_auto(project["id"], True)
     direction = admitted_direction(world, project)
-    workflow = world.create_workflow(project["id"], direction["id"], "plan-execute-review-reflect")
-    service = engine(world, FakeAgents(decisions=["reject", "reject"]), runner=FakeRunner(exit_code=1))
+    workflow = world.create_workflow(
+        project["id"], direction["id"], "plan-execute-review-reflect"
+    )
+    service = engine(
+        world,
+        FakeAgents(decisions=["reject", "reject"]),
+        runner=FakeRunner(exit_code=1),
+    )
     result = service.run(workflow["id"])
     assert result["status"] == "paused"
     assert "连续 2 次" in result["payload"]["reason"]
@@ -168,35 +217,45 @@ def test_two_rejections_pause_lineage(world, project):
 
 def test_double_review_conflict_escalates_to_human(world, project):
     direction = admitted_direction(world, project)
-    workflow = world.create_workflow(project["id"], direction["id"], "plan-execute-review-reflect")
-    service = engine(world, FakeAgents(decisions=["approve", "reject"]), runner=FakeRunner())
+    workflow = world.create_workflow(
+        project["id"], direction["id"], "plan-execute-review-reflect"
+    )
+    service = engine(
+        world, FakeAgents(decisions=["approve", "reject"]), runner=FakeRunner()
+    )
     service.confirm(workflow["id"])
     result = service.confirm(workflow["id"])
     assert result["status"] == "waiting_human"
     assert result["payload"]["conflict_node"].startswith("node:")
 
 
-def test_facade_maps_assembly_to_harness_session():
-    harness = FakeHarness({"candidates": [{"text": "x", "quality": 0.1}]})
+def test_facade_maps_assembly_to_runtime_session():
+    runtime = FakeRuntime({"candidates": [{"text": "x", "quality": 0.1}]})
     assembly = resolve_assembly(["fs", "graph-query"])
-    AgentFacade(harness, assembly, "http://control:8095/").brainstorm({"text": "Why?"}, 1)
-    _, _, _, tools, segments = harness.call
+    AgentFacade(runtime, assembly).brainstorm({"text": "Why?"}, 1)
+    _, _, _, tools, segments = runtime.call
     assert {"type": "fs"} in tools
     webhook = next(tool for tool in tools if tool["type"] == "webhook")
     assert webhook["name"] == "graph_query"
-    assert webhook["url"] == "http://control:8095/api/v1/tools/graph-query"
     assert webhook["parameters"]["required"] == ["action", "project_id"]
     assert segments == [package["prompt_segment"] for package in assembly]
 
 
 def test_pins_inject_node_content_into_agent_context(world, project):
-    pinned = world.create_node(project["id"], "source", {"title": "Kepler 1609"}, life_state="admitted")
+    pinned = world.create_node(
+        project["id"], "source", {"title": "Kepler 1609"}, life_state="admitted"
+    )
     world.embedding = FakeEmbedding({"Novel": [1, 0]})
     agents = FakeAgents([{"text": "Novel", "quality": 0.5}])
-    workflow = world.create_workflow(project["id"], world.nodes(project["id"])[0]["id"], "brainstorm",
-                                     {"select": 1, "pins": [pinned["id"]]})
+    workflow = world.create_workflow(
+        project["id"],
+        world.nodes(project["id"])[0]["id"],
+        "brainstorm",
+        {"select": 1, "pins": [pinned["id"]]},
+    )
     engine(world, agents, world.embedding).run(workflow["id"])
     context = agents.brainstorm_contexts[0]
     assert context["project_id"] == project["id"]
-    assert context["pins"] == [{"id": pinned["id"], "kind": "source",
-                                "payload": {"title": "Kepler 1609"}}]
+    assert context["pins"] == [
+        {"id": pinned["id"], "kind": "source", "payload": {"title": "Kepler 1609"}}
+    ]

@@ -12,6 +12,7 @@ from acp.schema import ClientCapabilities, Implementation
 
 from runtime.acp_agent import RuntimeAgent
 from runtime.service import Runtime
+from runtime.tools import ToolBox
 from tests.helpers import FakeProvider
 
 
@@ -25,6 +26,10 @@ class ProjectClient:
     async def read_text_file(self, session_id, path, **kwargs):
         assert path == "@D-008"
         return ReadTextFileResponse(content="node evidence")
+
+    async def ext_method(self, method, params):
+        assert method == "research/graph_query"
+        return {"id": params["node_id"], "life_state": "admitted"}
 
 
 async def test_acp_is_the_runtime_transport(tmp_path, monkeypatch):
@@ -80,3 +85,13 @@ async def test_acp_is_the_runtime_transport(tmp_path, monkeypatch):
 
     assert inspected["messages"][-1]["content"] == "verified"
     assert project.updates
+
+
+async def test_graph_query_crosses_the_client_boundary(tmp_path):
+    client = ProjectClient()
+    async with ToolBox(tmp_path, {}, ("graph_query",), [], client) as tools:
+        content, failed = await tools.call(
+            "session", "graph_query", '{"action":"get","node_id":"D-008"}'
+        )
+    assert failed is False
+    assert json.loads(content) == {"id": "D-008", "life_state": "admitted"}
