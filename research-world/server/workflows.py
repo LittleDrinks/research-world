@@ -765,7 +765,10 @@ PAIR_PROMPT = (
 PLAN_PROMPT = (
     "严格执行 instruction，把输入方向拆为可独立确认的最小实验步骤。执行契约：每个步骤都是独立的一次性容器，"
     "步骤之间不共享任何文件或状态，必须各自自包含；容器文件系统只读，仅 /tmp 可写（64MB、noexec），同一步骤内可用 /tmp 暂存；"
-    "输入数据放 files（base64，挂载于只读 /workspace）；一切结论经 stdout 输出，退出码 0 表示成功。严格返回 "
+    "使用 python:3.12-slim 与 Python 标准库或 busybox，禁止网络和未内置包；脚本内嵌 command，files 默认空对象，"
+    "非空文件内容必须是 base64。所有输入变量必须进入计算并与明确基线比较；不得硬编码判定、阈值或事实，"
+    "阈值只能由相邻观测的真实状态转变推导，无转变时必须报告 no_transition。stdout 最后一行必须是含 evidence_scope、"
+    "measurements 与 decision 的 JSON 对象；合成数据只能支持程序或模型内部结论。退出码 0 表示执行成功。严格返回 "
     '{"steps":[{"image":"busybox:1.36","command":["sh","-lc","..."],'
     '"files":{},"seed":0,"limits":{"cpus":1,"memory_mb":512,"pids":128}}]}。'
 )
