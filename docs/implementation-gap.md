@@ -2,7 +2,7 @@
 
 基线：`5d35e8e`。规格出处：`docs/adr/0017-research-world-redesign.md`（0017）、`docs/adr/0018-endpoints-and-harness.md`（端点）、`docs/adr/0020-graph-and-evidence.md`（图谱）、`docs/adr/0021-review-pipeline.md`（管线）。
 
-对应 issue：G1=#12 G2=#13 G3=#14 G4=#15 G5=#16 G7=#18 G8=#19 G9=#20 G10=#21 G11=#22 G12=#23 G13=#24 G14=#25 G15=#26（github.com/LittleDrinks/ai4sci）。
+对应 issue：G1=#12 G2=#13 G3=#14 G4=#15 G5=#16 G7=#18 G8=#19 G10=#21 G11=#22 G12=#23 G13=#24 G14=#25 G15=#26（github.com/LittleDrinks/ai4sci）。
 
 ## G1 review 无原子断言审计
 规格：claim 是审计单位而非节点；review 启动时把 direction 主张文本与 experiment 结果文本拆成逐条原子断言，审计结果回写状态机与极性边（0017 数据模型）。
@@ -37,11 +37,6 @@
 规格：人与 agent 经同一命令接口创建待审节点，人工提交不跳过审核（管线·人机共用节点提交接口）。
 现状：`app.py:118-119` UPDATE_KEYS 含 life_state，人工 PATCH 即 admitted；人工创建的 pending 节点无审核准入路径。
 处置：life_state 移出 UPDATE_KEYS，人工节点走与 brainstorm 候选相同的双审准入。
-
-## G9 节点身份用随机 token
-规格：系统对规范化内容生成不可变 UID，同内容同身份（图谱·系统拥有节点身份）。
-现状：`world.py:70` `secrets.token_hex(12)`，仅 project 与首问 question 用内容哈希（`world.py:40,48`）。
-处置：create_node 统一规范化内容哈希 UID。
 
 ## G10 执行凭据未接入活路径
 规格：结果审核检查输入边界、代码、环境、日志与产物哈希，以规范化内容哈希复跑（管线·分离执行、结果审核与评分）。

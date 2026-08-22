@@ -17,9 +17,6 @@ Agent 原始对话轨迹沉淀到图谱后默认丢弃；计算实验保留代�
 ## 审查视图按需派生
 图谱是唯一持久真源；审查视图从选定快照确定性生成状态分面、异常列表、ID 查找、依赖子图与失效影响范围，每个值能回到产生它的节点或事件，自由文本模型只解释查询结果。上游事实失效时按依赖边撤销全部后代，不重写无关分支 [danus]。[PROV](https://www.w3.org/TR/prov-dm/) 把事实定义为可查询关系，[Trrack](https://doi.org/10.1109/vis47514.2020.00030) 把溯源聚合为交互界面，[Workflow Cards](https://arxiv.org/abs/2608.11022) 压缩执行记录，[TRACE](https://arxiv.org/abs/2608.09153) 把失败归因回上下文组件。
 
-## 系统拥有节点身份
-Agent 只提交内容，系统对规范化内容生成不可变 UID：同内容映射同身份，UID 只表达内容身份、不推断语义重合。[JSON 规范化](https://www.rfc-editor.org/rfc/rfc8785.html)给出稳定字节表示，[安全哈希](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf)给出内容身份，[PROV](https://www.w3.org/TR/prov-dm/) 把"同一对象"与派生关系分开表示。
-
 ## 事实入图谱，审核程序入 Skill
 人工纠正具体事实时新增带来源、绑定 claim/resource 的图谱证据，规划与执行 agent 不默认读取；只有可跨事实复用的检查步骤进入全局 Skill。[SciFact](https://aclanthology.org/2020.emnlp-main.609/) 把证据句绑定到具体主张，[SciFact-Open](https://doi.org/10.18653/v1/2022.findings-emnlp.347) 显示证据覆盖随语料变化。
 
