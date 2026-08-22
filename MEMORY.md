@@ -13,7 +13,7 @@
 - .agents/skills 整目录未被 git 跟踪，skills-lock.json 未含 agent 四件套。
 - bootstrap 无 project_id 时回退到最旧项目（projects[0]=q001）；前端已用 localStorage 规避，服务端默认顺序未改。
 - 反思级联无界：auto 下 reflect 新方向准入即自动派生 research run，会持续消耗 token；125 题跑批需预算闸门（见下一步）。
-- Q49、Q89 已从正式 UI 完成项目创建、节点钉入、真实对话、brainstorm、双审人工闸门、轨迹返回、地图与科研日志；Q89 产出 4 个方向，运行投影无向量。
+- Q49、Q89 已从正式 UI 完成项目创建、节点钉入、真实对话、brainstorm、双审人工闸门、轨迹返回、地图与科研日志；Q89 产出 4 个方向，运行投影无向量；research 负路径以 3 次容器执行复现量纲错误，双审拒绝实验并写入 refutes 边后暂停谱系。
 - 界面选型原型：prototype/kimi/（10 套整套 UI，路由 /prototype/kimi?v=01..10，截图在 prototype/kimi/shots/，运行 cd research-world/web && npm run dev；依赖 web/node_modules 软链与 vite fs.allow 上探两级）。
 ## 约束
 - 基座必须 Qwen。截止 2026-09-05，交付：125 题轻量结果（每题一 project）+ 5 深度题演示 + ≤20 页 PPT/PDF + 源码 + 可运行入口。

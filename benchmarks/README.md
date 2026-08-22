@@ -26,4 +26,4 @@ Remote root: `/data/zsm/ai4sci-design-bench-20260809`.
 | 规划-准入闭环能否推进真实任务 | Matbench + research-world | v2：9 case 20 次规划，15 通过/4 待人工/1 格式拒绝，30 对局部判断 22 同 4 异 4 分歧、3 传递冲突；v3：3 case 6 次规划 200657 token，5 通过 1 待人工，无自然拒绝 | blind/reflect 坍缩到 composition token/attention/graph message passing 附近；不能比较失败后策略 |
 | 模型先验是否改变搜索空间 | Mini/Luna 跨模型对照 | 9 对候选 8 对明确不同、1 对分歧；3 case 6 次规划 3 通过 3 待人工 | 每格样本小；机制广度与执行有效性分开报告 |
 | harness 仪表链路能否支撑评测 | ResearchClawBench + ResearchHarness | 36 runs / 54 sessions / 255472 tokens 结构化落库 | 原任务规定目标方法，不能比较方法空间创新 |
-| 正式前端能否贯通 Runtime 与 Research Kernel | ACP Runtime + Playwright | 145 项自动测试通过；Q49、Q89 经正式 UI 完成项目→节点钉入→真实对话→brainstorm→双审人工闸门→轨迹返回→地图/科研日志；Q89 为 1 问题+4 方向、4 入图、0 working，运行投影无向量 | 当前实证止于 brainstorm；research pipeline、其余深度题与 125 题尚未验收 |
+| 正式前端能否贯通 Runtime 与 Research Kernel | ACP Runtime + Playwright | 146 项自动测试通过；Q49、Q89 经正式 UI 完成项目→节点钉入→真实对话→brainstorm→双审人工闸门→轨迹返回→地图/科研日志；Q89 为 1 问题+4 方向、4 入图、0 working，运行投影无向量；research 负路径执行 3 个容器，双审识别 `10^20%` 量纲错误并产出 ghost experiment、refutes 边与 paused lineage | research 只验证错误拦截，未形成 Matbench 正向成果；其余深度题与 125 题尚未验收 |
