@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from server.app import run_view
-from server.workflows import AgentFacade, PipelineEngine, mmr
+from server.app import _run_action, run_view
+from server.workflows import AgentFacade, PipelineEngine, fail_run, mmr
 
 
 def brainstorm_pipeline(pipeline_id="brainstorm"):
@@ -105,7 +105,7 @@ class FakeAgents:
 
     def pairwise(self, left, right):
         self.pairs.append((left, right))
-        return True
+        return {"duplicate": True}
 
     def plan(self, direction, agent=None):
         self.plan_contexts.append(direction)
@@ -133,8 +133,8 @@ class FakeRuntime:
         self.value = value
         self.call = None
 
-    def json(self, agent_spec, instruction, payload):
-        self.call = (agent_spec, instruction, payload)
+    def json(self, agent_spec, instruction, payload, required):
+        self.call = (agent_spec, instruction, payload, required)
         return self.value
 
 
@@ -304,6 +304,10 @@ def test_brainstorm_blocks_duplicates_and_admits_selected(world, project):
     )
     engine(world, agents, world.embedding).run(run["id"])
     assert_brainstorm_result(world, project, run, agents)
+    values = world.run(run["id"])["payload"]["_pipeline"]["values"]
+    assert "candidates" not in values
+    assert "pool" not in values
+    assert all("vector" not in item for item in values["directions"])
 
 
 def test_gray_similarity_uses_pairwise_judge(world, project):
@@ -318,6 +322,12 @@ def test_gray_similarity_uses_pairwise_judge(world, project):
     )
     engine(world, agents, world.embedding).run(run["id"])
     assert agents.pairs == [("Gray", "Existing direction")]
+    event = next(
+        item
+        for item in world.run_events(run["id"])
+        if item["actor"] == "deduplicator" and item["type"] == "agent_session"
+    )
+    assert event["payload"]["stage_id"] == "deduplicate"
 
 
 def test_manual_research_confirms_start_and_each_step(world, project):
@@ -435,6 +445,7 @@ def test_facade_passes_saved_agent_spec_to_runtime():
         {"text": "Why?"}, 1, "assistant"
     )
     assert runtime.call[0] == spec
+    assert runtime.call[3] == ("candidates",)
 
 
 def test_pipeline_rejects_unknown_agent_before_writing_events(world, project):
@@ -466,3 +477,28 @@ def test_pins_inject_node_content_into_agent_context(world, project):
     assert context["pins"] == [
         {"id": pinned["id"], "kind": "source", "payload": {"title": "Kepler 1609"}}
     ]
+
+
+def test_failed_run_preserves_payload_and_releases_nodes(world, project):
+    direction = admitted_direction(world, project)
+    world.set_working(direction["id"], True)
+    run = world.create_run(
+        project["id"], direction["id"], research_pipeline(), {"thread_id": "t-1"}
+    )
+    failed = fail_run(world, run["id"], RuntimeError("provider failed"))
+    assert failed["payload"] == {"thread_id": "t-1", "error": "provider failed"}
+    assert world.node(direction["id"])["working"] == 0
+    assert world.run_events(run["id"])[-1]["type"] == "run_failed"
+
+
+def test_background_run_failure_becomes_terminal(world, project):
+    root = world.nodes(project["id"])[0]
+    run = world.create_run(project["id"], root["id"], brainstorm_pipeline())
+    world.set_working(root["id"], True)
+
+    def fail():
+        raise RuntimeError("review failed")
+
+    _run_action(world, run["id"], fail, ())
+    assert world.run(run["id"])["status"] == "failed"
+    assert world.node(root["id"])["working"] == 0

@@ -74,21 +74,23 @@ class RuntimeClient:
                 parts.append(event["text"])
         return "".join(parts)
 
-    def json(self, agent_spec: dict, instruction: str, payload: dict) -> dict:
-        return asyncio.run(self._json(agent_spec, instruction, payload))
+    def json(
+        self, agent_spec: dict, instruction: str, payload: dict, required: tuple[str, ...]
+    ) -> dict:
+        return asyncio.run(self._json(agent_spec, instruction, payload, required))
 
-    async def _json(self, agent_spec, instruction, payload):
+    async def _json(self, agent_spec, instruction, payload, required):
         session_id = await self.launch(agent_spec, self._workspace())
         prompt = f"{instruction}\nReturn one JSON object and no prose.\n{json.dumps(payload, ensure_ascii=False)}"
-        await self.prompt(session_id, prompt, self.project_id)
-        view = await self.inspect(session_id)
-        turn = view["turns"][-1]
-        return {
-            **json_object(turn["output"] or ""),
-            "_session_id": session_id,
-            "_turn_id": turn["id"],
-            "_usage": _turn_usage(turn),
-        }
+        for _ in range(2):
+            await self.prompt(session_id, prompt, self.project_id)
+            view = await self.inspect(session_id)
+            turn = view["turns"][-1]
+            value, missing = _validated_json(turn["output"] or "", required)
+            if not missing:
+                return _json_result(value, session_id, turn)
+            prompt = _json_correction(missing)
+        raise ValueError(f"runtime response missing required field '{missing[0]}'")
 
     async def _extension(self, method: str, params: dict) -> dict:
         async with self._connect(
@@ -212,6 +214,28 @@ def _turn_usage(turn: dict) -> dict:
         (item for item in reversed(turn["events"]) if item["type"] == "turn_end"), {}
     )
     return event.get("data", {}).get("usage", {})
+
+
+def _json_result(value: dict, session_id: str, turn: dict) -> dict:
+    return {
+        **value,
+        "_session_id": session_id,
+        "_turn_id": turn["id"],
+        "_usage": _turn_usage(turn),
+    }
+
+
+def _validated_json(output: str, required: tuple[str, ...]) -> tuple[dict, list[str]]:
+    try:
+        value = json_object(output)
+    except ValueError:
+        return {}, ["valid JSON object"]
+    return value, [field for field in required if field not in value]
+
+
+def _json_correction(missing: list[str]) -> str:
+    fields = ", ".join(missing)
+    return f"上一个回答缺少必需字段：{fields}。重新返回符合原始契约的 JSON 对象，不要解释。"
 
 
 def _node_document(node: dict) -> str:

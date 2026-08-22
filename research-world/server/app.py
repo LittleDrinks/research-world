@@ -14,7 +14,7 @@ from .library import list_packages
 from .pipelines import PipelineRegistry
 from .runtime_client import RuntimeClient
 from .threads import ThreadManager
-from .workflows import default_engine
+from .workflows import default_engine, fail_run
 from .world import World, node_text
 
 
@@ -287,7 +287,9 @@ def run_control_routes(app: FastAPI, world: World) -> None:
     @app.post("/api/v1/runs/{run_id}/confirm", status_code=202)
     async def confirm(run_id: str):
         run = world.run(run_id)
-        run_async(default_engine(world, run["project_id"]).confirm, run_id)
+        run_async(
+            world, run_id, default_engine(world, run["project_id"]).confirm, run_id
+        )
         return run
 
     @app.post("/api/v1/runs/{run_id}/resolve", status_code=202)
@@ -295,6 +297,8 @@ def run_control_routes(app: FastAPI, world: World) -> None:
         value = await request.json()
         run = world.run(run_id)
         run_async(
+            world,
+            run_id,
             default_engine(world, run["project_id"]).resolve,
             run_id,
             value["decision"],
@@ -434,8 +438,17 @@ def slot_view(runs: list[dict], count: int = 2) -> list[dict]:
     ]
 
 
-def run_async(function, *args) -> None:
-    threading.Thread(target=function, args=args, daemon=True).start()
+def run_async(world, run_id, function, *args) -> None:
+    threading.Thread(
+        target=_run_action, args=(world, run_id, function, args), daemon=True
+    ).start()
+
+
+def _run_action(world, run_id, function, args) -> None:
+    try:
+        function(*args)
+    except Exception as error:  # noqa: BLE001 - background failures are durable.
+        fail_run(world, run_id, error)
 
 
 async def relay(events):

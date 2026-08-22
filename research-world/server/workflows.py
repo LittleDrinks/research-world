@@ -50,11 +50,17 @@ class AgentFacade:
         for agent_id in _pipeline_agents(pipeline):
             self.agents.get(agent_id)
 
-    def _call(self, agent_id: str, instruction: str, payload: dict) -> dict:
-        return self.runtime.json(self.agents.get(agent_id), instruction, payload)
+    def _call(
+        self, agent_id: str, instruction: str, payload: dict, required: tuple[str, ...]
+    ) -> dict:
+        return self.runtime.json(
+            self.agents.get(agent_id), instruction, payload, required
+        )
 
     def brainstorm(self, context: dict, count: int, agent: str) -> dict:
-        value = self._call(agent, BRAINSTORM_PROMPT, {**context, "count": count})
+        value = self._call(
+            agent, BRAINSTORM_PROMPT, {**context, "count": count}, ("candidates",)
+        )
         candidates = required(value, "candidates")
         if not isinstance(candidates, list) or len(candidates) < count:
             raise ValueError(
@@ -62,27 +68,32 @@ class AgentFacade:
             )
         return {**value, "candidates": candidates[:count]}
 
-    def pairwise(self, left: str, right: str) -> bool:
+    def pairwise(self, left: str, right: str) -> dict:
         value = self._call(
-            "independent-reviewer", PAIR_PROMPT, {"left": left, "right": right}
+            "independent-reviewer",
+            PAIR_PROMPT,
+            {"left": left, "right": right},
+            ("duplicate",),
         )
-        return bool(required(value, "duplicate"))
+        duplicate = required(value, "duplicate")
+        if not isinstance(duplicate, bool):
+            raise ValueError("runtime field 'duplicate' must be boolean")
+        return value
 
     def plan(self, direction: dict, agent: str) -> dict:
-        value = self._call(agent, PLAN_PROMPT, direction)
+        value = self._call(agent, PLAN_PROMPT, direction, ("steps",))
         required(value, "steps")
         return value
 
     def review(self, context: dict, reviewer: str, agent: str) -> dict:
-        value = self._call(agent, REVIEW_PROMPT, {**context, "reviewer": reviewer})
-        for field in ("decision", "quality", "diversity", "rebuttal"):
-            required(value, field)
+        fields = ("decision", "quality", "diversity", "rebuttal")
+        value = self._call(
+            agent, REVIEW_PROMPT, {**context, "reviewer": reviewer}, fields
+        )
         return value
 
     def reflect(self, context: dict, agent: str) -> dict:
-        value = self._call(agent, REFLECT_PROMPT, context)
-        required(value, "text")
-        return value
+        return self._call(agent, REFLECT_PROMPT, context, ("text",))
 
 
 @dataclass
@@ -155,6 +166,8 @@ class PipelineEngine:
         run = self.world.run(result["run_id"])
         frame, values = _frame(run), dict(_frame(run)["values"])
         values.update(result.get("values", {}))
+        for key in result.get("drop", ()):
+            values.pop(key, None)
         cursor = _next_cursor(
             run["definition_snapshot"], frame["cursor"], stage, result
         )
@@ -190,7 +203,11 @@ class PipelineEngine:
         run, values = context["run"], context["values"]
         count = int(run["payload"].get("select", 4))
         weight = float(_policy_params(stage).get("weight", 0.2))
-        return _stage_result(run, {"directions": mmr(values["pool"], count, weight)})
+        selected = mmr(values["pool"], count, weight)
+        directions = [_without_vector(item) for item in selected]
+        return _stage_result(
+            run, {"directions": directions}, drop=("candidates", "pool")
+        )
 
     def _deduplicate(
         self, run: dict, origin: dict, candidates: list[dict], params: dict
@@ -200,7 +217,7 @@ class PipelineEngine:
         for candidate in candidates:
             candidate["vector"] = self.embedding(candidate["text"])
             match, score = self._nearest(candidate, [*existing, *pool])
-            if match and self._is_duplicate(candidate, match, score, params):
+            if match and self._is_duplicate(run, candidate, match, score, params):
                 self._blocked_direction(run, origin, candidate, match, score)
             else:
                 pool.append(candidate)
@@ -233,13 +250,15 @@ class PipelineEngine:
         )
         return match, cosine(candidate["vector"], match["vector"])
 
-    def _is_duplicate(self, candidate, match, score, params) -> bool:
+    def _is_duplicate(self, run, candidate, match, score, params) -> bool:
         if score > float(params.get("block", 0.8)):
             return True
         review = float(params.get("review", 0.6))
-        return score >= review and self.agents.pairwise(
-            candidate["text"], match["text"]
-        )
+        if score < review:
+            return False
+        result = self.agents.pairwise(candidate["text"], match["text"])
+        self._record_agent(run["id"], "deduplicator", result)
+        return result["duplicate"]
 
     def _blocked_direction(self, run, origin, candidate, match, score) -> None:
         reason = (
@@ -342,6 +361,8 @@ class PipelineEngine:
             lineage_id=direction["lineage_id"],
             working=True,
         )
+        payload = {**run["payload"], "experiment_id": experiment["id"]}
+        self.world.update_run(run["id"], run["stage"], "running", payload)
         return experiment
 
     def _plan_steps(self, run: dict, direction: dict, agent: str) -> list[str]:
@@ -528,12 +549,13 @@ class PipelineEngine:
         self.world.record_run_event(run_id, actor, event_type, payload)
 
 
-def _stage_result(run, values=None, outcome="next", gate=None) -> dict:
+def _stage_result(run, values=None, outcome="next", gate=None, drop=()) -> dict:
     return {
         "run_id": run["id"],
         "values": values or {},
         "outcome": outcome,
         "gate": gate,
+        "drop": drop,
     }
 
 
@@ -581,6 +603,10 @@ def clean(value: dict) -> dict:
     return {key: item for key, item in value.items() if not key.startswith("_")}
 
 
+def _without_vector(value: dict) -> dict:
+    return {key: item for key, item in value.items() if key != "vector"}
+
+
 def required(value: dict, field: str):
     if field not in value:
         raise ValueError(f"runtime response missing required field '{field}'")
@@ -598,6 +624,20 @@ def default_engine(world: World, project_id: str) -> PipelineEngine:
     )
     pipelines = PipelineRegistry(settings.pipelines_root, settings.pipeline_schema)
     return PipelineEngine(world, agents, embedding, runner, pipelines)
+
+
+def fail_run(world: World, run_id: str, error: Exception) -> dict:
+    run = world.run(run_id)
+    _release_run_nodes(world, run)
+    payload = {**run["payload"], "error": str(error)}
+    world.record_run_event(run_id, "control", "run_failed", {"error": str(error)})
+    return world.update_run(run_id, "failed", "failed", payload)
+
+
+def _release_run_nodes(world: World, run: dict) -> None:
+    node_ids = {run["node_id"], run["payload"].get("experiment_id")}
+    for node_id in node_ids - {None}:
+        world.set_working(node_id, False)
 
 
 def _pipeline_agents(pipeline: dict) -> set[str]:

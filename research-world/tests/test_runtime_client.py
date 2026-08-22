@@ -7,11 +7,33 @@ import pytest
 from server.runtime_client import (
     KernelClient,
     RuntimeCapabilityError,
+    RuntimeClient,
     RuntimeEmbedding,
     _prompt_blocks,
     _websocket_url,
     json_object,
 )
+
+
+class RetryingRuntime(RuntimeClient):
+    def __init__(self, outputs):
+        self.outputs = outputs
+        self.prompts = []
+        self.project_id = "project:test"
+
+    async def launch(self, agent_spec, workspace, **values):
+        return "session:test"
+
+    async def prompt(self, session_id, message, project_id=None):
+        self.prompts.append(message)
+
+    async def inspect(self, session_id):
+        output = self.outputs[len(self.prompts) - 1]
+        turn = {"id": f"turn:{len(self.prompts)}", "output": output, "events": []}
+        return {"turns": [turn]}
+
+    def _workspace(self):
+        return "/workspace"
 
 
 def test_runtime_url_uses_acp_websocket():
@@ -21,6 +43,23 @@ def test_runtime_url_uses_acp_websocket():
 
 def test_json_object_repairs_fenced_model_output():
     assert json_object('```json\n{"answer": 42}\n```') == {"answer": 42}
+
+
+@pytest.mark.asyncio
+async def test_json_retries_missing_required_field_in_same_session():
+    runtime = RetryingRuntime(['{"left":"x"}', '{"duplicate":false}'])
+    result = await runtime._json({}, "compare", {}, ("duplicate",))
+    assert result["duplicate"] is False
+    assert result["_session_id"] == "session:test"
+    assert "缺少必需字段：duplicate" in runtime.prompts[1]
+
+
+@pytest.mark.asyncio
+async def test_json_retries_malformed_output_in_same_session():
+    runtime = RetryingRuntime(["not json", '{"duplicate":true}'])
+    result = await runtime._json({}, "compare", {}, ("duplicate",))
+    assert result["duplicate"] is True
+    assert "valid JSON object" in runtime.prompts[1]
 
 
 def test_prompt_resources_are_node_ids():

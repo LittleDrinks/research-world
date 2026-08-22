@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 
 from server.cli import default_world
-from server.workflows import default_engine
+from server.workflows import default_engine, fail_run
 
 
 def main() -> None:
@@ -20,10 +20,7 @@ def execute(world, run) -> None:
     try:
         default_engine(world, run["project_id"]).run(run["id"])
     except Exception as error:  # noqa: BLE001 - worker persists terminal failures.
-        world.record_run_event(
-            run["id"], "control", "run_failed", {"error": str(error)}
-        )
-        world.update_run(run["id"], "failed", "failed", {"error": str(error)})
+        fail_run(world, run["id"], error)
 
 
 if __name__ == "__main__":
