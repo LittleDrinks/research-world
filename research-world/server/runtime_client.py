@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
-import re
 from contextlib import asynccontextmanager
 from urllib.parse import urlsplit, urlunsplit
 
@@ -76,16 +74,11 @@ class RuntimeClient:
                 parts.append(event["text"])
         return "".join(parts)
 
-    def json(
-        self, role, instruction, payload, tools=None, prompt_segments=None
-    ) -> dict:
-        return asyncio.run(
-            self._json(role, instruction, payload, tools, prompt_segments)
-        )
+    def json(self, agent_spec: dict, instruction: str, payload: dict) -> dict:
+        return asyncio.run(self._json(agent_spec, instruction, payload))
 
-    async def _json(self, role, instruction, payload, tools, prompt_segments):
-        spec = _agent_spec(role, prompt_segments or [], tools or [])
-        session_id = await self.launch(spec, self._workspace())
+    async def _json(self, agent_spec, instruction, payload):
+        session_id = await self.launch(agent_spec, self._workspace())
         prompt = f"{instruction}\nReturn one JSON object and no prose.\n{json.dumps(payload, ensure_ascii=False)}"
         await self.prompt(session_id, prompt, self.project_id)
         view = await self.inspect(session_id)
@@ -207,37 +200,6 @@ def _prompt_blocks(message: str, node_ids: list[str]) -> list:
         for node_id in node_ids
     ]
     return [text_block(message), *resources]
-
-
-def _agent_spec(role: str, segments: list[str], tools: list[dict]) -> dict:
-    instructions = "\n\n".join([role, *segments])
-    return {
-        "id": _slug(role),
-        "name": role,
-        "runtime": os.getenv("RW_AGENT_RUNTIME", "openai-compatible"),
-        "model": os.getenv("RW_MODEL_NAME", "qwen3.7-flash"),
-        "instructions": instructions,
-        "tools": _tool_ids(tools),
-    }
-
-
-def _tool_ids(tools: list[dict]) -> list[str]:
-    values = []
-    for tool in tools:
-        if tool.get("type") == "fs":
-            values.append("read_file")
-        elif tool.get("name") == "graph_query":
-            values.append("graph_query")
-        else:
-            raise ValueError(
-                f"unsupported runtime tool: {tool.get('name') or tool.get('type')}"
-            )
-    return sorted(set(values))
-
-
-def _slug(value: str) -> str:
-    normalized = re.sub("[^a-z0-9]+", "-", value.lower()).strip("-")
-    return normalized or "agent"
 
 
 def _turn_usage(turn: dict) -> dict:

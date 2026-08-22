@@ -22,11 +22,10 @@
       "properties": {
         "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
         "type": {"enum": ["prompt", "tool", "spawn"]},
+        "prompt": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
         "agent": {"type": "string", "minLength": 1},
         "tool": {"type": "string", "minLength": 1},
         "pipeline": {"type": "string", "minLength": 1},
-        "input": {"type": "object"},
-        "output": {"type": "string", "minLength": 1},
         "repeat": {"type": "integer", "minimum": 1},
         "policy": {
           "oneOf": [
@@ -48,7 +47,7 @@
         }
       },
       "allOf": [
-        {"if": {"properties": {"type": {"const": "prompt"}}}, "then": {"required": ["agent"]}},
+        {"if": {"properties": {"type": {"const": "prompt"}}}, "then": {"required": ["agent", "prompt"]}},
         {"if": {"properties": {"type": {"const": "tool"}}}, "then": {"required": ["tool"]}},
         {"if": {"properties": {"type": {"const": "spawn"}}}, "then": {"required": ["pipeline"]}}
       ]
@@ -60,7 +59,7 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "action": {"enum": ["admit", "ghost", "wait_human", "pause", "complete"]},
+            "action": {"enum": ["admit", "ghost", "wait_human"]},
             "next": {"type": "string", "minLength": 1}
           },
           "minProperties": 1

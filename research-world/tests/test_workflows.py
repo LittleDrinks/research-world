@@ -2,21 +2,64 @@ from __future__ import annotations
 
 import pytest
 
-from server.library import resolve_assembly
+from server.app import run_view
 from server.workflows import AgentFacade, PipelineEngine, mmr
 
 
-def pipeline(pipeline_id):
+def brainstorm_pipeline(pipeline_id="brainstorm"):
+    stages = [
+        stage("generate", "prompt", "generate-directions", agent="assistant"),
+        stage(
+            "deduplicate", "tool", "deduplicate-directions", policy="cosine-threshold"
+        ),
+        stage("select", "tool", "select-directions", policy="mmr"),
+        review_stage("review", "review-directions"),
+    ]
+    return {"id": pipeline_id, "name": pipeline_id, "stages": stages}
+
+
+def research_pipeline(pipeline_id="research"):
     return {
         "id": pipeline_id,
         "name": pipeline_id,
-        "stages": [{"id": "run", "type": "tool", "tool": "test"}],
+        "stages": [
+            stage("plan", "prompt", "plan-experiment", agent="assistant"),
+            stage(
+                "execute",
+                "tool",
+                "execute-experiment",
+                policy="mechanical-audit",
+            ),
+            review_stage("review", "review-experiment"),
+            stage("reflect", "prompt", "reflect-direction", agent="assistant"),
+            review_stage("review-reflection", "review-directions"),
+        ],
+    }
+
+
+def stage(stage_id, stage_type, primitive, **values):
+    key = "prompt" if stage_type == "prompt" else "tool"
+    return {"id": stage_id, "type": stage_type, key: primitive, **values}
+
+
+def review_stage(stage_id, primitive):
+    return {
+        **stage(stage_id, "prompt", primitive, agent="reviewer"),
+        "repeat": 2,
+        "policy": "unanimous-review",
+        "on": {
+            "approve": {"action": "admit"},
+            "reject": {"action": "ghost"},
+            "conflict": {"action": "wait_human"},
+        },
     }
 
 
 class FakePipelines:
     def get(self, pipeline_id):
-        return pipeline(pipeline_id)
+        if pipeline_id == "research":
+            return research_pipeline()
+        return brainstorm_pipeline(pipeline_id)
 
 
 class FakeEmbedding:
@@ -42,27 +85,35 @@ class FakeRunner:
 
 
 class FakeAgents:
-    def __init__(self, candidates=None, decisions=None):
+    def __init__(self, candidates=None, decisions=None, steps=None):
         self.candidates = candidates or []
         self.decisions = list(decisions or [])
+        self.steps = steps or [{"image": "busybox:1.36", "command": ["true"]}]
         self.pairs = []
         self.brainstorm_contexts = []
         self.plan_contexts = []
         self.reflect_contexts = []
+        self.agent_ids = []
 
-    def brainstorm(self, context, count):
+    def validate(self, pipeline):
+        return None
+
+    def brainstorm(self, context, count, agent=None):
         self.brainstorm_contexts.append(context)
+        self.agent_ids.append(("brainstorm", agent))
         return {"candidates": self.candidates[:count]}
 
     def pairwise(self, left, right):
         self.pairs.append((left, right))
         return True
 
-    def plan(self, direction):
+    def plan(self, direction, agent=None):
         self.plan_contexts.append(direction)
-        return {"steps": [{"image": "busybox:1.36", "command": ["true"]}]}
+        self.agent_ids.append(("plan", agent))
+        return {"steps": self.steps}
 
-    def review(self, context, reviewer):
+    def review(self, context, reviewer, agent=None):
+        self.agent_ids.append(("review", agent))
         decision = self.decisions.pop(0) if self.decisions else "approve"
         return {
             "decision": decision,
@@ -71,8 +122,9 @@ class FakeAgents:
             "rebuttal": reviewer,
         }
 
-    def reflect(self, context):
+    def reflect(self, context, agent=None):
         self.reflect_contexts.append(context)
+        self.agent_ids.append(("reflect", agent))
         return {"text": "Reflected direction"}
 
 
@@ -81,9 +133,33 @@ class FakeRuntime:
         self.value = value
         self.call = None
 
-    def json(self, role, instruction, payload, tools=None, prompt_segments=None):
-        self.call = (role, instruction, payload, tools or [], prompt_segments or [])
+    def json(self, agent_spec, instruction, payload):
+        self.call = (agent_spec, instruction, payload)
         return self.value
+
+
+class FakeAgentRegistry:
+    def __init__(self, specs=None):
+        self.specs = {"assistant": agent_spec("assistant")} if specs is None else specs
+
+    def get(self, agent_id):
+        if agent_id not in self.specs:
+            raise KeyError(agent_id)
+        return self.specs[agent_id]
+
+
+def agent_spec(agent_id):
+    return {
+        "id": agent_id,
+        "name": "Configured agent",
+        "runtime": "codex",
+        "model": "gpt-5.6-codex",
+        "instructions": "Use the saved definition.",
+        "skills": ["evidence-review"],
+        "tools": ["read_skill"],
+        "mcp_servers": ["zotero"],
+        "options": {"reasoning_effort": "high"},
+    }
 
 
 def engine(world, agents, embedding=None, runner=None):
@@ -101,10 +177,103 @@ def admitted_direction(world, project, text="Existing direction"):
     return world.admit_node(node["id"])
 
 
+def assert_brainstorm_result(world, project, run, agents):
+    directions = [
+        node for node in world.nodes(project["id"]) if node["kind"] == "direction"
+    ]
+    assert world.run(run["id"])["status"] == "completed"
+    assert world.run_events(run["id"])[1]["actor"] == "brainstormer"
+    assert any(
+        node["life_state"] == "ghost" and "cos=1.00" in node["rejection_reason"]
+        for node in directions
+    )
+    assert any(
+        node["payload"]["text"] == "Novel" and node["life_state"] == "admitted"
+        for node in directions
+    )
+    assert agents.brainstorm_contexts[0]["instruction"] == "只考虑长期稳定性"
+
+
+def assert_reflection_reviewed(world, project, agents):
+    reflected = next(
+        node
+        for node in world.nodes(project["id"])
+        if node["payload"].get("text") == "Reflected direction"
+    )
+    assert reflected["life_state"] == "admitted"
+    assert agents.agent_ids.count(("review", "reviewer")) == 4
+    assert ("reflect", "assistant") in agents.agent_ids
+
+
+def assert_research_result(world, project, direction, agents):
+    assert world.node(direction["id"])["direction_status"] == "supported"
+    assert agents.plan_contexts[0]["instruction"] == "先扫描步长敏感性"
+    assert agents.reflect_contexts[0]["instruction"] == "先扫描步长敏感性"
+    assert_reflection_reviewed(world, project, agents)
+
+
+def test_arbitrary_pipeline_id_executes_registered_stages(world, project):
+    world.embedding = FakeEmbedding({"Novel": [1, 0]})
+    agents = FakeAgents([{"text": "Novel", "quality": 0.8}])
+    run = world.create_run(
+        project["id"],
+        world.nodes(project["id"])[0]["id"],
+        brainstorm_pipeline("custom-ideas"),
+        {"select": 1},
+    )
+    result = engine(world, agents, world.embedding).run(run["id"])
+    assert result["status"] == "completed"
+    assert any(
+        node["payload"].get("text") == "Novel" and node["life_state"] == "admitted"
+        for node in world.nodes(project["id"])
+    )
+    assert ("brainstorm", "assistant") in agents.agent_ids
+
+
+def test_pipeline_id_does_not_choose_implementation(world, project):
+    direction = admitted_direction(world, project)
+    run = world.create_run(
+        project["id"], direction["id"], research_pipeline("brainstorm")
+    )
+    agents = FakeAgents()
+    result = engine(world, agents, runner=FakeRunner()).run(run["id"])
+    assert result["status"] == "waiting_human"
+    assert len(agents.plan_contexts) == 1
+    assert agents.brainstorm_contexts == []
+
+
+def test_pipeline_execution_stops_after_last_defined_stage(world, project):
+    definition = brainstorm_pipeline("generate-only")
+    definition["stages"] = definition["stages"][:1]
+    agents = FakeAgents([{"text": "Novel", "quality": 0.8}])
+    run = world.create_run(
+        project["id"], world.nodes(project["id"])[0]["id"], definition
+    )
+    result = engine(world, agents).run(run["id"])
+    assert result["status"] == "completed"
+    assert all(node["kind"] != "direction" for node in world.nodes(project["id"]))
+
+
+def test_run_executes_definition_snapshot(world, project):
+    definition = brainstorm_pipeline("snapshot")
+    run = world.create_run(
+        project["id"], world.nodes(project["id"])[0]["id"], definition
+    )
+    definition["stages"] = research_pipeline()["stages"]
+    world.embedding = FakeEmbedding({"Novel": [1, 0]})
+    agents = FakeAgents([{"text": "Novel", "quality": 0.8}])
+    result = engine(world, agents, world.embedding).run(run["id"])
+    assert result["status"] == "completed"
+    assert len(agents.brainstorm_contexts) == 1
+    assert agents.plan_contexts == []
+
+
 def test_brainstorm_agent_enforces_named_response_contract():
     runtime = FakeRuntime({"research_directions": []})
     with pytest.raises(ValueError, match="required field 'candidates'"):
-        AgentFacade(runtime, []).brainstorm({"text": "Why?"}, 2)
+        AgentFacade(runtime, FakeAgentRegistry()).brainstorm(
+            {"text": "Why?"}, 2, "assistant"
+        )
     assert '"candidates"' in runtime.call[1]
     assert runtime.call[2] == {"text": "Why?", "count": 2}
 
@@ -130,24 +299,11 @@ def test_brainstorm_blocks_duplicates_and_admits_selected(world, project):
     run = world.create_run(
         project["id"],
         world.nodes(project["id"])[0]["id"],
-        pipeline("brainstorm"),
+        brainstorm_pipeline(),
         {"select": 2, "instruction": "只考虑长期稳定性"},
     )
-    result = engine(world, agents, world.embedding).run(run["id"])
-    directions = [
-        node for node in world.nodes(project["id"]) if node["kind"] == "direction"
-    ]
-    assert result["status"] == "completed"
-    assert world.run_events(run["id"])[1]["actor"] == "brainstormer"
-    assert any(
-        node["life_state"] == "ghost" and "cos=1.00" in node["rejection_reason"]
-        for node in directions
-    )
-    assert any(
-        node["payload"]["text"] == "Novel" and node["life_state"] == "admitted"
-        for node in directions
-    )
-    assert agents.brainstorm_contexts[0]["instruction"] == "只考虑长期稳定性"
+    engine(world, agents, world.embedding).run(run["id"])
+    assert_brainstorm_result(world, project, run, agents)
 
 
 def test_gray_similarity_uses_pairwise_judge(world, project):
@@ -156,7 +312,9 @@ def test_gray_similarity_uses_pairwise_judge(world, project):
     world.embedding = FakeEmbedding(vectors)
     agents = FakeAgents([{"text": "Gray", "quality": 0.7}])
     run = world.create_run(
-        project["id"], world.nodes(project["id"])[0]["id"], pipeline("brainstorm")
+        project["id"],
+        world.nodes(project["id"])[0]["id"],
+        brainstorm_pipeline(),
     )
     engine(world, agents, world.embedding).run(run["id"])
     assert agents.pairs == [("Gray", "Existing direction")]
@@ -167,7 +325,7 @@ def test_manual_research_confirms_start_and_each_step(world, project):
     run = world.create_run(
         project["id"],
         direction["id"],
-        pipeline("research"),
+        research_pipeline(),
         {"instruction": "先扫描步长敏感性"},
     )
     runner = FakeRunner()
@@ -180,9 +338,23 @@ def test_manual_research_confirms_start_and_each_step(world, project):
     completed = service.confirm(run["id"])
     assert completed["status"] == "completed"
     assert len(runner.calls) == 1
-    assert world.node(direction["id"])["direction_status"] == "supported"
-    assert agents.plan_contexts[0]["instruction"] == "先扫描步长敏感性"
-    assert agents.reflect_contexts[0]["instruction"] == "先扫描步长敏感性"
+    assert_research_result(world, project, direction, agents)
+
+
+def test_manual_research_confirms_every_planned_step(world, project):
+    direction = admitted_direction(world, project)
+    steps = [
+        {"image": "busybox:1.36", "command": ["echo", "one"]},
+        {"image": "busybox:1.36", "command": ["echo", "two"]},
+    ]
+    run = world.create_run(project["id"], direction["id"], research_pipeline())
+    runner, agents = FakeRunner(), FakeAgents(steps=steps)
+    service = engine(world, agents, runner=runner)
+    assert service.run(run["id"])["status"] == "waiting_human"
+    assert service.confirm(run["id"])["status"] == "waiting_human"
+    assert len(runner.calls) == 1
+    assert service.confirm(run["id"])["status"] == "completed"
+    assert len(runner.calls) == 2
 
 
 def test_replan_adds_evidence_without_rewriting_terminal_direction(world, project):
@@ -191,7 +363,7 @@ def test_replan_adds_evidence_without_rewriting_terminal_direction(world, projec
     run = world.create_run(
         project["id"],
         direction["id"],
-        pipeline("research"),
+        research_pipeline(),
         {"instruction": "更换积分器后重新验证", "mode": "replan"},
     )
     service = engine(world, FakeAgents(), runner=FakeRunner())
@@ -205,7 +377,7 @@ def test_replan_adds_evidence_without_rewriting_terminal_direction(world, projec
 def test_auto_review_starts_next_iteration(world, project):
     world.set_auto(project["id"], True)
     direction = admitted_direction(world, project)
-    run = world.create_run(project["id"], direction["id"], pipeline("research"))
+    run = world.create_run(project["id"], direction["id"], research_pipeline())
     result = engine(world, FakeAgents(), runner=FakeRunner()).run(run["id"])
     queued = [item for item in world.runs(project["id"]) if item["status"] == "queued"]
     assert result["status"] == "completed"
@@ -215,7 +387,7 @@ def test_auto_review_starts_next_iteration(world, project):
 def test_two_rejections_pause_lineage(world, project):
     world.set_auto(project["id"], True)
     direction = admitted_direction(world, project)
-    run = world.create_run(project["id"], direction["id"], pipeline("research"))
+    run = world.create_run(project["id"], direction["id"], research_pipeline())
     service = engine(
         world,
         FakeAgents(decisions=["reject", "reject"]),
@@ -228,7 +400,7 @@ def test_two_rejections_pause_lineage(world, project):
 
 def test_double_review_conflict_escalates_to_human(world, project):
     direction = admitted_direction(world, project)
-    run = world.create_run(project["id"], direction["id"], pipeline("research"))
+    run = world.create_run(project["id"], direction["id"], research_pipeline())
     service = engine(
         world, FakeAgents(decisions=["approve", "reject"]), runner=FakeRunner()
     )
@@ -236,18 +408,44 @@ def test_double_review_conflict_escalates_to_human(world, project):
     result = service.confirm(run["id"])
     assert result["status"] == "waiting_human"
     assert result["payload"]["conflict_node"].startswith("node:")
+    assert service.resolve(run["id"], "approve", "人工批准")["status"] == "completed"
 
 
-def test_facade_maps_assembly_to_runtime_session():
+def test_agent_session_event_names_owning_stage(world, project):
+    world.embedding = FakeEmbedding({"Novel": [1, 0]})
+    agents = FakeAgents([{"text": "Novel", "quality": 0.8}])
+    run = world.create_run(
+        project["id"], world.nodes(project["id"])[0]["id"], brainstorm_pipeline()
+    )
+    engine(world, agents, world.embedding).run(run["id"])
+    view = run_view(world, world.run(run["id"]))
+    event = next(item for item in view["events"] if item["type"] == "agent_session")
+    assert event["payload"] == {
+        "stage_id": "generate",
+        "session_id": None,
+        "turn_id": None,
+        "usage": {},
+    }
+
+
+def test_facade_passes_saved_agent_spec_to_runtime():
     runtime = FakeRuntime({"candidates": [{"text": "x", "quality": 0.1}]})
-    assembly = resolve_assembly(["fs", "graph-query"])
-    AgentFacade(runtime, assembly).brainstorm({"text": "Why?"}, 1)
-    _, _, _, tools, segments = runtime.call
-    assert {"type": "fs"} in tools
-    webhook = next(tool for tool in tools if tool["type"] == "webhook")
-    assert webhook["name"] == "graph_query"
-    assert webhook["parameters"]["required"] == ["action", "project_id"]
-    assert segments == [package["prompt_segment"] for package in assembly]
+    spec = agent_spec("assistant")
+    AgentFacade(runtime, FakeAgentRegistry({"assistant": spec})).brainstorm(
+        {"text": "Why?"}, 1, "assistant"
+    )
+    assert runtime.call[0] == spec
+
+
+def test_pipeline_rejects_unknown_agent_before_writing_events(world, project):
+    facade = AgentFacade(FakeRuntime({}), FakeAgentRegistry({}))
+    run = world.create_run(
+        project["id"], world.nodes(project["id"])[0]["id"], brainstorm_pipeline()
+    )
+    service = engine(world, facade)
+    with pytest.raises(KeyError):
+        service.run(run["id"])
+    assert world.run_events(run["id"]) == []
 
 
 def test_pins_inject_node_content_into_agent_context(world, project):
@@ -259,7 +457,7 @@ def test_pins_inject_node_content_into_agent_context(world, project):
     run = world.create_run(
         project["id"],
         world.nodes(project["id"])[0]["id"],
-        pipeline("brainstorm"),
+        brainstorm_pipeline(),
         {"select": 1, "pins": [pinned["id"]]},
     )
     engine(world, agents, world.embedding).run(run["id"])
