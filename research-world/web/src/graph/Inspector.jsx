@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { createThread } from "../api";
 import { useWorld } from "../context/WorldContext";
 import { RUN_STATUS, shortId } from "../utils/labels";
+import { nodeTitle } from "./nodeText";
 
 
 const LABELS = { question: "问题", source: "来源", direction: "方向", experiment: "实验",
@@ -20,7 +21,7 @@ export function Inspector({ node, nodes, edges, run, onSelect, onStart, onOpen }
 
 
 function NodeHeader({ node, run, onStart, onOpen }) {
-  const title = node.payload?.title || node.payload?.text || "未命名节点";
+  const title = nodeTitle(node.payload);
   return <header className="inspector-header"><div className="eyebrow"><span>{LABELS[node.kind]}</span><span>{LABELS[node.life_state]}</span>{node.direction_status && <span>{LABELS[node.direction_status]}</span>}</div>
     <h1>{title}</h1>{node.rejection_reason && <p className="rejection-reason">{node.rejection_reason}</p>}
     {run && <button className="button primary workflow-start" onClick={() => onOpen(run)}><Activity size={16} />{RUN_STATUS[run.status] || run.status} · 查看轨迹</button>}
@@ -52,21 +53,22 @@ function NodeRecord({ node }) {
 function Relations({ node, nodes, edges, onSelect }) {
   const byId = new Map(nodes.map((item) => [item.id, item]));
   const related = edges.filter((edge) => edge.source === node.id || edge.target === node.id).map((edge) => ({ edge, node: byId.get(edge.source === node.id ? edge.target : edge.source) })).filter((item) => item.node);
-  return <section className="inspector-section"><h2><GitBranch size={15} />证据关系</h2>{related.length ? <ul className="relation-list">{related.map(({ edge, node: item }) => <li key={`${edge.source}:${edge.target}:${edge.polarity}`}><button onClick={() => onSelect(item.id)}><span className={`polarity ${edge.polarity}`}>{edge.polarity === "supports" ? "支持" : "反驳"}</span><b>{item.payload?.title || item.payload?.text}</b></button></li>)}</ul> : <p className="muted">暂无关系</p>}</section>;
+  return <section className="inspector-section"><h2><GitBranch size={15} />证据关系</h2>{related.length ? <ul className="relation-list">{related.map(({ edge, node: item }) => <li key={`${edge.source}:${edge.target}:${edge.polarity}`}><button onClick={() => onSelect(item.id)}><span className={`polarity ${edge.polarity}`}>{edge.polarity === "supports" ? "支持" : "反驳"}</span><b>{nodeTitle(item.payload)}</b></button></li>)}</ul> : <p className="muted">暂无关系</p>}</section>;
 }
 
 
 function Claims({ node }) {
-  const claims = node.payload?.claims || [];
+  const values = node.payload?.claims;
+  const claims = Array.isArray(values) ? values.filter(isClaim) : [];
   if (!claims.length) return null;
   return <section className="inspector-section"><h2>原子主张</h2><ol className="claim-list">
-    {claims.map((claim, index) => <li key={claim.id || index}><header><b>{claim.text}</b><span>{label(claim.verdict)}</span></header>
+    {claims.map((claim, index) => <li key={text(claim.id) || index}><header><b>{claim.text}</b><span>{label(claim.verdict)}</span></header>
       <Evidence values={claim.evidence} /></li>)}</ol></section>;
 }
 
 
 function Reviews({ node }) {
-  if (!node.rebuttal) return null;
+  if (!isRecord(node.rebuttal)) return null;
   return <section className="inspector-section"><h2>审计意见</h2><div className="review-grid">
     {Object.entries(node.rebuttal).map(([name, value]) => <Review key={name} name={name} value={value} />)}
   </div></section>;
@@ -74,20 +76,37 @@ function Reviews({ node }) {
 
 
 function Review({ name, value }) {
-  const title = label(value.stance) || name;
-  return <article><header><b>{title}</b><span>{label(value.decision || value.stance)}</span></header>
-    <p>{value.argument || value.reason}</p><Evidence values={value.evidence} /></article>;
+  const review = isRecord(value) ? value : { argument: String(value ?? "") };
+  const title = label(review.stance) || name;
+  return <article><header><b>{title}</b><span>{label(review.decision || review.stance)}</span></header>
+    <p>{text(review.argument) || text(review.reason)}</p><Evidence values={review.evidence} /></article>;
 }
 
 
 function Evidence({ values = [] }) {
-  if (!values.length) return null;
-  return <ul className="audit-evidence">{values.map((value, index) => <li key={`${value}:${index}`} className="mono">{value}</li>)}</ul>;
+  const items = Array.isArray(values) ? values.filter(text) : [];
+  if (!items.length) return null;
+  return <ul className="audit-evidence">{items.map((value, index) => <li key={`${value}:${index}`} className="mono">{String(value)}</li>)}</ul>;
+}
+
+
+function isRecord(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+
+function isClaim(value) {
+  return isRecord(value) && Boolean(text(value.text));
+}
+
+
+function text(value) {
+  return typeof value === "string" ? value : "";
 }
 
 
 function label(value) {
-  return LABELS[value] || value;
+  return text(value) ? LABELS[value] || value : "";
 }
 
 

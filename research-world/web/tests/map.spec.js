@@ -25,6 +25,23 @@ function overlappingPairs(page, selector) {
 }
 
 
+function edgeNodeIntersections(page) {
+  return page.locator(".signal-edge").evaluateAll((edges) => {
+    const nodes = [...document.querySelectorAll(".react-flow__node")];
+    return edges.flatMap((edge) => {
+      const path = edge.querySelector(".react-flow__edge-path");
+      const obstacles = nodes.filter((node) => ![edge.dataset.source, edge.dataset.target].includes(node.dataset.id));
+      for (let offset = 0; offset <= path.getTotalLength(); offset += 1) {
+        const point = new DOMPoint(path.getPointAtLength(offset).x, path.getPointAtLength(offset).y).matrixTransform(path.getScreenCTM());
+        const hit = obstacles.find((node) => { const box = node.getBoundingClientRect(); return point.x > box.left && point.x < box.right && point.y > box.top && point.y < box.bottom; });
+        if (hit) return [[edge.dataset.source, edge.dataset.target, hit.dataset.id]];
+      }
+      return [];
+    });
+  });
+}
+
+
 test("lays out the four fixed node kinds as graph lanes", async ({ page }) => {
   await mockBase(page, mapFixture());
   await page.goto("/map");
@@ -49,6 +66,18 @@ test("keeps admitted and ghost experiments from overlapping in one lane", async 
   const experiments = ".react-flow__node:has(.kind-experiment)";
   await expect(page.locator(experiments)).toHaveCount(4);
   expect(await overlappingPairs(page, experiments)).toEqual([]);
+});
+
+
+test("routes relations around nodes in every life state", async ({ page }) => {
+  const nodes = [node("node:q", "question"), node("node:s", "source"), node("node:d", "direction", { parent_id: "node:q" }),
+    node("node:e", "experiment", { parent_id: "node:d" }), node("node:p", "experiment", { parent_id: "node:d", life_state: "pending" }),
+    node("node:g", "experiment", { parent_id: "node:d", life_state: "ghost" })];
+  const edges = [{ source: "node:s", target: "node:d", polarity: "supports" }, { source: "node:e", target: "node:d", polarity: "refutes" }];
+  await mockBase(page, bootstrap({ nodes, edges }));
+  await page.goto("/map");
+  await expect(page.locator(".react-flow__edge")).toHaveCount(5);
+  expect(await edgeNodeIntersections(page)).toEqual([]);
 });
 
 
@@ -115,6 +144,34 @@ test("does not offer a Thread entry for a ghost node", async ({ page }) => {
   await expect(inspector.getByRole("button", { name: "新建对话并钉入该节点" })).toHaveCount(0);
   await expect(inspector.getByRole("button", { name: "发起运行" })).toHaveCount(0);
   await expect(inspector.getByLabel("选择流程")).toHaveCount(0);
+});
+
+
+test("keeps the inspector usable for malformed pending review data", async ({ page }) => {
+  const pending = node("node:p", "direction", {
+    life_state: "pending", payload: { text: {}, claims: ["invalid", null, { text: {}, evidence: [{}] }] },
+    rebuttal: { reviewer_a: null, reviewer_b: "needs evidence", reviewer_c: { stance: {}, argument: {}, evidence: "node:s" } },
+  });
+  await mockBase(page, bootstrap({ nodes: [node("node:q", "question"), pending] }));
+  await page.goto("/map?node=node%3Ap");
+  const inspector = page.locator(".inspector");
+  await expect(inspector).toContainText("待审查");
+  await expect(inspector.locator("h1")).toHaveText("未命名节点");
+  await expect(inspector.locator(".claim-list")).toHaveCount(0);
+  await expect(inspector.locator(".review-grid article")).toHaveCount(3);
+  await expect(inspector).toContainText("needs evidence");
+  await expect(inspector.getByRole("button", { name: "发起运行" })).toHaveCount(0);
+});
+
+
+test("uses a safe title for malformed related node payloads", async ({ page }) => {
+  const source = node("node:s", "source", { payload: { title: {} } });
+  const body = bootstrap({ nodes: [node("node:q", "question"), source],
+    edges: [{ source: source.id, target: "node:q", polarity: "supports" }] });
+  await mockBase(page, body);
+  await page.goto("/map?node=node%3Aq");
+  await expect(page.locator(".research-node", { hasText: "未命名节点" })).toBeVisible();
+  await expect(page.locator(".relation-list")).toContainText("未命名节点");
 });
 
 
