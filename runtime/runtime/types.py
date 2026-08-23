@@ -18,6 +18,10 @@ class SessionNotFound(RuntimeError):
     pass
 
 
+class SessionSpecInvalid(RuntimeError):
+    pass
+
+
 class CapabilityNotFound(RuntimeError):
     pass
 

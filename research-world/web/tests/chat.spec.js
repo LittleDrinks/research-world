@@ -167,6 +167,38 @@ test("restores the draft on stream error and stays readable on mobile", async ({
 });
 
 
+test("offers inline restart when the session spec is outdated", async ({ page }) => {
+  let restarted = false;
+  const sent = [];
+  await mockChat(page);
+  await page.route(/\/api\/v1\/threads\/thread%3At1\/prompts/, (route) => {
+    sent.push(route.request().postDataJSON());
+    return restarted
+      ? route.fulfill(sse([["delta", { text: "重启后的答复" }], ["done", { stop_reason: "end_turn" }]]))
+      : route.fulfill(sse([["error", { detail: "此对话的 Agent 配置已变更，需要重启会话", code: "session_spec_invalid" }]]));
+  });
+  await page.route(/\/api\/v1\/threads\/thread%3At1\/restart/, (route) => {
+    restarted = true;
+    return route.fulfill({ json: threadDetail({ session_id: "s-new" }) });
+  });
+  await page.goto("/chat/thread%3At1");
+  await page.getByLabel("消息").fill("继续讨论");
+  await page.getByRole("button", { name: "发送" }).click();
+  const notice = page.locator(".spec-notice");
+  await expect(notice).toContainText("此对话的 Agent 配置已变更，需要重启会话");
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.getByLabel("消息")).toHaveValue("继续讨论");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await notice.getByRole("button", { name: "重启会话" }).click();
+  await expect(notice).toHaveCount(0);
+  await expect(page.getByLabel("消息")).toHaveValue("继续讨论");
+  await page.getByRole("button", { name: "发送" }).click();
+  await expect.poll(() => sent.length).toBe(2);
+  expect(sent[1]).toEqual({ message: "继续讨论" });
+});
+
+
 test("only lists runs bound to the thread id", async ({ page }) => {
   const foreign = run({ id: "run:r2", node_id: "node:q", payload: {} });
   await mockBase(page, bootstrap({ runs: [run(), foreign] }));

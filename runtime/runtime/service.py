@@ -16,7 +16,13 @@ from .endpoints import Endpoint, EndpointPool, load_endpoints
 from .skills import Skill, discover_skills, skill_index
 from .tools import ToolBox
 from .trace import TraceStore, inspect_trace
-from .types import AgentSpec, CapabilityNotFound, SessionNotFound
+from .types import (
+    AgentSpec,
+    CapabilityNotFound,
+    SessionNotFound,
+    SessionSpecInvalid,
+)
+from .types import RuntimeError as RuntimeInputError
 
 
 class Runtime:
@@ -93,7 +99,10 @@ class Runtime:
     async def _prompt(self, session_id, blocks, client, emit):
         events = self._events(session_id)
         meta = events[0]["data"]
-        spec = AgentSpec.parse(meta["agent_spec"])
+        try:
+            spec = AgentSpec.parse(meta["agent_spec"])
+        except RuntimeInputError as error:
+            raise SessionSpecInvalid(str(error)) from error
         turn_id = f"t-{uuid.uuid4().hex}"
         self.trace.append(session_id, "turn_start", {"prompt": blocks}, turn_id)
         try:

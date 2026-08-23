@@ -28,9 +28,18 @@ class RuntimeCapabilityError(RuntimeError):
     pass
 
 
-def _request_error_message(error: RequestError) -> str:
+class RuntimeRequestError(ValueError):
+    def __init__(self, message: str, code: str | None = None):
+        super().__init__(message)
+        self.code = code
+
+
+def _raise_request_error(error: RequestError) -> None:
     data = error.data if isinstance(error.data, dict) else {}
-    return str(data.get("details") or error)
+    message = str(data.get("details") or error)
+    if error.code == -32602:
+        raise RuntimeRequestError(message, data.get("code")) from None
+    raise RuntimeCapabilityError(message) from error
 
 
 class RuntimeClient:
@@ -84,7 +93,10 @@ class RuntimeClient:
             task = asyncio.create_task(connection.prompt(session_id, blocks))
             async for update in _updates(client, task):
                 yield update
-            response = await task
+            try:
+                response = await task
+            except RequestError as error:
+                _raise_request_error(error)
             yield {"type": "done", "stop_reason": response.stop_reason}
 
     async def prompt(
@@ -135,10 +147,7 @@ class RuntimeClient:
             ) as connection:
                 return await connection.ext_method(method, params)
         except RequestError as error:
-            message = _request_error_message(error)
-            if error.code == -32602:
-                raise ValueError(message) from None
-            raise RuntimeCapabilityError(message) from error
+            _raise_request_error(error)
 
     @asynccontextmanager
     async def _connect(self, client):

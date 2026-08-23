@@ -293,13 +293,23 @@ def _artifact_values(value: dict) -> dict:
     return {"content": content, "media_type": value["media_type"]}
 
 
+_ERROR_TEXT = {"session_spec_invalid": "此对话的 Agent 配置已变更，需要重启会话"}
+
+
 async def relay(events):
     try:
         async for event in events:
             event_type = event.pop("type")
             yield sse_frame(event_type, event)
     except Exception as error:  # noqa: BLE001
-        yield sse_frame("error", {"detail": str(error)})
+        yield sse_frame("error", _error_payload(error))
+
+
+def _error_payload(error: Exception) -> dict:
+    code = getattr(error, "code", None)
+    detail = _ERROR_TEXT.get(code) if code else None
+    payload = {"detail": detail or str(error)}
+    return {**payload, "code": code} if code else payload
 
 
 def sse_frame(event: str, data) -> str:

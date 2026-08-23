@@ -21,6 +21,7 @@ from acp.schema import (
 
 from .service import Runtime
 from .types import RuntimeError as RuntimeInputError
+from .types import SessionSpecInvalid
 
 
 class RuntimeAgent:
@@ -67,10 +68,17 @@ class RuntimeAgent:
     async def prompt(
         self, session_id: str, prompt: list[Any], **kwargs: Any
     ) -> PromptResponse:
-        blocks = [_block(item) for item in prompt]
-        result = await self.runtime.prompt(
-            session_id, blocks, self.client, self._emit(session_id)
-        )
+        try:
+            blocks = [_block(item) for item in prompt]
+            result = await self.runtime.prompt(
+                session_id, blocks, self.client, self._emit(session_id)
+            )
+        except SessionSpecInvalid as error:
+            raise RequestError.invalid_params(
+                {"code": "session_spec_invalid", "details": str(error)}
+            ) from None
+        except (RuntimeInputError, ValueError, TypeError, KeyError) as error:
+            raise RequestError.invalid_params({"details": str(error)}) from None
         reason = "end_turn" if result["status"] == "completed" else "max_turn_requests"
         return PromptResponse(stop_reason=reason)
 

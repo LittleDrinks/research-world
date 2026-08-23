@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from server.agents import AgentRegistry
 from server.app import create_app
 from server.kernel import ResearchKernel
+from server.runtime_client import RuntimeRequestError
 
 
 class FakeRuntime:
@@ -146,6 +147,32 @@ def test_prompt_route_uses_kernel_command():
 
     assert "event: delta" in response.text
     assert kernel.tags == ["thread_prompt"]
+
+
+def test_prompt_error_frame_carries_code_and_user_text(world, project, tmp_path):
+    class SpecInvalidRuntime(FakeRuntime):
+        async def prompt_stream(self, session_id, message, project_id, node_ids):
+            raise RuntimeRequestError(
+                "Additional properties are not allowed", "session_spec_invalid"
+            )
+            yield  # pragma: no cover
+
+    kernel = ResearchKernel(
+        world,
+        projects_root=tmp_path / "projects",
+        runtime=SpecInvalidRuntime(),
+        agents=_agents(tmp_path),
+    )
+    client = TestClient(create_app(kernel))
+    thread = client.post(f"/api/v1/projects/{project['id']}/threads", json={}).json()
+
+    response = client.post(
+        f"/api/v1/threads/{thread['id']}/prompts", json={"message": "分析它"}
+    )
+
+    assert '"code": "session_spec_invalid"' in response.text
+    assert "此对话的 Agent 配置已变更，需要重启会话" in response.text
+    assert "Additional properties" not in response.text
 
 
 def test_restart_replaces_pointer_and_keeps_old_trace(world, project, tmp_path):

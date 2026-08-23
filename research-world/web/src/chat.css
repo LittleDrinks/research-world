@@ -46,6 +46,8 @@
 .launch-control { display: flex; align-items: center; gap: 8px; padding: 8px max(16px, calc((100% - 780px) / 2)); border-top: 1px solid var(--line); background: var(--app-panel); }
 .launch-control select { max-width: 220px; min-height: 34px; font-size: 13px; }
 .launch-control .button { min-height: 34px; font-size: 13px; }
+.spec-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px max(16px, calc((100% - 780px) / 2)); border-top: 1px solid var(--line); background: var(--app-panel); font-size: 13px; }
+.spec-notice .button { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; }
 .composer-wrap { position: relative; z-index: 20; flex: 0 0 auto; padding: 10px max(16px, calc((100% - 780px) / 2)) 14px; border-top: 1px solid var(--line); background: var(--app-topbar); }
 .composer { display: grid; grid-template-columns: minmax(0, 1fr) 40px; align-items: end; gap: 8px; }
 .composer textarea { min-height: 44px; max-height: 180px; resize: vertical; }

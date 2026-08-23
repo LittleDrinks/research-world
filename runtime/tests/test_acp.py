@@ -264,6 +264,41 @@ async def test_runtime_user_input_errors_cross_acp_as_invalid_params(
     assert raised.value.data["details"]
 
 
+async def test_prompt_on_legacy_session_meta_surfaces_validation_error(tmp_path):
+    runtime = Runtime(tmp_path / "data", [endpoint(FakeProvider([]))])
+    legacy_spec = {
+        "id": "researcher",
+        "name": "Researcher",
+        "runtime": "openai-compatible",
+        "model": "qwen-test",
+        "instructions": "Use cited nodes.",
+        "mcp_servers": [],
+    }
+    runtime.trace.create(
+        "s-legacy",
+        {
+            "agent_spec": legacy_spec,
+            "workspace": str(tmp_path),
+            "parent": None,
+            "mode": "resume",
+            "skills": [],
+        },
+    )
+    left, right = memory_transport_pair()
+    agent = AgentSideConnection(lambda client: RuntimeAgent(runtime), left)
+    connection = connect_to_agent(ProjectClient(), right)
+    try:
+        with pytest.raises(RequestError) as raised:
+            await connection.prompt("s-legacy", [text_block("hi")])
+    finally:
+        await connection.close()
+        await agent.close()
+
+    assert raised.value.code == -32602
+    assert raised.value.data["code"] == "session_spec_invalid"
+    assert "Additional properties are not allowed" in raised.value.data["details"]
+
+
 class KernelClient:
     def __init__(self):
         self.calls = []

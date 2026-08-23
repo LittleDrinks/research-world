@@ -55,22 +55,35 @@ function useThreadDetail(threadId) {
 }
 
 
-function useSend(threadId, setDetail) {
+function promptEvent(reply, setStreaming, event, payload) {
+  if (event === "delta") { reply.text += payload.text; setStreaming(reply.text || " "); }
+  if (event !== "error") return;
+  const failure = new Error(payload.detail || "答复失败");
+  failure.code = payload.code;
+  throw failure;
+}
+
+
+function showSendError(error, onSpecInvalid, setError) {
+  if (error.code === "session_spec_invalid") onSpecInvalid();
+  else setError(error.message);
+}
+
+
+function useSend(threadId, setDetail, onSpecInvalid) {
   const { projectId, refresh, setError } = useWorld();
   const [sending, setSending] = useState(false);
   const [streaming, setStreaming] = useState("");
   const [pending, setPending] = useState("");
   const send = async (text) => {
     setSending(true); setPending(text); setStreaming(" ");
-    let reply = "";
+    const reply = { text: "" };
     try {
-      await sendPrompt(threadId, text, (event, payload) => {
-        if (event === "delta") { reply += payload.text; setStreaming(reply || " "); }
-        if (event === "error") throw new Error(payload.detail || "答复失败");
-      });
+      await sendPrompt(threadId, text, (...event) => promptEvent(reply, setStreaming, ...event));
       setDetail(await getThread(threadId)); await refresh(projectId); return true;
-    } catch (error) { setError(error.message); return false; }
-    finally { setSending(false); setStreaming(""); setPending(""); }
+    } catch (error) {
+      showSendError(error, onSpecInvalid, setError); return false;
+    } finally { setSending(false); setStreaming(""); setPending(""); }
   };
   return { sending, streaming, pending, send };
 }
@@ -95,21 +108,41 @@ function ThreadFailed({ onRetry }) {
 }
 
 
+function useRestart(threadId, setDetail) {
+  const { setError } = useWorld();
+  const [specInvalid, setSpecInvalid] = useState(false);
+  const restart = async () => {
+    try { setDetail(await restartThread(threadId)); setSpecInvalid(false); }
+    catch (error) { setError(error.message); }
+  };
+  return { specInvalid, flagSpecInvalid: () => setSpecInvalid(true), restart };
+}
+
+
 function ThreadView({ threadId }) {
-  const { data, setError } = useWorld();
+  const { data } = useWorld();
   const { detail, failed, retry, setDetail } = useThreadDetail(threadId);
-  const { sending, streaming, pending, send } = useSend(threadId, setDetail);
+  const { specInvalid, flagSpecInvalid, restart } = useRestart(threadId, setDetail);
+  const { sending, streaming, pending, send } = useSend(threadId, setDetail, flagSpecInvalid);
   const pin = usePin(threadId, setDetail);
   if (failed) return <ThreadFailed onRetry={retry} />;
   if (!detail) return <div className="page-loading">正在载入 Thread...</div>;
   const messages = [...(detail.runtime?.messages || [])];
   if (pending) messages.push({ role: "user", content: pending });
   return <section className="chat-page">
-    <ThreadHeader detail={detail} sending={sending} onRestart={() => restartThread(threadId).then(setDetail).catch((error) => setError(error.message))} />
+    <ThreadHeader detail={detail} sending={sending} onRestart={restart} />
     <div className="chat-scroll"><MessageList messages={messages} streaming={sending ? streaming : ""} />
       <RunSection runs={threadRuns(data.runs, detail)} threadId={threadId} />
       <LaunchControl thread={detail} /></div>
+    {specInvalid && <SpecInvalidNotice onRestart={restart} />}
     <Composer pinnedNodes={detail.nodes} sending={sending} onSend={send} onPin={pin} /></section>;
+}
+
+
+function SpecInvalidNotice({ onRestart }) {
+  return <div className="spec-notice" role="status">
+    <span>此对话的 Agent 配置已变更，需要重启会话</span>
+    <button className="button secondary" onClick={onRestart}><RotateCcw size={14} />重启会话</button></div>;
 }
 
 

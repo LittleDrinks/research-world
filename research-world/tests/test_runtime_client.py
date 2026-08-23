@@ -12,6 +12,7 @@ from server.runtime_client import (
     RuntimeCapabilityError,
     RuntimeClient,
     RuntimeEmbedding,
+    RuntimeRequestError,
     _prompt_blocks,
     _websocket_url,
     json_object,
@@ -61,6 +62,9 @@ class FailingConnection:
     async def ext_method(self, _method, _params):
         raise self.error
 
+    async def prompt(self, _session_id, _blocks):
+        raise self.error
+
 
 def test_runtime_url_uses_acp_websocket():
     assert _websocket_url("http://runtime:8098") == "ws://runtime:8098/acp/"
@@ -90,6 +94,23 @@ async def test_internal_runtime_extension_error_becomes_capability_error():
 
     with pytest.raises(RuntimeCapabilityError, match="runtime unavailable"):
         await runtime.validate_agent({"id": "bad"})
+
+
+@pytest.mark.asyncio
+async def test_prompt_stream_surfaces_runtime_error_details():
+    error = RequestError.invalid_params(
+        {
+            "code": "session_spec_invalid",
+            "details": "Additional properties are not allowed ('mcp_servers')",
+        }
+    )
+    runtime = FailingExtensionRuntime(error)
+
+    with pytest.raises(RuntimeRequestError, match="Additional properties") as raised:
+        async for _ in runtime.prompt_stream("session:test", "hi"):
+            pass
+
+    assert raised.value.code == "session_spec_invalid"
 
 
 def test_json_object_repairs_fenced_model_output():
