@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import pytest
 from fastapi.testclient import TestClient
-
 from server.agents import AgentRegistry
 from server.app import create_app
 from server.kernel import ResearchKernel
@@ -180,7 +180,10 @@ def test_cross_project_node_cannot_be_pinned(world, project, tmp_path):
     assert response.status_code == 400
 
 
-def test_pending_node_cannot_enter_thread_context(world, project, tmp_path):
+@pytest.mark.parametrize("life_state", ["pending", "ghost"])
+def test_unadmitted_node_cannot_enter_thread_context(
+    world, project, tmp_path, life_state
+):
     runtime = FakeRuntime()
     kernel = ResearchKernel(
         world,
@@ -190,6 +193,8 @@ def test_pending_node_cannot_enter_thread_context(world, project, tmp_path):
     )
     client = TestClient(create_app(kernel))
     pending = world.create_node(project["id"], "direction", {"text": "unreviewed"})
+    if life_state == "ghost":
+        world.ghost_node(pending["id"], "rejected")
 
     created = client.post(
         f"/api/v1/projects/{project['id']}/threads",

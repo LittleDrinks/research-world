@@ -8,7 +8,12 @@ from pathlib import Path
 from pybtex.database import parse_string
 from pybtex.exceptions import PybtexError
 
-from .admission import AdmissionPolicy, AdmissionVerdict, PendingAdmissionPolicy
+from .admission import (
+    AdmissionPolicy,
+    AdmissionVerdict,
+    PendingAdmissionPolicy,
+    validate_claims,
+)
 from .artifacts import ArtifactStore
 from .observations import observation_submission
 from .reporting import assess_delivery
@@ -95,7 +100,7 @@ class ResearchKernel:
         project_id = _project_id(command)
         node = self._project_node(project_id, command.values["node_id"])
         verdict = _admission_verdict(command.values)
-        return self._world.apply_admission(node["id"], verdict)
+        return self._apply_admission(project_id, node, verdict)
 
     def _command_add_edge(self, command: KernelCommand) -> dict:
         value, project_id = command.values, _project_id(command)
@@ -304,12 +309,30 @@ class ResearchKernel:
     def _submit_node(self, project_id: str, value: dict) -> dict:
         _validate_fields(value, {"kind", "payload", "parent_id"}, {"kind", "payload"})
         self._validate_parent(project_id, value.get("parent_id"))
+        payload = _node_payload(value["payload"])
         state = {"parent_id": value["parent_id"]} if value.get("parent_id") else {}
-        node = self._world.create_node(
-            project_id, value["kind"], value["payload"], **state
-        )
+        node = self._world.create_node(project_id, value["kind"], payload, **state)
         verdict = self._admission.review(node)
-        return self._world.apply_admission(node["id"], verdict) if verdict else node
+        return self._apply_admission(project_id, node, verdict) if verdict else node
+
+    def _apply_admission(self, project_id, node, verdict) -> dict:
+        if verdict.decision == "approve":
+            self._validate_claim_ids(project_id, node)
+        return self._world.apply_admission(node["id"], verdict)
+
+    def _validate_claim_ids(self, project_id: str, node: dict) -> None:
+        admitted = [
+            item
+            for item in self._world.nodes(project_id)
+            if item["life_state"] == "admitted" and item["id"] != node["id"]
+        ]
+        claims = [
+            *_node_claims(node),
+            *(c for item in admitted for c in _node_claims(item)),
+        ]
+        ids = [claim["id"] for claim in claims]
+        if len(ids) != len(set(ids)):
+            raise ValueError("claim ids must be unique within a project")
 
     def _project_node(self, project_id: str | None, node_id: str) -> dict:
         node = self._world.node(_canonical_node_id(node_id))
@@ -516,6 +539,12 @@ def _validate_fields(value: dict, allowed: set[str], required: set[str]) -> None
         raise ValueError(f"kernel command rejects fields: {', '.join(sorted(unknown))}")
 
 
+def _node_payload(value) -> dict:
+    if not isinstance(value, dict):
+        raise TypeError("node payload must be an object")
+    return value
+
+
 def _admission_verdict(value: dict) -> AdmissionVerdict:
     reason = value.get("reason", "")
     rebuttal = value.get("rebuttal")
@@ -582,7 +611,7 @@ def _source_record(node: dict) -> dict:
 
 
 def _node_claims(node: dict) -> list[dict]:
-    claims = node["payload"].get("claims", [])
+    claims = validate_claims(node["payload"].get("claims", []))
     return [_claim_record(node, index, claim) for index, claim in enumerate(claims, 1)]
 
 

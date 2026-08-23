@@ -5,6 +5,7 @@ import os
 import secrets
 from dataclasses import dataclass
 
+from .admission import validate_claims as validate_claim_records
 from .agents import AgentRegistry
 from .artifacts import ArtifactStore
 from .clients import RunnerClient
@@ -960,20 +961,10 @@ def validate_candidates(value, count: int) -> list[dict]:
 
 
 def validate_claims(value) -> list[dict]:
-    if not isinstance(value, list) or not value:
+    claims = validate_claim_records(value)
+    if not claims:
         raise ValueError("runtime field 'claims' must be a non-empty list")
-    for claim in value:
-        _validate_claim(claim)
-    return value
-
-
-def _validate_claim(claim: dict) -> None:
-    if not isinstance(claim, dict) or not str(claim.get("text", "")).strip():
-        raise ValueError("each claim requires text")
-    if claim.get("verdict") not in {"supported", "refuted", "uncertain"}:
-        raise ValueError("each claim requires a supported/refuted/uncertain verdict")
-    if not isinstance(claim.get("evidence"), list):
-        raise TypeError("each claim requires an evidence list")
+    return claims
 
 
 def default_engine(world: World, project_id: str, kernel) -> PipelineEngine:

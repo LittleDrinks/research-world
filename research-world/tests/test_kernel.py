@@ -3,7 +3,6 @@ from base64 import b64encode
 
 import pytest
 from fastapi.testclient import TestClient
-
 from server.admission import AdmissionVerdict
 from server.app import create_app
 from server.kernel import KernelCommand, KernelQuery, ResearchKernel
@@ -138,6 +137,69 @@ def test_node_api_submits_pending_and_cannot_mutate_payload(world, project, tmp_
     assert node["life_state"] == "pending"
     assert updated.status_code == 405
     assert world.node(node["id"])["payload"] == {"text": "Candidate"}
+
+
+@pytest.mark.parametrize(
+    "claims",
+    [
+        ["not-an-object"],
+        [{"text": "", "verdict": "supported", "evidence": []}],
+        [{"text": 42, "verdict": "supported", "evidence": []}],
+        [{"text": "Claim", "verdict": "unknown", "evidence": []}],
+        [{"text": "Claim", "verdict": "supported", "evidence": "node:s"}],
+        [{"text": "Claim", "verdict": "supported", "evidence": [{}]}],
+    ],
+)
+def test_admission_rejects_malformed_claims(world, project, tmp_path, claims):
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
+    client = TestClient(create_app(kernel))
+    created = client.post(
+        f"/api/v1/projects/{project['id']}/nodes",
+        json={"kind": "direction", "payload": {"text": "Candidate", "claims": claims}},
+    ).json()
+
+    admitted = client.post(
+        f"/api/v1/projects/{project['id']}/nodes/{created['id']}/admission",
+        json={"decision": "approve"},
+    )
+    projection = client.get(f"/api/v1/projects/{project['id']}/report/projection")
+
+    assert admitted.status_code == 400
+    assert world.node(created["id"])["life_state"] == "pending"
+    assert projection.status_code == 200
+
+
+def test_admission_rejects_duplicate_project_claim_ids(world, project, tmp_path):
+    client = TestClient(
+        create_app(ResearchKernel(world, projects_root=tmp_path / "projects"))
+    )
+    claims = [
+        {"id": "claim:shared", "text": "Claim", "verdict": "supported", "evidence": []}
+    ]
+    nodes = [
+        client.post(
+            f"/api/v1/projects/{project['id']}/nodes",
+            json={"kind": "direction", "payload": {"text": text, "claims": claims}},
+        ).json()
+        for text in ("First", "Second")
+    ]
+
+    assert admit(client, project, nodes[0]).status_code == 200
+    assert admit(client, project, nodes[1]).status_code == 400
+    assert world.node(nodes[1]["id"])["life_state"] == "pending"
+
+
+def test_node_submission_requires_object_payload(world, project, tmp_path):
+    client = TestClient(
+        create_app(ResearchKernel(world, projects_root=tmp_path / "projects"))
+    )
+
+    response = client.post(
+        f"/api/v1/projects/{project['id']}/nodes",
+        json={"kind": "direction", "payload": ["not", "an", "object"]},
+    )
+
+    assert response.status_code == 400
 
 
 def test_artifact_then_observation_uses_one_kernel_path(world, project, tmp_path):
