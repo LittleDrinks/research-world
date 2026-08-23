@@ -89,21 +89,15 @@ async def test_prompt_rejects_an_empty_final_response(tmp_path, monkeypatch):
 
 
 async def test_agent_spec_exposes_only_selected_builtin_tools(tmp_path, monkeypatch):
-    runtime, provider = configured_runtime(
-        tmp_path,
-        monkeypatch,
-        [
-            {"role": "assistant", "content": "selected"},
-            {"role": "assistant", "content": "omitted"},
-        ],
-    )
-    selected = await launch(runtime, tmp_path, spec(tools=["report_validate"]))
+    runtime, provider = configured_runtime(tmp_path, monkeypatch)
+    selected_tools = ["report_projection", "report_validate"]
+    selected = await launch(runtime, tmp_path, spec(tools=selected_tools))
     omitted = await launch(runtime, tmp_path, spec(id="without-report"))
 
     await runtime.prompt(selected["session_id"], [{"type": "text", "text": "one"}])
     await runtime.prompt(omitted["session_id"], [{"type": "text", "text": "two"}])
 
-    assert request_tool_names(provider.requests[0]) == {"report_validate"}
+    assert request_tool_names(provider.requests[0]) == set(selected_tools)
     assert request_tool_names(provider.requests[1]) == set()
 
 
@@ -181,9 +175,13 @@ async def launch(runtime, workspace, agent_spec):
     )
 
 
-def configured_runtime(tmp_path, monkeypatch, outputs):
+def configured_runtime(tmp_path, monkeypatch):
     monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
     monkeypatch.setenv("RUNTIME_API_KEY", "secret")
     monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
+    outputs = [
+        {"role": "assistant", "content": "selected"},
+        {"role": "assistant", "content": "omitted"},
+    ]
     provider = FakeProvider(outputs)
     return Runtime(tmp_path / "data", [endpoint(provider)]), provider

@@ -115,6 +115,16 @@ async def test_report_validate_crosses_the_client_boundary(tmp_path):
     ]
 
 
+async def test_report_projection_crosses_the_client_boundary(tmp_path):
+    client = KernelClient()
+    async with ToolBox(tmp_path, {}, ("report_projection",), [], client) as tools:
+        content, failed = await tools.call("session", "report_projection", "{}")
+
+    assert failed is False
+    assert json.loads(content) == {"facts": [], "claims": [], "sources": []}
+    assert client.calls == [("research/report_projection", {})]
+
+
 async def test_submit_observation_crosses_the_client_boundary(tmp_path):
     client = KernelClient()
     value = observation()
@@ -130,12 +140,18 @@ async def test_submit_observation_crosses_the_client_boundary(tmp_path):
 
 def test_kernel_tools_are_exposed_only_when_selected(tmp_path):
     selected = ToolBox(
-        tmp_path, {}, ("report_validate", "submit_observation"), [], None
+        tmp_path,
+        {},
+        ("report_projection", "report_validate", "submit_observation"),
+        [],
+        None,
     )
     omitted = ToolBox(tmp_path, {}, (), [], None)
 
+    assert "report_projection" in tool_names(selected)
     assert "report_validate" in tool_names(selected)
     assert "submit_observation" in tool_names(selected)
+    assert "report_projection" not in tool_names(omitted)
     assert "report_validate" not in tool_names(omitted)
     assert "submit_observation" not in tool_names(omitted)
 
@@ -190,6 +206,8 @@ class KernelClient:
 
     async def ext_method(self, method, params):
         self.calls.append((method, params))
+        if method == "research/report_projection":
+            return {"facts": [], "claims": [], "sources": []}
         if method == "research/report_validate":
             return {"valid": True, "delivery_level": 4}
         if method == "research/submit_observation":

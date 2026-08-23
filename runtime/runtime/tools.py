@@ -81,6 +81,18 @@ REPORT_VALIDATE = {
         },
     },
 }
+REPORT_PROJECTION = {
+    "type": "function",
+    "function": {
+        "name": "report_projection",
+        "description": "Read the admitted report projection from Research Kernel.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": False,
+        },
+    },
+}
 SUBMIT_OBSERVATION = {
     "type": "function",
     "function": {
@@ -138,6 +150,7 @@ BUILTINS = {
     "read_skill": READ_SKILL,
     "read_resource": READ_RESOURCE,
     "graph_query": GRAPH_QUERY,
+    "report_projection": REPORT_PROJECTION,
     "report_validate": REPORT_VALIDATE,
     "submit_observation": SUBMIT_OBSERVATION,
     "read_file": READ_FILE,
@@ -223,6 +236,12 @@ class ToolBox:
         if self.client is None:
             raise RuntimeError("client does not provide report validation")
         result = await self.client.ext_method("research/report_validate", values)
+        return json.dumps(result, ensure_ascii=False)
+
+    async def _report_projection(self, session_id: str, values: dict) -> str:
+        if self.client is None:
+            raise RuntimeError("client does not provide report projection")
+        result = await self.client.ext_method("research/report_projection", values)
         return json.dumps(result, ensure_ascii=False)
 
     async def _submit_observation(self, session_id: str, values: dict) -> str:
