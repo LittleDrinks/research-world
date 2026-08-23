@@ -28,6 +28,10 @@ class RunnerClient:
             return result
         return invalid_evidence(step["execution_id"], check)
 
+    def replay(self, step: dict) -> dict:
+        replay = {**step, "execution_id": f"{step['execution_id']}:replay"}
+        return self.run(replay)
+
 
 def invalid_evidence(execution_id: str, check: dict) -> dict:
     return {

@@ -1,10 +1,13 @@
 import pytest
 
+from server.artifacts import ArtifactStore
 from server.clients import RunnerClient
 from server.execution_evidence import (
     build_evidence,
     compare_replay,
+    persist_evidence_artifact,
     verify_evidence,
+    verify_evidence_artifact,
 )
 
 
@@ -35,6 +38,26 @@ def test_replay_distinguishes_input_and_content_mismatch():
     assert compare_replay(expected, changed_input)["code"] == "input_mismatch"
     assert compare_replay(expected, changed_output)["code"] == "content_mismatch"
     assert compare_replay(expected, expected)["ok"] is True
+
+
+def test_execution_credential_is_bound_to_immutable_artifact(tmp_path):
+    evidence = build_evidence(spec(), output())
+    store = ArtifactStore(tmp_path)
+
+    artifact_id = persist_evidence_artifact(evidence, store)
+
+    assert artifact_id == evidence["content_hash"].replace("sha256:", "artifact:")
+    assert verify_evidence_artifact(evidence, artifact_id, store)["ok"] is True
+
+
+def test_artifact_reference_cannot_be_swapped(tmp_path):
+    evidence = build_evidence(spec(), output())
+    store = ArtifactStore(tmp_path)
+    other = store.add(b"other", "text/plain")["id"]
+
+    result = verify_evidence_artifact(evidence, other, store)
+
+    assert result["code"] == "artifact_reference_mismatch"
 
 
 def test_runner_client_rejects_tampered_evidence(monkeypatch):

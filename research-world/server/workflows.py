@@ -6,8 +6,15 @@ import secrets
 from dataclasses import dataclass
 
 from .agents import AgentRegistry
+from .artifacts import ArtifactStore
 from .clients import RunnerClient
 from .config import load_settings
+from .execution_evidence import (
+    compare_replay,
+    persist_evidence_artifact,
+    verify_evidence,
+    verify_evidence_artifact,
+)
 from .pipelines import PipelineRegistry, StagePrimitiveRegistry
 from .runtime_client import RuntimeCapabilityError, RuntimeClient, RuntimeEmbedding
 from .world import World
@@ -89,7 +96,7 @@ class AgentFacade:
         )
         duplicate = required(value, "duplicate")
         if not isinstance(duplicate, bool):
-            raise ValueError("runtime field 'duplicate' must be boolean")
+            raise TypeError("runtime field 'duplicate' must be boolean")
         return value
 
     def plan(
@@ -97,7 +104,7 @@ class AgentFacade:
     ) -> dict:
         value = self._call(agent, PLAN_PROMPT, direction, ("action",), operation_id)
         if not isinstance(required(value, "action"), dict):
-            raise ValueError("runtime field 'action' must be an object")
+            raise TypeError("runtime field 'action' must be an object")
         return value
 
     def audit_action(self, context: dict, operation_id: str | None = None) -> dict:
@@ -157,6 +164,7 @@ class PipelineEngine:
     pipelines: object
 
     def __post_init__(self) -> None:
+        self.artifacts = ArtifactStore(self.world.artifacts_root)
         handlers = {
             "generate-directions": self._generate_directions,
             "deduplicate-directions": self._deduplicate_directions,
@@ -554,12 +562,40 @@ class PipelineEngine:
     def _execute_step(self, run: dict, step: dict) -> None:
         self.world.update_step(step["id"], "running")
         payload = {**step["payload"], "execution_id": step["id"]}
-        output = self.runner.run(payload)
-        status = "completed" if output.get("exit_code") == 0 else "failed"
+        output = self._execute_with_replay(payload)
+        status = "completed" if self._verified_execution(output) else "failed"
         self.world.update_step(step["id"], status, output)
         self._event(
             run["id"], "runner", "tool_result", {"step_id": step["id"], **output}
         )
+
+    def _execute_with_replay(self, payload: dict) -> dict:
+        evidence = self.runner.run(payload)
+        if not verify_evidence(evidence)["ok"]:
+            return evidence
+        artifact_id = persist_evidence_artifact(evidence, self.artifacts)
+        replay = self.runner.replay(payload)
+        return {
+            **evidence,
+            "artifact_id": artifact_id,
+            "replay": self._replay_record(evidence, replay),
+        }
+
+    def _replay_record(self, evidence: dict, replay: dict) -> dict:
+        comparison = compare_replay(evidence, replay)
+        if not verify_evidence(replay)["ok"]:
+            return comparison
+        artifact_id = persist_evidence_artifact(replay, self.artifacts)
+        return {**comparison, "artifact_id": artifact_id}
+
+    def _verified_execution(self, output: dict) -> bool:
+        if output.get("exit_code") != 0 or not output.get("replay", {}).get("ok"):
+            return False
+        artifact = verify_evidence_artifact(
+            output, output.get("artifact_id", ""), self.artifacts
+        )
+        replay = output["replay"]
+        return artifact["ok"] and replay.get("artifact_id") == output["artifact_id"]
 
     def _review_experiment(self, stage: dict, context: dict) -> dict:
         run, values = context["run"], context["values"]
@@ -572,7 +608,9 @@ class PipelineEngine:
                 stage, run, experiment, values, signal
             )
         outputs = values["outputs"]
-        mechanical = all(output and output.get("exit_code") == 0 for output in outputs)
+        mechanical = all(
+            output and self._verified_execution(output) for output in outputs
+        )
         extra = {"mechanical": mechanical, "outputs": outputs}
         found, outcome = _stored_review(experiment)
         if not found:
@@ -867,7 +905,7 @@ def _validate_claim(claim: dict) -> None:
     if claim.get("verdict") not in {"supported", "refuted", "uncertain"}:
         raise ValueError("each claim requires a supported/refuted/uncertain verdict")
     if not isinstance(claim.get("evidence"), list):
-        raise ValueError("each claim requires an evidence list")
+        raise TypeError("each claim requires an evidence list")
 
 
 def default_engine(world: World, project_id: str) -> PipelineEngine:

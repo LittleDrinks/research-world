@@ -120,6 +120,42 @@ def compare_replay(expected: dict, actual: dict) -> dict:
     return {"ok": True, "code": "match", "content_hash": actual["content_hash"]}
 
 
+def credential_content(evidence: dict) -> bytes:
+    check = verify_evidence(evidence)
+    if not check["ok"]:
+        raise ValueError(check["code"])
+    execution_input = normalize_input(_select(evidence, INPUT_FIELDS))
+    return canonical_json({**execution_input, **normalize_output(evidence)})
+
+
+def persist_evidence_artifact(evidence: dict, store) -> str:
+    record = store.add(
+        credential_content(evidence),
+        "application/vnd.research-world.execution+json",
+    )
+    expected = _artifact_id(evidence["content_hash"])
+    if record["id"] != expected:
+        raise ValueError("execution artifact hash mismatch")
+    return record["id"]
+
+
+def verify_evidence_artifact(evidence: dict, artifact_id: str, store) -> dict:
+    check = verify_evidence(evidence)
+    if not check["ok"]:
+        return check
+    if artifact_id != _artifact_id(evidence["content_hash"]):
+        return failure("artifact_reference_mismatch")
+    try:
+        content = store.read(artifact_id)
+    except (KeyError, ValueError) as error:
+        return failure("artifact_integrity_failure", detail=str(error))
+    return (
+        {"ok": True, "code": "verified"}
+        if content == credential_content(evidence)
+        else failure("artifact_content_mismatch")
+    )
+
+
 def failure(code: str, **details: Any) -> dict:
     return {"ok": False, "code": code, **details}
 
@@ -157,3 +193,10 @@ def _with_usage(evidence: dict, result: dict) -> dict:
 
 def _select(value: dict, fields: tuple[str, ...]) -> dict:
     return {field: value[field] for field in fields}
+
+
+def _artifact_id(content_digest: str) -> str:
+    prefix, separator, digest = content_digest.partition(":")
+    if prefix != "sha256" or not separator:
+        raise ValueError("invalid execution content hash")
+    return f"artifact:{digest}"

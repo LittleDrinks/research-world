@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from server.app import run_view
+from server.execution_evidence import build_evidence
 from server.workflows import AgentFacade, PipelineEngine, fail_run, mmr
 
 
@@ -71,17 +72,37 @@ class FakeEmbedding:
 
 
 class FakeRunner:
-    def __init__(self, exit_code=0):
+    def __init__(self, exit_code=0, replay_stdout="measured"):
         self.exit_code = exit_code
+        self.replay_stdout = replay_stdout
         self.calls = []
+        self.replays = []
 
     def run(self, step):
         self.calls.append(step)
-        return {
-            "exit_code": self.exit_code,
-            "stdout": "measured",
-            "usage": {"wall_ms": 10},
+        return self._evidence(step)
+
+    def replay(self, step):
+        self.replays.append(step)
+        return self._evidence(step, self.replay_stdout)
+
+    def _evidence(self, step, stdout="measured"):
+        spec = {
+            "image": step["image"],
+            "command": step["command"],
+            "files": step.get("files", {}),
+            "seed": step.get("seed", 0),
+            "limits": step.get("limits", {"cpus": 1, "memory_mb": 512, "pids": 128}),
         }
+        return build_evidence(
+            spec,
+            {
+                "exit_code": self.exit_code,
+                "stdout": stdout,
+                "stderr": "",
+                "usage": {"wall_ms": 10},
+            },
+        )
 
 
 class FakeAgents:
@@ -465,6 +486,7 @@ def test_manual_research_confirms_start_and_each_step(world, project):
     assert completed["status"] == "completed"
     assert "_signal" not in completed["payload"]
     assert len(runner.calls) == 1
+    assert len(runner.replays) == 1
     assert agents.action_reviews == [{"action": agents.action}]
     assert_research_result(world, project, direction, agents)
 
@@ -491,8 +513,26 @@ def test_plan_creates_one_audited_action(world, project):
     assert service.run(run["id"])["status"] == "waiting_human"
     assert confirm_step(world, service, run["id"])["status"] == "completed"
     assert len(runner.calls) == 1
+    output = world.steps(run["id"])[0]["output"]
+    assert output["replay"]["code"] == "match"
+    assert output["artifact_id"].startswith("artifact:")
     assert world.steps(run["id"])[0]["payload"] == action
     assert agents.action_reviews == [{"action": action}]
+
+
+def test_replay_mismatch_blocks_experiment_admission(world, project):
+    direction = admitted_direction(world, project)
+    run = world.create_run(project["id"], direction["id"], research_pipeline())
+    runner = FakeRunner(replay_stdout="changed")
+    service = engine(world, FakeAgents(), runner=runner)
+    service.run(run["id"])
+
+    confirm_step(world, service, run["id"])
+
+    output = world.steps(run["id"])[0]["output"]
+    experiment = world.node(world.run(run["id"])["payload"]["experiment_id"])
+    assert output["replay"]["code"] == "content_mismatch"
+    assert experiment["life_state"] == "ghost"
 
 
 def test_rejected_action_never_creates_execution(world, project):
