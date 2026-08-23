@@ -23,8 +23,11 @@ class McpTools:
 
     async def __aenter__(self) -> Self:
         await self.stack.__aenter__()
-        for server in self.servers:
-            await self._connect(server)
+        try:
+            for server in self.servers:
+                await self._connect(server)
+        except BaseException as error:
+            await self._abort(error)
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
@@ -45,6 +48,13 @@ class McpTools:
         await session.initialize()
         self.sessions[server.id] = session
         await self._load_tools(server.id, session)
+
+    async def _abort(self, error: BaseException) -> None:
+        try:
+            await self.stack.aclose()
+        except BaseException as cleanup_error:
+            raise RuntimeError("connector session failed") from cleanup_error
+        raise RuntimeError("connector session failed") from error
 
     async def _load_tools(self, server_id: str, session: ClientSession) -> None:
         result = await session.list_tools()

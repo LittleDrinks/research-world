@@ -1,6 +1,8 @@
 import json
 import sys
 
+import pytest
+
 from runtime.service import Runtime
 from tests.helpers import FakeProvider, endpoint
 
@@ -78,3 +80,26 @@ class ArtifactClient:
     async def ext_method(self, method, params):
         self.calls.append((method, params))
         return {"id": "artifact:" + "a" * 64}
+
+
+async def test_unreachable_remote_connector_closes_the_failed_turn(tmp_path):
+    runtime = Runtime(tmp_path / "data", [endpoint(FakeProvider([]))])
+    runtime.register_connector(
+        {"id": "offline", "transport": "http", "url": "http://127.0.0.1:1/mcp"}
+    )
+    agent = {
+        "id": "researcher",
+        "name": "Researcher",
+        "endpoint": "openai-compatible",
+        "model": "qwen-test",
+        "instructions": "Use MCP.",
+        "connectors": ["offline"],
+    }
+    launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": agent})
+
+    with pytest.raises(RuntimeError, match="connector session failed"):
+        await runtime.prompt(launched["session_id"], [{"type": "text", "text": "go"}])
+
+    trace = runtime.inspect(launched["session_id"])
+    assert trace["status"] == "error"
+    assert [event["type"] for event in trace["events"]][-2:] == ["error", "turn_end"]
