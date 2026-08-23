@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import httpx
 
+from .execution_evidence import verify_evidence
+
 
 class RunnerClient:
     def __init__(self, url: str):
@@ -18,4 +20,20 @@ class RunnerClient:
         }
         response = httpx.post(f"{self.url}/run", json=spec, timeout=360)
         response.raise_for_status()
-        return response.json()
+        result = response.json()
+        if "failure" in result:
+            return result
+        check = verify_evidence(result)
+        if check["ok"]:
+            return result
+        return invalid_evidence(step["execution_id"], check)
+
+
+def invalid_evidence(execution_id: str, check: dict) -> dict:
+    return {
+        "execution_id": execution_id,
+        "exit_code": 2,
+        "stdout": "",
+        "stderr": check["code"],
+        "failure": check,
+    }

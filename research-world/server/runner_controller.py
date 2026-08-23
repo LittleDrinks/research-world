@@ -15,6 +15,15 @@ from threading import Lock
 
 from fastapi import FastAPI
 
+from .execution_evidence import (
+    build_evidence,
+    canonical_json,
+    content_hash,
+    failure,
+    normalize_input,
+    verify_evidence,
+)
+
 app = FastAPI(title="Research World Runner Controller")
 EXECUTION_LOCKS: defaultdict[str, Lock] = defaultdict(Lock)
 
@@ -47,21 +56,68 @@ def doctor() -> dict:
 
 @app.post("/run")
 def run(spec: dict) -> dict:
-    execution_id = spec.pop("execution_id")
+    execution_id = spec.pop("execution_id", None)
     return run_once(execution_id, spec)
 
 
-def run_once(execution_id: str, spec: dict) -> dict:
+def run_once(execution_id: str | None, spec: dict) -> dict:
+    if not isinstance(execution_id, str) or not execution_id:
+        problem = failure("invalid_execution_id", detail="expected non-empty string")
+        return failed_result("", problem)
+    try:
+        execution_input = normalize_input(spec)
+    except (KeyError, TypeError, ValueError) as error:
+        return failed_result(execution_id, failure("invalid_input", detail=str(error)))
     target = execution_path(execution_id)
     with EXECUTION_LOCKS[execution_id]:
         if target.exists():
-            return json.loads(target.read_text(encoding="utf-8"))
-        result = {**execution_result(spec), "execution_id": execution_id}
-        target.parent.mkdir(parents=True, exist_ok=True)
-        temporary = target.with_suffix(".tmp")
-        temporary.write_text(json.dumps(result), encoding="utf-8")
-        temporary.replace(target)
+            return reuse_result(execution_id, execution_input, target)
+        evidence = build_evidence(execution_input, execution_result(execution_input))
+        result = {**evidence, "execution_id": execution_id}
+        persist_result(target, result)
+    return result
+
+
+def reuse_result(execution_id: str, spec: dict, target: Path) -> dict:
+    try:
+        result = json.loads(target.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as error:
+        return failed_result(
+            execution_id, failure("stored_evidence_invalid", detail=str(error))
+        )
+    check = verify_evidence(result)
+    if not check["ok"]:
+        return failed_result(execution_id, {**check, "code": f"stored_{check['code']}"})
+    return reuse_matching_input(execution_id, spec, result)
+
+
+def reuse_matching_input(execution_id: str, spec: dict, result: dict) -> dict:
+    actual = content_hash(spec)
+    if result["input_hash"] == actual:
         return result
+    problem = failure(
+        "input_mismatch",
+        expected_hash=result["input_hash"],
+        actual_hash=actual,
+    )
+    return failed_result(execution_id, problem)
+
+
+def persist_result(target: Path, result: dict) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_suffix(".tmp")
+    temporary.write_bytes(canonical_json(result))
+    temporary.replace(target)
+
+
+def failed_result(execution_id: str, problem: dict) -> dict:
+    return {
+        "execution_id": execution_id,
+        "exit_code": 2,
+        "stdout": "",
+        "stderr": problem["code"],
+        "failure": problem,
+    }
 
 
 def execution_result(spec: dict) -> dict:
