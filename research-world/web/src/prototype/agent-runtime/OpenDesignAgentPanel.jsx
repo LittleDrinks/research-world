@@ -1,4 +1,4 @@
-import { Bot, Check, ChevronDown, ChevronRight, Download, RefreshCw, Search, Terminal } from "lucide-react";
+import { Bot, Check, ChevronDown, ChevronRight, Download, Plus, RefreshCw, Search, Terminal, X } from "lucide-react";
 import { useState } from "react";
 import { GROUP_LABELS, PROVIDERS, RUNTIMES } from "./seed";
 import { Status, TestButton } from "./shared";
@@ -78,10 +78,23 @@ function CapabilityCatalog({ state }) {
 
 function CapabilitySection({ type, label, state }) {
   const [open, setOpen] = useState(type === "skills");
+  const [adding, setAdding] = useState(false);
   const items = state.inventory[type];
-  return <details className="od-cap-section" open={open} onToggle={(event) => setOpen(event.currentTarget.open)}><summary><ChevronRight size={15} /><b>{label}</b><span>{items.length} 个已识别</span></summary>
+  const canAdd = type !== "mcp";
+  const beginAdd = (event) => { event.preventDefault(); setOpen(true); setAdding(true); };
+  return <details className="od-cap-section" open={open} onToggle={(event) => setOpen(event.currentTarget.open)}><summary><ChevronRight size={15} /><b>{label}</b><span>{items.length} 个已识别</span>
+    {canAdd && <button className="od-add-source" onClick={beginAdd}><Plus size={14} />添加来源</button>}</summary>
     <div className="od-cap-body"><label className="od-search"><Search size={15} /><input value={state.query} onChange={(event) => state.setQuery(event.target.value)} placeholder={`搜索 ${label}`} /></label>
+      {adding && <AddSourceForm type={type} state={state} close={() => setAdding(false)} />}
       {items.map((item) => <CapabilityRow key={item.id} item={item} type={type} state={state} />)}</div></details>;
+}
+
+function AddSourceForm({ type, state, close }) {
+  const [path, setPath] = useState("");
+  const submit = (event) => { event.preventDefault(); state.addCapability(type, path); close(); };
+  const placeholder = type === "skills" ? "Skill 目录，例如 /workspace/.agents/skills/my-skill" : "工具清单或可执行文件路径";
+  return <form className="od-add-form" onSubmit={submit}><input autoFocus value={path} onChange={(event) => setPath(event.target.value)} placeholder={placeholder} />
+    <button type="submit" disabled={!path.trim()}>识别并添加</button><button type="button" onClick={close} aria-label="取消"><X size={15} /></button></form>;
 }
 
 function CapabilityRow({ item, type, state }) {

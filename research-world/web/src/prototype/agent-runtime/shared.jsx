@@ -24,6 +24,6 @@ export function Notice({ state }) {
 }
 
 export function StatePeek({ state }) {
-  const visible = { agent: state.draft, scan: state.scan, tests: state.tests, memoryAgents: state.agents };
+  const visible = { agent: state.draft, scan: state.scan, tests: state.tests, custom: state.custom, memoryAgents: state.agents };
   return <details className="ar-state"><summary>Prototype state</summary><pre>{JSON.stringify(visible, null, 2)}</pre></details>;
 }

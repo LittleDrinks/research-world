@@ -5,7 +5,7 @@ export function usePrototypeState() {
   const core = useCoreState();
   const runtime = RUNTIMES.find((item) => item.id === core.draft.runtimeId) || RUNTIMES[0];
   const provider = PROVIDERS.find((item) => item.id === core.draft.providerId) || PROVIDERS[0];
-  const inventory = useMemo(() => filterInventory(core.query), [core.query]);
+  const inventory = useMemo(() => filterInventory(core.query, core.custom), [core.query, core.custom]);
   return { ...core, runtime, provider, inventory, ...buildActions(core) };
 }
 
@@ -16,11 +16,12 @@ function useCoreState() {
   const [tests, setTests] = useState({});
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState("skills");
+  const [custom, setCustom] = useState({ skills: [], tools: [], mcp: [] });
   const [notice, setNotice] = useState("");
-  return { draft, setDraft, agents, setAgents, scan, setScan, tests, setTests, query, setQuery, group, setGroup, notice, setNotice };
+  return { draft, setDraft, agents, setAgents, scan, setScan, tests, setTests, query, setQuery, group, setGroup, custom, setCustom, notice, setNotice };
 }
 
-function buildActions({ draft, setDraft, agents, setAgents, setScan, setTests, setNotice }) {
+function buildActions({ draft, setDraft, agents, setAgents, custom, setCustom, setScan, setTests, setNotice }) {
   const patch = (value) => setDraft((current) => ({ ...current, ...value }));
   const selectRuntime = (item) => item.status === "ready" && patch({ channel: "cli", runtimeId: item.id, model: item.models[0], effort: item.efforts[1] || item.efforts[0] });
   const selectProvider = (item) => item.status === "ready" && patch({ channel: "api", providerId: item.id,
@@ -30,14 +31,29 @@ function buildActions({ draft, setDraft, agents, setAgents, setScan, setTests, s
   const rescan = () => runScan(setScan);
   const beginNew = () => startDraft(setDraft, setNotice);
   const create = () => createAgent(draft, agents, setAgents, setDraft, setNotice);
-  return { patch, selectRuntime, selectProvider, toggle, test, rescan, beginNew, create };
+  const addCapability = (type, path) => addCustomCapability(type, path, custom, setCustom, setNotice);
+  return { patch, selectRuntime, selectProvider, toggle, test, rescan, beginNew, create, addCapability };
 }
 
-function filterInventory(query) {
+function filterInventory(query, custom) {
   const needle = query.trim().toLowerCase();
-  if (!needle) return CAPABILITIES;
-  return Object.fromEntries(Object.entries(CAPABILITIES).map(([key, items]) => [key, items.filter((item) =>
+  const merged = Object.fromEntries(Object.entries(CAPABILITIES).map(([key, items]) => [key, [...items, ...custom[key]]]));
+  if (!needle) return merged;
+  return Object.fromEntries(Object.entries(merged).map(([key, items]) => [key, items.filter((item) =>
     `${item.name} ${item.source} ${item.path} ${item.detail}`.toLowerCase().includes(needle))]));
+}
+
+function addCustomCapability(type, path, custom, setCustom, setNotice) {
+  const cleanPath = path.trim().replace(/\/$/, "");
+  if (!cleanPath) return;
+  const name = cleanPath.split("/").pop() || `custom-${type}`;
+  const item = { id: `custom-${type}-${custom[type].length + 1}`, name, path: cleanPath, source: "自定义来源", status: "ready", detail: customDetail(type) };
+  setCustom((value) => ({ ...value, [type]: [...value[type], item] }));
+  setNotice(`已识别 ${name}；保存 Agent 前不会写入配置。`);
+}
+
+function customDetail(type) {
+  return type === "skills" ? "从自定义目录识别的 SKILL.md" : "从自定义路径识别的本地工具";
 }
 
 function toggleSelected(selected, type, id) {
