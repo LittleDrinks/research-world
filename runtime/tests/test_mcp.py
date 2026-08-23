@@ -1,3 +1,4 @@
+import json
 import sys
 
 from runtime.service import Runtime
@@ -53,8 +54,27 @@ async def test_selected_mcp_server_exposes_and_executes_tools(tmp_path, monkeypa
         "connectors": ["lean4"],
     }
     launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": agent})
+    artifacts = ArtifactClient()
 
-    await runtime.prompt(launched["session_id"], [{"type": "text", "text": "echo"}])
+    await runtime.prompt(
+        launched["session_id"], [{"type": "text", "text": "echo"}], artifacts
+    )
 
     assert "mcp__lean4__echo" in str(provider.requests[0]["tools"])
     assert "mcp:hello" in str(provider.requests[1]["messages"])
+    assert "artifact:" + "a" * 64 in str(provider.requests[1]["messages"])
+    method, capture = artifacts.calls[0]
+    assert method == "research/capture_artifact"
+    assert set(capture) == {"content", "media_type", "connector_tool"}
+    assert capture["media_type"] == "application/json"
+    assert capture["connector_tool"] == "mcp__lean4__echo"
+    assert "mcp:hello" in str(json.loads(capture["content"]))
+
+
+class ArtifactClient:
+    def __init__(self):
+        self.calls = []
+
+    async def ext_method(self, method, params):
+        self.calls.append((method, params))
+        return {"artifact_id": "artifact:" + "a" * 64}

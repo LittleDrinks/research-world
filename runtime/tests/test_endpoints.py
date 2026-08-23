@@ -2,9 +2,10 @@ import json
 
 import pytest
 
-from runtime.endpoints import load_endpoints
+from runtime.endpoints import EndpointPool, load_endpoints
 from runtime.providers.base import EndpointUnavailable
 from runtime.service import Runtime
+from runtime.types import CapabilityNotFound
 from tests.helpers import FakeProvider, endpoint
 
 
@@ -49,6 +50,7 @@ def configured_row(**values):
         "name": "Primary",
         "adapter": "openai-compatible",
         "models": ["shared-model"],
+        "embedding_models": ["embed-model"],
         "base_url_env": "PRIMARY_BASE_URL",
         "api_key_env": "PRIMARY_API_KEY",
         "priority": 10,
@@ -144,6 +146,7 @@ def test_endpoint_settings_reference_environment_without_exposing_key(monkeypatc
 
     assert public["id"] == "primary"
     assert public["models"] == ["shared-model"]
+    assert public["embedding_models"] == ["embed-model"]
     assert configured.api_key_env == "PRIMARY_API_KEY"
     assert "top-secret" not in str(public)
     assert "PRIMARY_API_KEY" not in str(public)
@@ -160,7 +163,8 @@ def test_endpoint_settings_reject_inline_credentials(monkeypatch):
 async def test_embedding_requires_an_endpoint_id(tmp_path):
     provider = FakeProvider([])
     runtime = Runtime(
-        tmp_path / "data", [endpoint(provider, "embedding", ("embed-model",))]
+        tmp_path / "data",
+        [endpoint(provider, "embedding", (), embedding_models=("embed-model",))],
     )
 
     vectors = await runtime.embed("embedding", "embed-model", ["one", "two"])
@@ -171,12 +175,67 @@ async def test_embedding_requires_an_endpoint_id(tmp_path):
 async def test_embedding_fails_over_for_same_model(tmp_path):
     primary = FailedEmbeddingProvider([])
     backup = FakeProvider([])
-    runtime = failover_runtime(tmp_path, primary, backup, "embed-model")
+    runtime = runtime_with(
+        tmp_path,
+        endpoint(primary, "primary", ("primary-chat",), 10, ("embed-model",)),
+        endpoint(backup, "backup", ("backup-chat",), 20, ("embed-model",)),
+    )
 
     vectors = await runtime.embed("primary", "embed-model", ["proof"])
 
     assert vectors == [[0.0]]
     assert len(primary.embedding_requests) == len(backup.embedding_requests) == 1
+
+
+async def test_generation_rejects_embedding_only_model():
+    provider = FakeProvider([{"role": "assistant", "content": "wrong"}])
+    pool = EndpointPool(
+        [endpoint(provider, "primary", ("chat-model",), 10, ("embed-model",))]
+    )
+
+    with pytest.raises(CapabilityNotFound, match="model is not available"):
+        await pool.generate("primary", "embed-model", [], [], Collector(), {})
+
+    assert not provider.requests
+
+
+async def test_embedding_rejects_chat_only_model():
+    provider = FakeProvider([])
+    pool = EndpointPool(
+        [endpoint(provider, "primary", ("chat-model",), 10, ("embed-model",))]
+    )
+
+    with pytest.raises(CapabilityNotFound, match="embedding model is not available"):
+        await pool.embed("primary", "chat-model", ["proof"])
+
+    assert not provider.embedding_requests
+
+
+async def test_embedding_does_not_fail_over_to_chat_model_match():
+    primary = FailedEmbeddingProvider([])
+    backup = FakeProvider([])
+    pool = EndpointPool(
+        [
+            endpoint(primary, "primary", (), 10, ("embed-model",)),
+            endpoint(backup, "backup", ("embed-model",), 20),
+        ]
+    )
+
+    with pytest.raises(EndpointUnavailable, match="embedding unavailable"):
+        await pool.embed("primary", "embed-model", ["proof"])
+
+    assert not backup.embedding_requests
+
+
+def test_default_endpoint_has_independent_embedding_model(monkeypatch):
+    monkeypatch.delenv("RUNTIME_ENDPOINTS", raising=False)
+    monkeypatch.setenv("RUNTIME_MODEL", "chat-model")
+    monkeypatch.setenv("RUNTIME_EMBEDDING_MODEL", "embed-model")
+
+    configured = load_endpoints()[0]
+
+    assert configured.models == ("chat-model",)
+    assert configured.embedding_models == ("embed-model",)
 
 
 class PartialFailureProvider(FakeProvider):

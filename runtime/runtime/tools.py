@@ -50,6 +50,66 @@ GRAPH_QUERY = {
         },
     },
 }
+REPORT_VALIDATE = {
+    "type": "function",
+    "function": {
+        "name": "report_validate",
+        "description": "Validate report facts and citations against Research Kernel.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "facts": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "text": {"type": "string"},
+                            "claim_id": {"type": "string"},
+                            "source_ids": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                        },
+                        "required": ["text", "claim_id", "source_ids"],
+                        "additionalProperties": False,
+                    },
+                },
+                "endpoint_ready": {"type": "boolean"},
+            },
+            "required": ["facts", "endpoint_ready"],
+            "additionalProperties": False,
+        },
+    },
+}
+SUBMIT_OBSERVATION = {
+    "type": "function",
+    "function": {
+        "name": "submit_observation",
+        "description": "Submit a human observation to Research Kernel admission.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "kind": {"type": "string", "enum": ["source", "experiment"]},
+                "payload": {"type": "object"},
+                "provenance": {"type": "object"},
+                "observed_at": {"type": "string"},
+                "artifact_ids": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                },
+                "parent_id": {"type": "string"},
+            },
+            "required": [
+                "kind",
+                "payload",
+                "provenance",
+                "observed_at",
+                "artifact_ids",
+            ],
+            "additionalProperties": False,
+        },
+    },
+}
 READ_FILE = {
     "type": "function",
     "function": {
@@ -78,6 +138,8 @@ BUILTINS = {
     "read_skill": READ_SKILL,
     "read_resource": READ_RESOURCE,
     "graph_query": GRAPH_QUERY,
+    "report_validate": REPORT_VALIDATE,
+    "submit_observation": SUBMIT_OBSERVATION,
     "read_file": READ_FILE,
     "write_file": WRITE_FILE,
 }
@@ -123,11 +185,22 @@ class ToolBox:
 
     async def _call(self, session_id: str, name: str, values: dict) -> str:
         if name in self.mcp.names:
-            content, failed = await self.mcp.call(name, values)
-            if failed:
-                raise RuntimeError(content)
-            return content
+            return await self._call_connector(name, values)
         return await getattr(self, f"_{name}")(session_id, values)
+
+    async def _call_connector(self, name: str, values: dict) -> str:
+        if self.client is None:
+            raise RuntimeError("client does not provide artifact capture")
+        content, failed = await self.mcp.call(name, values)
+        if failed:
+            raise RuntimeError(content)
+        capture = {
+            "content": content,
+            "media_type": _media_type(content),
+            "connector_tool": name,
+        }
+        artifact = await self.client.ext_method("research/capture_artifact", capture)
+        return _captured_result(artifact["artifact_id"], content, capture["media_type"])
 
     async def _read_skill(self, session_id: str, values: dict) -> str:
         return self.skills[values["name"]].body()
@@ -146,6 +219,18 @@ class ToolBox:
         result = await self.client.ext_method("research/graph_query", values)
         return json.dumps(result, ensure_ascii=False)
 
+    async def _report_validate(self, session_id: str, values: dict) -> str:
+        if self.client is None:
+            raise RuntimeError("client does not provide report validation")
+        result = await self.client.ext_method("research/report_validate", values)
+        return json.dumps(result, ensure_ascii=False)
+
+    async def _submit_observation(self, session_id: str, values: dict) -> str:
+        if self.client is None:
+            raise RuntimeError("client does not provide observation submission")
+        result = await self.client.ext_method("research/submit_observation", values)
+        return json.dumps(result, ensure_ascii=False)
+
     async def _read_file(self, session_id: str, values: dict) -> str:
         return self._path(values["path"]).read_text(encoding="utf-8")
 
@@ -160,3 +245,17 @@ class ToolBox:
         if not path.is_relative_to(self.workspace):
             raise ValueError("path escapes workspace")
         return path
+
+
+def _media_type(content: str) -> str:
+    try:
+        json.loads(content)
+    except json.JSONDecodeError:
+        return "text/plain"
+    return "application/json"
+
+
+def _captured_result(artifact_id: str, content: str, media_type: str) -> str:
+    original = json.loads(content) if media_type == "application/json" else content
+    value = {"artifact_id": artifact_id, "content": original}
+    return json.dumps(value, ensure_ascii=False)

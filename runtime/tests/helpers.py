@@ -25,6 +25,12 @@ class FakeProvider:
 
 
 def endpoint(
-    provider, endpoint_id="openai-compatible", models=("qwen-test",), priority=100
+    provider,
+    endpoint_id="openai-compatible",
+    models=("qwen-test",),
+    priority=100,
+    embedding_models=(),
 ):
-    return provider_endpoint(provider, models, endpoint_id, priority)
+    return provider_endpoint(
+        provider, models, endpoint_id, priority, embedding_models
+    )

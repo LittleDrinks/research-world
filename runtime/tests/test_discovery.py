@@ -52,3 +52,5 @@ async def test_catalog_contains_only_detected_workspace_assets(tmp_path, monkeyp
     assert {item["id"] for item in value["endpoints"]} >= {"openai-compatible"}
     assert {item["id"] for item in value["models"]} >= {"qwen-test"}
     assert all(set(item) == {"id", "endpoint"} for item in value["models"])
+    assert "report_validate" in {item["id"] for item in value["tools"]}
+    assert "submit_observation" in {item["id"] for item in value["tools"]}

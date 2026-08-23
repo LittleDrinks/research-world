@@ -88,6 +88,25 @@ async def test_prompt_rejects_an_empty_final_response(tmp_path, monkeypatch):
     assert turn["output"] is None
 
 
+async def test_agent_spec_exposes_only_selected_builtin_tools(tmp_path, monkeypatch):
+    runtime, provider = configured_runtime(
+        tmp_path,
+        monkeypatch,
+        [
+            {"role": "assistant", "content": "selected"},
+            {"role": "assistant", "content": "omitted"},
+        ],
+    )
+    selected = await launch(runtime, tmp_path, spec(tools=["report_validate"]))
+    omitted = await launch(runtime, tmp_path, spec(id="without-report"))
+
+    await runtime.prompt(selected["session_id"], [{"type": "text", "text": "one"}])
+    await runtime.prompt(omitted["session_id"], [{"type": "text", "text": "two"}])
+
+    assert request_tool_names(provider.requests[0]) == {"report_validate"}
+    assert request_tool_names(provider.requests[1]) == set()
+
+
 async def test_launch_with_same_session_id_is_idempotent(tmp_path, monkeypatch):
     monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
     monkeypatch.setenv("RUNTIME_API_KEY", "secret")
@@ -150,3 +169,21 @@ async def test_skill_body_is_disclosed_only_after_tool_call(tmp_path, monkeypatc
     second_request = provider.requests[1]["messages"]
     assert "SECRET BODY" not in str(first_request)
     assert "SECRET BODY" in str(second_request)
+
+
+def request_tool_names(request):
+    return {value["function"]["name"] for value in request["tools"]}
+
+
+async def launch(runtime, workspace, agent_spec):
+    return await runtime.launch(
+        {"workspace": str(workspace), "agent_spec": agent_spec}
+    )
+
+
+def configured_runtime(tmp_path, monkeypatch, outputs):
+    monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
+    monkeypatch.setenv("RUNTIME_API_KEY", "secret")
+    monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
+    provider = FakeProvider(outputs)
+    return Runtime(tmp_path / "data", [endpoint(provider)]), provider

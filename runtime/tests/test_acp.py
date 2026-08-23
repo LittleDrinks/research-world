@@ -98,10 +98,69 @@ async def test_graph_query_crosses_the_client_boundary(tmp_path):
     assert json.loads(content) == {"id": "D-008", "life_state": "admitted"}
 
 
+async def test_report_validate_crosses_the_client_boundary(tmp_path):
+    client = KernelClient()
+    facts = [{"text": "Result", "claim_id": "claim:1", "source_ids": ["S-1"]}]
+    async with ToolBox(tmp_path, {}, ("report_validate",), [], client) as tools:
+        content, failed = await tools.call(
+            "session",
+            "report_validate",
+            json.dumps({"facts": facts, "endpoint_ready": True}),
+        )
+
+    assert failed is False
+    assert json.loads(content) == {"valid": True, "delivery_level": 4}
+    assert client.calls == [
+        ("research/report_validate", {"facts": facts, "endpoint_ready": True})
+    ]
+
+
+async def test_submit_observation_crosses_the_client_boundary(tmp_path):
+    client = KernelClient()
+    value = observation()
+    async with ToolBox(tmp_path, {}, ("submit_observation",), [], client) as tools:
+        content, failed = await tools.call(
+            "session", "submit_observation", json.dumps(value)
+        )
+
+    assert failed is False
+    assert json.loads(content)["life_state"] == "pending"
+    assert client.calls == [("research/submit_observation", value)]
+
+
+def test_kernel_tools_are_exposed_only_when_selected(tmp_path):
+    selected = ToolBox(
+        tmp_path, {}, ("report_validate", "submit_observation"), [], None
+    )
+    omitted = ToolBox(tmp_path, {}, (), [], None)
+
+    assert "report_validate" in tool_names(selected)
+    assert "submit_observation" in tool_names(selected)
+    assert "report_validate" not in tool_names(omitted)
+    assert "submit_observation" not in tool_names(omitted)
+
+
+async def test_connector_call_without_kernel_client_fails_explicitly(tmp_path):
+    tools = ToolBox(tmp_path, {}, (), [], None)
+    tools.mcp = ConnectorResult()
+
+    content, failed = await tools.call("session", "mcp__db__query", "{}")
+
+    assert failed is True
+    assert "client does not provide artifact capture" in content
+
+
 async def test_runtime_extensions_register_connector_and_embed(tmp_path):
     runtime = Runtime(
         tmp_path / "data",
-        [endpoint(FakeProvider([]), "embedding", ("embed-model",))],
+        [
+            endpoint(
+                FakeProvider([]),
+                "embedding",
+                (),
+                embedding_models=("embed-model",),
+            )
+        ],
     )
     agent = RuntimeAgent(runtime)
 
@@ -123,3 +182,40 @@ async def test_runtime_extensions_register_connector_and_embed(tmp_path):
 
     assert connector["id"] == "lean4"
     assert vectors == {"value": [[0.0]]}
+
+
+class KernelClient:
+    def __init__(self):
+        self.calls = []
+
+    async def ext_method(self, method, params):
+        self.calls.append((method, params))
+        if method == "research/report_validate":
+            return {"valid": True, "delivery_level": 4}
+        if method == "research/submit_observation":
+            return {"id": "node:observation", "life_state": "pending"}
+        raise AssertionError(method)
+
+
+class ConnectorResult:
+    def __init__(self):
+        self.names = {"mcp__db__query": ("db", "query")}
+        self.specs = []
+
+    async def call(self, name, values):
+        return '[{"type":"text","text":"result"}]', False
+
+
+def tool_names(tools):
+    return {value["function"]["name"] for value in tools.specs()}
+
+
+def observation():
+    return {
+        "kind": "source",
+        "payload": {"title": "Run 7"},
+        "provenance": {"actor": "researcher:li", "method": "four-probe"},
+        "observed_at": "2026-08-23T09:30:00+08:00",
+        "artifact_ids": ["artifact:" + "a" * 64],
+        "parent_id": "node:direction",
+    }

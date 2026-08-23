@@ -22,6 +22,7 @@ ENDPOINT_FIELDS = {
     "name",
     "adapter",
     "models",
+    "embedding_models",
     "base_url_env",
     "api_key_env",
     "priority",
@@ -34,6 +35,7 @@ class Endpoint:
     name: str
     adapter: str
     models: tuple[str, ...]
+    embedding_models: tuple[str, ...]
     priority: int
     provider: Provider | None
     base_url_env: str | None = None
@@ -45,6 +47,7 @@ class Endpoint:
             "name": self.name,
             "adapter": self.adapter,
             "models": list(self.models),
+            "embedding_models": list(self.embedding_models),
             "priority": self.priority,
             "available": self.provider is not None,
         }
@@ -64,17 +67,29 @@ class EndpointPool:
         return self._ordered()
 
     def require(self, endpoint_id: str, model: str) -> Endpoint:
+        return self._require(endpoint_id, model, "models", "model")
+
+    def require_embedding(self, endpoint_id: str, model: str) -> Endpoint:
+        return self._require(
+            endpoint_id, model, "embedding_models", "embedding model"
+        )
+
+    def _require(self, endpoint_id, model, field, capability) -> Endpoint:
         endpoint = self._values.get(endpoint_id)
         if endpoint is None:
             raise CapabilityNotFound(f"endpoint is not available: {endpoint_id}")
-        if model not in endpoint.models:
-            raise CapabilityNotFound(f"model is not available on endpoint: {model}")
-        if not self._candidates(endpoint, model):
+        if model not in getattr(endpoint, field):
+            raise CapabilityNotFound(
+                f"{capability} is not available on endpoint: {model}"
+            )
+        if not self._candidates(endpoint, model, field):
             raise CapabilityNotFound(f"endpoint is not available: {endpoint_id}")
         return endpoint
 
     def default(self) -> Endpoint:
-        endpoint = next((item for item in self._ordered() if item.provider), None)
+        endpoint = next(
+            (item for item in self._ordered() if item.provider and item.models), None
+        )
         if endpoint is None:
             raise CapabilityNotFound("no model endpoint is available")
         return endpoint
@@ -84,7 +99,7 @@ class EndpointPool:
     ) -> tuple[str, ModelResult]:
         endpoint = self.require(endpoint_id, model)
         last_error = None
-        for candidate in self._candidates(endpoint, model):
+        for candidate in self._candidates(endpoint, model, "models"):
             relay = _Emission(emit)
             try:
                 result = await candidate.provider.generate(
@@ -100,9 +115,9 @@ class EndpointPool:
         )
 
     async def embed(self, endpoint_id: str, model: str, texts: list[str]):
-        endpoint = self.require(endpoint_id, model)
+        endpoint = self.require_embedding(endpoint_id, model)
         last_error = None
-        for candidate in self._candidates(endpoint, model):
+        for candidate in self._candidates(endpoint, model, "embedding_models"):
             try:
                 return await candidate.provider.embed(model, texts)
             except EndpointUnavailable as error:
@@ -114,12 +129,12 @@ class EndpointPool:
     def _ordered(self) -> list[Endpoint]:
         return sorted(self._values.values(), key=lambda item: (item.priority, item.id))
 
-    def _candidates(self, endpoint: Endpoint, model: str) -> list[Endpoint]:
+    def _candidates(self, endpoint: Endpoint, model: str, field: str) -> list[Endpoint]:
         values = [
             item
             for item in self._ordered()
             if item.adapter == endpoint.adapter
-            and model in item.models
+            and model in getattr(item, field)
             and item.provider
         ]
         return sorted(values, key=lambda item: item.id != endpoint.id)
@@ -140,9 +155,12 @@ def provider_endpoint(
     models: tuple[str, ...],
     endpoint_id: str | None = None,
     priority: int = 100,
+    embedding_models: tuple[str, ...] = (),
 ) -> Endpoint:
     value = endpoint_id or provider.id
-    return Endpoint(value, value, provider.id, models, priority, provider)
+    return Endpoint(
+        value, value, provider.id, models, embedding_models, priority, provider
+    )
 
 
 def load_endpoints() -> list[Endpoint]:
@@ -167,6 +185,9 @@ def _default_openai_row() -> dict[str, Any]:
         "name": "OpenAI Compatible",
         "adapter": "openai-compatible",
         "models": [os.getenv("RUNTIME_MODEL", "qwen3.7-flash")],
+        "embedding_models": [
+            os.getenv("RUNTIME_EMBEDDING_MODEL", "qwen3.7-text-embedding")
+        ],
         "base_url_env": "RUNTIME_API_BASE",
         "api_key_env": "RUNTIME_API_KEY",
         "priority": 100,
@@ -183,7 +204,8 @@ def _openai_endpoint(row: dict[str, Any]) -> Endpoint:
         row["id"],
         row.get("name", row["id"]),
         adapter,
-        tuple(row["models"]),
+        tuple(row.get("models", [])),
+        tuple(row.get("embedding_models", [])),
         row.get("priority", 100),
         provider,
         row["base_url_env"],
@@ -204,8 +226,14 @@ def _validate_endpoint_row(row: dict[str, Any]) -> None:
     if not isinstance(row, dict) or set(row) - ENDPOINT_FIELDS:
         raise ValueError("invalid endpoint definition")
     _validate_endpoint_id(row.get("id"))
-    if not _models(row.get("models")):
+    models = row.get("models", [])
+    embedding_models = row.get("embedding_models", [])
+    if not _models(models):
         raise ValueError("endpoint models must be unique non-empty strings")
+    if not _models(embedding_models):
+        raise ValueError("endpoint embedding models must be unique non-empty strings")
+    if not models and not embedding_models:
+        raise ValueError("endpoint must expose at least one model")
     _validate_endpoint_env(row)
     _validate_priority(row.get("priority", 100))
 
@@ -232,7 +260,6 @@ def _validate_priority(priority) -> None:
 def _models(value) -> bool:
     return (
         isinstance(value, list)
-        and bool(value)
         and all(isinstance(item, str) and item for item in value)
         and len(set(value)) == len(value)
     )
@@ -243,7 +270,7 @@ def _codex_endpoint() -> Endpoint | None:
     if provider is None:
         return None
     model = os.getenv("CODEX_MODEL") or _codex_model() or "gpt-5.6-sol"
-    return Endpoint("codex", "Codex CLI", "codex", (model,), 200, provider)
+    return Endpoint("codex", "Codex CLI", "codex", (model,), (), 200, provider)
 
 
 def _codex_model() -> str | None:
