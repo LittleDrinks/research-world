@@ -7,6 +7,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+from .admission import AdmissionVerdict
 from .artifacts import now
 from .db import Database
 from .library import assembly_names
@@ -208,6 +209,26 @@ class World:
             rejection_reason=reason.strip(),
             rebuttal=rebuttal,
         )
+
+    def apply_admission(self, node_id: str, verdict: AdmissionVerdict) -> dict:
+        if not isinstance(verdict, AdmissionVerdict):
+            raise TypeError("admission requires an AdmissionVerdict")
+        return self._apply_pending_admission(node_id, verdict)
+
+    def _apply_pending_admission(self, node_id, verdict) -> dict:
+        life_state = "admitted" if verdict.decision == "approve" else "ghost"
+        rejection = None if verdict.decision == "approve" else verdict.reason.strip()
+        encoded = json.dumps(verdict.rebuttal) if verdict.rebuttal is not None else None
+        with self.db.connect() as connection:
+            cursor = connection.execute(
+                "UPDATE nodes SET life_state=?,working=0,rejection_reason=?,rebuttal=?,updated_at=? "
+                "WHERE id=? AND life_state='pending'",
+                (life_state, rejection, encoded, now(), node_id),
+            )
+        if cursor.rowcount != 1:
+            self.node(node_id)
+            raise ValueError("only pending nodes can receive an admission verdict")
+        return self.node(node_id)
 
     def set_working(self, node_id: str, working: bool) -> dict:
         return self.update_node(node_id, working=working)
@@ -535,7 +556,9 @@ class World:
             experiment = decode(row)
             changed = experiment["life_state"] == "pending"
             if changed:
-                _resolve_experiment(connection, experiment, direction_id, approved, payload)
+                _resolve_experiment(
+                    connection, experiment, direction_id, approved, payload
+                )
             lineage = _lineage(connection, experiment["lineage_id"])
         return {"changed": changed, "lineage": lineage}
 

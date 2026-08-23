@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from .agents import AgentRegistry
 from .config import ROOT, load_settings
 from .library import list_packages
+from .kernel import ResearchKernel
 from .pipelines import PipelineRegistry
 from .runtime_client import RuntimeClient
 from .threads import ThreadManager
@@ -46,7 +47,7 @@ def app_dependencies(world, runtime, agents, pipelines, settings):
 def register_routes(app, world, runtime, agents, pipelines, projects_root) -> None:
     error_handlers(app)
     project_routes(app, world, pipelines, projects_root)
-    graph_routes(app, world)
+    graph_routes(app, ResearchKernel(world), world)
     thread_routes(app, world, runtime, agents)
     runtime_routes(app, world, runtime, agents)
     pipeline_routes(app, world, pipelines)
@@ -126,27 +127,24 @@ def project_state_routes(app, world, pipelines) -> None:
         return world.set_auto(project_id, bool(value["auto"]))
 
 
-def graph_routes(app: FastAPI, world: World) -> None:
-    graph_node_routes(app, world)
+def graph_routes(app: FastAPI, kernel: ResearchKernel, world: World) -> None:
+    graph_node_routes(app, kernel)
     graph_edge_routes(app, world)
 
 
-def graph_node_routes(app: FastAPI, world: World) -> None:
+def graph_node_routes(app: FastAPI, kernel: ResearchKernel) -> None:
     @app.get("/api/v1/nodes/{node_id}")
     async def node(node_id: str):
-        return get_or_404(world.node, node_id)
+        return get_or_404(kernel.node, node_id)
 
     @app.post("/api/v1/projects/{project_id}/nodes", status_code=201)
     async def create_node(project_id: str, request: Request):
         value = await request.json()
-        state = {key: value[key] for key in NODE_STATE_KEYS if key in value}
-        return world.create_node(project_id, value["kind"], value["payload"], **state)
+        return kernel.submit_node(project_id, value)
 
     @app.patch("/api/v1/nodes/{node_id}")
     async def update_node(node_id: str, request: Request):
-        value = await request.json()
-        state = {key: value[key] for key in UPDATE_KEYS if key in value}
-        return world.update_node(node_id, value.get("payload"), **state)
+        return kernel.update_node(node_id, await request.json())
 
 
 def graph_edge_routes(app: FastAPI, world: World) -> None:
@@ -327,22 +325,6 @@ def node_summary(node: dict) -> dict:
         "life_state": node["life_state"],
         "summary": node_text(node["payload"]),
     }
-
-
-NODE_STATE_KEYS = {
-    "parent_id",
-    "lineage_id",
-    "life_state",
-    "direction_status",
-    "working",
-}
-UPDATE_KEYS = {
-    "life_state",
-    "direction_status",
-    "working",
-    "rejection_reason",
-    "rebuttal",
-}
 
 
 def bootstrap_data(
