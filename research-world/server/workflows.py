@@ -92,23 +92,55 @@ class AgentFacade:
             raise ValueError("runtime field 'duplicate' must be boolean")
         return value
 
-    def plan(self, direction: dict, agent: str, operation_id: str | None = None) -> dict:
-        value = self._call(agent, PLAN_PROMPT, direction, ("steps",), operation_id)
-        required(value, "steps")
+    def plan(
+        self, direction: dict, agent: str, operation_id: str | None = None
+    ) -> dict:
+        value = self._call(agent, PLAN_PROMPT, direction, ("action",), operation_id)
+        if not isinstance(required(value, "action"), dict):
+            raise ValueError("runtime field 'action' must be an object")
+        return value
+
+    def audit_action(self, context: dict, operation_id: str | None = None) -> dict:
+        value = self._call(
+            "independent-reviewer",
+            ACTION_REVIEW_PROMPT,
+            context,
+            ("decision", "argument", "evidence"),
+            operation_id,
+        )
+        return validate_verdict(value)
+
+    def claims(
+        self, context: dict, agent: str, operation_id: str | None = None
+    ) -> dict:
+        value = self._call(
+            agent, CLAIM_AUDIT_PROMPT, context, ("claims",), operation_id
+        )
+        value["claims"] = validate_claims(value["claims"])
         return value
 
     def review(
-        self, context: dict, reviewer: str, agent: str, operation_id: str | None = None
+        self,
+        context: dict,
+        subject: str,
+        stance: str,
+        agent: str,
+        operation_id: str | None = None,
     ) -> dict:
-        fields = ("decision", "quality", "diversity", "rebuttal")
+        fields = ("decision", "argument", "evidence")
         value = self._call(
             agent,
-            REVIEW_PROMPT,
-            {**context, "reviewer": reviewer},
+            REVIEW_PROMPTS[subject],
+            {**context, "stance": stance},
             fields,
             operation_id,
         )
-        return value
+        return {**validate_verdict(value), "stance": stance}
+
+    def reconcile(
+        self, context: dict, agent: str, operation_id: str | None = None
+    ) -> dict:
+        return self._call(agent, RECONCILE_PROMPT, context, ("text",), operation_id)
 
     def reflect(
         self, context: dict, agent: str, operation_id: str | None = None
@@ -142,9 +174,7 @@ class PipelineEngine:
         self.primitives.validate(run["definition_snapshot"])
         self.agents.validate(run["definition_snapshot"])
         event = "run_resumed" if self.world.run_events(run_id) else "run_started"
-        self._event(
-            run_id, "control", event, {"pipeline_id": run["pipeline_id"]}
-        )
+        self._event(run_id, "control", event, {"pipeline_id": run["pipeline_id"]})
         signal = run["payload"].get("_signal")
         if (
             signal
@@ -164,8 +194,14 @@ class PipelineEngine:
             frame["values"],
             None,
         )
-        event = {"actor": "human", "type": "plan_rejected", "payload": {"reason": reason}}
-        return self.world.transition_run(run["id"], run["stage"], "paused", payload, event)
+        event = {
+            "actor": "human",
+            "type": "plan_rejected",
+            "payload": {"reason": reason},
+        }
+        return self.world.transition_run(
+            run["id"], run["stage"], "paused", payload, event
+        )
 
     def _drive(self, run_id: str, signal: dict | None = None) -> dict:
         while True:
@@ -246,7 +282,11 @@ class PipelineEngine:
             candidate["vector"] = self.embedding(candidate["text"])
             match, score = self._nearest(candidate, [*existing, *pool])
             if match and self._is_duplicate(run, candidate, match, score, params):
-                self._blocked_direction(run, origin, candidate, match, score)
+                reflected = self._blocked_direction(
+                    run, origin, candidate, match, score
+                )
+                if reflected:
+                    pool.append(reflected)
             else:
                 pool.append(candidate)
         return pool
@@ -254,7 +294,7 @@ class PipelineEngine:
     def _existing_directions(self, project_id: str) -> list[dict]:
         values = []
         for node in self.world.nodes(project_id):
-            if node["kind"] != "direction" or node["life_state"] == "ghost":
+            if node["kind"] != "direction":
                 continue
             vector = self.world.embedding_for(node["id"]) or self.embedding(
                 node["payload"].get("text", "")
@@ -264,6 +304,7 @@ class PipelineEngine:
                     "text": node["payload"].get("text", ""),
                     "vector": vector,
                     "node_id": node["id"],
+                    "life_state": node["life_state"],
                 }
             )
         return values
@@ -289,19 +330,47 @@ class PipelineEngine:
         self._record_agent(run["id"], "deduplicator", result)
         return result["duplicate"]
 
-    def _blocked_direction(self, run, origin, candidate, match, score) -> None:
-        reason = (
-            f"与“{match['text']}”重合（cos={score:.2f}），已阻断并转入 reflect/合并。"
-        )
+    def _blocked_direction(self, run, origin, candidate, match, score) -> dict:
+        reason = f"与“{match['text']}”重合（cos={score:.2f}）"
         node = self._blocked_node(run, origin, candidate)
-        if node["rejection_reason"]:
-            return
-        self.world.update_node(node["id"], rejection_reason=reason)
-        self._event(
-            run["id"],
-            "deduplicator",
-            "candidate_blocked",
-            {"node_id": node["id"], "reason": reason},
+        if not node["rejection_reason"]:
+            node = self.world.ghost_node(node["id"], reason)
+            self._event(
+                run["id"],
+                "deduplicator",
+                "candidate_blocked",
+                {
+                    "node_id": node["id"],
+                    "reason": reason,
+                },
+            )
+        return self._reflect_blocked(run, node, candidate, match, reason)
+
+    def _reflect_blocked(self, run, node, candidate, match, reason) -> dict:
+        context = {
+            "candidate": candidate["text"],
+            "overlap": {
+                "node_id": match.get("node_id"),
+                "text": match["text"],
+            },
+            "blocker": reason,
+        }
+        operation = f"{run['id']}:deduplicate:{node['id']}:reflect"
+        value = self.agents.reconcile(context, self._author_agent(run), operation)
+        self._record_agent(run["id"], "reflector", value)
+        return {
+            "text": value["text"],
+            "quality": candidate.get("quality", 0),
+            "vector": self.embedding(value["text"]),
+            "lineage_id": node["lineage_id"],
+        }
+
+    def _author_agent(self, run: dict) -> str:
+        stages = run["definition_snapshot"]["stages"]
+        return next(
+            stage["agent"]
+            for stage in stages
+            if stage.get("prompt") == "generate-directions"
         )
 
     def _blocked_node(self, run, origin, candidate) -> dict:
@@ -316,10 +385,10 @@ class PipelineEngine:
             ),
             None,
         )
-        return existing or self._candidate_node(run, origin, candidate, "ghost")
+        return existing or self._candidate_node(run, origin, candidate)
 
-    def _candidate_node(self, run, origin, candidate, life_state="pending") -> dict:
-        lineage = f"lineage:{secrets.token_hex(12)}"
+    def _candidate_node(self, run, origin, candidate) -> dict:
+        lineage = candidate.get("lineage_id") or f"lineage:{secrets.token_hex(12)}"
         payload = {
             "text": candidate["text"],
             "quality": float(candidate.get("quality", 0)),
@@ -330,7 +399,6 @@ class PipelineEngine:
             payload,
             parent_id=origin["id"],
             lineage_id=lineage,
-            life_state=life_state,
         )
 
     def _review_directions(self, stage: dict, context: dict) -> dict:
@@ -361,7 +429,9 @@ class PipelineEngine:
             return None
         found, outcome = _stored_review(node)
         if not found:
-            outcome = self._double_review(run, node, "direction", agent=stage["agent"])
+            outcome = self._admission_review(
+                run, node, "direction", agent=stage["agent"]
+            )
         if outcome is None:
             gate = {"kind": "review", "node_id": node["id"]}
             return _stage_result(run, values, "conflict", gate)
@@ -395,11 +465,14 @@ class PipelineEngine:
         experiment = self._experiment(run, direction, values)
         values["experiment"] = experiment["id"]
         self._checkpoint(run["id"], values)
-        values["plan"] = self._plan(run, direction, stage["agent"], values)
+        values["action"] = self._plan(run, direction, stage["agent"], values)
         self._checkpoint(run["id"], values)
-        steps = self._ensure_steps(run, values["plan"])
+        review = self._audit_action(run, values)
+        if review["decision"] == "reject":
+            return self._reject_action(run, direction, experiment, review)
+        steps = self._ensure_step(run, values["action"])
         return _stage_result(
-            run, {"experiment": experiment["id"], "steps": steps}, drop=("plan",)
+            run, {"experiment": experiment["id"], "steps": steps}, drop=("action",)
         )
 
     def _experiment(self, run, direction, values) -> dict:
@@ -425,22 +498,38 @@ class PipelineEngine:
         self.world.update_run(run["id"], run["stage"], "running", payload)
         return experiment
 
-    def _plan(self, run: dict, direction: dict, agent: str, values: dict) -> list:
-        if values.get("plan") is not None:
-            return values["plan"]
+    def _plan(self, run: dict, direction: dict, agent: str, values: dict) -> dict:
+        if values.get("action") is not None:
+            return values["action"]
         context = self._agent_context(run, direction["payload"])
         plan = self.agents.plan(context, agent, f"{run['id']}:plan")
         self._record_agent(run["id"], "planner", plan)
-        return plan["steps"]
+        return plan["action"]
 
-    def _ensure_steps(self, run: dict, plan: list[dict]) -> list[str]:
-        steps = []
-        for ordinal, payload in enumerate(plan, 1):
-            saved = self.world.add_step(
-                run["id"], ordinal, "execute", payload, not bool(run["auto"])
-            )
-            steps.append(saved["id"])
-        return steps
+    def _audit_action(self, run: dict, values: dict) -> dict:
+        if values.get("action_review"):
+            return values["action_review"]
+        operation = f"{run['id']}:action-review"
+        review = self.agents.audit_action({"action": values["action"]}, operation)
+        self._record_agent(run["id"], "action-reviewer", review)
+        values["action_review"] = clean(review)
+        self._checkpoint(run["id"], values)
+        return review
+
+    def _reject_action(self, run, direction, experiment, review) -> dict:
+        reason = review["argument"]
+        self.world.ghost_node(
+            experiment["id"], reason, {"action_review": clean(review)}
+        )
+        self.world.set_working(direction["id"], False)
+        self._pause(run["id"], f"行动审核驳回：{reason}")
+        return _stage_result(run)
+
+    def _ensure_step(self, run: dict, action: dict) -> list[str]:
+        step = self.world.add_step(
+            run["id"], 1, "execute", action, not bool(run["auto"])
+        )
+        return [step["id"]]
 
     def _execute_experiment(self, stage: dict, context: dict) -> dict:
         run, signal = context["run"], context.get("signal")
@@ -495,9 +584,17 @@ class PipelineEngine:
         return _stage_result(run, outcome="approve" if outcome else "reject")
 
     def _review_evidence(self, run, experiment, extra, agent):
+        self._audit_claims(run, experiment, "experiment", extra, agent)
         if not extra["mechanical"]:
+            verdict = {
+                "decision": "reject",
+                "stance": "mechanical",
+                "argument": "执行退出码或凭据校验失败",
+                "evidence": ["execution.exit_code"],
+            }
+            self.world.update_node(experiment["id"], rebuttal={"mechanical": verdict})
             return False
-        return self._double_review(run, experiment, "experiment", extra, agent)
+        return self._admission_review(run, experiment, "experiment", extra, agent)
 
     def _resume_experiment_review(self, stage, run, experiment, values, signal):
         approved = signal["decision"] == "approve"
@@ -511,27 +608,52 @@ class PipelineEngine:
         expected = "admit" if approved else "ghost"
         if action != expected:
             raise ValueError(f"experiment review requires action {expected}")
-        self._resolve_experiment(run, experiment, approved, outputs)
+        self._resolve_experiment(
+            run, self.world.node(experiment["id"]), approved, outputs
+        )
 
-    def _double_review(self, run, node, subject, extra=None, agent=None) -> bool | None:
-        context = {"subject": subject, "node": node["payload"], **(extra or {})}
-        reviews = [
-            self.agents.review(
-                context, name, agent, f"{run['id']}:{subject}:{node['id']}:{name}"
-            )
-            for name in ("A", "B")
-        ]
-        for name, review in zip(("A", "B"), reviews, strict=True):
-            event = {**review, "node_id": node["id"], "subject": subject}
-            self._record_agent(run["id"], f"reviewer-{name.lower()}", event)
+    def _admission_review(self, run, node, subject, extra=None, agent=None):
+        claims = self._audit_claims(run, node, subject, extra, agent)
+        context = {
+            "subject": subject,
+            "node": node["payload"],
+            "claims": claims,
+            **(extra or {}),
+        }
+        reviews = self._review_pair(run, node, subject, context, agent)
         self.world.update_node(
             node["id"],
-            rebuttal={"reviewer_a": clean(reviews[0]), "reviewer_b": clean(reviews[1])},
+            rebuttal={
+                "reviewer_a": clean(reviews[0]),
+                "reviewer_b": clean(reviews[1]),
+            },
         )
         decisions = [review.get("decision") == "approve" for review in reviews]
         if decisions[0] != decisions[1]:
             return None
         return decisions[0]
+
+    def _audit_claims(self, run, node, subject, extra, agent) -> list[dict]:
+        if claims := node["payload"].get("claims"):
+            return claims
+        context = {"subject": subject, "node": node["payload"], **(extra or {})}
+        operation = f"{run['id']}:{subject}:{node['id']}:claims"
+        value = self.agents.claims(context, agent, operation)
+        self._record_agent(run["id"], "claim-auditor", value)
+        claims = value["claims"]
+        self.world.update_node(
+            node["id"], payload={**node["payload"], "claims": claims}
+        )
+        return claims
+
+    def _review_pair(self, run, node, subject, context, agent) -> list[dict]:
+        reviews = []
+        for stance in ("support", "challenge"):
+            operation = f"{run['id']}:{subject}:{node['id']}:{stance}"
+            review = self.agents.review(context, subject, stance, agent, operation)
+            self._record_agent(run["id"], f"reviewer-{stance}", review)
+            reviews.append(review)
+        return reviews
 
     def _resolve_node(self, run, node, approved: bool, reason: str) -> None:
         result = self.world.resolve_direction_review(node["id"], approved, reason)
@@ -576,7 +698,7 @@ class PipelineEngine:
             run["project_id"],
             "direction",
             {"text": value["text"]},
-            parent_id=experiment["id"],
+            parent_id=run["node_id"],
             lineage_id=experiment["lineage_id"],
         )
         directions = [{"node_id": node["id"]}]
@@ -593,7 +715,11 @@ class PipelineEngine:
     def _pause(self, run_id: str, reason: str) -> dict:
         run = self.world.run(run_id)
         payload = {**run["payload"], "reason": reason}
-        event = {"actor": "control", "type": "run_paused", "payload": {"reason": reason}}
+        event = {
+            "actor": "control",
+            "type": "run_paused",
+            "payload": {"reason": reason},
+        }
         return self.world.transition_run(run_id, "paused", "paused", payload, event)
 
     def _record_agent(self, run_id: str, actor: str, value: dict) -> None:
@@ -699,6 +825,8 @@ def _without_vector(value: dict) -> dict:
 
 def _stored_review(node: dict) -> tuple[bool, bool | None]:
     rebuttal = node.get("rebuttal") or {}
+    if mechanical := rebuttal.get("mechanical"):
+        return True, mechanical.get("decision") == "approve"
     reviews = [rebuttal.get("reviewer_a"), rebuttal.get("reviewer_b")]
     if not all(reviews):
         return False, None
@@ -710,6 +838,36 @@ def required(value: dict, field: str):
     if field not in value:
         raise ValueError(f"runtime response missing required field '{field}'")
     return value[field]
+
+
+def validate_verdict(value: dict) -> dict:
+    if value.get("decision") not in {"approve", "reject"}:
+        raise ValueError("runtime field 'decision' must be approve or reject")
+    if not isinstance(value.get("argument"), str) or not value["argument"].strip():
+        raise ValueError("runtime field 'argument' must be non-empty text")
+    evidence = value.get("evidence")
+    if not isinstance(evidence, list) or not all(
+        isinstance(item, str) for item in evidence
+    ):
+        raise ValueError("runtime field 'evidence' must be a string list")
+    return value
+
+
+def validate_claims(value) -> list[dict]:
+    if not isinstance(value, list) or not value:
+        raise ValueError("runtime field 'claims' must be a non-empty list")
+    for claim in value:
+        _validate_claim(claim)
+    return value
+
+
+def _validate_claim(claim: dict) -> None:
+    if not isinstance(claim, dict) or not str(claim.get("text", "")).strip():
+        raise ValueError("each claim requires text")
+    if claim.get("verdict") not in {"supported", "refuted", "uncertain"}:
+        raise ValueError("each claim requires a supported/refuted/uncertain verdict")
+    if not isinstance(claim.get("evidence"), list):
+        raise ValueError("each claim requires an evidence list")
 
 
 def default_engine(world: World, project_id: str) -> PipelineEngine:
@@ -758,9 +916,7 @@ def _owned_pending_nodes(run: dict) -> set[str]:
     payload = run["payload"]
     values = payload.get("_pipeline", {}).get("values", {})
     items = values.get("directions", [])
-    direction_ids = {
-        item.get("node_id") for item in items if isinstance(item, dict)
-    }
+    direction_ids = {item.get("node_id") for item in items if isinstance(item, dict)}
     fixed = {payload.get("experiment_id"), values.get("experiment")}
     return (direction_ids | fixed) - {None, run["node_id"]}
 
@@ -778,18 +934,40 @@ PAIR_PROMPT = (
     '严格返回 {"duplicate":true}，duplicate 只能是布尔值。'
 )
 PLAN_PROMPT = (
-    "严格执行 instruction，把输入方向拆为可独立确认的最小实验步骤。执行契约：每个步骤都是独立的一次性容器，"
-    "步骤之间不共享任何文件或状态，必须各自自包含；容器文件系统只读，仅 /tmp 可写（64MB、noexec），同一步骤内可用 /tmp 暂存；"
+    "严格执行 instruction，只提交当前最值得执行的一个原子行动，不规划后续步骤。执行契约：行动在独立的一次性容器中运行，"
+    "不能依赖其他行动的文件或状态；容器文件系统只读，仅 /tmp 可写（64MB、noexec），同一行动内可用 /tmp 暂存；"
     "使用 python:3.12-slim 与 Python 标准库或 busybox，禁止网络和未内置包；脚本内嵌 command，files 默认空对象，"
     "非空文件内容必须是 base64。所有输入变量必须进入计算并与明确基线比较；不得硬编码判定、阈值或事实，"
     "阈值只能由相邻观测的真实状态转变推导，无转变时必须报告 no_transition。stdout 最后一行必须是含 evidence_scope、"
     "measurements 与 decision 的 JSON 对象；合成数据只能支持程序或模型内部结论。退出码 0 表示执行成功。严格返回 "
-    '{"steps":[{"image":"busybox:1.36","command":["sh","-lc","..."],'
-    '"files":{},"seed":0,"limits":{"cpus":1,"memory_mb":512,"pids":128}}]}。'
+    '{"action":{"image":"busybox:1.36","command":["sh","-lc","..."],'
+    '"files":{},"seed":0,"limits":{"cpus":1,"memory_mb":512,"pids":128}}}。'
 )
-REVIEW_PROMPT = (
-    "机械审计优先，再独立评价质量与多样性。严格返回 "
-    '{"decision":"approve","quality":0.0,"diversity":0.0,"rebuttal":"..."}；'
-    "decision 只能是 approve 或 reject，分数范围 0-1。"
+ACTION_REVIEW_PROMPT = (
+    "独立检查单个 action 的输入边界、可证伪性、资源限制与结果契约；不得执行。严格返回 "
+    '{"decision":"approve|reject","argument":"...","evidence":["字段路径或约束"]}。'
+)
+CLAIM_AUDIT_PROMPT = (
+    "把 node 与 outputs 中的结论拆成互不复合的原子 claim，逐条按已有证据审计。严格返回 "
+    '{"claims":[{"text":"...","verdict":"supported|refuted|uncertain",'
+    '"evidence":["来源或产物引用"]}]}。不得用总分替代逐条结论。'
+)
+MECHANISM_REVIEW_PROMPT = (
+    "审核 direction 的机制新颖性、任务适配与可证伪性。stance=support 时给最强支持论证，"
+    "stance=challenge 时主动寻找重合、泄漏与反例。严格返回 "
+    '{"decision":"approve|reject","argument":"...","evidence":["claim/source 引用"]}。'
+)
+EVIDENCE_REVIEW_PROMPT = (
+    "审核 experiment 的输入边界、执行凭据、产物哈希与逐条 claim 证据。stance=support 时给最强支持论证，"
+    "stance=challenge 时主动寻找不可复现、越界与反例。严格返回 "
+    '{"decision":"approve|reject","argument":"...","evidence":["claim/artifact 引用"]}。'
+)
+REVIEW_PROMPTS = {
+    "direction": MECHANISM_REVIEW_PROMPT,
+    "experiment": EVIDENCE_REVIEW_PROMPT,
+}
+RECONCILE_PROMPT = (
+    "候选被 blocker 阻断。只使用 candidate、overlap 的相关切片与最小理由，生成一个机制上明确不同且可证伪的方向；"
+    '不得请求完整隔离内容。严格返回 {"text":"..."}。'
 )
 REFLECT_PROMPT = '严格执行 instruction，基于实验输出与失败边界生成一个可证伪的新方向。严格返回 {"text":"..."}。'
