@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 import pytest
 from acp import RequestError
+
 from server.kernel import KernelCommand, ResearchKernel
 from server.runtime_client import (
     KernelClient,

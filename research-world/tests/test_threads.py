@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 from fastapi.testclient import TestClient
+
 from server.agents import AgentRegistry
 from server.app import create_app
 from server.kernel import ResearchKernel

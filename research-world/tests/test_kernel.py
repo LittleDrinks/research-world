@@ -3,6 +3,7 @@ from base64 import b64encode
 
 import pytest
 from fastapi.testclient import TestClient
+
 from server.admission import AdmissionVerdict
 from server.app import create_app
 from server.kernel import KernelCommand, KernelQuery, ResearchKernel

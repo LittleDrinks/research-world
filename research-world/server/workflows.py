@@ -8,8 +8,8 @@ from dataclasses import dataclass
 
 from .admission import (
     validate_claims as validate_claim_records,
-    validate_project_claim_ids,
 )
+from .admission import validate_project_claim_ids
 from .agents import AgentRegistry
 from .artifacts import ArtifactStore
 from .clients import RunnerClient
@@ -974,7 +974,7 @@ def validate_candidates(value, count: int) -> list[dict]:
 
 def _validate_candidate(candidate) -> dict:
     if not isinstance(candidate, dict):
-        raise ValueError("each candidate requires title and text")
+        raise TypeError("each candidate requires title and text")
     title = validate_title(required(candidate, "title"))
     text = required(candidate, "text")
     if not isinstance(text, str) or not text.strip():

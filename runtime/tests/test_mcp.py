@@ -2,7 +2,6 @@ import json
 import sys
 
 import pytest
-
 from runtime.service import Runtime
 from tests.helpers import FakeProvider, endpoint
 

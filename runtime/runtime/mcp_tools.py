@@ -26,7 +26,7 @@ class McpTools:
         try:
             for server in self.servers:
                 await self._connect(server)
-        except BaseException as error:
+        except BaseException as error:  # noqa: BLE001 - cancellation must close sessions
             await self._abort(error)
         return self
 

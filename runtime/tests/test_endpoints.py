@@ -1,7 +1,6 @@
 import json
 
 import pytest
-
 from runtime.endpoints import EndpointPool, load_endpoints
 from runtime.providers.base import EndpointUnavailable
 from runtime.service import Runtime

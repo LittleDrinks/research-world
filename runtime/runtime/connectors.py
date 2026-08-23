@@ -4,13 +4,12 @@ import json
 import os
 import re
 import shutil
+import tomllib
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
-
-import tomllib
 
 from .config import codex_config_path
 
