@@ -1,7 +1,6 @@
 import json
 
 import pytest
-
 from runtime.service import Runtime
 from runtime.types import AgentSpec, CapabilityNotFound
 from runtime.types import RuntimeError as SpecError
@@ -30,6 +29,8 @@ def test_agent_spec_rejects_legacy_fields(legacy):
     "invalid",
     [
         {"name": ""},
+        {"name": "   "},
+        {"instructions": "\n\t"},
         {"runtime": "legacy"},
         {"options": {"max_rounds": 0}},
         {"connectors": ["lean4", "lean4"]},
@@ -187,9 +188,7 @@ def request_tool_names(request):
 
 
 async def launch(runtime, workspace, agent_spec):
-    return await runtime.launch(
-        {"workspace": str(workspace), "agent_spec": agent_spec}
-    )
+    return await runtime.launch({"workspace": str(workspace), "agent_spec": agent_spec})
 
 
 def configured_runtime(tmp_path, monkeypatch):

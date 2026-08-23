@@ -1,16 +1,17 @@
 import json
 import sys
 
+import pytest
 from acp import (
     PROTOCOL_VERSION,
     ReadTextFileResponse,
+    RequestError,
     connect_to_agent,
     text_block,
 )
 from acp._transport import memory_transport_pair
 from acp.agent import AgentSideConnection
 from acp.schema import ClientCapabilities, Implementation
-
 from runtime.acp_agent import RuntimeAgent
 from runtime.service import Runtime
 from runtime.tools import ToolBox
@@ -136,9 +137,7 @@ async def test_export_bibtex_crosses_the_client_boundary(tmp_path):
 
     assert failed is False
     assert json.loads(content) == {"id": artifact_id, "content": "@article{x}"}
-    assert client.calls == [
-        ("research/export_bibtex", {"artifact_id": artifact_id})
-    ]
+    assert client.calls == [("research/export_bibtex", {"artifact_id": artifact_id})]
 
 
 async def test_report_projection_crosses_the_client_boundary(tmp_path):
@@ -235,6 +234,34 @@ async def test_runtime_extension_validates_agent_spec(tmp_path):
     )
 
     assert result == {"valid": True}
+
+
+@pytest.mark.parametrize(
+    ("method", "params"),
+    [
+        ("runtime/agents/validate", {"agent_spec": {"id": "bad"}}),
+        (
+            "runtime/connectors/register",
+            {"connector": {"id": "lean4", "transport": "http", "url": "bad"}},
+        ),
+    ],
+)
+async def test_runtime_user_input_errors_cross_acp_as_invalid_params(
+    tmp_path, method, params
+):
+    runtime = Runtime(tmp_path / "data", [endpoint(FakeProvider([]))])
+    left, right = memory_transport_pair()
+    agent = AgentSideConnection(lambda client: RuntimeAgent(runtime), left)
+    connection = connect_to_agent(ProjectClient(), right)
+    try:
+        with pytest.raises(RequestError) as raised:
+            await connection.ext_method(method, params)
+    finally:
+        await connection.close()
+        await agent.close()
+
+    assert raised.value.code == -32602
+    assert raised.value.data["details"]
 
 
 class KernelClient:

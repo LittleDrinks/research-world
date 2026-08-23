@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import json
+from contextlib import asynccontextmanager
 
 import pytest
-
+from acp import RequestError
 from server.kernel import KernelCommand, ResearchKernel
 from server.runtime_client import (
     KernelClient,
@@ -41,6 +42,25 @@ class RetryingRuntime(RuntimeClient):
         return "/workspace"
 
 
+class FailingExtensionRuntime(RuntimeClient):
+    def __init__(self, error):
+        super().__init__("http://runtime:8098", "project:test")
+        self.error = error
+        self.kernel = object()
+
+    @asynccontextmanager
+    async def _connect(self, _client):
+        yield FailingConnection(self.error)
+
+
+class FailingConnection:
+    def __init__(self, error):
+        self.error = error
+
+    async def ext_method(self, _method, _params):
+        raise self.error
+
+
 def test_runtime_url_uses_acp_websocket():
     assert _websocket_url("http://runtime:8098") == "ws://runtime:8098/acp/"
     assert _websocket_url("https://runtime.test/base") == "wss://runtime.test/base/acp/"
@@ -51,6 +71,24 @@ def test_runtime_client_requires_kernel_binding():
 
     with pytest.raises(RuntimeError, match="bound ResearchKernel"):
         runtime._kernel()
+
+
+@pytest.mark.asyncio
+async def test_invalid_runtime_extension_params_become_value_error():
+    error = RequestError.invalid_params({"details": "agent name is required"})
+    runtime = FailingExtensionRuntime(error)
+
+    with pytest.raises(ValueError, match="agent name is required"):
+        await runtime.validate_agent({"id": "bad"})
+
+
+@pytest.mark.asyncio
+async def test_internal_runtime_extension_error_becomes_capability_error():
+    error = RequestError.internal_error({"details": "runtime unavailable"})
+    runtime = FailingExtensionRuntime(error)
+
+    with pytest.raises(RuntimeCapabilityError, match="runtime unavailable"):
+        await runtime.validate_agent({"id": "bad"})
 
 
 def test_json_object_repairs_fenced_model_output():

@@ -7,6 +7,7 @@ from acp import (
     LoadSessionResponse,
     NewSessionResponse,
     PromptResponse,
+    RequestError,
     text_block,
     update_agent_message,
 )
@@ -19,6 +20,7 @@ from acp.schema import (
 )
 
 from .service import Runtime
+from .types import RuntimeError as RuntimeInputError
 
 
 class RuntimeAgent:
@@ -76,6 +78,15 @@ class RuntimeAgent:
         self.runtime.cancel(session_id)
 
     async def ext_method(self, method: str, params: dict[str, Any]) -> dict[str, Any]:
+        try:
+            value = await self._extension_value(method, params)
+        except RequestError:
+            raise
+        except (RuntimeInputError, ValueError, TypeError, KeyError) as error:
+            raise RequestError.invalid_params({"details": str(error)}) from None
+        return {"value": value} if isinstance(value, list) else value
+
+    async def _extension_value(self, method: str, params: dict[str, Any]):
         handlers = {
             "runtime/discover": lambda: self.runtime.recognize(params["workspace"]),
             "runtime/launch": lambda: self.runtime.launch(params),
@@ -88,8 +99,10 @@ class RuntimeAgent:
                 params["texts"],
             ),
         }
-        value = await handlers[method.lstrip("_")]()
-        return {"value": value} if isinstance(value, list) else value
+        handler = handlers.get(method.lstrip("_"))
+        if handler is None:
+            raise RequestError.method_not_found(method)
+        return await handler()
 
     def _inspect(self, params):
         return self.runtime.inspect(params["session_id"])

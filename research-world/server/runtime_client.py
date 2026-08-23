@@ -9,6 +9,7 @@ from urllib.parse import urlsplit, urlunsplit
 from acp import (
     PROTOCOL_VERSION,
     ReadTextFileResponse,
+    RequestError,
     connect_to_agent,
     resource_link_block,
     text_block,
@@ -25,6 +26,11 @@ from json_repair import repair_json
 
 class RuntimeCapabilityError(RuntimeError):
     pass
+
+
+def _request_error_message(error: RequestError) -> str:
+    data = error.data if isinstance(error.data, dict) else {}
+    return str(data.get("details") or error)
 
 
 class RuntimeClient:
@@ -123,10 +129,16 @@ class RuntimeClient:
         raise ValueError(f"runtime response missing required field '{missing[0]}'")
 
     async def _extension(self, method: str, params: dict) -> dict:
-        async with self._connect(
-            KernelClient(self._kernel(), self.project_id)
-        ) as connection:
-            return await connection.ext_method(method, params)
+        try:
+            async with self._connect(
+                KernelClient(self._kernel(), self.project_id)
+            ) as connection:
+                return await connection.ext_method(method, params)
+        except RequestError as error:
+            message = _request_error_message(error)
+            if error.code == -32602:
+                raise ValueError(message) from None
+            raise RuntimeCapabilityError(message) from error
 
     @asynccontextmanager
     async def _connect(self, client):

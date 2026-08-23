@@ -126,7 +126,7 @@ function CatalogFields({ form, patch, patchOption, catalog, retry }) {
 
 function normalize(agent) {
   return { skills: [], tools: [], connectors: [], options: {}, ...agent,
-    options: { reasoning_effort: "medium", sandbox: "read-only", max_rounds: 8, token_budget: 120000, ...(agent.options || {}) } };
+    options: { reasoning_effort: "medium", sandbox: "read-only", max_rounds: 12, token_budget: 200000, ...(agent.options || {}) } };
 }
 
 

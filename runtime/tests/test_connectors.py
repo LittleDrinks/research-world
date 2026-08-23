@@ -1,7 +1,6 @@
 import json
 
 import pytest
-
 from runtime.connectors import ConnectorStore, parse_connector
 from runtime.service import Runtime
 from tests.helpers import FakeProvider, endpoint
@@ -61,6 +60,19 @@ def test_stdio_connector_public_projection_hides_command(tmp_path):
 
     assert "command" not in public
     assert "/usr/bin/lean" not in json.dumps(public)
+
+
+def test_absolute_stdio_connector_must_be_executable(tmp_path):
+    command = tmp_path / "lean4-mcp"
+    command.write_text("#!/bin/sh\n", encoding="utf-8")
+    connector = parse_connector(
+        {"id": "lean4", "transport": "stdio", "command": str(command)}, "test"
+    )
+
+    command.chmod(0o600)
+    assert connector.available() is False
+    command.chmod(0o700)
+    assert connector.available() is True
 
 
 async def test_connector_config_and_credentials_do_not_enter_trace(

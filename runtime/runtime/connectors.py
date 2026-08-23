@@ -4,12 +4,13 @@ import json
 import os
 import re
 import shutil
-import tomllib
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
+
+import tomllib
 
 from .config import codex_config_path
 
@@ -49,7 +50,11 @@ class Connector:
             return True
         command = self.config["command"]
         path = Path(command)
-        return path.is_file() if path.is_absolute() else bool(shutil.which(command))
+        return (
+            path.is_file() and os.access(path, os.X_OK)
+            if path.is_absolute()
+            else bool(shutil.which(command))
+        )
 
     def resolved_config(self) -> dict[str, Any]:
         return _resolve(self.config)

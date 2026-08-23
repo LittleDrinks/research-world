@@ -83,6 +83,24 @@ test("saves the agent through the real API with advanced settings", async ({ pag
 });
 
 
+test("uses canonical Runtime option defaults when AgentSpec omits options", async ({ page }) => {
+  const minimal = { ...agents()[0] };
+  delete minimal.options;
+  let saved;
+  await mockBase(page);
+  await page.route(/\/api\/v1\/agents$/, (route) => route.fulfill({ json: [minimal] }));
+  await page.route(/\/api\/v1\/agents\/research-assistant$/, (route) => {
+    saved = route.request().postDataJSON();
+    return route.fulfill({ json: saved });
+  });
+  await page.goto("/agents/research-assistant");
+  await page.getByRole("button", { name: "保存" }).click();
+  await expect.poll(() => saved).toBeTruthy();
+  expect(saved.options.max_rounds).toBe(12);
+  expect(saved.options.token_budget).toBe(200000);
+});
+
+
 test("requires non-blank name and instructions before saving", async ({ page }) => {
   await mockBase(page);
   await page.goto("/agents/research-assistant");
