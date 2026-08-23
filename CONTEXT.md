@@ -31,12 +31,12 @@ _Avoid_: 节点消息表、草稿区
 _Avoid_: 裸路径、覆盖写
 **执行凭据**：step 的完整执行描述与结果：image、command、files、seed、limits、退出码、输出哈希。
 _Avoid_: 日志片段、口头复现
-**AgentSpec**：Runtime、模型、Instructions、Skills、Tools、MCP 与执行参数的声明；启动时编译并快照。
+**AgentSpec**：Endpoint、模型、Instructions、Skills、Tools、Connectors 与执行参数的声明；启动时编译并快照。
 _Avoid_: 能力装配模块、动态挂载
 **Connector**：AgentSpec 选择的 MCP server；向 Agent 暴露外部数据库、科学软件、搜索服务或实验设施，凭证只由 Agent Runtime 解析。
 _Avoid_: Kernel 专用后端、Pipeline 特判
 **识别**：Runtime 对工作区真实可用能力的探测；AgentSpec 只能引用识别结果。
-_Avoid_: 手填 Runtime、手填 Skill、手填 MCP
+_Avoid_: 手填 Endpoint、手填 Skill、手填 Connector
 **渐进披露**：Skill 与节点正文默认不进入模型请求；模型调用读取工具后才进入 Trace。
 _Avoid_: 全量投喂、字符串拼接钉入
 ## Agent Runtime
