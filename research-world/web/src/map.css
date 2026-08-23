@@ -80,6 +80,9 @@
 .node-record > div { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .node-record dt { color: var(--text-muted); font-size: 12px; }
 .node-record dd { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+.node-id { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.node-id code { min-width: 0; flex: 1; overflow: hidden; color: var(--text-muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.node-id .icon-button { flex: 0 0 auto; }
 .relation-list { display: grid; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; }
 .relation-list button { width: 100%; display: grid; grid-template-columns: 48px minmax(0, 1fr); align-items: center; gap: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); text-align: left; cursor: pointer; transition: border-color var(--motion-duration-fast) var(--motion-ease-standard); }
 .relation-list button:hover { border-color: var(--line-strong); }

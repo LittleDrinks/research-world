@@ -134,6 +134,19 @@ test("selects a node from the sidebar record list", async ({ page }) => {
 });
 
 
+test("shows the generated title while preserving the full node body", async ({ page }) => {
+  const text = "完整研究正文 ".repeat(40);
+  const direction = node("node:d", "direction", {
+    parent_id: "node:q", payload: { title: "共振阈值反转", text },
+  });
+  await mockBase(page, bootstrap({ nodes: [node("node:q", "question"), direction] }));
+  await page.goto("/map?node=node%3Ad");
+  await expect(page.locator('.react-flow__node[data-id="node:d"] h3')).toHaveText("共振阈值反转");
+  await expect(page.locator(".inspector h1")).toHaveText("共振阈值反转");
+  await expect(page.locator(".node-record")).toContainText(text.trim());
+});
+
+
 test("does not offer a Thread entry for a ghost node", async ({ page }) => {
   const ghost = node("node:g", "direction", { life_state: "ghost", rejection_reason: "证据不足" });
   await mockBase(page, bootstrap({ nodes: [node("node:q", "question"), ghost] }));
