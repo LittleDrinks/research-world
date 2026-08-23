@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import os
+import re
 import secrets
 from dataclasses import dataclass
 
@@ -109,10 +110,12 @@ class AgentFacade:
     def plan(
         self, direction: dict, agent: str, operation_id: str | None = None
     ) -> dict:
-        value = self._call(agent, PLAN_PROMPT, direction, ("action",), operation_id)
+        value = self._call(
+            agent, PLAN_PROMPT, direction, ("title", "action"), operation_id
+        )
         if not isinstance(required(value, "action"), dict):
             raise TypeError("runtime field 'action' must be an object")
-        return value
+        return {**value, "title": validate_title(required(value, "title"))}
 
     def audit_action(self, context: dict, operation_id: str | None = None) -> dict:
         value = self._call(
@@ -154,12 +157,18 @@ class AgentFacade:
     def reconcile(
         self, context: dict, agent: str, operation_id: str | None = None
     ) -> dict:
-        return self._call(agent, RECONCILE_PROMPT, context, ("text",), operation_id)
+        value = self._call(
+            agent, RECONCILE_PROMPT, context, ("title", "text"), operation_id
+        )
+        return {**value, "title": validate_title(required(value, "title"))}
 
     def reflect(
         self, context: dict, agent: str, operation_id: str | None = None
     ) -> dict:
-        return self._call(agent, REFLECT_PROMPT, context, ("text",), operation_id)
+        value = self._call(
+            agent, REFLECT_PROMPT, context, ("title", "text"), operation_id
+        )
+        return {**value, "title": validate_title(required(value, "title"))}
 
 
 @dataclass
@@ -378,6 +387,7 @@ class PipelineEngine:
         value = self.agents.reconcile(context, self._author_agent(run), operation)
         self._record_agent(run["id"], "reflector", value)
         return {
+            "title": value["title"],
             "text": value["text"],
             "vector": self.embedding(value["text"]),
             "lineage_id": node["lineage_id"],
@@ -410,7 +420,7 @@ class PipelineEngine:
         return self.world.create_node(
             run["project_id"],
             "direction",
-            {"text": candidate["text"]},
+            {"title": candidate["title"], "text": candidate["text"]},
             parent_id=origin["id"],
             lineage_id=lineage,
         )
@@ -476,34 +486,36 @@ class PipelineEngine:
     def _plan_experiment(self, stage: dict, context: dict) -> dict:
         run, values = context["run"], dict(context["values"])
         direction = self.world.set_working(run["node_id"], True)
+        values.update(self._plan(run, direction, stage["agent"], values))
+        self._checkpoint(run["id"], values)
         experiment = self._experiment(run, direction, values)
         values["experiment"] = experiment["id"]
-        self._checkpoint(run["id"], values)
-        values["action"] = self._plan(run, direction, stage["agent"], values)
         self._checkpoint(run["id"], values)
         review = self._audit_action(run, values)
         if review["decision"] == "reject":
             return self._reject_action(run, direction, experiment, review)
         steps = self._ensure_step(run, values["action"])
         return _stage_result(
-            run, {"experiment": experiment["id"], "steps": steps}, drop=("action",)
+            run,
+            {"experiment": experiment["id"], "steps": steps},
+            drop=("action", "title"),
         )
 
     def _experiment(self, run, direction, values) -> dict:
         node_id = values.get("experiment") or run["payload"].get("experiment_id")
         if node_id:
             return self.world.node(node_id)
-        experiment = self._new_experiment(run, direction)
+        experiment = self._new_experiment(run, direction, values["title"])
         self._event(
             run["id"], "control", "experiment_created", {"node_id": experiment["id"]}
         )
         return experiment
 
-    def _new_experiment(self, run: dict, direction: dict) -> dict:
+    def _new_experiment(self, run: dict, direction: dict, title: str) -> dict:
         experiment = self.world.create_node(
             run["project_id"],
             "experiment",
-            {"title": "待执行实验", "goal": direction["payload"].get("text", "")},
+            {"title": title, "goal": direction["payload"].get("text", "")},
             parent_id=direction["id"],
             lineage_id=direction["lineage_id"],
             working=True,
@@ -514,11 +526,11 @@ class PipelineEngine:
 
     def _plan(self, run: dict, direction: dict, agent: str, values: dict) -> dict:
         if values.get("action") is not None:
-            return values["action"]
+            return {"action": values["action"], "title": values["title"]}
         context = self._agent_context(run, direction["payload"])
         plan = self.agents.plan(context, agent, f"{run['id']}:plan")
         self._record_agent(run["id"], "planner", plan)
-        return plan["action"]
+        return {"action": plan["action"], "title": plan["title"]}
 
     def _audit_action(self, run: dict, values: dict) -> dict:
         if values.get("action_review"):
@@ -782,20 +794,19 @@ class PipelineEngine:
             self._agent_context(run, prompt), stage["agent"], operation
         )
         self._record_agent(run["id"], "reflector", value)
-        node = self._reflection_node(run, experiment, value["text"])
+        node = self._reflection_node(run, experiment, value)
         directions = [{"node_id": node["id"]}]
         self._checkpoint(run["id"], {**values, "directions": directions})
         return _stage_result(run, {"directions": directions})
 
-    def _reflection_node(self, run, experiment, text):
-        node = self.world.create_node(
+    def _reflection_node(self, run, experiment, value):
+        return self.world.create_node(
             run["project_id"],
             "direction",
-            {"text": text},
+            {"title": value["title"], "text": value["text"]},
             parent_id=run["node_id"],
             lineage_id=experiment["lineage_id"],
         )
-        return node
 
     def _complete(self, run_id: str) -> dict:
         run = self.world.run(run_id)
@@ -958,13 +969,42 @@ def validate_candidates(value, count: int) -> list[dict]:
         raise ValueError(
             f"runtime field 'candidates' must contain at least {count} items"
         )
-    candidates = []
-    for candidate in value[:count]:
-        text = candidate.get("text") if isinstance(candidate, dict) else None
-        if not isinstance(text, str) or not text.strip():
-            raise ValueError("each candidate requires text")
-        candidates.append({"text": text.strip()})
-    return candidates
+    return [_validate_candidate(candidate) for candidate in value[:count]]
+
+
+def _validate_candidate(candidate) -> dict:
+    if not isinstance(candidate, dict):
+        raise ValueError("each candidate requires title and text")
+    title = validate_title(required(candidate, "title"))
+    text = required(candidate, "text")
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("each candidate requires text")
+    return {"title": title, "text": text.strip()}
+
+
+TITLE_TOKEN_LIMIT = 12
+
+
+def validate_title(value) -> str:
+    if not isinstance(value, str):
+        raise TypeError("runtime field 'title' must be a string")
+    title = value.strip()
+    if not title:
+        raise ValueError("runtime field 'title' must be non-empty text")
+    if _title_tokens(title) > TITLE_TOKEN_LIMIT:
+        raise ValueError("runtime field 'title' exceeds the 12-token limit")
+    return title
+
+
+def _title_tokens(title: str) -> int:
+    return len(_TOKEN_PATTERN.findall(title))
+
+
+_TOKEN_PATTERN = re.compile(
+    r"[一-鿿豈-﫿]"
+    r"|[A-Za-z0-9]+"
+    r"|[^\sA-Za-z0-9一-鿿豈-﫿]"
+)
 
 
 def validate_claims(value) -> list[dict]:
@@ -1033,7 +1073,8 @@ def _pipeline_agents(pipeline: dict) -> set[str]:
 
 BRAINSTORM_PROMPT = (
     "输入节点内容与 instruction 是研究约束，count 是候选数。严格执行 instruction，生成恰好 count 个相互差异显著、"
-    '可证伪的研究方向。严格返回 {"candidates":[{"text":"..."}]}。'
+    "可证伪的研究方向。每个候选的 title 是简洁标题，硬性不超过 12 token；text 是完整正文。"
+    '严格返回 {"candidates":[{"title":"...","text":"..."}]}。'
 )
 PAIR_PROMPT = (
     "判断 left 与 right 是否在研究问题、方法和可证伪结论上实质重复。"
@@ -1045,8 +1086,9 @@ PLAN_PROMPT = (
     "使用 python:3.12-slim 与 Python 标准库或 busybox，禁止网络和未内置包；脚本内嵌 command，files 默认空对象，"
     "非空文件内容必须是 base64。所有输入变量必须进入计算并与明确基线比较；不得硬编码判定、阈值或事实，"
     "阈值只能由相邻观测的真实状态转变推导，无转变时必须报告 no_transition。stdout 最后一行必须是含 evidence_scope、"
-    "measurements 与 decision 的 JSON 对象；合成数据只能支持程序或模型内部结论。退出码 0 表示执行成功。严格返回 "
-    '{"action":{"image":"busybox:1.36","command":["sh","-lc","..."],'
+    "measurements 与 decision 的 JSON 对象；合成数据只能支持程序或模型内部结论。退出码 0 表示执行成功。"
+    "title 是本实验的简洁标题，硬性不超过 12 token。严格返回 "
+    '{"title":"...","action":{"image":"busybox:1.36","command":["sh","-lc","..."],'
     '"files":{},"seed":0,"limits":{"cpus":1,"memory_mb":512,"pids":128}}}。'
 )
 ACTION_REVIEW_PROMPT = (
@@ -1076,6 +1118,11 @@ REVIEW_PROMPTS = {
 }
 RECONCILE_PROMPT = (
     "候选被 blocker 阻断。只使用 candidate、overlap 的相关切片与最小理由，生成一个机制上明确不同且可证伪的方向；"
-    '不得请求完整隔离内容。严格返回 {"text":"..."}。'
+    "不得请求完整隔离内容。title 是简洁标题，硬性不超过 12 token；text 是完整正文。"
+    '严格返回 {"title":"...","text":"..."}。'
 )
-REFLECT_PROMPT = '严格执行 instruction，基于实验输出与失败边界生成一个可证伪的新方向。严格返回 {"text":"..."}。'
+REFLECT_PROMPT = (
+    "严格执行 instruction，基于实验输出与失败边界生成一个可证伪的新方向。"
+    "title 是简洁标题，硬性不超过 12 token；text 是完整正文。"
+    '严格返回 {"title":"...","text":"..."}。'
+)

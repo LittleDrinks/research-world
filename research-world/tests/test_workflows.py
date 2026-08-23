@@ -8,7 +8,17 @@ import pytest
 from server.artifacts import ArtifactStore
 from server.execution_evidence import build_evidence
 from server.kernel import KernelQuery, ResearchKernel
-from server.workflows import AgentFacade, PipelineEngine, fail_run, mmr
+from server.workflows import (
+    BRAINSTORM_PROMPT,
+    PLAN_PROMPT,
+    RECONCILE_PROMPT,
+    REFLECT_PROMPT,
+    AgentFacade,
+    PipelineEngine,
+    fail_run,
+    mmr,
+    validate_title,
+)
 
 
 def brainstorm_pipeline(pipeline_id="brainstorm"):
@@ -118,6 +128,7 @@ class FakeAgents:
         action_decision="approve",
         needs_experiment=False,
         review_evidence=None,
+        plan_title="步长敏感性扫描",
     ):
         self.candidates = candidates or []
         self.decisions = list(decisions or [])
@@ -125,6 +136,7 @@ class FakeAgents:
         self.action_decision = action_decision
         self.needs_experiment = needs_experiment
         self.review_evidence = review_evidence
+        self.plan_title = plan_title
         self.pairs = []
         self.brainstorm_contexts = []
         self.plan_contexts = []
@@ -140,7 +152,7 @@ class FakeAgents:
     def brainstorm(self, context, count, agent=None, operation_id=None):
         self.brainstorm_contexts.append(context)
         self.agent_ids.append(("brainstorm", agent))
-        return {"candidates": self.candidates[:count]}
+        return {"candidates": [_titled(c) for c in self.candidates[:count]]}
 
     def pairwise(self, left, right, operation_id=None):
         self.pairs.append((left, right))
@@ -149,7 +161,7 @@ class FakeAgents:
     def plan(self, direction, agent=None, operation_id=None):
         self.plan_contexts.append(direction)
         self.agent_ids.append(("plan", agent))
-        return {"action": self.action}
+        return {"title": self.plan_title, "action": self.action}
 
     def audit_action(self, context, operation_id=None):
         self.action_reviews.append(context)
@@ -185,12 +197,16 @@ class FakeAgents:
     def reconcile(self, context, agent=None, operation_id=None):
         self.reconcile_contexts.append(context)
         self.agent_ids.append(("reconcile", agent))
-        return {"text": "Reconciled direction"}
+        return {"title": "调和方向", "text": "Reconciled direction"}
 
     def reflect(self, context, agent=None, operation_id=None):
         self.reflect_contexts.append(context)
         self.agent_ids.append(("reflect", agent))
-        return {"text": "Reflected direction"}
+        return {"title": "反思方向", "text": "Reflected direction"}
+
+
+def _titled(candidate):
+    return {"title": "候选方向", **candidate}
 
 
 class FakeRuntime:
@@ -306,7 +322,7 @@ def assert_research_result(world, project, direction, agents):
 def test_arbitrary_pipeline_id_executes_registered_stages(world, project):
     question = world.nodes(project["id"])[0]
     world.embedding = FakeEmbedding(
-        {question["payload"]["text"]: [1, 0], "Novel": [1, 0]}
+        {question["payload"]["text"]: [1, 0], "Novel": [1, 0], "候选方向 Novel": [1, 0]}
     )
     agents = FakeAgents([{"text": "Novel"}], needs_experiment=True)
     run = world.create_run(
@@ -361,7 +377,7 @@ def test_run_executes_definition_snapshot(world, project):
     definition["stages"] = research_pipeline()["stages"]
     question = world.nodes(project["id"])[0]
     world.embedding = FakeEmbedding(
-        {question["payload"]["text"]: [1, 0], "Novel": [1, 0]}
+        {question["payload"]["text"]: [1, 0], "Novel": [1, 0], "候选方向 Novel": [1, 0]}
     )
     agents = FakeAgents([{"text": "Novel"}])
     result = engine(world, agents, world.embedding).run(run["id"])
@@ -382,11 +398,11 @@ def test_brainstorm_agent_enforces_named_response_contract():
 
 
 def test_brainstorm_discards_model_supplied_candidate_metadata():
-    runtime = FakeRuntime({"candidates": [{"text": "x", "quality": 1.0}]})
+    runtime = FakeRuntime({"candidates": [{"title": "t", "text": "x", "quality": 1.0}]})
     result = AgentFacade(runtime, FakeAgentRegistry()).brainstorm(
         {"text": "Why?"}, 1, "assistant"
     )
-    assert result["candidates"] == [{"text": "x"}]
+    assert result["candidates"] == [{"title": "t", "text": "x"}]
 
 
 def test_plan_agent_requires_one_action():
@@ -462,6 +478,9 @@ def test_brainstorm_blocks_duplicates_and_admits_selected(world, project):
             "Duplicate": [1, 0],
             "Novel": [0, 1],
             "Reconciled direction": [1, 0],
+            "候选方向 Duplicate": [1, 0],
+            "候选方向 Novel": [0, 1],
+            "调和方向 Reconciled direction": [1, 0],
         }
     )
     world.update_node(existing["id"], payload={"text": "Existing direction"})
@@ -506,6 +525,8 @@ def test_gray_similarity_uses_pairwise_judge(world, project):
         "Existing direction": [1, 0],
         "Gray": [0.7, 0.714],
         "Reconciled direction": [0, 1],
+        "候选方向 Gray": [0.7, 0.714],
+        "调和方向 Reconciled direction": [0, 1],
     }
     world.embedding = FakeEmbedding(vectors)
     question = world.nodes(project["id"])[0]
@@ -735,7 +756,7 @@ def test_double_review_conflict_escalates_to_human(world, project):
 def test_agent_session_event_names_owning_stage(world, project, tmp_path):
     question = world.nodes(project["id"])[0]
     world.embedding = FakeEmbedding(
-        {question["payload"]["text"]: [1, 0], "Novel": [1, 0]}
+        {question["payload"]["text"]: [1, 0], "Novel": [1, 0], "候选方向 Novel": [1, 0]}
     )
     agents = FakeAgents([{"text": "Novel"}])
     run = world.create_run(
@@ -757,7 +778,7 @@ def test_agent_session_event_names_owning_stage(world, project, tmp_path):
 
 
 def test_facade_passes_saved_agent_spec_to_runtime():
-    runtime = FakeRuntime({"candidates": [{"text": "x"}]})
+    runtime = FakeRuntime({"candidates": [{"title": "t", "text": "x"}]})
     spec = agent_spec("assistant")
     AgentFacade(runtime, FakeAgentRegistry({"assistant": spec})).brainstorm(
         {"text": "Why?"}, 1, "assistant"
@@ -783,7 +804,7 @@ def test_pins_inject_node_content_into_agent_context(world, project):
     )
     question = world.nodes(project["id"])[0]
     world.embedding = FakeEmbedding(
-        {question["payload"]["text"]: [1, 0], "Novel": [1, 0]}
+        {question["payload"]["text"]: [1, 0], "Novel": [1, 0], "候选方向 Novel": [1, 0]}
     )
     agents = FakeAgents([{"text": "Novel"}])
     run = world.create_run(
@@ -834,7 +855,7 @@ def test_direction_review_resumes_from_persisted_node(world, project):
     run = world.create_run(project["id"], root["id"], brainstorm_pipeline())
     values = {
         "origin": root["id"],
-        "directions": [{"text": "Stable candidate"}],
+        "directions": [{"title": "稳定候选", "text": "Stable candidate"}],
     }
     payload = {"_pipeline": {"cursor": 3, "values": values, "gate": None}}
     world.update_run(run["id"], "review", "running", payload)
@@ -884,6 +905,26 @@ def test_pipeline_rejects_duplicate_project_claim_ids(world, project):
     assert world.node(pending["id"])["life_state"] == "pending"
 
 
+def test_pipeline_experiment_rejects_duplicate_project_claim_ids(world, project):
+    claim = {
+        "id": "claim:experiment",
+        "text": "shared result",
+        "verdict": "supported",
+        "evidence": [],
+    }
+    direction = admitted_direction(world, project)
+    admitted = world.create_node(project["id"], "experiment", {"claims": [claim]})
+    world.admit_node(admitted["id"])
+    pending = world.create_node(project["id"], "experiment", {"claims": [claim]})
+
+    with pytest.raises(ValueError, match="claim ids must be unique"):
+        engine(world, FakeAgents())._resolve_experiment(
+            {"node_id": direction["id"]}, pending, True, []
+        )
+
+    assert world.node(pending["id"])["life_state"] == "pending"
+
+
 def test_plan_resume_reuses_action_and_audit(world, project, monkeypatch):
     direction = admitted_direction(world, project)
     action = {"image": "busybox:1.36", "command": ["echo", "one"]}
@@ -923,3 +964,77 @@ def test_running_container_step_is_resumable(world, project):
 
     assert confirm_step(world, service, run["id"])["status"] == "completed"
     assert len(runner.calls) == 1
+
+
+def test_brainstorm_candidates_require_title():
+    runtime = FakeRuntime({"candidates": [{"text": "x"}]})
+    with pytest.raises(ValueError, match="required field 'title'"):
+        AgentFacade(runtime, FakeAgentRegistry()).brainstorm({}, 1, "assistant")
+
+
+def test_brainstorm_rejects_over_limit_title_without_truncation():
+    candidate = {"title": "一 二 三 四 五 六 七 八 九 十 十一 十二 十三", "text": "x"}
+    facade = AgentFacade(FakeRuntime({"candidates": [candidate]}), FakeAgentRegistry())
+    with pytest.raises(ValueError, match="12-token"):
+        facade.brainstorm({}, 1, "assistant")
+
+
+@pytest.mark.parametrize("title", ["", "   ", "a b c d e f g h i j k l m"])
+def test_title_validation_rejects_blank_and_over_limit(title):
+    with pytest.raises(ValueError, match="title"):
+        validate_title(title)
+
+
+def test_title_validation_rejects_non_string():
+    with pytest.raises(TypeError, match="title"):
+        validate_title(7)
+
+
+def test_title_validation_counts_compact_punctuation():
+    assert validate_title("a,b,c") == "a,b,c"
+    with pytest.raises(ValueError, match="12-token"):
+        validate_title("a,b,c,d,e,f,g")
+
+
+def test_title_prompts_state_hard_12_token_limit():
+    prompts = (BRAINSTORM_PROMPT, PLAN_PROMPT, RECONCILE_PROMPT, REFLECT_PROMPT)
+    assert all("12 token" in prompt for prompt in prompts)
+
+
+def test_plan_requires_title_for_pending_experiment():
+    action = {"image": "busybox:1.36", "command": ["true"]}
+    facade = AgentFacade(FakeRuntime({"action": action}), FakeAgentRegistry())
+    with pytest.raises(ValueError, match="required field 'title'"):
+        facade.plan({}, "assistant")
+
+
+def test_reflect_and_reconcile_require_titles():
+    facade = AgentFacade(FakeRuntime({"text": "x"}), FakeAgentRegistry())
+    with pytest.raises(ValueError, match="required field 'title'"):
+        facade.reconcile({}, "assistant")
+    with pytest.raises(ValueError, match="required field 'title'"):
+        facade.reflect({}, "assistant")
+
+
+def test_pipeline_nodes_persist_title_separate_from_full_text(world, project):
+    question = world.nodes(project["id"])[0]
+    text = "完整方向正文 " * 40
+    vectors = {question["payload"]["text"]: [1, 0], text: [1, 0]}
+    agents = FakeAgents([{"title": "方向标题", "text": text}])
+    run = world.create_run(
+        project["id"], question["id"], brainstorm_pipeline(), {"select": 1}
+    )
+    engine(world, agents, FakeEmbedding(vectors)).run(run["id"])
+    node = next(n for n in world.nodes(project["id"]) if n["kind"] == "direction")
+    assert node["payload"]["title"] == "方向标题"
+    assert node["payload"]["text"] == text
+
+
+def test_planned_experiment_carries_agent_title(world, project):
+    direction = admitted_direction(world, project)
+    run = world.create_run(project["id"], direction["id"], research_pipeline())
+    agents = FakeAgents(plan_title="步长扫描")
+    result = engine(world, agents, runner=FakeRunner()).run(run["id"])
+    experiment = world.node(result["payload"]["experiment_id"])
+    assert experiment["payload"]["title"] == "步长扫描"
+    assert experiment["payload"]["goal"] == direction["payload"]["text"]
