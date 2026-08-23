@@ -10,6 +10,7 @@ const TracesPage = lazy(() => import("./pages/TracesPage").then((value) => ({ de
 const AgentsPage = lazy(() => import("./pages/AgentsPage").then((value) => ({ default: value.AgentsPage })));
 const SettingsPage = lazy(() => import("./pages/SettingsPage").then((value) => ({ default: value.SettingsPage })));
 const ProjectsPage = lazy(() => import("./pages/ProjectsPage").then((value) => ({ default: value.ProjectsPage })));
+const AgentRuntimePrototype = lazy(() => import("./prototype/agent-runtime/AgentRuntimePrototype").then((value) => ({ default: value.AgentRuntimePrototype })));
 
 
 function View({ component: Component }) {
@@ -28,6 +29,7 @@ export function App() {
   return <Routes>
     <Route index element={<Navigate to="/projects" replace />} />
     <Route path="projects" element={<View component={ProjectsPage} />} />
+    <Route path="prototype/agent-runtime" element={<View component={AgentRuntimePrototype} />} />
     <Route element={<ProjectRequired />}>
       <Route path="map" element={<View component={MapPage} />} />
       <Route path="chat" element={<View component={ChatPage} />} />
