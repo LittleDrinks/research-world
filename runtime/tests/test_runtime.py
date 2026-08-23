@@ -61,6 +61,27 @@ async def test_prompt_and_resume_are_derived_from_trace(tmp_path, monkeypatch):
     ] == ["one", "first", "two"]
 
 
+async def test_prompt_rejects_an_empty_final_response(tmp_path, monkeypatch):
+    monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
+    monkeypatch.setenv("RUNTIME_API_KEY", "secret")
+    monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
+    runtime = Runtime(tmp_path / "data", {"openai-compatible": FakeProvider([
+        {"role": "assistant", "content": ""},
+    ])})
+    launched = await runtime.launch(
+        {"workspace": str(tmp_path), "agent_spec": spec()}
+    )
+
+    with pytest.raises(RuntimeError, match="empty assistant response"):
+        await runtime.prompt(
+            launched["session_id"], [{"type": "text", "text": "answer"}]
+        )
+
+    turn = runtime.inspect(launched["session_id"])["turns"][0]
+    assert turn["status"] == "error"
+    assert turn["output"] is None
+
+
 async def test_launch_with_same_session_id_is_idempotent(tmp_path, monkeypatch):
     monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
     monkeypatch.setenv("RUNTIME_API_KEY", "secret")

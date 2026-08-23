@@ -133,7 +133,10 @@ class Runtime:
         self._record_response(session_id, turn_id, result)
         calls = result.message.get("tool_calls") or []
         await self._tools(session_id, turn_id, calls, tools)
-        return not calls, result.message.get("content") or ""
+        content = result.message.get("content") or ""
+        if not calls and not content.strip():
+            raise RuntimeError("model returned an empty assistant response")
+        return not calls, content
 
     async def _generate(self, session_id, spec, meta, messages, tools, emit):
         provider = self.providers[spec.runtime]
