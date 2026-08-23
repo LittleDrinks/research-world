@@ -12,7 +12,9 @@ from .admission import (
     AdmissionPolicy,
     AdmissionVerdict,
     PendingAdmissionPolicy,
+    claim_id,
     validate_claims,
+    validate_project_claim_ids,
 )
 from .artifacts import ArtifactStore
 from .observations import observation_submission
@@ -100,7 +102,7 @@ class ResearchKernel:
         project_id = _project_id(command)
         node = self._project_node(project_id, command.values["node_id"])
         verdict = _admission_verdict(command.values)
-        return self._apply_admission(project_id, node, verdict)
+        return self._apply_admission(node, verdict)
 
     def _command_add_edge(self, command: KernelCommand) -> dict:
         value, project_id = command.values, _project_id(command)
@@ -313,26 +315,12 @@ class ResearchKernel:
         state = {"parent_id": value["parent_id"]} if value.get("parent_id") else {}
         node = self._world.create_node(project_id, value["kind"], payload, **state)
         verdict = self._admission.review(node)
-        return self._apply_admission(project_id, node, verdict) if verdict else node
+        return self._apply_admission(node, verdict) if verdict else node
 
-    def _apply_admission(self, project_id, node, verdict) -> dict:
+    def _apply_admission(self, node, verdict) -> dict:
         if verdict.decision == "approve":
-            self._validate_claim_ids(project_id, node)
+            validate_project_claim_ids(self._world, node)
         return self._world.apply_admission(node["id"], verdict)
-
-    def _validate_claim_ids(self, project_id: str, node: dict) -> None:
-        admitted = [
-            item
-            for item in self._world.nodes(project_id)
-            if item["life_state"] == "admitted" and item["id"] != node["id"]
-        ]
-        claims = [
-            *_node_claims(node),
-            *(c for item in admitted for c in _node_claims(item)),
-        ]
-        ids = [claim["id"] for claim in claims]
-        if len(ids) != len(set(ids)):
-            raise ValueError("claim ids must be unique within a project")
 
     def _project_node(self, project_id: str | None, node_id: str) -> dict:
         node = self._world.node(_canonical_node_id(node_id))
@@ -620,7 +608,7 @@ def _claim_record(node: dict, index: int, claim: dict) -> dict:
         item for item in claim.get("evidence", []) if str(item).startswith("node:")
     ]
     return {
-        "id": claim.get("id", f"claim:{node['id'].removeprefix('node:')}:{index}"),
+        "id": claim_id(node, index, claim),
         "text": claim["text"],
         "life_state": "admitted",
         "verdict": claim["verdict"],

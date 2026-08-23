@@ -865,6 +865,25 @@ def test_direction_resolution_is_idempotent(world, project):
     assert second["lineage"]["rejection_streak"] == 1
 
 
+def test_pipeline_rejects_duplicate_project_claim_ids(world, project):
+    claim = {
+        "id": "claim:shared",
+        "text": "shared claim",
+        "verdict": "supported",
+        "evidence": [],
+    }
+    admitted = world.create_node(project["id"], "direction", {"claims": [claim]})
+    world.admit_node(admitted["id"])
+    pending = world.create_node(project["id"], "direction", {"claims": [claim]})
+
+    with pytest.raises(ValueError, match="claim ids must be unique"):
+        engine(world, FakeAgents())._resolve_node(
+            {"auto": False}, pending, True, "approved"
+        )
+
+    assert world.node(pending["id"])["life_state"] == "pending"
+
+
 def test_plan_resume_reuses_action_and_audit(world, project, monkeypatch):
     direction = admitted_direction(world, project)
     action = {"image": "busybox:1.36", "command": ["echo", "one"]}

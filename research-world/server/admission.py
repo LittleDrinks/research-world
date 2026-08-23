@@ -34,6 +34,31 @@ def validate_claims(value) -> list[dict]:
     return value
 
 
+def claim_id(node: dict, index: int, claim: dict) -> str:
+    default = f"claim:{node['id'].removeprefix('node:')}:{index}"
+    return claim.get("id", default)
+
+
+def validate_project_claim_ids(world, node: dict) -> None:
+    admitted = [
+        item
+        for item in world.nodes(node["project_id"])
+        if item["life_state"] == "admitted" and item["id"] != node["id"]
+    ]
+    nodes = [node, *admitted]
+    ids = [
+        claim_id(item, index, claim)
+        for item in nodes
+        for index, claim in enumerate(_claims(item), 1)
+    ]
+    if len(ids) != len(set(ids)):
+        raise ValueError("claim ids must be unique within a project")
+
+
+def _claims(node: dict) -> list[dict]:
+    return validate_claims(node["payload"].get("claims", []))
+
+
 def _validate_claim(claim) -> None:
     if not isinstance(claim, dict):
         raise TypeError("each claim must be an object")

@@ -5,7 +5,10 @@ import os
 import secrets
 from dataclasses import dataclass
 
-from .admission import validate_claims as validate_claim_records
+from .admission import (
+    validate_claims as validate_claim_records,
+    validate_project_claim_ids,
+)
 from .agents import AgentRegistry
 from .artifacts import ArtifactStore
 from .clients import RunnerClient
@@ -738,6 +741,8 @@ class PipelineEngine:
                 raise ValueError("review evidence must reference an admitted node")
 
     def _resolve_node(self, run, node, approved: bool, reason: str) -> None:
+        if approved:
+            validate_project_claim_ids(self.world, node)
         result = self.world.resolve_direction_review(node["id"], approved, reason)
         lineage, current = result["lineage"], result["node"]
         if approved:
@@ -753,6 +758,8 @@ class PipelineEngine:
     def _resolve_experiment(self, run, experiment, approved, outputs) -> None:
         direction = self.world.node(run["node_id"])
         payload = {**experiment["payload"], "outputs": outputs}
+        if approved:
+            validate_project_claim_ids(self.world, {**experiment, "payload": payload})
         result = self.world.resolve_experiment_review(
             experiment["id"], direction["id"], approved, payload
         )
