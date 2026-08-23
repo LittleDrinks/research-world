@@ -383,12 +383,17 @@ def project_cards(world: World) -> list[dict]:
     cards = []
     for project in world.projects():
         nodes = world.nodes(project["id"])
+        runs = world.runs(project["id"])
         cards.append(
             {
                 **project,
                 "title": project["name"],
                 "node_count": len(nodes),
-                "run_count": len(world.runs(project["id"])),
+                "run_count": len(runs),
+                "active_run_count": sum(
+                    run["status"] in {"queued", "running", "waiting_human"}
+                    for run in runs
+                ),
             }
         )
     return cards

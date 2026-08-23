@@ -18,6 +18,7 @@ test("renders project thread messages and sends via the prompts stream", async (
   });
   await page.goto("/chat/thread%3At1");
   await expect(page.getByText("已带入问题上下文")).toBeVisible();
+  await expect(page.locator(".pin-strip")).toHaveCount(0);
   const composer = await page.locator(".composer-wrap").boundingBox();
   expect(composer.y + composer.height).toBe(await page.evaluate(() => innerHeight));
   await page.screenshot({ path: "test-results/chat-desktop.png" });
@@ -58,29 +59,32 @@ test("searches real nodes on @ and pins the selected node", async ({ page }) => 
   await page.getByLabel("消息").fill("参考 @d");
   await page.locator(".mention-menu button").first().click();
   await expect(page.getByLabel("消息")).toHaveValue("参考 @node:d ");
+  await expect(page.locator(".thread-header")).toContainText("2 个引用节点");
   expect(pinned).toEqual({ node_id: "node:d" });
-  await expect(page.locator(".pin-chip")).toHaveCount(2);
 });
 
 
-test("removes a pinned node through the unpin API", async ({ page }) => {
-  let removed = "";
-  await mockChat(page);
-  await page.route(/\/api\/v1\/threads\/thread%3At1\/nodes\/node%3Aq$/, (route) => {
-    removed = route.request().method();
-    return route.fulfill({ json: { ...thread(), nodes: [] } });
-  });
+test("uses one chat scroll container and keeps the composer reachable", async ({ page }) => {
+  const messages = Array.from({ length: 30 }, (_, index) => ({ role: "assistant", content: `回复 ${index}` }));
+  await mockChat(page, threadDetail({ runtime: { ...threadDetail().runtime, messages } }));
   await page.goto("/chat/thread%3At1");
-  await expect(page.locator(".pin-chip")).toHaveCount(1);
-  await page.getByRole("button", { name: /移除/ }).click();
-  expect(removed).toBe("DELETE");
-  await expect(page.locator(".pin-chip")).toHaveCount(0);
+  await expect(page.locator(".chat-runs")).toBeVisible();
+  const overflow = await page.evaluate(() => Object.fromEntries([".chat-page", ".chat-scroll", ".message-list", ".chat-runs"]
+    .map((selector) => [selector, getComputedStyle(document.querySelector(selector)).overflowY])));
+  expect(overflow).toEqual({ ".chat-page": "hidden", ".chat-scroll": "auto", ".message-list": "visible", ".chat-runs": "visible" });
+  await expect.poll(() => page.locator(".chat-scroll").evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+  const composer = await page.locator(".composer-wrap").boundingBox();
+  expect(Math.abs(composer.y + composer.height - await page.evaluate(() => innerHeight))).toBeLessThanOrEqual(1);
 });
 
 
 test("renders run cards linked by thread_id and navigates to the trace", async ({ page }) => {
   await mockChat(page);
   await page.goto("/chat/thread%3At1");
+  const section = page.getByRole("button", { name: /研究运行/ });
+  await expect(section).toHaveAttribute("aria-expanded", "false");
+  await expect(page.locator(".run-card")).toHaveCount(0);
+  await section.click();
   const card = page.locator(".run-card");
   await expect(card).toHaveCount(1);
   await expect(card).toContainText("生成研究方向");
@@ -90,6 +94,27 @@ test("renders run cards linked by thread_id and navigates to the trace", async (
   await expect(page.getByRole("button", { name: "返回对话" })).toBeVisible();
   await page.getByRole("button", { name: "返回对话" }).click();
   await expect(page).toHaveURL(/\/chat\/thread%3At1$/);
+});
+
+
+test("locally hides terminal runs without removing trace access", async ({ page }) => {
+  const terminal = [run({ status: "completed" }), run({ id: "run:r2", status: "failed" })];
+  await mockBase(page, bootstrap({ runs: [...terminal, run({ id: "run:r3" })] }));
+  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill({ json: threadDetail() }));
+  await page.goto("/chat/thread%3At1");
+  await page.getByRole("button", { name: /研究运行/ }).click();
+  await expect(page.locator(".run-card")).toHaveCount(3);
+  await expect(page.getByRole("button", { name: /从当前列表移除运行/ })).toHaveCount(2);
+  await page.getByRole("button", { name: /从当前列表移除运行/ }).first().click();
+  await expect(page.locator(".run-card")).toHaveCount(2);
+  await expect(page.getByRole("button", { name: "查看轨迹" })).toHaveCount(2);
+  await page.getByRole("button", { name: "恢复已移出的 1 项" }).click();
+  await expect(page.locator(".run-card")).toHaveCount(3);
+  await expect(page.getByRole("button", { name: "查看轨迹" })).toHaveCount(3);
+  await page.getByRole("button", { name: /从当前列表移除运行/ }).first().click();
+  await page.reload();
+  await page.getByRole("button", { name: /研究运行/ }).click();
+  await expect(page.locator(".run-card")).toHaveCount(3);
 });
 
 
@@ -147,6 +172,7 @@ test("only lists runs bound to the thread id", async ({ page }) => {
   await mockBase(page, bootstrap({ runs: [run(), foreign] }));
   await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill({ json: threadDetail() }));
   await page.goto("/chat/thread%3At1");
+  await page.getByRole("button", { name: /研究运行/ }).click();
   await expect(page.locator(".run-card")).toHaveCount(1);
   await expect(page.locator(".run-card")).not.toContainText("run:r2");
 });
@@ -157,6 +183,7 @@ test("always offers a trace link on run cards, even without sessions", async ({ 
   await mockBase(page, bootstrap({ runs: [quiet] }));
   await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill({ json: threadDetail() }));
   await page.goto("/chat/thread%3At1");
+  await page.getByRole("button", { name: /研究运行/ }).click();
   const card = page.locator(".run-card");
   await expect(card).toHaveCount(1);
   await expect(card.locator(".run-card-head")).toHaveAttribute("aria-expanded", "false");
@@ -189,7 +216,7 @@ test("waits for the pin to persist before allowing send", async ({ page }) => {
   await page.waitForTimeout(150);
   expect(message).toBeUndefined();
   releasePin();
-  await expect(page.locator(".pin-chip")).toHaveCount(2);
+  await expect(page.getByLabel("消息")).toHaveValue("参考 @node:d ");
   await expect(page.getByRole("button", { name: "发送" })).toBeEnabled();
   await page.getByRole("button", { name: "发送" }).click();
   await expect.poll(() => message).toEqual({ message: "参考 @node:d" });
@@ -225,7 +252,7 @@ test("does not insert the mention when the pin fails", async ({ page }) => {
   await page.locator(".mention-menu button").first().click();
   await expect(page.getByRole("alert")).toContainText("节点已锁定");
   await expect(page.getByLabel("消息")).toHaveValue("参考 @d");
-  await expect(page.locator(".pin-chip")).toHaveCount(1);
+  await expect(page.locator(".pin-strip")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "发送" })).toBeEnabled();
   await page.getByLabel("消息").press("Enter");
   await expect.poll(() => message).toEqual({ message: "参考 @d" });

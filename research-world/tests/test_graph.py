@@ -63,6 +63,27 @@ def test_bootstrap_includes_all_life_states(world, project):
     }
 
 
+@pytest.mark.parametrize(
+    ("status", "active"),
+    [
+        ("queued", 1),
+        ("running", 1),
+        ("waiting_human", 1),
+        ("paused", 0),
+        ("completed", 0),
+        ("failed", 0),
+    ],
+)
+def test_bootstrap_project_cards_distinguish_active_runs(
+    world, project, status, active
+):
+    pipeline = {"id": "research", "name": "Research", "stages": []}
+    run = world.create_run(project["id"], world.nodes(project["id"])[0]["id"], pipeline)
+    world.update_run(run["id"], "test", status)
+    card = bootstrap_data(world, project["id"])["projects"][0]
+    assert (card["run_count"], card["active_run_count"]) == (1, active)
+
+
 def test_active_run_is_idempotent_for_node_and_experiment(world, project):
     direction = world.create_node(project["id"], "direction", {"text": "Candidate"})
     experiment = world.create_node(

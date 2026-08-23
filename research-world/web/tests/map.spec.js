@@ -16,6 +16,15 @@ function nodeX(page, id) {
 }
 
 
+function overlappingPairs(page, selector) {
+  return page.locator(selector).evaluateAll((elements) => elements.flatMap((left, index) => elements.slice(index + 1).filter((right) => {
+    const a = left.getBoundingClientRect();
+    const b = right.getBoundingClientRect();
+    return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+  }).map((right) => [left.dataset.id, right.dataset.id])));
+}
+
+
 test("lays out the four fixed node kinds as graph lanes", async ({ page }) => {
   await mockBase(page, mapFixture());
   await page.goto("/map");
@@ -25,6 +34,21 @@ test("lays out the four fixed node kinds as graph lanes", async ({ page }) => {
   expect(await nodeX(page, "node:e")).toBeGreaterThan(await nodeX(page, "node:d"));
   await expect(page.locator(".react-flow__edge")).toHaveCount(3);
   await page.screenshot({ path: "test-results/map-desktop.png" });
+});
+
+
+test("keeps admitted and ghost experiments from overlapping in one lane", async ({ page }) => {
+  const nodes = [node("node:q", "question"), node("node:d", "direction", { parent_id: "node:q" }),
+    node("node:a1", "experiment", { parent_id: "node:d" }), node("node:a2", "experiment", { parent_id: "node:d" }),
+    node("node:g1", "experiment", { parent_id: "node:d", life_state: "ghost" }),
+    node("node:g2", "experiment", { parent_id: "node:d", life_state: "ghost" })];
+  const edges = [{ source: "node:a1", target: "node:d", polarity: "supports" },
+    { source: "node:a2", target: "node:d", polarity: "supports" }];
+  await mockBase(page, bootstrap({ nodes, edges }));
+  await page.goto("/map");
+  const experiments = ".react-flow__node:has(.kind-experiment)";
+  await expect(page.locator(experiments)).toHaveCount(4);
+  expect(await overlappingPairs(page, experiments)).toEqual([]);
 });
 
 

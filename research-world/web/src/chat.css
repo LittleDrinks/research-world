@@ -1,32 +1,12 @@
-.chat-page { height: 100%; min-height: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto auto; background: var(--app-canvas); }
+.chat-page { height: 100%; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--app-canvas); }
+.chat-scroll { min-height: 0; flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
 .thread-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--app-topbar); }
 .thread-header h1 { font-size: 16px; }
 .thread-header span { color: var(--text-muted); font-size: 12px; }
 .thread-header > div { min-width: 0; }
 
-/* —— 钉住节点 —— */
-.pin-strip { padding: 8px 20px; border-bottom: 1px solid var(--line); background: var(--app-panel); }
-.pin-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.pin-chip { display: inline-flex; align-items: center; border: 1px solid var(--line); border-left: 3px solid var(--text-faint); border-radius: 7px; background: var(--paper); font-size: 12px; }
-.pin-chip.kind-question { border-left-color: var(--kind-question); }
-.pin-chip.kind-source { border-left-color: var(--kind-source); }
-.pin-chip.kind-direction { border-left-color: var(--kind-direction); }
-.pin-chip.kind-experiment { border-left-color: var(--kind-experiment); }
-.pin-chip.active { border-color: color-mix(in oklab, var(--accent) 45%, var(--line)); }
-.pin-chip-main { display: inline-flex; align-items: center; gap: 6px; padding: 4px 4px 4px 8px; border: 0; color: var(--text); background: transparent; cursor: pointer; }
-.pin-chip-main em { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-style: normal; }
-.pin-chip-remove { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 3px; border: 0; border-radius: 5px; color: var(--text-faint); background: transparent; cursor: pointer; }
-.pin-chip-remove:hover { color: var(--state-failed); background: var(--state-failed-surface); }
-.node-peek { margin: 8px 0 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-raised); font-size: 13px; }
-.node-peek header { display: flex; align-items: center; gap: 8px; }
-.node-peek header b { color: var(--text-strong); }
-.node-peek header span { color: var(--text-muted); font-size: 12px; }
-.node-peek details { margin-top: 8px; }
-.node-peek summary { color: var(--text-muted); font-size: 12px; cursor: pointer; }
-.node-peek pre { max-height: 220px; margin: 8px 0 0; padding: 10px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-muted); font-size: 12px; }
-
 /* —— 消息流 —— */
-.message-list { min-height: 0; overflow-y: auto; padding: 16px max(16px, calc((100% - 780px) / 2)); }
+.message-list { min-height: 0; flex: 1 0 auto; overflow: visible; padding: 16px max(16px, calc((100% - 780px) / 2)); }
 .message-placeholder { margin: 30px 0; color: var(--text-faint); font-size: 13px; text-align: center; }
 .message { margin: 0 0 14px; }
 .message > span { display: block; margin-bottom: 4px; color: var(--text-faint); font-size: 11px; font-weight: 650; }
@@ -38,12 +18,16 @@
 .inline-mention:hover { background: var(--accent-soft); }
 
 /* —— 研究运行卡 —— */
-.chat-runs { max-height: 40vh; overflow-y: auto; padding: 10px max(16px, calc((100% - 780px) / 2)) 4px; border-top: 1px solid var(--line); background: var(--app-panel); }
-.chat-runs > header { margin-bottom: 6px; color: var(--text-muted); font-size: 12px; font-weight: 650; }
+.chat-runs { flex: 0 0 auto; overflow: visible; padding: 10px max(16px, calc((100% - 780px) / 2)) 4px; border-top: 1px solid var(--line); background: var(--app-panel); }
+.chat-runs-head { margin-bottom: 6px; }
+.run-section-toggle { width: 100%; display: flex; align-items: center; gap: 7px; padding: 4px 0; border: 0; color: var(--text-muted); background: transparent; font-size: 12px; font-weight: 650; text-align: left; cursor: pointer; }
+.run-section-toggle span { flex: 1; }
+.run-section-toggle em { color: var(--text-faint); font-style: normal; }
+.run-restore { padding: 4px 0; border: 0; color: var(--accent); background: transparent; font-size: 12px; cursor: pointer; }
 .run-card { margin-bottom: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-raised); overflow: hidden; }
 .run-card-head-row { display: flex; align-items: center; }
 .run-card-head-row .run-card-head { flex: 1; min-width: 0; }
-.run-card-trace { margin-right: 6px; }
+.run-card-trace, .run-card-dismiss { margin-right: 6px; }
 .run-card-head { width: 100%; display: flex; align-items: center; gap: 9px; padding: 9px 12px; border: 0; color: var(--text); background: transparent; font-size: 13px; text-align: left; cursor: pointer; }
 .run-card-head:hover { background: var(--surface-muted); }
 .run-card-head > span { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -56,12 +40,13 @@
 .session-row + .session-row { margin-top: 5px; }
 .session-row:hover { border-color: var(--line-strong); }
 .session-row small { min-width: 0; flex: 1; color: var(--text-faint); }
+.session-row > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* —— 启动控件 + 输入区 —— */
 .launch-control { display: flex; align-items: center; gap: 8px; padding: 8px max(16px, calc((100% - 780px) / 2)); border-top: 1px solid var(--line); background: var(--app-panel); }
 .launch-control select { max-width: 220px; min-height: 34px; font-size: 13px; }
 .launch-control .button { min-height: 34px; font-size: 13px; }
-.composer-wrap { position: relative; padding: 10px max(16px, calc((100% - 780px) / 2)) 14px; border-top: 1px solid var(--line); background: var(--app-topbar); }
+.composer-wrap { position: relative; z-index: 20; flex: 0 0 auto; padding: 10px max(16px, calc((100% - 780px) / 2)) 14px; border-top: 1px solid var(--line); background: var(--app-topbar); }
 .composer { display: grid; grid-template-columns: minmax(0, 1fr) 40px; align-items: end; gap: 8px; }
 .composer textarea { min-height: 44px; max-height: 180px; resize: vertical; }
 .send-button { color: #fff; background: var(--accent); }

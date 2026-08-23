@@ -5,6 +5,7 @@ export const NODE_WIDTH = 280;
 export const NODE_HEIGHT = 128;
 const KIND_ORDER = ["question", "source", "direction", "experiment"];
 const COLUMN_GAP = 150;
+const ROW_GAP = 76;
 const OPPOSITE = { top: "bottom", right: "left", bottom: "top", left: "right" };
 const HANDLE_POINTS = [[Position.Top, NODE_WIDTH / 2, 0], [Position.Right, NODE_WIDTH, NODE_HEIGHT / 2],
   [Position.Bottom, NODE_WIDTH / 2, NODE_HEIGHT], [Position.Left, 0, NODE_HEIGHT / 2]];
@@ -36,12 +37,32 @@ async function engine() {
 }
 
 
+function verticalOrder(left, right) {
+  return left.y - right.y || left.id.localeCompare(right.id);
+}
+
+
+function separateLaneNodes(layouts, source) {
+  const positions = new Map();
+  for (const kind of KIND_ORDER) {
+    let bottom = -Infinity;
+    layouts.filter((layout) => source.get(layout.id).kind === kind).sort(verticalOrder).forEach((layout) => {
+      const y = Math.max(layout.y, bottom + ROW_GAP);
+      positions.set(layout.id, y);
+      bottom = y + NODE_HEIGHT;
+    });
+  }
+  return layouts.map((layout) => ({ ...layout, y: positions.get(layout.id) ?? layout.y }));
+}
+
+
 export async function layoutGraph(nodes, edges) {
   if (!nodes.length) return { nodes: [], routes: new Map() };
   const result = await (await engine()).layout(inputGraph(nodes, edges));
   const source = new Map(nodes.map((node) => [node.id, node]));
   const columns = visibleColumns(nodes);
-  return { nodes: result.children.map((node) => flowNode(node, source.get(node.id), columns)), routes: new Map() };
+  const layouts = separateLaneNodes(result.children, source);
+  return { nodes: layouts.map((node) => flowNode(node, source.get(node.id), columns)), routes: new Map() };
 }
 
 

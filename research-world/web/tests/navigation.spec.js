@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { bootstrap, mockBase, threadDetail } from "./fixtures";
+import { bootstrap, mockBase, project, threadDetail } from "./fixtures";
 
 
 async function mockShell(page) {
@@ -18,8 +18,24 @@ test("keeps project selection outside the application shell", async ({ page }) =
   await expect(page).toHaveURL(/\/map$/);
   await expect(page.locator(".module-nav a")).toHaveCount(5);
   await expect(page.locator(".brand")).toContainText("Research World");
-  await page.locator(".project-dock").getByRole("link", { name: "切换项目" }).click();
+  const dock = page.locator(".project-dock");
+  await expect(dock.getByRole("link")).toHaveCount(2);
+  await expect(dock).not.toContainText("测试项目");
+  await expect(dock).not.toContainText("实时");
+  await expect(dock.getByRole("link", { name: "项目设置" })).toHaveAttribute("title", "项目设置");
+  await dock.getByRole("link", { name: "切换项目" }).click();
   await expect(page).toHaveURL(/\/projects$/);
+});
+
+
+test("shows only current run activity on project cards", async ({ page }) => {
+  const idle = { ...project(), node_count: 13, run_count: 9, active_run_count: 0 };
+  const active = { ...project(), id: "project:active", node_count: 7, run_count: 4, active_run_count: 2 };
+  await mockBase(page, bootstrap({ projects: [idle, active] }));
+  await page.goto("/projects");
+  const counts = page.locator(".project-counts");
+  await expect(counts.nth(0)).toHaveText("13 节点");
+  await expect(counts.nth(1)).toHaveText("7 节点 · 2 运行中");
 });
 
 

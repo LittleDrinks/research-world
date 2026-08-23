@@ -7,7 +7,7 @@ export function node(id, kind, state = {}) {
 
 export function project() {
   return { id: "project:test", name: "测试项目", title: "测试项目", root: "/projects/test", question: "如何验证新方向？",
-    auto: 0, node_count: 2, run_count: 1, created_at: "2026-08-16T00:00:00Z" };
+    auto: 0, node_count: 2, run_count: 1, active_run_count: 1, created_at: "2026-08-16T00:00:00Z" };
 }
 
 

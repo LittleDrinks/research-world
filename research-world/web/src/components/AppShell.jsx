@@ -1,9 +1,8 @@
-import { Activity, Bot, Map, Menu, MessagesSquare, Settings, X } from "lucide-react";
+import { Activity, Bot, LogOut, Map, Menu, MessagesSquare, Settings, X } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useWorld } from "../context/WorldContext";
 import { RecordList } from "./RecordList";
-import { ThemeButton } from "./ThemeButton";
 
 
 export const MODULES = [
@@ -34,15 +33,10 @@ function ModuleNav({ close }) {
 
 
 function ProjectDock({ close }) {
-  const { data, projectId, streamState } = useWorld();
-  const project = data.projects.find((item) => item.id === projectId);
   return <footer className="project-dock">
-    <NavLink to="/settings" onClick={close} className="project-card">
-      <b>{project?.title || project?.name || "未选择项目"}</b><span>{project ? "项目设置" : "选择项目"}</span></NavLink>
-    <div className="project-dock-row">
-      <NavLink to="/projects" onClick={close} className="button secondary dock-button">切换项目</NavLink>
-      <span className={`connection ${streamState}`}><i />{streamState === "live" ? "实时" : "同步中"}</span>
-      <ThemeButton /></div></footer>;
+    <NavLink to="/projects" onClick={close} className="icon-button dock-icon" aria-label="切换项目" title="切换项目"><LogOut size={17} /></NavLink>
+    <NavLink to="/settings" onClick={close} className="icon-button dock-icon" aria-label="项目设置" title="项目设置"><Settings size={17} /></NavLink>
+  </footer>;
 }
 
 

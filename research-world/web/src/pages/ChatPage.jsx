@@ -1,12 +1,11 @@
-import { MessagesSquare, Plus, RotateCcw } from "lucide-react";
+import { ChevronDown, ChevronRight, MessagesSquare, Plus, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
-import { createThread, getThread, pinNode, restartThread, sendPrompt, unpinNode } from "../api";
+import { createThread, getThread, pinNode, restartThread, sendPrompt } from "../api";
 import { EmptyState } from "../components/bits";
 import { Composer } from "../components/chat/Composer";
 import { LaunchControl } from "../components/chat/LaunchControl";
 import { MessageList } from "../components/chat/MessageList";
-import { PinStrip } from "../components/chat/PinStrip";
 import { RunCard } from "../components/chat/RunCard";
 import { useWorld } from "../context/WorldContext";
 import "../chat.css";
@@ -84,8 +83,7 @@ function usePin(threadId, setDetail) {
     try { patch(await pinNode(threadId, nodeId)); return true; }
     catch (error) { setError(error.message); return false; }
   };
-  const unpin = (nodeId) => unpinNode(threadId, nodeId).then(patch).catch((error) => setError(error.message));
-  return { pin, unpin };
+  return pin;
 }
 
 
@@ -101,25 +99,33 @@ function ThreadView({ threadId }) {
   const { data, setError } = useWorld();
   const { detail, failed, retry, setDetail } = useThreadDetail(threadId);
   const { sending, streaming, pending, send } = useSend(threadId, setDetail);
-  const { pin, unpin } = usePin(threadId, setDetail);
+  const pin = usePin(threadId, setDetail);
   if (failed) return <ThreadFailed onRetry={retry} />;
   if (!detail) return <div className="page-loading">正在载入 Thread...</div>;
   const messages = [...(detail.runtime?.messages || [])];
   if (pending) messages.push({ role: "user", content: pending });
   return <section className="chat-page">
     <ThreadHeader detail={detail} sending={sending} onRestart={() => restartThread(threadId).then(setDetail).catch((error) => setError(error.message))} />
-    <PinStrip nodes={detail.nodes} onRemove={unpin} />
-    <MessageList messages={messages} streaming={sending ? streaming : ""} />
-    <RunSection runs={threadRuns(data.runs, detail)} threadId={threadId} />
-    <LaunchControl thread={detail} />
+    <div className="chat-scroll"><MessageList messages={messages} streaming={sending ? streaming : ""} />
+      <RunSection runs={threadRuns(data.runs, detail)} threadId={threadId} />
+      <LaunchControl thread={detail} /></div>
     <Composer pinnedNodes={detail.nodes} sending={sending} onSend={send} onPin={pin} /></section>;
 }
 
 
 function RunSection({ runs, threadId }) {
+  const [open, setOpen] = useState(false);
+  const [hidden, setHidden] = useState(() => new Set());
   if (!runs.length) return null;
-  return <section className="chat-runs"><header>研究运行 · {runs.length}</header>
-    {runs.map((run) => <RunCard key={run.id} run={run} threadId={threadId} />)}</section>;
+  const visible = runs.filter((run) => !hidden.has(run.id));
+  const Toggle = open ? ChevronDown : ChevronRight;
+  const hide = (runId) => setHidden((current) => new Set([...current, runId]));
+  const restore = () => setHidden(new Set());
+  return <section className="chat-runs"><header className="chat-runs-head">
+    <button className="run-section-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
+      <Toggle size={14} /><span>研究运行</span><em>{visible.length === runs.length ? runs.length : `${visible.length}/${runs.length}`}</em></button></header>
+    {open && visible.map((run) => <RunCard key={run.id} run={run} threadId={threadId} onDismiss={hide} />)}
+    {open && hidden.size > 0 && <button className="run-restore" onClick={restore}>恢复已移出的 {hidden.size} 项</button>}</section>;
 }
 
 
