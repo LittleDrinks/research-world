@@ -7,6 +7,8 @@ _Avoid_: 课题、任务
 _Avoid_: World 服务、CRUD 层
 **节点**：图谱内容单元，固定四类：question / source / direction / experiment；实验结果并入 experiment 负载，claim 是审计单位不是节点。
 _Avoid_: brief、result、setup 节点类型
+**节点标题**：Pipeline 创建节点时 Agent 生成的简洁标题，与完整正文分开存于 payload；硬上限 12 token，Kernel 拒绝缺失、空白、非字符串或超限标题，不截断、不合成、不回退正文。
+_Avoid_: 占位标题、正文截取
 **准入**：提交节点时强制执行的审核过程；先形成 pending 候选，纯策略可立即给出结论，默认策略不裁决，由 Research Kernel 显式裁决为 admitted 或 ghost。
 _Avoid_: 数据库 before-save hook、可绕过校验
 **Life state**：节点准入状态：pending（仅准入审核可见，不能生长依赖）→ admitted（通过）或 ghost（驳回隔离）。
@@ -37,7 +39,7 @@ _Avoid_: 日志片段、口头复现
 _Avoid_: 能力装配模块、动态挂载
 **Connector**：AgentSpec 选择的外部能力；向 Agent 暴露数据库、科学软件、搜索服务或实验设施，MCP 只是内部 transport，位置、配置与凭证只由 Agent Runtime 解析。
 _Avoid_: Kernel 专用后端、Pipeline 特判
-**识别**：Runtime 对工作区真实可用能力的探测；AgentSpec 只能引用识别结果。
+**识别**：Runtime 枚举工作区当前可选择的能力；Endpoint 需解析到 Provider，stdio Connector 需解析到命令，远端 Connector 在 Session 暴露工具时完成协议握手。AgentSpec 只能引用识别结果。
 _Avoid_: 手填 Endpoint、手填 Skill、手填 Connector
 **渐进披露**：Skill 与节点正文默认不进入模型请求；模型调用读取工具后才进入 Trace。
 _Avoid_: 全量投喂、字符串拼接钉入
