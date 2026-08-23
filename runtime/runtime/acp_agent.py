@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from acp import (
@@ -48,7 +47,7 @@ class RuntimeAgent:
     async def new_session(self, cwd: str, **kwargs: Any) -> NewSessionResponse:
         value = {
             "workspace": cwd,
-            "agent_spec": kwargs.get("agent_spec") or _default_spec(),
+            "agent_spec": kwargs.get("agent_spec") or _default_spec(self.runtime),
         }
         result = await self.runtime.launch(value)
         return NewSessionResponse(session_id=result["session_id"])
@@ -83,10 +82,13 @@ class RuntimeAgent:
             "runtime/inspect": lambda: _async_value(
                 self.runtime.inspect(params["session_id"])
             ),
+            "runtime/connectors/register": lambda: _async_value(
+                self.runtime.register_connector(params["connector"])
+            ),
             "runtime/embed": lambda: self.runtime.embed(
+                params["endpoint"],
                 params["model"],
                 params["texts"],
-                params.get("runtime", "openai-compatible"),
             ),
         }
         value = await handlers[method.lstrip("_")]()
@@ -118,13 +120,12 @@ async def _async_value(value):
     return value
 
 
-def _default_spec():
-    runtime_id = "openai-compatible" if os.getenv("RUNTIME_API_BASE") else "codex"
-    model = os.getenv("RUNTIME_MODEL") or os.getenv("CODEX_MODEL") or "gpt-5.6-sol"
+def _default_spec(runtime: Runtime):
+    endpoint = runtime.endpoints.default()
     return {
         "id": "default",
         "name": "Research Assistant",
-        "runtime": runtime_id,
-        "model": model,
+        "endpoint": endpoint.id,
+        "model": endpoint.models[0],
         "instructions": "Assist with scientific research.",
     }

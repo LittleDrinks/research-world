@@ -1,7 +1,7 @@
 import json
 
-from runtime.catalog import discover
-from runtime.mcp_servers import discover_mcp
+from runtime.connectors import discover_connectors
+from runtime.service import Runtime
 from runtime.skills import discover_skills
 
 
@@ -18,7 +18,8 @@ def test_discovers_skill_frontmatter(tmp_path):
     assert skills["evidence-review"].body() == "Read claims."
 
 
-def test_discovers_mcp_without_exposing_secrets(tmp_path):
+def test_discovers_mcp_without_exposing_secrets(tmp_path, monkeypatch):
+    monkeypatch.setenv("SEARCH_TOKEN", "secret")
     tmp_path.joinpath(".mcp.json").write_text(
         json.dumps(
             {
@@ -26,18 +27,18 @@ def test_discovers_mcp_without_exposing_secrets(tmp_path):
                     "search": {
                         "type": "http",
                         "url": "https://mcp.test",
-                        "headers": {"Authorization": "secret"},
+                        "headers": {"Authorization": "Bearer ${SEARCH_TOKEN}"},
                     }
                 }
             }
         )
     )
 
-    server = discover_mcp(tmp_path)["search"]
+    connector = discover_connectors(tmp_path)["search"]
 
-    assert server.public()["url"] == "https://mcp.test"
-    assert server.public()["header_names"] == ["Authorization"]
-    assert "headers" not in server.public()
+    assert connector.public()["url"] == "https://mcp.test"
+    assert connector.public()["header_names"] == ["Authorization"]
+    assert "headers" not in connector.public()
 
 
 async def test_catalog_contains_only_detected_workspace_assets(tmp_path, monkeypatch):
@@ -45,7 +46,9 @@ async def test_catalog_contains_only_detected_workspace_assets(tmp_path, monkeyp
     monkeypatch.setenv("RUNTIME_API_KEY", "secret")
     monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
 
-    value = await discover(tmp_path)
+    value = await Runtime(tmp_path / "data").recognize(str(tmp_path))
 
-    assert {item["id"] for item in value["runtimes"]} >= {"openai-compatible"}
+    assert set(value) == {"endpoints", "models", "skills", "tools", "connectors"}
+    assert {item["id"] for item in value["endpoints"]} >= {"openai-compatible"}
     assert {item["id"] for item in value["models"]} >= {"qwen-test"}
+    assert all(set(item) == {"id", "endpoint"} for item in value["models"])

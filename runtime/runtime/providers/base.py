@@ -7,6 +7,10 @@ from typing import Any, Protocol
 Emit = Callable[[str], Awaitable[None]]
 
 
+class EndpointUnavailable(RuntimeError):
+    pass
+
+
 @dataclass(frozen=True)
 class ModelResult:
     message: dict[str, Any]

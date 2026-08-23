@@ -4,11 +4,11 @@
   "title": "AgentSpec",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "name", "runtime", "model", "instructions"],
+  "required": ["id", "name", "endpoint", "model", "instructions"],
   "properties": {
     "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
     "name": {"type": "string", "minLength": 1},
-    "runtime": {"type": "string", "minLength": 1},
+    "endpoint": {"type": "string", "minLength": 1},
     "model": {"type": "string", "minLength": 1},
     "instructions": {"type": "string", "minLength": 1},
     "skills": {
@@ -23,7 +23,7 @@
       "uniqueItems": true,
       "default": []
     },
-    "mcp_servers": {
+    "connectors": {
       "type": "array",
       "items": {"type": "string", "minLength": 1},
       "uniqueItems": true,

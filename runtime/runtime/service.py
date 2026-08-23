@@ -11,9 +11,8 @@ from typing import Any
 from acp.interfaces import Client
 
 from . import catalog
-from .mcp_servers import discover_mcp
-from .providers import CodexProvider, OpenAIProvider
-from .providers.base import Provider
+from .connectors import ConnectorStore, discover_connectors
+from .endpoints import Endpoint, EndpointPool, load_endpoints
 from .skills import Skill, discover_skills, skill_index
 from .tools import ToolBox
 from .trace import TraceStore, inspect_trace
@@ -24,16 +23,24 @@ class Runtime:
     def __init__(
         self,
         data_root: Path | None = None,
-        providers: dict[str, Provider] | None = None,
+        endpoints: list[Endpoint] | None = None,
     ):
         root = Path(data_root or os.getenv("RUNTIME_DATA", "./data"))
         self.trace = TraceStore(root / "sessions")
-        self.providers = providers or _providers()
+        values = endpoints if endpoints is not None else load_endpoints()
+        self.endpoints = EndpointPool(values)
+        self.connectors = ConnectorStore(root / "connectors.json")
         self._locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._cancelled: set[str] = set()
 
     async def recognize(self, workspace: str) -> dict:
-        return await catalog.discover(_workspace(workspace))
+        registered = list(self.connectors.all().values())
+        return await catalog.discover(
+            _workspace(workspace), self.endpoints.values(), registered
+        )
+
+    def register_connector(self, value: dict[str, Any]) -> dict[str, Any]:
+        return self.connectors.register(value)
 
     async def launch(self, value: dict[str, Any]) -> dict[str, Any]:
         workspace = _workspace(value["workspace"])
@@ -41,14 +48,13 @@ class Runtime:
         session_id = _session_id(value.get("session_id"))
         if self.trace.path(session_id).exists():
             _validate_existing_session(
-                self.inspect(session_id)["session"], _launch_identity(spec, workspace, value)
+                self.inspect(session_id)["session"],
+                _launch_identity(spec, workspace, value),
             )
             return {"session_id": session_id}
         recognized = await self.recognize(str(workspace))
         _validate_spec(spec, recognized)
-        meta = _session_meta(
-            spec, workspace, value, _skill_snapshots(spec, workspace), recognized
-        )
+        meta = _session_meta(spec, workspace, value, _skill_snapshots(spec, workspace))
         self.trace.create(session_id, meta)
         return {"session_id": session_id}
 
@@ -60,19 +66,15 @@ class Runtime:
         emit=None,
     ) -> dict:
         async with self._locks[session_id]:
-            return await self._prompt(session_id, blocks, client, emit or _ignore)
+            callback = emit if emit is not None else _ignore
+            return await self._prompt(session_id, blocks, client, callback)
 
     def inspect(self, session_id: str) -> dict[str, Any]:
         events = self._events(session_id)
         return inspect_trace(events)
 
-    async def embed(
-        self, model: str, texts: list[str], runtime_id: str = "openai-compatible"
-    ):
-        provider = self.providers.get(runtime_id)
-        if provider is None:
-            raise CapabilityNotFound(f"runtime is not available: {runtime_id}")
-        return await provider.embed(model, texts)
+    async def embed(self, endpoint_id: str, model: str, texts: list[str]):
+        return await self.endpoints.embed(endpoint_id, model, texts)
 
     def sessions(self) -> list[dict[str, Any]]:
         return [
@@ -98,7 +100,7 @@ class Runtime:
 
     async def _run_turn(self, session_id, turn_id, spec, meta, client, emit):
         skills = _skills_from_meta(meta)
-        servers = _selected_servers(spec, Path(meta["workspace"]))
+        servers = self._selected_connectors(spec, Path(meta["workspace"]))
         async with ToolBox(
             Path(meta["workspace"]), skills, spec.tools, servers, client
         ) as tools:
@@ -121,16 +123,19 @@ class Runtime:
 
     async def _round(self, session_id, turn_id, spec, meta, tools, emit, usage):
         messages = _messages(self._events(session_id), meta)
-        specs = tools.specs() if spec.runtime == "openai-compatible" else []
+        endpoint = self.endpoints.require(spec.endpoint, spec.model)
+        specs = tools.specs() if endpoint.adapter == "openai-compatible" else []
         self.trace.append(
             session_id,
             "model_request",
             {"model": spec.model, "messages": messages, "tools": specs},
             turn_id,
         )
-        result = await self._generate(session_id, spec, meta, messages, specs, emit)
+        endpoint_id, result = await self._generate(
+            session_id, spec, meta, messages, specs, emit
+        )
         _add_usage(usage, result.usage)
-        self._record_response(session_id, turn_id, result)
+        self._record_response(session_id, turn_id, endpoint_id, result)
         calls = result.message.get("tool_calls") or []
         await self._tools(session_id, turn_id, calls, tools)
         content = result.message.get("content") or ""
@@ -139,12 +144,14 @@ class Runtime:
         return not calls, content
 
     async def _generate(self, session_id, spec, meta, messages, tools, emit):
-        provider = self.providers[spec.runtime]
         context = _provider_context(meta, self._events(session_id))
-        return await provider.generate(spec.model, messages, tools, emit, context)
+        return await self.endpoints.generate(
+            spec.endpoint, spec.model, messages, tools, emit, context
+        )
 
-    def _record_response(self, session_id, turn_id, result):
+    def _record_response(self, session_id, turn_id, endpoint_id, result):
         data = {
+            "endpoint": endpoint_id,
             "message": result.message,
             "usage": result.usage,
             "provider_session_id": result.provider_session_id,
@@ -189,14 +196,14 @@ class Runtime:
             raise SessionNotFound(session_id)
         return events
 
+    def _selected_connectors(self, spec: AgentSpec, workspace: Path):
+        registered = self.connectors.all().values()
+        available = discover_connectors(workspace, registered)
+        return [available[name] for name in spec.connectors]
+
 
 async def _ignore(text: str) -> None:
     return None
-
-
-def _providers() -> dict[str, Provider]:
-    values = [OpenAIProvider.from_env(), CodexProvider.detected()]
-    return {item.id: item for item in values if item is not None}
 
 
 def _workspace(value: str) -> Path:
@@ -231,14 +238,16 @@ def _launch_identity(spec, workspace, value) -> dict:
 
 
 def _validate_spec(spec: AgentSpec, recognized: dict) -> None:
-    runtime_ids = {item["id"] for item in recognized["runtimes"] if item["available"]}
-    model_pairs = {(item["runtime"], item["id"]) for item in recognized["models"]}
-    _require(spec.runtime, runtime_ids, "runtime")
-    _require((spec.runtime, spec.model), model_pairs, "model")
-    for key in ("skills", "tools", "mcp_servers"):
-        available = {item["id"] for item in recognized[key]}
+    endpoint_ids = {item["id"] for item in recognized["endpoints"] if item["available"]}
+    model_pairs = {(item["endpoint"], item["id"]) for item in recognized["models"]}
+    _require(spec.endpoint, endpoint_ids, "endpoint")
+    _require((spec.endpoint, spec.model), model_pairs, "model")
+    for key in ("skills", "tools", "connectors"):
+        available = {
+            item["id"] for item in recognized[key] if item.get("available", True)
+        }
         for value in getattr(spec, key):
-            _require(value, available, key[:-1])
+            _require(value, available, _capability_kind(key))
 
 
 def _require(value, available, kind):
@@ -246,15 +255,17 @@ def _require(value, available, kind):
         raise CapabilityNotFound(f"{kind} is not available: {value}")
 
 
-def _session_meta(spec, workspace, value, skills, recognized):
-    mcp = {item["id"]: item for item in recognized["mcp_servers"]}
+def _capability_kind(key: str) -> str:
+    return key[:-1]
+
+
+def _session_meta(spec, workspace, value, skills):
     return {
         "agent_spec": spec.snapshot(),
         "workspace": str(workspace),
         "parent": value.get("parent"),
         "mode": value.get("mode", "resume"),
         "skills": skills,
-        "mcp_servers": [mcp[name] for name in spec.mcp_servers],
     }
 
 
@@ -279,11 +290,6 @@ class _SnapshotSkill:
 
 def _skills_from_meta(meta) -> dict[str, Skill]:
     return {value["id"]: _SnapshotSkill(value) for value in meta.get("skills", [])}
-
-
-def _selected_servers(spec, workspace):
-    available = discover_mcp(workspace)
-    return [available[name] for name in spec.mcp_servers]
 
 
 def _messages(events, meta):

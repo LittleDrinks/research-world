@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import json
-import os
 from collections import defaultdict
 from typing import Any
 
 import httpx
 
-from .base import Emit, ModelResult
+from .base import Emit, EndpointUnavailable, ModelResult
 
 
 class OpenAIProvider:
@@ -18,17 +17,31 @@ class OpenAIProvider:
         self.api_key = api_key
         self.client = httpx.AsyncClient(timeout=timeout)
 
-    @classmethod
-    def from_env(cls) -> OpenAIProvider | None:
-        base_url = os.getenv("RUNTIME_API_BASE", "")
-        api_key = os.getenv("RUNTIME_API_KEY", "")
-        return cls(base_url, api_key) if base_url and api_key else None
-
     async def generate(
         self, model, messages, tools, emit: Emit, context
     ) -> ModelResult:
         payload = _payload(model, messages, tools)
         accumulator = _Accumulator()
+        try:
+            await self._stream(payload, accumulator, emit)
+        except httpx.TransportError as error:
+            raise EndpointUnavailable(_transport_error(error)) from error
+        return ModelResult(accumulator.message(), accumulator.usage)
+
+    async def embed(self, model: str, texts: list[str]) -> list[list[float]]:
+        try:
+            response = await self.client.post(
+                self._url("embeddings"),
+                json={"model": model, "input": texts},
+                headers=self._headers(),
+            )
+        except httpx.TransportError as error:
+            raise EndpointUnavailable(_transport_error(error)) from error
+        await _check(response)
+        rows = sorted(response.json()["data"], key=lambda item: item["index"])
+        return [item["embedding"] for item in rows]
+
+    async def _stream(self, payload, accumulator, emit) -> None:
         async with self.client.stream(
             "POST", self._url("chat/completions"), json=payload, headers=self._headers()
         ) as response:
@@ -37,17 +50,6 @@ class OpenAIProvider:
                 delta = accumulator.add(line)
                 if delta:
                     await emit(delta)
-        return ModelResult(accumulator.message(), accumulator.usage)
-
-    async def embed(self, model: str, texts: list[str]) -> list[list[float]]:
-        response = await self.client.post(
-            self._url("embeddings"),
-            json={"model": model, "input": texts},
-            headers=self._headers(),
-        )
-        await _check(response)
-        rows = sorted(response.json()["data"], key=lambda item: item["index"])
-        return [item["embedding"] for item in rows]
 
     def _url(self, path: str) -> str:
         return f"{self.base_url}/{path}"
@@ -118,6 +120,10 @@ async def _check(response: httpx.Response) -> None:
     if response.status_code < 400:
         return
     await response.aread()
-    raise RuntimeError(
-        f"model endpoint returned {response.status_code}: {response.text[:300]}"
-    )
+    if response.status_code in {408, 409, 429} or response.status_code >= 500:
+        raise EndpointUnavailable(f"model endpoint returned {response.status_code}")
+    raise RuntimeError(f"model endpoint returned {response.status_code}")
+
+
+def _transport_error(error: httpx.TransportError) -> str:
+    return f"model endpoint transport failed: {type(error).__name__}"

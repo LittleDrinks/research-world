@@ -1,4 +1,5 @@
 import json
+import sys
 
 from acp import (
     PROTOCOL_VERSION,
@@ -13,7 +14,7 @@ from acp.schema import ClientCapabilities, Implementation
 from runtime.acp_agent import RuntimeAgent
 from runtime.service import Runtime
 from runtime.tools import ToolBox
-from tests.helpers import FakeProvider
+from tests.helpers import FakeProvider, endpoint
 
 
 class ProjectClient:
@@ -50,7 +51,7 @@ async def test_acp_is_the_runtime_transport(tmp_path, monkeypatch):
             {"role": "assistant", "content": "verified"},
         ]
     )
-    runtime = Runtime(tmp_path / "data", {"openai-compatible": provider})
+    runtime = Runtime(tmp_path / "data", [endpoint(provider)])
     left, right = memory_transport_pair()
     agent = AgentSideConnection(lambda client: RuntimeAgent(runtime), left)
     project = ProjectClient()
@@ -68,7 +69,7 @@ async def test_acp_is_the_runtime_transport(tmp_path, monkeypatch):
                 "agent_spec": {
                     "id": "researcher",
                     "name": "Researcher",
-                    "runtime": "openai-compatible",
+                    "endpoint": "openai-compatible",
                     "model": "qwen-test",
                     "instructions": "Use cited nodes.",
                     "tools": ["read_resource"],
@@ -95,3 +96,30 @@ async def test_graph_query_crosses_the_client_boundary(tmp_path):
         )
     assert failed is False
     assert json.loads(content) == {"id": "D-008", "life_state": "admitted"}
+
+
+async def test_runtime_extensions_register_connector_and_embed(tmp_path):
+    runtime = Runtime(
+        tmp_path / "data",
+        [endpoint(FakeProvider([]), "embedding", ("embed-model",))],
+    )
+    agent = RuntimeAgent(runtime)
+
+    connector = await agent.ext_method(
+        "runtime/connectors/register",
+        {
+            "connector": {
+                "id": "lean4",
+                "name": "Lean 4",
+                "transport": "stdio",
+                "command": sys.executable,
+            }
+        },
+    )
+    vectors = await agent.ext_method(
+        "runtime/embed",
+        {"endpoint": "embedding", "model": "embed-model", "texts": ["proof"]},
+    )
+
+    assert connector["id"] == "lean4"
+    assert vectors == {"value": [[0.0]]}

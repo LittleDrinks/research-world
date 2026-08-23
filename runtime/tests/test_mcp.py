@@ -1,8 +1,7 @@
-import json
 import sys
 
 from runtime.service import Runtime
-from tests.helpers import FakeProvider
+from tests.helpers import FakeProvider, endpoint
 
 SERVER = """
 from mcp.server.fastmcp import FastMCP
@@ -23,23 +22,10 @@ async def test_selected_mcp_server_exposes_and_executes_tools(tmp_path, monkeypa
     monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
     script = tmp_path / "server.py"
     script.write_text(SERVER)
-    tmp_path.joinpath(".mcp.json").write_text(
-        json.dumps(
-            {
-                "mcpServers": {
-                    "fixture": {
-                        "type": "stdio",
-                        "command": sys.executable,
-                        "args": [str(script)],
-                    }
-                }
-            }
-        )
-    )
     call = {
         "id": "m1",
         "type": "function",
-        "function": {"name": "mcp__fixture__echo", "arguments": '{"text":"hello"}'},
+        "function": {"name": "mcp__lean4__echo", "arguments": '{"text":"hello"}'},
     }
     provider = FakeProvider(
         [
@@ -47,18 +33,28 @@ async def test_selected_mcp_server_exposes_and_executes_tools(tmp_path, monkeypa
             {"role": "assistant", "content": "done"},
         ]
     )
-    runtime = Runtime(tmp_path / "data", {"openai-compatible": provider})
+    runtime = Runtime(tmp_path / "data", [endpoint(provider)])
+    runtime.register_connector(
+        {
+            "id": "lean4",
+            "name": "Lean 4",
+            "description": "Formal proof tools",
+            "transport": "stdio",
+            "command": sys.executable,
+            "args": [str(script)],
+        }
+    )
     agent = {
         "id": "researcher",
         "name": "Researcher",
-        "runtime": "openai-compatible",
+        "endpoint": "openai-compatible",
         "model": "qwen-test",
         "instructions": "Use MCP.",
-        "mcp_servers": ["fixture"],
+        "connectors": ["lean4"],
     }
     launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": agent})
 
     await runtime.prompt(launched["session_id"], [{"type": "text", "text": "echo"}])
 
-    assert "mcp__fixture__echo" in str(provider.requests[0]["tools"])
+    assert "mcp__lean4__echo" in str(provider.requests[0]["tools"])
     assert "mcp:hello" in str(provider.requests[1]["messages"])

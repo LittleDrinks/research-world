@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 from contextlib import AsyncExitStack
 from typing import Self
 
@@ -11,11 +10,11 @@ from mcp.client.sse import sse_client
 from mcp.client.stdio import stdio_client
 from mcp.client.streamable_http import streamable_http_client
 
-from .mcp_servers import McpServer
+from .connectors import Connector
 
 
 class McpTools:
-    def __init__(self, servers: list[McpServer]):
+    def __init__(self, servers: list[Connector]):
         self.servers = servers
         self.stack = AsyncExitStack()
         self.sessions: dict[str, ClientSession] = {}
@@ -39,7 +38,7 @@ class McpTools:
         ]
         return json.dumps(content, ensure_ascii=False), bool(result.isError)
 
-    async def _connect(self, server: McpServer) -> None:
+    async def _connect(self, server: Connector) -> None:
         streams = await self.stack.enter_async_context(_transport(self.stack, server))
         read, write = streams[:2]
         session = await self.stack.enter_async_context(ClientSession(read, write))
@@ -55,32 +54,20 @@ class McpTools:
             self.specs.append(_spec(public_name, tool))
 
 
-def _transport(stack: AsyncExitStack, server: McpServer):
+def _transport(stack: AsyncExitStack, server: Connector):
+    config = server.resolved_config()
     if server.transport == "stdio":
         params = StdioServerParameters(
-            command=server.config["command"],
-            args=server.config.get("args", []),
-            env=_environment(server.config.get("env")),
+            command=config["command"],
+            args=config.get("args", []),
+            env=config.get("env"),
         )
         return stdio_client(params)
     if server.transport == "sse":
-        return sse_client(server.config["url"], headers=_headers(server.config))
-    client = httpx.AsyncClient(headers=_headers(server.config))
+        return sse_client(config["url"], headers=config.get("headers"))
+    client = httpx.AsyncClient(headers=config.get("headers"))
     stack.push_async_callback(client.aclose)
-    return streamable_http_client(server.config["url"], http_client=client)
-
-
-def _environment(values):
-    if values is None:
-        return None
-    return {key: os.path.expandvars(str(value)) for key, value in values.items()}
-
-
-def _headers(config):
-    return {
-        key: os.path.expandvars(str(value))
-        for key, value in (config.get("headers") or {}).items()
-    }
+    return streamable_http_client(config["url"], http_client=client)
 
 
 def _spec(name, tool):

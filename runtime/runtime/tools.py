@@ -6,7 +6,7 @@ from typing import Self
 
 from acp.interfaces import Client
 
-from .mcp_servers import McpServer
+from .connectors import Connector
 from .mcp_tools import McpTools
 from .skills import Skill
 
@@ -89,7 +89,7 @@ class ToolBox:
         workspace: Path,
         skills: dict[str, Skill],
         selected_tools: tuple[str, ...],
-        servers: list[McpServer],
+        servers: list[Connector],
         client: Client | None,
     ):
         self.workspace = workspace.resolve()

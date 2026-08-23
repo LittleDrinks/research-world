@@ -3,15 +3,16 @@ import json
 import pytest
 
 from runtime.service import Runtime
-from runtime.types import CapabilityNotFound
-from tests.helpers import FakeProvider
+from runtime.types import AgentSpec, CapabilityNotFound
+from runtime.types import RuntimeError as SpecError
+from tests.helpers import FakeProvider, endpoint
 
 
 def spec(**values):
     data = {
         "id": "researcher",
         "name": "Researcher",
-        "runtime": "openai-compatible",
+        "endpoint": "openai-compatible",
         "model": "qwen-test",
         "instructions": "Answer from evidence.",
     }
@@ -19,11 +20,17 @@ def spec(**values):
     return data
 
 
+@pytest.mark.parametrize("legacy", [{"runtime": "old"}, {"mcp_servers": []}])
+def test_agent_spec_rejects_legacy_fields(legacy):
+    with pytest.raises(SpecError):
+        AgentSpec.parse({**spec(), **legacy})
+
+
 async def test_launch_rejects_unrecognized_capability(tmp_path, monkeypatch):
     monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
     monkeypatch.setenv("RUNTIME_API_KEY", "secret")
     monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
-    runtime = Runtime(tmp_path / "data", {"openai-compatible": FakeProvider([])})
+    runtime = Runtime(tmp_path / "data", [endpoint(FakeProvider([]))])
 
     with pytest.raises(CapabilityNotFound, match="skill is not available"):
         await runtime.launch(
@@ -41,7 +48,7 @@ async def test_prompt_and_resume_are_derived_from_trace(tmp_path, monkeypatch):
             {"role": "assistant", "content": "second"},
         ]
     )
-    runtime = Runtime(tmp_path / "data", {"openai-compatible": provider})
+    runtime = Runtime(tmp_path / "data", [endpoint(provider)])
     launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec()})
 
     await runtime.prompt(launched["session_id"], [{"type": "text", "text": "one"}])
@@ -65,12 +72,11 @@ async def test_prompt_rejects_an_empty_final_response(tmp_path, monkeypatch):
     monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
     monkeypatch.setenv("RUNTIME_API_KEY", "secret")
     monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
-    runtime = Runtime(tmp_path / "data", {"openai-compatible": FakeProvider([
-        {"role": "assistant", "content": ""},
-    ])})
-    launched = await runtime.launch(
-        {"workspace": str(tmp_path), "agent_spec": spec()}
+    runtime = Runtime(
+        tmp_path / "data",
+        [endpoint(FakeProvider([{"role": "assistant", "content": ""}]))],
     )
+    launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec()})
 
     with pytest.raises(RuntimeError, match="empty assistant response"):
         await runtime.prompt(
@@ -86,7 +92,7 @@ async def test_launch_with_same_session_id_is_idempotent(tmp_path, monkeypatch):
     monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
     monkeypatch.setenv("RUNTIME_API_KEY", "secret")
     monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
-    runtime = Runtime(tmp_path / "data", {"openai-compatible": FakeProvider([])})
+    runtime = Runtime(tmp_path / "data", [endpoint(FakeProvider([]))])
     value = {
         "workspace": str(tmp_path),
         "agent_spec": spec(),
@@ -102,7 +108,7 @@ async def test_launch_rejects_reusing_session_for_other_spec(tmp_path, monkeypat
     monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
     monkeypatch.setenv("RUNTIME_API_KEY", "secret")
     monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
-    runtime = Runtime(tmp_path / "data", {"openai-compatible": FakeProvider([])})
+    runtime = Runtime(tmp_path / "data", [endpoint(FakeProvider([]))])
     value = {"workspace": str(tmp_path), "agent_spec": spec(), "session_id": "s-op"}
     await runtime.launch(value)
 
@@ -133,7 +139,7 @@ async def test_skill_body_is_disclosed_only_after_tool_call(tmp_path, monkeypatc
             {"role": "assistant", "content": "done"},
         ]
     )
-    runtime = Runtime(tmp_path / "data", {"openai-compatible": provider})
+    runtime = Runtime(tmp_path / "data", [endpoint(provider)])
     launched = await runtime.launch(
         {"workspace": str(tmp_path), "agent_spec": spec(skills=["evidence-review"])}
     )

@@ -34,12 +34,12 @@ class AgentOptions:
 class AgentSpec:
     id: str
     name: str
-    runtime: str
+    endpoint: str
     model: str
     instructions: str
     skills: tuple[str, ...] = ()
     tools: tuple[str, ...] = ()
-    mcp_servers: tuple[str, ...] = ()
+    connectors: tuple[str, ...] = ()
     options: AgentOptions = field(default_factory=AgentOptions)
 
     @classmethod
@@ -51,7 +51,7 @@ class AgentSpec:
             raise RuntimeError(errors[0].message)
         options = AgentOptions(**value.get("options", {}))
         arrays = {
-            key: tuple(value.get(key, [])) for key in ("skills", "tools", "mcp_servers")
+            key: tuple(value.get(key, [])) for key in ("skills", "tools", "connectors")
         }
         return cls(
             **{key: value[key] for key in _required()}, **arrays, options=options
@@ -62,7 +62,7 @@ class AgentSpec:
 
 
 def _required() -> tuple[str, ...]:
-    return "id", "name", "runtime", "model", "instructions"
+    return "id", "name", "endpoint", "model", "instructions"
 
 
 def _validator() -> Draft202012Validator:
