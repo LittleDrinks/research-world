@@ -30,11 +30,13 @@ class FakeRuntime:
         return self.sessions[session_id]
 
     async def recognize(self, workspace):
+        tools = ["read_resource", "graph_query", "report_projection", "report_validate",
+                 "export_bibtex", "submit_observation"]
         return {
             "workspace": workspace,
             "endpoints": [],
             "skills": [],
-            "tools": [],
+            "tools": [{"id": tool, "status": "ready"} for tool in tools],
         }
 
     async def validate_agent(self, value):
@@ -239,7 +241,7 @@ def test_agent_registry_reads_and_updates_yaml(tmp_path):
     assert registry.save(agent["id"], agent)["instructions"] == "只陈述可验证结论"
 
 
-def test_agent_api_validates_before_registry_write(world, tmp_path):
+def test_agent_api_validates_before_registry_write(world, project, tmp_path):
     runtime = FakeRuntime()
     agents = _agents(tmp_path)
     kernel = ResearchKernel(
@@ -250,14 +252,16 @@ def test_agent_api_validates_before_registry_write(world, tmp_path):
     )
     value = {**agents.get("research-assistant"), "name": ""}
     response = TestClient(create_app(kernel)).put(
-        "/api/v1/agents/research-assistant", json=value
+        "/api/v1/agents/research-assistant",
+        params={"project_id": project["id"]},
+        json=value,
     )
     assert response.status_code == 400
     assert runtime.validated == [value]
     assert agents.get("research-assistant")["name"] == "研究助手"
 
 
-def test_agent_api_creates_without_upserting(world, tmp_path):
+def test_agent_api_creates_without_upserting(world, project, tmp_path):
     runtime = FakeRuntime()
     agents = _agents(tmp_path)
     kernel = ResearchKernel(
@@ -266,8 +270,11 @@ def test_agent_api_creates_without_upserting(world, tmp_path):
     client = TestClient(create_app(kernel))
     value = {**agents.get("research-assistant"), "id": "proof-reviewer"}
 
-    created = client.post("/api/v1/agents", json=value)
-    duplicate = client.post("/api/v1/agents", json={**value, "name": "覆盖"})
+    params = {"project_id": project["id"]}
+    created = client.post("/api/v1/agents", params=params, json=value)
+    duplicate = client.post(
+        "/api/v1/agents", params=params, json={**value, "name": "覆盖"}
+    )
 
     assert created.status_code == 201
     assert created.json() == value
@@ -276,7 +283,7 @@ def test_agent_api_creates_without_upserting(world, tmp_path):
     assert runtime.validated == [value]
 
 
-def test_agent_update_requires_existing_id(world, tmp_path):
+def test_agent_update_requires_existing_id(world, project, tmp_path):
     runtime = FakeRuntime()
     agents = _agents(tmp_path)
     kernel = ResearchKernel(
@@ -284,7 +291,11 @@ def test_agent_update_requires_existing_id(world, tmp_path):
     )
     value = {**agents.get("research-assistant"), "id": "missing"}
 
-    response = TestClient(create_app(kernel)).put("/api/v1/agents/missing", json=value)
+    response = TestClient(create_app(kernel)).put(
+        "/api/v1/agents/missing",
+        params={"project_id": project["id"]},
+        json=value,
+    )
 
     assert response.status_code == 404
     assert not (agents.root / "missing.yaml").exists()

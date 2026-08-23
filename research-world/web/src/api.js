@@ -61,8 +61,9 @@ export const getCatalog = (projectId) => fetch(`/api/v1/runtime/catalog?project_
 export const getSession = (sessionId) => fetch(`/api/v1/runtime/sessions/${enc(sessionId)}`).then(decode);
 
 export const listAgents = () => fetch("/api/v1/agents").then(decode);
-export const createAgent = (body) => fetch("/api/v1/agents", json("POST", body)).then(decode);
-export const saveAgent = (agentId, body) => fetch(`/api/v1/agents/${enc(agentId)}`, json("PUT", body)).then(decode);
+export const createAgent = (body, projectId) => fetch(`/api/v1/agents?project_id=${enc(projectId)}`, json("POST", body)).then(decode);
+export const draftAgent = (projectId, presetId) => fetch(`/api/v1/projects/${enc(projectId)}/agent-drafts`, json("POST", { preset_id: presetId })).then(decode);
+export const saveAgent = (agentId, projectId, body) => fetch(`/api/v1/agents/${enc(agentId)}?project_id=${enc(projectId)}`, json("PUT", body)).then(decode);
 
 export const listRuns = (projectId) => fetch(`/api/v1/projects/${enc(projectId)}/runs`).then(decode);
 export const startRun = (projectId, body) => fetch(`/api/v1/projects/${enc(projectId)}/runs`, json("POST", body)).then(decode);

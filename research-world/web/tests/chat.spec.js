@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { bootstrap, mockBase, node, run, sse, thread, threadDetail } from "./fixtures";
+import { agentDraft, agents, bootstrap, catalog, mockBase, node, run, sse, thread, threadDetail } from "./fixtures";
 
 
 async function mockChat(page, detail = threadDetail()) {
@@ -323,4 +323,122 @@ test("does not insert the mention when the pin fails", async ({ page }) => {
   await expect(page.getByRole("button", { name: "发送" })).toBeEnabled();
   await page.getByLabel("消息").press("Enter");
   await expect.poll(() => message).toEqual({ message: "参考 @d" });
+});
+
+
+test("drafts an Agent profile from a Preset and confirms creation", async ({ page }) => {
+  const values = agents();
+  let created;
+  await mockChat(page);
+  await page.route(/\/api\/v1\/projects\/project%3Atest\/agent-drafts/, (route) =>
+    route.fulfill({ status: 201, json: agentDraft() }));
+  await page.route(/\/api\/v1\/agents(\?|$)/, (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: values });
+    created = route.request().postDataJSON(); values.push(created);
+    return route.fulfill({ status: 201, json: created });
+  });
+  await page.goto("/chat/thread%3At1");
+  await page.getByRole("button", { name: "起草 Agent" }).click();
+  await page.getByRole("menuitem", { name: /数学证明/ }).click();
+  const card = page.getByRole("region", { name: "Agent 草稿" });
+  await expect(card).toContainText("形式化证明 Agent");
+  await expect(card.getByLabel("ID")).toHaveValue("math-proof");
+  await expect(card.getByLabel("Endpoint")).toHaveValue("openai-compatible");
+  await page.screenshot({ path: "test-results/profile-draft-desktop.png", fullPage: true });
+  await card.getByLabel("推理强度").selectOption("high");
+  await card.getByText("权限与限制").click();
+  await card.getByLabel("Sandbox").selectOption("workspace-write");
+  const skills = card.locator(".capability-picker", { hasText: "Skills" });
+  await skills.getByLabel("搜索Skills").fill("文献综述");
+  await skills.locator(".capability-options button").click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mask = page.locator(".sidebar-mask");
+  if (await mask.count()) await mask.click({ force: true });
+  await expect.poll(async () => {
+    const box = await page.locator(".sidebar").boundingBox();
+    return box ? box.x + box.width : 0;
+  }).toBeLessThanOrEqual(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.screenshot({ path: "test-results/profile-draft-mobile.png", fullPage: true });
+  await card.getByLabel("名称").fill("证明助手");
+  await card.getByRole("button", { name: "确认创建" }).click();
+  await expect.poll(() => created).toBeTruthy();
+  expect(created.name).toBe("证明助手");
+  expect(created.tools).toEqual(["lean4"]);
+  expect(created.skills).toEqual(["skill-review"]);
+  expect(created.options).toMatchObject({ reasoning_effort: "high", sandbox: "workspace-write" });
+  await page.getByRole("link", { name: "打开 Agent 设置" }).click();
+  await expect(page).toHaveURL(/\/agents\/math-proof$/);
+});
+
+
+test("dismisses the Agent Preset menu and restores trigger focus", async ({ page }) => {
+  await mockChat(page);
+  await page.goto("/chat/thread%3At1");
+  const trigger = page.getByRole("button", { name: "起草 Agent" });
+  await trigger.click();
+  await expect(page.getByRole("menu")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu")).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+});
+
+
+test("keeps the Profile draft local and discards it on cancel", async ({ page }) => {
+  let creates = 0;
+  await mockChat(page);
+  await page.route(/\/api\/v1\/projects\/project%3Atest\/agent-drafts/, (route) =>
+    route.fulfill({ status: 201, json: agentDraft() }));
+  await page.route(/\/api\/v1\/agents(\?|$)/, (route) => {
+    if (route.request().method() === "POST") creates += 1;
+    return route.fulfill({ json: agents() });
+  });
+  await page.goto("/chat/thread%3At1");
+  await page.getByRole("button", { name: "起草 Agent" }).click();
+  await page.getByRole("menuitem", { name: /数学证明/ }).click();
+  const card = page.getByRole("region", { name: "Agent 草稿" });
+  await expect(card).toBeVisible();
+  await card.getByLabel("名称").fill("不会保存");
+  await card.getByRole("button", { name: "取消" }).click();
+  await expect(card).toHaveCount(0);
+  expect(creates).toBe(0);
+});
+
+
+test("blocks confirmation while a Preset Tool is unavailable and shows id and status", async ({ page }) => {
+  const draft = agentDraft({ tools: [{ id: "lean4", status: "missing" }], confirmable: false,
+    issues: ["tool unavailable: lean4 (missing)"] });
+  await mockChat(page);
+  await page.route(/\/api\/v1\/projects\/project%3Atest\/agent-drafts/, (route) =>
+    route.fulfill({ status: 201, json: draft }));
+  await page.route(/\/api\/v1\/runtime\/catalog/, (route) => {
+    const value = catalog();
+    value.tools = value.tools.filter((tool) => tool.id !== "lean4");
+    return route.fulfill({ json: value });
+  });
+  await page.goto("/chat/thread%3At1");
+  await page.getByRole("button", { name: "起草 Agent" }).click();
+  await page.getByRole("menuitem", { name: /数学证明/ }).click();
+  const card = page.getByRole("region", { name: "Agent 草稿" });
+  await expect(card.getByRole("alert")).toContainText("Tool 不可用：lean4（missing）");
+  await expect(card.getByRole("button", { name: "确认创建" })).toBeDisabled();
+  await card.getByRole("button", { name: "移除 lean4" }).click();
+  await expect(card.getByRole("button", { name: "确认创建" })).toBeEnabled();
+});
+
+
+test("shows server-side create errors inside the draft card", async ({ page }) => {
+  await mockChat(page);
+  await page.route(/\/api\/v1\/projects\/project%3Atest\/agent-drafts/, (route) =>
+    route.fulfill({ status: 201, json: agentDraft() }));
+  await page.route(/\/api\/v1\/agents(\?|$)/, (route) => route.request().method() === "POST"
+    ? route.fulfill({ status: 400, json: { detail: "tool unavailable: lean4 (missing)" } })
+    : route.fulfill({ json: agents() }));
+  await page.goto("/chat/thread%3At1");
+  await page.getByRole("button", { name: "起草 Agent" }).click();
+  await page.getByRole("menuitem", { name: /数学证明/ }).click();
+  const card = page.getByRole("region", { name: "Agent 草稿" });
+  await card.getByRole("button", { name: "确认创建" }).click();
+  await expect(card.getByRole("alert")).toContainText("tool unavailable: lean4 (missing)");
+  await expect(page).toHaveURL(/\/chat\/thread%3At1$/);
 });

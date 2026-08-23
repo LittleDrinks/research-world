@@ -1,22 +1,8 @@
 import { Workflow, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { LaunchControl } from "./LaunchControl";
 import { RunCard } from "./RunCard";
-
-
-function useDismiss(open, root, trigger, close) {
-  useEffect(() => {
-    if (!open) return undefined;
-    const dismiss = (event) => {
-      if (event.type === "keydown" && event.key !== "Escape") return;
-      if (event.type === "pointerdown" && root.current?.contains(event.target)) return;
-      close(); requestAnimationFrame(() => trigger.current?.focus());
-    };
-    document.addEventListener("keydown", dismiss);
-    document.addEventListener("pointerdown", dismiss);
-    return () => { document.removeEventListener("keydown", dismiss); document.removeEventListener("pointerdown", dismiss); };
-  }, [open, close]);
-}
+import { usePopoverDismiss } from "./usePopoverDismiss";
 
 
 export function ResearchControls({ thread, runs }) {
@@ -25,7 +11,7 @@ export function ResearchControls({ thread, runs }) {
   const root = useRef(null);
   const trigger = useRef(null);
   const close = useCallback(() => setOpen(false), []);
-  useDismiss(open, root, trigger, close);
+  usePopoverDismiss(open, root, trigger, close);
   const visible = runs.filter((run) => !hidden.has(run.id));
   const hide = (runId) => setHidden((value) => new Set([...value, runId]));
   return <div className="research-controls" ref={root}>

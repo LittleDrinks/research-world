@@ -36,3 +36,18 @@
   .agent-form-footer .button { flex: 0 0 auto; }
   .catalog-failure { align-items: flex-start; flex-direction: column; }
 }
+
+/* —— Profile Presets —— */
+.preset-panel { margin-bottom: 18px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--app-panel); }
+.preset-panel h2 { margin-bottom: 8px; font-size: 13px; }
+.preset-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
+.preset-info { min-width: 0; }
+.preset-info b { margin-right: 8px; font-size: 13px; }
+.preset-info .mono { color: var(--text-muted); font-size: 12px; overflow-wrap: anywhere; }
+.preset-info p { margin: 4px 0; color: var(--text-muted); font-size: 12px; overflow-wrap: anywhere; }
+.preset-info small { color: var(--text-faint); font-size: 11px; overflow-wrap: anywhere; }
+.preset-row .button { flex: 0 0 auto; min-height: 32px; font-size: 12px; }
+
+@media (max-width: 640px) {
+  .preset-row { flex-wrap: wrap; }
+}

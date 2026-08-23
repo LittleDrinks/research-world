@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { agents, catalog, mockBase } from "./fixtures";
+import { agents, catalog, mockBase, preset } from "./fixtures";
 
 
 test("offers recognizable endpoint, model and effort choices from the catalog", async ({ page }) => {
@@ -18,10 +18,11 @@ test("offers recognizable endpoint, model and effort choices from the catalog", 
 test("creates a new Agent from the sidebar and opens its editor", async ({ page }) => {
   const values = agents();
   let created;
+  let createUrl;
   await mockBase(page);
-  await page.route(/\/api\/v1\/agents$/, (route) => {
+  await page.route(/\/api\/v1\/agents(\?|$)/, (route) => {
     if (route.request().method() === "GET") return route.fulfill({ json: values });
-    created = route.request().postDataJSON(); values.push(created);
+    created = route.request().postDataJSON(); values.push(created); createUrl = route.request().url();
     return route.fulfill({ status: 201, json: created });
   });
   await page.goto("/agents/research-assistant");
@@ -30,12 +31,16 @@ test("creates a new Agent from the sidebar and opens its editor", async ({ page 
   await dialog.getByLabel("ID").fill("proof-reviewer");
   await dialog.getByLabel("名称").fill("形式化复核");
   await dialog.getByLabel("指令").fill("检查证明并报告反例。");
+  const idField = await dialog.getByLabel("ID").locator("..").boundingBox();
+  const nameField = await dialog.getByLabel("名称").locator("..").boundingBox();
   const hint = await dialog.getByText("小写字母、数字、连字符，创建后不可改").boundingBox();
-  const name = await dialog.getByText("名称", { exact: true }).boundingBox();
-  expect(hint.y + hint.height).toBeLessThan(name.y);
+  expect(idField.x + idField.width).toBeLessThanOrEqual(nameField.x);
+  expect(hint.x).toBeGreaterThanOrEqual(idField.x);
+  expect(hint.x + hint.width).toBeLessThanOrEqual(idField.x + idField.width);
   await page.screenshot({ path: "test-results/new-agent-dialog.png", fullPage: true });
   await dialog.getByRole("button", { name: "创建 Agent" }).click();
   await expect.poll(() => created).toBeTruthy();
+  expect(createUrl).toContain("project_id=project%3Atest");
   expect(created).toEqual({ id: "proof-reviewer", name: "形式化复核", instructions: "检查证明并报告反例。",
     endpoint: "openai-compatible", model: "qwen3.7-flash", skills: [], tools: [],
     options: { reasoning_effort: "medium", sandbox: "read-only", max_rounds: 12, token_budget: 200000 } });
@@ -60,7 +65,7 @@ test("adds and removes skills via searchable catalog entries", async ({ page }) 
 test("saves the agent through the real API with advanced settings", async ({ page }) => {
   let saved;
   await mockBase(page);
-  await page.route(/\/api\/v1\/agents\/research-assistant$/, (route) => {
+  await page.route(/\/api\/v1\/agents\/research-assistant\?/, (route) => {
     if (route.request().method() === "PUT") { saved = route.request().postDataJSON(); return route.fulfill({ json: saved }); }
     return route.fulfill({ json: agents()[0] });
   });
@@ -88,7 +93,7 @@ test("uses canonical Runtime option defaults when AgentSpec omits options", asyn
   let saved;
   await mockBase(page);
   await page.route(/\/api\/v1\/agents$/, (route) => route.fulfill({ json: [minimal] }));
-  await page.route(/\/api\/v1\/agents\/research-assistant$/, (route) => {
+  await page.route(/\/api\/v1\/agents\/research-assistant\?/, (route) => {
     saved = route.request().postDataJSON();
     return route.fulfill({ json: saved });
   });
@@ -134,7 +139,7 @@ test("rebuilds the saved AgentSpec without legacy or unknown fields", async ({ p
   let saved;
   await mockBase(page);
   await page.route(/\/api\/v1\/agents$/, (route) => route.fulfill({ json: [loaded] }));
-  await page.route(/\/api\/v1\/agents\/research-assistant$/, (route) => {
+  await page.route(/\/api\/v1\/agents\/research-assistant\?/, (route) => {
     saved = route.request().postDataJSON();
     return route.fulfill({ json: saved });
   });
@@ -148,7 +153,7 @@ test("rebuilds the saved AgentSpec without legacy or unknown fields", async ({ p
 test("syncs the model to the chosen endpoint and keeps the pair saveable", async ({ page }) => {
   let saved;
   await mockBase(page);
-  await page.route(/\/api\/v1\/agents\/research-assistant$/, (route) => {
+  await page.route(/\/api\/v1\/agents\/research-assistant\?/, (route) => {
     if (route.request().method() === "PUT") { saved = route.request().postDataJSON(); return route.fulfill({ json: saved }); }
     return route.fulfill({ json: agents()[0] });
   });
@@ -214,11 +219,10 @@ test("retries runtime catalog recognition after a transient failure", async ({ p
 
 test("selects a recognized Lean4 Tool and saves it", async ({ page }) => {
   const value = catalog();
-  value.tools.push({ id: "lean4", name: "Lean4", description: "形式化验证", source: "runtime", status: "ready" });
   let saved;
   await mockBase(page);
   await page.route(/\/api\/v1\/runtime\/catalog/, (route) => route.fulfill({ json: value }));
-  await page.route(/\/api\/v1\/agents\/research-assistant$/, (route) => {
+  await page.route(/\/api\/v1\/agents\/research-assistant\?/, (route) => {
     saved = route.request().postDataJSON();
     return route.fulfill({ json: saved });
   });
@@ -264,4 +268,56 @@ test("wraps long Tool catalog values at 390px without exposing its implementatio
   const picker = page.locator(".capability-picker").filter({ hasText: longName });
   const widths = await picker.evaluate((element) => [element.scrollWidth, element.clientWidth]);
   expect(widths[0]).toBeLessThanOrEqual(widths[1]);
+});
+
+
+test("browses a Profile Preset and applies it as an editable creation draft", async ({ page }) => {
+  const values = agents();
+  let created;
+  await mockBase(page);
+  await page.route(/\/api\/v1\/agents(\?|$)/, (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: values });
+    created = route.request().postDataJSON(); values.push(created);
+    return route.fulfill({ status: 201, json: created });
+  });
+  await page.goto("/agents/research-assistant");
+  const panel = page.getByRole("region", { name: "Profile Presets" });
+  await expect(panel).toContainText("数学证明");
+  await expect(panel).toContainText("lean4（ready）");
+  await panel.getByRole("button", { name: "应用为草稿" }).click();
+  const dialog = page.getByRole("dialog", { name: "应用 Preset：数学证明" });
+  await expect(dialog).toContainText("形式化证明 Agent");
+  await expect(dialog.getByLabel("ID")).toHaveValue("math-proof");
+  await expect(dialog.getByLabel("名称")).toHaveValue("数学证明助手");
+  await dialog.getByLabel("名称").fill("证明助手 v2");
+  await dialog.getByLabel("推理强度").selectOption("high");
+  await dialog.getByText("权限与限制").click();
+  await dialog.getByLabel("Sandbox").selectOption("workspace-write");
+  const skills = dialog.locator(".capability-picker", { hasText: "Skills" });
+  await skills.getByLabel("搜索Skills").fill("文献综述");
+  await skills.locator(".capability-options button").click();
+  await dialog.getByRole("button", { name: "创建 Agent" }).click();
+  await expect.poll(() => created).toBeTruthy();
+  expect(created.id).toBe("math-proof");
+  expect(created.name).toBe("证明助手 v2");
+  expect(created.tools).toEqual(["lean4"]);
+  expect(created.skills).toEqual(["skill-review"]);
+  expect(created.options).toMatchObject({ reasoning_effort: "high", sandbox: "workspace-write" });
+  expect(created.endpoint).toBe("openai-compatible");
+  await expect(page).toHaveURL(/\/agents\/math-proof$/);
+  await expect(page.getByRole("heading", { name: "证明助手 v2" })).toBeVisible();
+});
+
+
+test("blocks applying a Preset whose Tool is unavailable", async ({ page }) => {
+  const value = catalog();
+  value.presets = [preset({ tools: [{ id: "lean4", status: "missing" }] })];
+  value.tools = value.tools.filter((tool) => tool.id !== "lean4");
+  await mockBase(page);
+  await page.route(/\/api\/v1\/runtime\/catalog/, (route) => route.fulfill({ json: value }));
+  await page.goto("/agents/research-assistant");
+  await page.getByRole("button", { name: "应用为草稿" }).click();
+  const dialog = page.getByRole("dialog", { name: "应用 Preset：数学证明" });
+  await expect(dialog.getByRole("alert")).toContainText("lean4（missing）");
+  await expect(dialog.getByRole("button", { name: "创建 Agent" })).toBeDisabled();
 });

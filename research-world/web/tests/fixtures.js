@@ -54,7 +54,26 @@ export function catalog() {
     models: [{ id: "qwen3.7-flash", endpoint: "openai-compatible" }, { id: "gpt-5.2", endpoint: "codex" }],
     skills: [{ id: "skill-review", name: "文献综述", description: "检索并综述相关文献", source: "workspace" }],
     tools: [{ id: "read_resource", name: "读取引用节点", status: "ready" },
-      { id: "graph_query", name: "查询研究图谱", status: "ready" }] };
+      { id: "graph_query", name: "查询研究图谱", status: "ready" },
+      { id: "lean4", name: "Lean4", description: "形式化验证", source: "runtime", status: "ready" }],
+    presets: [preset()] };
+}
+
+
+export function preset(state = {}) {
+  return { id: "math-proof", name: "数学证明", description: "形式化证明 Agent：将命题形式化为 Lean4 定理并调用 Lean4 Tool 验证。",
+    spec: { id: "math-proof", name: "数学证明助手", instructions: "把研究中的数学命题形式化为 Lean4 定理并调用 Lean4 Tool 验证。",
+      skills: [], tools: ["lean4"] },
+    tools: [{ id: "lean4", status: "ready" }], ...state };
+}
+
+
+export function agentDraft(state = {}) {
+  const value = preset();
+  return { preset_id: value.id, reason: value.description,
+    spec: { ...value.spec, endpoint: "openai-compatible", model: "qwen3.7-flash",
+      options: { reasoning_effort: "medium", sandbox: "read-only", max_rounds: 12, token_budget: 200000 } },
+    tools: value.tools, confirmable: true, issues: [], ...state };
 }
 
 

@@ -18,6 +18,7 @@ from .admission import (
 )
 from .artifacts import ArtifactStore
 from .observations import observation_submission
+from .presets import agent_draft, require_tools_ready
 from .reporting import assess_delivery
 from .world import World, node_text
 
@@ -201,13 +202,27 @@ class ResearchKernel:
         value = command.values["value"]
         self._require_agents().validate_new(value)
         await self._require_runtime().validate_agent(value)
+        catalog = await self._runtime_catalog(_project_id(command))
+        require_tools_ready(catalog, value)
         return self._require_agents().create(value)
+
+    async def _command_draft_agent(self, command: KernelCommand) -> dict:
+        _validate_fields(command.values, {"preset_id"}, {"preset_id"})
+        catalog = await self._runtime_catalog(_project_id(command))
+        return agent_draft(command.values["preset_id"], catalog)
+
+    async def _runtime_catalog(self, project_id: str) -> dict:
+        workspace = self._world.project(project_id)["root"]
+        return await self._require_runtime().recognize(workspace)
 
     async def _command_save_agent(self, command: KernelCommand) -> dict:
         _validate_fields(command.values, {"agent_id", "value"}, {"agent_id", "value"})
-        await self._require_runtime().validate_agent(command.values["value"])
+        value = command.values["value"]
+        await self._require_runtime().validate_agent(value)
+        catalog = await self._runtime_catalog(_project_id(command))
+        require_tools_ready(catalog, value)
         return self._require_agents().save(
-            command.values["agent_id"], command.values["value"]
+            command.values["agent_id"], value
         )
 
     def _command_save_pipeline(self, command: KernelCommand) -> dict:
@@ -257,8 +272,7 @@ class ResearchKernel:
         return self._world.threads(_project_id(query))
 
     async def _query_catalog(self, query: KernelQuery) -> dict:
-        workspace = self._world.project(_project_id(query))["root"]
-        return await self._require_runtime().recognize(workspace)
+        return await self._runtime_catalog(_project_id(query))
 
     async def _query_session(self, query: KernelQuery) -> dict:
         return await self._require_runtime().inspect(query.values["session_id"])

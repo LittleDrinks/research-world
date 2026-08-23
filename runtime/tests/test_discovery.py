@@ -52,7 +52,7 @@ async def test_catalog_contains_only_detected_workspace_assets(tmp_path, monkeyp
 
     value = await Runtime(tmp_path / "data").recognize(str(tmp_path))
 
-    assert set(value) == {"endpoints", "models", "skills", "tools"}
+    assert set(value) == {"endpoints", "models", "skills", "tools", "presets"}
     assert {item["id"] for item in value["endpoints"]} >= {"openai-compatible"}
     assert {item["id"] for item in value["models"]} >= {"qwen-test"}
     assert all(set(item) == {"id", "endpoint"} for item in value["models"])
@@ -69,3 +69,40 @@ async def test_catalog_contains_only_detected_workspace_assets(tmp_path, monkeyp
         set(item) == {"id", "name", "description", "source", "status"}
         for item in tools.values()
     )
+
+
+async def test_catalog_lists_unavailable_lean4_in_math_preset(tmp_path, monkeypatch):
+    monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
+    monkeypatch.setenv("RUNTIME_API_KEY", "secret")
+    monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
+
+    value = await Runtime(tmp_path / "data").recognize(str(tmp_path))
+
+    presets = {item["id"]: item for item in value["presets"]}
+    preset = presets["math-proof"]
+    assert preset["spec"]["tools"] == ["lean4"]
+    assert preset["tools"] == [
+        {"id": "lean4", "status": "unavailable", "reason": "not_installed"}
+    ]
+    assert set(preset) == {"id", "name", "description", "spec", "tools"}
+
+
+async def test_preset_tool_status_follows_adapter_readiness(tmp_path, monkeypatch):
+    import sys
+
+    from runtime.adapters import parse_definition
+
+    monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
+    monkeypatch.setenv("RUNTIME_API_KEY", "secret")
+    monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
+    definition = parse_definition(
+        {"id": "lean4", "transport": "stdio", "command": sys.executable},
+        "runtime",
+    )
+    runtime = Runtime(tmp_path / "data", tool_definitions=[definition])
+
+    value = await runtime.recognize(str(tmp_path))
+
+    preset = {item["id"]: item for item in value["presets"]}["math-proof"]
+    assert preset["tools"] == [{"id": "lean4", "status": "ready"}]
+    assert sys.executable not in json.dumps(preset)

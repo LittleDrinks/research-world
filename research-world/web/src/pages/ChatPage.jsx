@@ -5,6 +5,7 @@ import { createThread, getThread, pinNode, restartThread, sendPrompt } from "../
 import { EmptyState } from "../components/bits";
 import { Composer } from "../components/chat/Composer";
 import { MessageList } from "../components/chat/MessageList";
+import { ProfileDraftButton, ProfileDraftCard } from "../components/chat/ProfileDraft";
 import { ResearchControls } from "../components/chat/ResearchControls";
 import { useWorld } from "../context/WorldContext";
 import "../chat.css";
@@ -124,6 +125,7 @@ function ThreadView({ threadId }) {
   const { specInvalid, flagSpecInvalid, restart } = useRestart(threadId, setDetail);
   const { sending, streaming, pending, send } = useSend(threadId, setDetail, flagSpecInvalid);
   const pin = usePin(threadId, setDetail);
+  const [draft, setDraft] = useState(null);
   if (failed) return <ThreadFailed onRetry={retry} />;
   if (!detail) return <div className="page-loading">正在载入 Thread...</div>;
   const messages = [...(detail.runtime?.messages || [])];
@@ -132,8 +134,10 @@ function ThreadView({ threadId }) {
     <ThreadHeader detail={detail} sending={sending} onRestart={restart} />
     <div className="chat-scroll"><MessageList messages={messages} streaming={sending ? streaming : ""} /></div>
     {specInvalid && <SpecInvalidNotice onRestart={restart} />}
+    {draft && <ProfileDraftCard key={draft.nonce} draft={draft} onCancel={() => setDraft(null)} />}
     <Composer pinnedNodes={detail.nodes} sending={sending} onSend={send} onPin={pin}
-      accessory={<ResearchControls thread={detail} runs={threadRuns(data.runs, detail)} />} /></section>;
+      accessory={<><ResearchControls thread={detail} runs={threadRuns(data.runs, detail)} />
+        <ProfileDraftButton onDraft={(value) => setDraft({ ...value, nonce: Date.now() })} /></>} /></section>;
 }
 
 

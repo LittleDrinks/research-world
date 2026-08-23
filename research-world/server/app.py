@@ -188,19 +188,32 @@ def agent_routes(app, kernel) -> None:
     async def all_agents():
         return await kernel.query(KernelQuery("agents"))
 
-    @app.post("/api/v1/agents", status_code=201)
-    async def create_agent(request: Request):
-        values = {"value": await request.json()}
-        return await kernel.command(KernelCommand("create_agent", values=values))
-
     @app.get("/api/v1/agents/{agent_id}")
     async def agent(agent_id: str):
         return await kernel.query(KernelQuery("agent", values={"agent_id": agent_id}))
 
+    agent_command_routes(app, kernel)
+
+
+def agent_command_routes(app, kernel) -> None:
+    @app.post("/api/v1/agents", status_code=201)
+    async def create_agent(request: Request, project_id: str):
+        values = {"value": await request.json()}
+        command = KernelCommand("create_agent", project_id=project_id, values=values)
+        return await kernel.command(command)
+
+    @app.post("/api/v1/projects/{project_id}/agent-drafts", status_code=201)
+    async def draft_agent(project_id: str, request: Request):
+        return await kernel.command(
+            KernelCommand("draft_agent", project_id, await request.json())
+        )
+
     @app.put("/api/v1/agents/{agent_id}")
-    async def save_agent(agent_id: str, request: Request):
+    async def save_agent(agent_id: str, request: Request, project_id: str):
         values = {"agent_id": agent_id, "value": await request.json()}
-        return await kernel.command(KernelCommand("save_agent", values=values))
+        return await kernel.command(
+            KernelCommand("save_agent", project_id=project_id, values=values)
+        )
 
 
 def pipeline_definition_routes(app, kernel) -> None:

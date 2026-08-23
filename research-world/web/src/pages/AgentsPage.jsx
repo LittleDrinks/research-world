@@ -1,9 +1,10 @@
 import { Bot, RefreshCw, Save } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { getCatalog, saveAgent } from "../api";
 import { EmptyState } from "../components/bits";
 import { CapabilityPicker } from "../components/agents/CapabilityPicker";
+import { NewAgentDialog } from "../components/agents/NewAgentDialog";
 import { useWorld } from "../context/WorldContext";
 import { AGENT_OPTION_DEFAULTS } from "../utils/agents";
 import { REASONING_EFFORTS } from "../utils/labels";
@@ -53,7 +54,7 @@ function useAgentForm(agent) {
   const patchOption = (key, value) => setForm((current) => ({ ...current, options: { ...current.options, [key]: value } }));
   const save = async () => {
     setState("saving");
-    try { await saveAgent(agent.id, agentPayload(form)); await refresh(projectId); setState("saved"); }
+    try { await saveAgent(agent.id, projectId, agentPayload(form)); await refresh(projectId); setState("saved"); }
     catch (error) { setError(error.message); setState(""); }
   };
   return { ...catalogState, form, patch, patchOption, state, save };
@@ -61,15 +62,37 @@ function useAgentForm(agent) {
 
 
 function AgentEditor({ agent }) {
+  const { projectId, refresh } = useWorld();
+  const navigate = useNavigate();
+  const [preset, setPreset] = useState(null);
   const { catalog, failed, retry, form, patch, patchOption, state, save } = useAgentForm(agent);
   const issue = catalogIssue(form, catalog);
+  const created = async (value) => { await refresh(projectId); navigate(`/agents/${encodeURIComponent(value.id)}`); };
   return <section className="agents-page"><div className="agent-form">
+    <PresetPanel catalog={catalog} onApply={setPreset} />
     <header className="agent-form-header"><h1>{form.name || form.id}</h1><span className="mono">{form.id}</span></header>
     {failed ? <CatalogFailure message={failed} retry={retry} />
       : !catalog ? <p className="record-empty">正在载入 runtime catalog...</p>
       : <CatalogFields form={form} patch={patch} patchOption={patchOption} catalog={catalog} />}</div>
     <footer className="agent-form-footer"><span>{issue || (state === "saved" ? "已保存" : state === "saving" ? "保存中..." : "")}</span>
-      <button className="button primary" disabled={!catalog || Boolean(issue) || state === "saving"} onClick={save}><Save size={15} />保存</button></footer></section>;
+      <button className="button primary" disabled={!catalog || Boolean(issue) || state === "saving"} onClick={save}><Save size={15} />保存</button></footer>
+    <NewAgentDialog open={Boolean(preset)} preset={preset} onClose={() => setPreset(null)} done={created} /></section>;
+}
+
+
+function PresetPanel({ catalog, onApply }) {
+  const presets = catalog?.presets || [];
+  if (!presets.length) return null;
+  return <section className="preset-panel" aria-label="Profile Presets"><h2>Profile Presets</h2>
+    {presets.map((preset) => <PresetRow key={preset.id} preset={preset} onApply={() => onApply(preset)} />)}</section>;
+}
+
+
+function PresetRow({ preset, onApply }) {
+  const tools = preset.tools.map((tool) => `${tool.id}（${tool.status}）`).join("、") || "无";
+  return <div className="preset-row"><div className="preset-info"><b>{preset.name}</b><span className="mono">{preset.id}</span>
+    <p>{preset.description}</p><small>推荐 Tool：{tools}</small></div>
+    <button className="button secondary" onClick={onApply}>应用为草稿</button></div>;
 }
 
 
