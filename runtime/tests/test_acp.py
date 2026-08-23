@@ -1,5 +1,4 @@
 import json
-import sys
 
 import pytest
 from acp import (
@@ -91,7 +90,7 @@ async def test_acp_is_the_runtime_transport(tmp_path, monkeypatch):
 
 async def test_graph_query_crosses_the_client_boundary(tmp_path):
     client = ProjectClient()
-    async with ToolBox(tmp_path, {}, ("graph_query",), [], client) as tools:
+    async with ToolBox(tmp_path, {}, ("graph_query",), {}, client) as tools:
         content, failed = await tools.call(
             "session", "graph_query", '{"action":"get","node_id":"D-008"}'
         )
@@ -102,7 +101,7 @@ async def test_graph_query_crosses_the_client_boundary(tmp_path):
 async def test_report_validate_crosses_the_client_boundary(tmp_path):
     client = KernelClient()
     facts = [{"text": "Result", "claim_id": "claim:1", "source_ids": ["S-1"]}]
-    async with ToolBox(tmp_path, {}, ("report_validate",), [], client) as tools:
+    async with ToolBox(tmp_path, {}, ("report_validate",), {}, client) as tools:
         content, failed = await tools.call(
             "session",
             "report_validate",
@@ -117,7 +116,7 @@ async def test_report_validate_crosses_the_client_boundary(tmp_path):
 async def test_report_validate_rejects_caller_readiness(tmp_path):
     client = KernelClient()
     values = {"facts": [], "endpoint_ready": True}
-    async with ToolBox(tmp_path, {}, ("report_validate",), [], client) as tools:
+    async with ToolBox(tmp_path, {}, ("report_validate",), {}, client) as tools:
         content, failed = await tools.call(
             "session", "report_validate", json.dumps(values)
         )
@@ -130,7 +129,7 @@ async def test_report_validate_rejects_caller_readiness(tmp_path):
 async def test_export_bibtex_crosses_the_client_boundary(tmp_path):
     client = KernelClient()
     artifact_id = "artifact:" + "a" * 64
-    async with ToolBox(tmp_path, {}, ("export_bibtex",), [], client) as tools:
+    async with ToolBox(tmp_path, {}, ("export_bibtex",), {}, client) as tools:
         content, failed = await tools.call(
             "session", "export_bibtex", json.dumps({"artifact_id": artifact_id})
         )
@@ -142,7 +141,7 @@ async def test_export_bibtex_crosses_the_client_boundary(tmp_path):
 
 async def test_report_projection_crosses_the_client_boundary(tmp_path):
     client = KernelClient()
-    async with ToolBox(tmp_path, {}, ("report_projection",), [], client) as tools:
+    async with ToolBox(tmp_path, {}, ("report_projection",), {}, client) as tools:
         content, failed = await tools.call("session", "report_projection", "{}")
 
     assert failed is False
@@ -153,7 +152,7 @@ async def test_report_projection_crosses_the_client_boundary(tmp_path):
 async def test_submit_observation_crosses_the_client_boundary(tmp_path):
     client = KernelClient()
     value = observation()
-    async with ToolBox(tmp_path, {}, ("submit_observation",), [], client) as tools:
+    async with ToolBox(tmp_path, {}, ("submit_observation",), {}, client) as tools:
         content, failed = await tools.call(
             "session", "submit_observation", json.dumps(value)
         )
@@ -163,35 +162,31 @@ async def test_submit_observation_crosses_the_client_boundary(tmp_path):
     assert client.calls == [("research/submit_observation", value)]
 
 
-def test_kernel_tools_are_exposed_only_when_selected(tmp_path):
-    selected = ToolBox(
-        tmp_path,
-        {},
-        ("report_projection", "report_validate", "submit_observation"),
-        [],
-        None,
-    )
-    omitted = ToolBox(tmp_path, {}, (), [], None)
+async def test_kernel_tools_are_exposed_only_when_selected(tmp_path):
+    async with ToolBox(
+        tmp_path, {}, ("report_projection", "report_validate", "submit_observation"), {}, None
+    ) as selected:
+        selected_names = tool_names(selected)
+    async with ToolBox(tmp_path, {}, (), {}, None) as omitted:
+        omitted_names = tool_names(omitted)
 
-    assert "report_projection" in tool_names(selected)
-    assert "report_validate" in tool_names(selected)
-    assert "submit_observation" in tool_names(selected)
-    assert "report_projection" not in tool_names(omitted)
-    assert "report_validate" not in tool_names(omitted)
-    assert "submit_observation" not in tool_names(omitted)
+    assert "report_projection" in selected_names
+    assert "report_validate" in selected_names
+    assert "submit_observation" in selected_names
+    assert "report_projection" not in omitted_names
+    assert "report_validate" not in omitted_names
+    assert "submit_observation" not in omitted_names
 
 
-async def test_connector_call_without_kernel_client_fails_explicitly(tmp_path):
-    tools = ToolBox(tmp_path, {}, (), [], None)
-    tools.mcp = ConnectorResult()
-
-    content, failed = await tools.call("session", "mcp__db__query", "{}")
+async def test_external_call_without_kernel_client_fails_explicitly(tmp_path):
+    async with ToolBox(tmp_path, {}, ("db",), {"db": FakeAdapter()}, None) as tools:
+        content, failed = await tools.call("session", "tool__db__query", "{}")
 
     assert failed is True
     assert "client does not provide artifact capture" in content
 
 
-async def test_runtime_extensions_register_connector_and_embed(tmp_path):
+async def test_runtime_extension_embed(tmp_path):
     runtime = Runtime(
         tmp_path / "data",
         [
@@ -205,23 +200,11 @@ async def test_runtime_extensions_register_connector_and_embed(tmp_path):
     )
     agent = RuntimeAgent(runtime)
 
-    connector = await agent.ext_method(
-        "runtime/connectors/register",
-        {
-            "connector": {
-                "id": "lean4",
-                "name": "Lean 4",
-                "transport": "stdio",
-                "command": sys.executable,
-            }
-        },
-    )
     vectors = await agent.ext_method(
         "runtime/embed",
         {"endpoint": "embedding", "model": "embed-model", "texts": ["proof"]},
     )
 
-    assert connector["id"] == "lean4"
     assert vectors == {"value": [[0.0]]}
 
 
@@ -238,13 +221,7 @@ async def test_runtime_extension_validates_agent_spec(tmp_path):
 
 @pytest.mark.parametrize(
     ("method", "params"),
-    [
-        ("runtime/agents/validate", {"agent_spec": {"id": "bad"}}),
-        (
-            "runtime/connectors/register",
-            {"connector": {"id": "lean4", "transport": "http", "url": "bad"}},
-        ),
-    ],
+    [("runtime/agents/validate", {"agent_spec": {"id": "bad"}})],
 )
 async def test_runtime_user_input_errors_cross_acp_as_invalid_params(
     tmp_path, method, params
@@ -316,13 +293,25 @@ class KernelClient:
         raise AssertionError(method)
 
 
-class ConnectorResult:
-    def __init__(self):
-        self.names = {"mcp__db__query": ("db", "query")}
-        self.specs = []
+class FakeAdapter:
+    def inspect(self):
+        return {"id": "db", "name": "DB", "description": "", "source": "test", "status": "ready"}
 
-    async def call(self, name, values):
+    async def open(self):
+        return FakeBound()
+
+
+class FakeBound:
+    def __init__(self):
+        self.specs = [
+            {"type": "function", "function": {"name": "tool__db__query", "parameters": {}}}
+        ]
+
+    async def invoke(self, operation, values, session_id=""):
         return '[{"type":"text","text":"result"}]', False
+
+    async def close(self):
+        return None
 
 
 def tool_names(tools):
@@ -348,3 +337,49 @@ def valid_agent_spec():
         "model": "embed-model",
         "instructions": "Use evidence.",
     }
+
+
+async def test_toolbox_rolls_back_opened_tools_in_reverse_order(tmp_path):
+    events = []
+    adapters = {
+        "a": TrackAdapter("a", events),
+        "b": TrackAdapter("b", events),
+        "c": FailingAdapter("c", events),
+        "d": TrackAdapter("d", events),
+    }
+
+    with pytest.raises(RuntimeError, match="open failed: c"):
+        async with ToolBox(tmp_path, {}, ("a", "b", "c", "d"), adapters, None):
+            pass
+
+    assert events == ["open:a", "open:b", "open:c", "close:b", "close:a"]
+
+
+class TrackAdapter:
+    def __init__(self, tool_id, events):
+        self.tool_id = tool_id
+        self.events = events
+
+    async def open(self):
+        self.events.append(f"open:{self.tool_id}")
+        return TrackBound(self.tool_id, self.events)
+
+
+class TrackBound:
+    def __init__(self, tool_id, events):
+        self.tool_id = tool_id
+        self.events = events
+        self.specs = []
+
+    async def close(self):
+        self.events.append(f"close:{self.tool_id}")
+
+
+class FailingAdapter:
+    def __init__(self, tool_id, events):
+        self.tool_id = tool_id
+        self.events = events
+
+    async def open(self):
+        self.events.append(f"open:{self.tool_id}")
+        raise RuntimeError(f"open failed: {self.tool_id}")

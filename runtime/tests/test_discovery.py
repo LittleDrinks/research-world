@@ -1,6 +1,6 @@
 import json
 
-from runtime.connectors import discover_connectors
+from runtime.adapters import discover_adapters
 from runtime.service import Runtime
 from runtime.skills import discover_skills
 
@@ -18,7 +18,7 @@ def test_discovers_skill_frontmatter(tmp_path):
     assert skills["evidence-review"].body() == "Read claims."
 
 
-def test_discovers_mcp_without_exposing_secrets(tmp_path, monkeypatch):
+def test_discovers_workspace_tool_without_exposing_secrets(tmp_path, monkeypatch):
     monkeypatch.setenv("SEARCH_TOKEN", "secret")
     tmp_path.joinpath(".mcp.json").write_text(
         json.dumps(
@@ -34,18 +34,12 @@ def test_discovers_mcp_without_exposing_secrets(tmp_path, monkeypatch):
         )
     )
 
-    connector = discover_connectors(tmp_path)["search"]
+    adapter = discover_adapters(tmp_path)["search"]
 
-    public = connector.public()
-    assert set(public) == {
-        "id",
-        "name",
-        "description",
-        "transport",
-        "source",
-        "available",
-    }
+    public = adapter.inspect()
+    assert set(public) == {"id", "name", "description", "source", "status"}
     assert public["source"] == "workspace"
+    assert public["status"] == "ready"
     assert "https://mcp.test" not in json.dumps(public)
     assert "SEARCH_TOKEN" not in json.dumps(public)
     assert str(tmp_path) not in json.dumps(public)
@@ -58,11 +52,20 @@ async def test_catalog_contains_only_detected_workspace_assets(tmp_path, monkeyp
 
     value = await Runtime(tmp_path / "data").recognize(str(tmp_path))
 
-    assert set(value) == {"endpoints", "models", "skills", "tools", "connectors"}
+    assert set(value) == {"endpoints", "models", "skills", "tools"}
     assert {item["id"] for item in value["endpoints"]} >= {"openai-compatible"}
     assert {item["id"] for item in value["models"]} >= {"qwen-test"}
     assert all(set(item) == {"id", "endpoint"} for item in value["models"])
-    assert "report_projection" in {item["id"] for item in value["tools"]}
-    assert "report_validate" in {item["id"] for item in value["tools"]}
-    assert "export_bibtex" in {item["id"] for item in value["tools"]}
-    assert "submit_observation" in {item["id"] for item in value["tools"]}
+    tools = {item["id"]: item for item in value["tools"]}
+    for tool_id in (
+        "report_projection",
+        "report_validate",
+        "export_bibtex",
+        "submit_observation",
+    ):
+        assert tool_id in tools
+    assert all(item["status"] == "ready" for item in tools.values())
+    assert all(
+        set(item) == {"id", "name", "description", "source", "status"}
+        for item in tools.values()
+    )

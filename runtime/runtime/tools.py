@@ -6,8 +6,6 @@ from typing import Self
 
 from acp.interfaces import Client
 
-from .connectors import Connector
-from .mcp_tools import McpTools
 from .skills import Skill
 
 READ_SKILL = {
@@ -169,124 +167,232 @@ BUILTINS = {
     "read_file": READ_FILE,
     "write_file": WRITE_FILE,
 }
+BUILTIN_NAMES = {
+    "read_skill": "读取 Skill",
+    "read_resource": "读取引用节点",
+    "graph_query": "查询研究图谱",
+    "report_projection": "读取报告投影",
+    "report_validate": "校验科研报告",
+    "export_bibtex": "导出 BibTeX",
+    "submit_observation": "提交人工观测",
+    "read_file": "读取工作区文件",
+    "write_file": "写入工作区文件",
+}
+
+
+class BuiltinAdapter:
+    """ToolAdapter seam：内置函数投影为单 operation 的 Tool。"""
+
+    def __init__(self, tool_id: str):
+        self.tool_id = tool_id
+
+    def inspect(self) -> dict:
+        spec = BUILTINS[self.tool_id]["function"]
+        return {
+            "id": self.tool_id,
+            "name": BUILTIN_NAMES[self.tool_id],
+            "description": spec["description"],
+            "source": "runtime",
+            "status": "ready",
+        }
+
+    async def open(self, workspace, skills, client) -> BoundBuiltin:
+        return BoundBuiltin(self.tool_id, workspace, skills, client)
+
+
+class BoundBuiltin:
+    def __init__(self, tool_id: str, workspace, skills, client):
+        self.tool_id = tool_id
+        self.workspace = Path(workspace).resolve()
+        self.skills = skills
+        self.client = client
+        self.specs = [BUILTINS[tool_id]]
+
+    async def close(self) -> None:
+        return None
+
+    async def invoke(self, operation: str, values: dict, session_id: str) -> str:
+        return await _HANDLERS[self.tool_id](self, session_id, values)
 
 
 class ToolBox:
+    """Session 级 Tool 聚合：统一打开、路由与 Artifact capture。"""
+
     def __init__(
         self,
         workspace: Path,
         skills: dict[str, Skill],
         selected_tools: tuple[str, ...],
-        servers: list[Connector],
+        adapters: dict,
         client: Client | None,
     ):
-        self.workspace = workspace.resolve()
+        self.workspace = workspace
         self.skills = skills
-        self.selected_tools = selected_tools
         self.client = client
-        self.mcp = McpTools(servers)
+        self.selected = _with_skill_reader(selected_tools, skills)
+        self.adapters = adapters
+        self._bound: list = []
+        self._routes: dict[str, object] = {}
+        self._external: set[str] = set()
 
     async def __aenter__(self) -> Self:
-        await self.mcp.__aenter__()
+        try:
+            for tool_id in self.selected:
+                await self._open(tool_id)
+        except BaseException:  # noqa: BLE001 - open failure rolls back opened tools
+            await self._rollback()
+            raise
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
-        return await self.mcp.__aexit__(exc_type, exc, tb)
+        for bound in reversed(self._bound):
+            await bound.close()
 
     def specs(self) -> list[dict]:
-        selected = list(self.selected_tools)
-        if self.skills and "read_skill" not in selected:
-            selected.append("read_skill")
-        values = [BUILTINS[name] for name in selected if name in BUILTINS]
-        return [*values, *self.mcp.specs]
+        return [spec for bound in self._bound for spec in bound.specs]
+
+    def plan(self) -> list[dict]:
+        return [
+            {"id": bound.tool_id, "operations": [s["function"] for s in bound.specs]}
+            for bound in self._bound
+        ]
+
+    async def _rollback(self) -> None:
+        for bound in reversed(self._bound):
+            await bound.close()
 
     async def call(
         self, session_id: str, name: str, arguments: str
     ) -> tuple[str, bool]:
         try:
             values = json.loads(arguments or "{}")
-            return await self._call(session_id, name, values), False
+            return await self._invoke(session_id, name, values), False
         except Exception as error:  # noqa: BLE001 - tool errors become model-visible results.
             return f"{type(error).__name__}: {error}", True
 
-    async def _call(self, session_id: str, name: str, values: dict) -> str:
-        if name in self.mcp.names:
-            return await self._call_connector(name, values)
-        return await getattr(self, f"_{name}")(session_id, values)
+    async def _open(self, tool_id: str) -> None:
+        if tool_id in BUILTINS:
+            adapter = BuiltinAdapter(tool_id)
+            bound = await adapter.open(self.workspace, self.skills, self.client)
+            self._bind(bound, external=False)
+            return
+        bound = await self.adapters[tool_id].open()
+        self._bind(bound, external=True)
 
-    async def _call_connector(self, name: str, values: dict) -> str:
+    def _bind(self, bound, external: bool) -> None:
+        self._bound.append(bound)
+        for spec in bound.specs:
+            name = spec["function"]["name"]
+            self._routes[name] = bound
+            if external:
+                self._external.add(name)
+
+    async def _invoke(self, session_id: str, name: str, values: dict) -> str:
+        if name not in self._routes:
+            raise KeyError(f"unknown tool operation: {name}")
+        if name in self._external:
+            return await self._invoke_external(name, values)
+        return await self._routes[name].invoke(name, values, session_id)
+
+    async def _invoke_external(self, name: str, values: dict) -> str:
         if self.client is None:
             raise RuntimeError("client does not provide artifact capture")
-        content, failed = await self.mcp.call(name, values)
+        content, failed = await self._routes[name].invoke(name, values)
         if failed:
             raise RuntimeError(content)
-        capture = {
-            "content": content,
-            "media_type": _media_type(content),
-            "connector_tool": name,
-        }
+        capture = {"content": content, "media_type": _media_type(content), "tool": name}
         artifact = await self.client.ext_method("research/capture_artifact", capture)
         return _captured_result(artifact["id"], content, capture["media_type"])
 
-    async def _read_skill(self, session_id: str, values: dict) -> str:
-        return self.skills[values["name"]].body()
 
-    async def _read_resource(self, session_id: str, values: dict) -> str:
-        if self.client is None:
-            raise RuntimeError("client does not provide project resources")
-        result = await self.client.read_text_file(
-            session_id=session_id, path=f"@{values['node_id'].lstrip('@')}"
-        )
-        return result.content
+async def _read_skill(bound, session_id, values):
+    return bound.skills[values["name"]].body()
 
-    async def _graph_query(self, session_id: str, values: dict) -> str:
-        if self.client is None:
-            raise RuntimeError("client does not provide a research graph")
-        result = await self.client.ext_method("research/graph_query", values)
-        return json.dumps(result, ensure_ascii=False)
 
-    async def _report_validate(self, session_id: str, values: dict) -> str:
-        if self.client is None:
-            raise RuntimeError("client does not provide report validation")
-        if set(values) != {"facts"}:
-            raise ValueError("unexpected report validation fields")
-        result = await self.client.ext_method("research/report_validate", values)
-        return json.dumps(result, ensure_ascii=False)
+async def _read_resource(bound, session_id, values):
+    if bound.client is None:
+        raise RuntimeError("client does not provide project resources")
+    result = await bound.client.read_text_file(
+        session_id=session_id, path=f"@{values['node_id'].lstrip('@')}"
+    )
+    return result.content
 
-    async def _export_bibtex(self, session_id: str, values: dict) -> str:
-        if self.client is None:
-            raise RuntimeError("client does not provide BibTeX export")
-        if set(values) != {"artifact_id"}:
-            raise ValueError("unexpected BibTeX export fields")
-        result = await self.client.ext_method("research/export_bibtex", values)
-        return json.dumps(result, ensure_ascii=False)
 
-    async def _report_projection(self, session_id: str, values: dict) -> str:
-        if self.client is None:
-            raise RuntimeError("client does not provide report projection")
-        result = await self.client.ext_method("research/report_projection", values)
-        return json.dumps(result, ensure_ascii=False)
+async def _graph_query(bound, session_id, values):
+    if bound.client is None:
+        raise RuntimeError("client does not provide a research graph")
+    result = await bound.client.ext_method("research/graph_query", values)
+    return json.dumps(result, ensure_ascii=False)
 
-    async def _submit_observation(self, session_id: str, values: dict) -> str:
-        if self.client is None:
-            raise RuntimeError("client does not provide observation submission")
-        result = await self.client.ext_method("research/submit_observation", values)
-        return json.dumps(result, ensure_ascii=False)
 
-    async def _read_file(self, session_id: str, values: dict) -> str:
-        return self._path(values["path"]).read_text(encoding="utf-8")
+async def _report_validate(bound, session_id, values):
+    if bound.client is None:
+        raise RuntimeError("client does not provide report validation")
+    if set(values) != {"facts"}:
+        raise ValueError("unexpected report validation fields")
+    result = await bound.client.ext_method("research/report_validate", values)
+    return json.dumps(result, ensure_ascii=False)
 
-    async def _write_file(self, session_id: str, values: dict) -> str:
-        path = self._path(values["path"])
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(values["content"], encoding="utf-8")
-        return str(path.relative_to(self.workspace))
 
-    def _path(self, value: str) -> Path:
-        path = (self.workspace / value).resolve()
-        if not path.is_relative_to(self.workspace):
-            raise ValueError("path escapes workspace")
-        return path
+async def _export_bibtex(bound, session_id, values):
+    if bound.client is None:
+        raise RuntimeError("client does not provide BibTeX export")
+    if set(values) != {"artifact_id"}:
+        raise ValueError("unexpected BibTeX export fields")
+    result = await bound.client.ext_method("research/export_bibtex", values)
+    return json.dumps(result, ensure_ascii=False)
+
+
+async def _report_projection(bound, session_id, values):
+    if bound.client is None:
+        raise RuntimeError("client does not provide report projection")
+    result = await bound.client.ext_method("research/report_projection", values)
+    return json.dumps(result, ensure_ascii=False)
+
+
+async def _submit_observation(bound, session_id, values):
+    if bound.client is None:
+        raise RuntimeError("client does not provide observation submission")
+    result = await bound.client.ext_method("research/submit_observation", values)
+    return json.dumps(result, ensure_ascii=False)
+
+
+async def _read_file(bound, session_id, values):
+    return _path(bound, values["path"]).read_text(encoding="utf-8")
+
+
+async def _write_file(bound, session_id, values):
+    path = _path(bound, values["path"])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(values["content"], encoding="utf-8")
+    return str(path.relative_to(bound.workspace))
+
+
+_HANDLERS = {
+    "read_skill": _read_skill,
+    "read_resource": _read_resource,
+    "graph_query": _graph_query,
+    "report_validate": _report_validate,
+    "export_bibtex": _export_bibtex,
+    "report_projection": _report_projection,
+    "submit_observation": _submit_observation,
+    "read_file": _read_file,
+    "write_file": _write_file,
+}
+
+
+def _with_skill_reader(selected, skills) -> list[str]:
+    values = list(selected)
+    if skills and "read_skill" not in values:
+        values.append("read_skill")
+    return values
+
+
+def _path(bound, value: str) -> Path:
+    path = (bound.workspace / value).resolve()
+    if not path.is_relative_to(bound.workspace):
+        raise ValueError("path escapes workspace")
+    return path
 
 
 def _media_type(content: str) -> str:

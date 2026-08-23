@@ -23,12 +23,6 @@
       "uniqueItems": true,
       "default": []
     },
-    "connectors": {
-      "type": "array",
-      "items": {"type": "string", "minLength": 1, "pattern": "\\S"},
-      "uniqueItems": true,
-      "default": []
-    },
     "options": {
       "type": "object",
       "additionalProperties": false,

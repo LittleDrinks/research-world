@@ -26,6 +26,10 @@ class CapabilityNotFound(RuntimeError):
     pass
 
 
+class ToolPlanDrift(SessionSpecInvalid):
+    pass
+
+
 @dataclass(frozen=True)
 class AgentOptions:
     reasoning_effort: str = "medium"
@@ -43,7 +47,6 @@ class AgentSpec:
     instructions: str
     skills: tuple[str, ...] = ()
     tools: tuple[str, ...] = ()
-    connectors: tuple[str, ...] = ()
     options: AgentOptions = field(default_factory=AgentOptions)
 
     @classmethod
@@ -54,9 +57,7 @@ class AgentSpec:
         if errors:
             raise RuntimeError(errors[0].message)
         options = AgentOptions(**value.get("options", {}))
-        arrays = {
-            key: tuple(value.get(key, [])) for key in ("skills", "tools", "connectors")
-        }
+        arrays = {key: tuple(value.get(key, [])) for key in ("skills", "tools")}
         return cls(
             **{key: value[key] for key in _required()}, **arrays, options=options
         )

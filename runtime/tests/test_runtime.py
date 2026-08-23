@@ -19,7 +19,7 @@ def spec(**values):
     return data
 
 
-@pytest.mark.parametrize("legacy", [{"runtime": "old"}, {"mcp_servers": []}])
+@pytest.mark.parametrize("legacy", [{"runtime": "old"}, {"mcp_servers": []}, {"connectors": ["lean4"]}])
 def test_agent_spec_rejects_legacy_fields(legacy):
     with pytest.raises(SpecError):
         AgentSpec.parse({**spec(), **legacy})
@@ -33,7 +33,7 @@ def test_agent_spec_rejects_legacy_fields(legacy):
         {"instructions": "\n\t"},
         {"runtime": "legacy"},
         {"options": {"max_rounds": 0}},
-        {"connectors": ["lean4", "lean4"]},
+        {"tools": ["graph_query", "graph_query"]},
     ],
 )
 def test_runtime_validates_agent_spec_with_the_canonical_schema(tmp_path, invalid):

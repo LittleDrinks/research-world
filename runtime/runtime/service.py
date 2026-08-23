@@ -5,13 +5,14 @@ import os
 import re
 import uuid
 from collections import defaultdict
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
 from acp.interfaces import Client
 
 from . import catalog
-from .connectors import ConnectorStore, discover_connectors
+from .adapters import ToolDefinition, discover_adapters
 from .endpoints import Endpoint, EndpointPool, load_endpoints
 from .skills import Skill, discover_skills, skill_index
 from .tools import ToolBox
@@ -21,6 +22,7 @@ from .types import (
     CapabilityNotFound,
     SessionNotFound,
     SessionSpecInvalid,
+    ToolPlanDrift,
 )
 from .types import RuntimeError as RuntimeInputError
 
@@ -30,23 +32,20 @@ class Runtime:
         self,
         data_root: Path | None = None,
         endpoints: list[Endpoint] | None = None,
+        tool_definitions: Iterable[ToolDefinition] = (),
     ):
         root = Path(data_root or os.getenv("RUNTIME_DATA", "./data"))
         self.trace = TraceStore(root / "sessions")
         values = endpoints if endpoints is not None else load_endpoints()
         self.endpoints = EndpointPool(values)
-        self.connectors = ConnectorStore(root / "connectors.json")
+        self.tool_definitions = tuple(tool_definitions)
         self._locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._cancelled: set[str] = set()
 
     async def recognize(self, workspace: str) -> dict:
-        registered = list(self.connectors.all().values())
-        return await catalog.discover(
-            _workspace(workspace), self.endpoints.values(), registered
-        )
-
-    def register_connector(self, value: dict[str, Any]) -> dict[str, Any]:
-        return self.connectors.register(value)
+        path = _workspace(workspace)
+        adapters = discover_adapters(path, self.tool_definitions)
+        return await catalog.discover(path, self.endpoints.values(), adapters)
 
     def validate_agent(self, value: dict[str, Any]) -> dict[str, bool]:
         AgentSpec.parse(value)
@@ -64,9 +63,17 @@ class Runtime:
             return {"session_id": session_id}
         recognized = await self.recognize(str(workspace))
         _validate_spec(spec, recognized)
-        meta = _session_meta(spec, workspace, value, _skill_snapshots(spec, workspace))
+        snapshots = _skill_snapshots(spec, workspace)
+        plan = await self._tool_plan(spec, workspace, snapshots)
+        meta = _session_meta(spec, workspace, value, snapshots, plan)
         self.trace.create(session_id, meta)
         return {"session_id": session_id}
+
+    async def _tool_plan(self, spec: AgentSpec, workspace: Path, snapshots) -> list:
+        skills = {value["id"]: _SnapshotSkill(value) for value in snapshots}
+        adapters = discover_adapters(workspace, self.tool_definitions)
+        async with ToolBox(workspace, skills, spec.tools, adapters, None) as tools:
+            return tools.plan()
 
     async def prompt(
         self,
@@ -113,10 +120,10 @@ class Runtime:
 
     async def _run_turn(self, session_id, turn_id, spec, meta, client, emit):
         skills = _skills_from_meta(meta)
-        servers = self._selected_connectors(spec, Path(meta["workspace"]))
-        async with ToolBox(
-            Path(meta["workspace"]), skills, spec.tools, servers, client
-        ) as tools:
+        workspace = Path(meta["workspace"])
+        adapters = discover_adapters(workspace, self.tool_definitions)
+        async with ToolBox(workspace, skills, spec.tools, adapters, client) as tools:
+            _require_frozen_plan(tools.plan(), meta.get("tool_plan"))
             return await self._rounds(session_id, turn_id, spec, meta, tools, emit)
 
     async def _rounds(self, session_id, turn_id, spec, meta, tools, emit):
@@ -208,11 +215,6 @@ class Runtime:
             raise SessionNotFound(session_id)
         return events
 
-    def _selected_connectors(self, spec: AgentSpec, workspace: Path):
-        registered = self.connectors.all().values()
-        available = discover_connectors(workspace, registered)
-        return [available[name] for name in spec.connectors]
-
 
 async def _ignore(text: str) -> None:
     return None
@@ -254,12 +256,12 @@ def _validate_spec(spec: AgentSpec, recognized: dict) -> None:
     model_pairs = {(item["endpoint"], item["id"]) for item in recognized["models"]}
     _require(spec.endpoint, endpoint_ids, "endpoint")
     _require((spec.endpoint, spec.model), model_pairs, "model")
-    for key in ("skills", "tools", "connectors"):
-        available = {
-            item["id"] for item in recognized[key] if item.get("available", True)
-        }
-        for value in getattr(spec, key):
-            _require(value, available, _capability_kind(key))
+    skills = {item["id"] for item in recognized["skills"]}
+    for value in spec.skills:
+        _require(value, skills, "skill")
+    ready = {item["id"] for item in recognized["tools"] if item["status"] == "ready"}
+    for value in spec.tools:
+        _require(value, ready, "tool")
 
 
 def _require(value, available, kind):
@@ -267,18 +269,20 @@ def _require(value, available, kind):
         raise CapabilityNotFound(f"{kind} is not available: {value}")
 
 
-def _capability_kind(key: str) -> str:
-    return key[:-1]
-
-
-def _session_meta(spec, workspace, value, skills):
+def _session_meta(spec, workspace, value, skills, tool_plan):
     return {
         "agent_spec": spec.snapshot(),
         "workspace": str(workspace),
         "parent": value.get("parent"),
         "mode": value.get("mode", "resume"),
         "skills": skills,
+        "tool_plan": tool_plan,
     }
+
+
+def _require_frozen_plan(current: list, frozen: list | None) -> None:
+    if current != frozen:
+        raise ToolPlanDrift("tool operations changed since launch; start a new session")
 
 
 def _skill_snapshots(spec: AgentSpec, workspace: Path):
