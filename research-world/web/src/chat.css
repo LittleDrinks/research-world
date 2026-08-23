@@ -18,11 +18,6 @@
 .inline-mention:hover { background: var(--accent-soft); }
 
 /* —— 研究运行卡 —— */
-.chat-runs { flex: 0 0 auto; overflow: visible; padding: 10px max(16px, calc((100% - 780px) / 2)) 4px; border-top: 1px solid var(--line); background: var(--app-panel); }
-.chat-runs-head { margin-bottom: 6px; }
-.run-section-toggle { width: 100%; display: flex; align-items: center; gap: 7px; padding: 4px 0; border: 0; color: var(--text-muted); background: transparent; font-size: 12px; font-weight: 650; text-align: left; cursor: pointer; }
-.run-section-toggle span { flex: 1; }
-.run-section-toggle em { color: var(--text-faint); font-style: normal; }
 .run-restore { padding: 4px 0; border: 0; color: var(--accent); background: transparent; font-size: 12px; cursor: pointer; }
 .run-card { margin-bottom: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-raised); overflow: hidden; }
 .run-card-head-row { display: flex; align-items: center; }
@@ -43,12 +38,20 @@
 .session-row > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* —— 启动控件 + 输入区 —— */
-.launch-control { display: flex; align-items: center; gap: 8px; padding: 8px max(16px, calc((100% - 780px) / 2)); border-top: 1px solid var(--line); background: var(--app-panel); }
-.launch-control select { max-width: 220px; min-height: 34px; font-size: 13px; }
+.launch-control { display: flex; align-items: center; gap: 8px; padding: 12px; border-bottom: 1px solid var(--line); }
+.launch-control select { min-width: 0; flex: 1; min-height: 34px; font-size: 13px; }
 .launch-control .button { min-height: 34px; font-size: 13px; }
 .spec-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px max(16px, calc((100% - 780px) / 2)); border-top: 1px solid var(--line); background: var(--app-panel); font-size: 13px; }
 .spec-notice .button { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; }
 .composer-wrap { position: relative; z-index: 20; flex: 0 0 auto; padding: 10px max(16px, calc((100% - 780px) / 2)) 14px; border-top: 1px solid var(--line); background: var(--app-topbar); }
+.composer-tools { height: 30px; display: flex; align-items: center; margin-bottom: 6px; }
+.research-controls { position: relative; }
+.composer-tool { height: 30px; display: inline-flex; align-items: center; gap: 6px; padding: 0 8px; border: 1px solid var(--line); border-radius: 7px; color: var(--text-muted); background: var(--surface-raised); font-size: 12px; cursor: pointer; }
+.composer-tool:hover, .composer-tool[aria-expanded="true"] { border-color: var(--line-strong); color: var(--text); background: var(--surface-muted); }
+.composer-tool em { min-width: 16px; color: var(--text-faint); font-style: normal; text-align: center; }
+.research-popover { position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 40; width: min(680px, calc(100vw - 32px)); max-height: min(560px, 68vh); display: grid; grid-template-rows: 42px auto minmax(0, 1fr); border: 1px solid var(--line); border-radius: 8px; background: var(--surface-raised); box-shadow: 0 16px 38px rgb(15 23 42 / .16); overflow: hidden; }
+.research-popover > header { display: flex; align-items: center; justify-content: space-between; padding: 0 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.research-popover-runs { min-height: 0; padding: 10px 12px; overflow-y: auto; overscroll-behavior: contain; }
 .composer { display: grid; grid-template-columns: minmax(0, 1fr) 40px; align-items: end; gap: 8px; }
 .composer textarea { min-height: 44px; max-height: 180px; resize: vertical; }
 .send-button { color: #fff; background: var(--accent); }
@@ -61,6 +64,7 @@
 
 @media (max-width: 640px) {
   .launch-control { flex-wrap: wrap; }
-  .launch-control select { max-width: 100%; flex: 1 1 140px; }
+  .launch-control select { flex: 1 1 140px; }
+  .research-popover { max-height: min(520px, 60vh); }
   .run-card-head em { display: none; }
 }

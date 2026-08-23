@@ -1,12 +1,11 @@
-import { ChevronDown, ChevronRight, MessagesSquare, Plus, RotateCcw } from "lucide-react";
+import { MessagesSquare, Plus, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { createThread, getThread, pinNode, restartThread, sendPrompt } from "../api";
 import { EmptyState } from "../components/bits";
 import { Composer } from "../components/chat/Composer";
-import { LaunchControl } from "../components/chat/LaunchControl";
 import { MessageList } from "../components/chat/MessageList";
-import { RunCard } from "../components/chat/RunCard";
+import { ResearchControls } from "../components/chat/ResearchControls";
 import { useWorld } from "../context/WorldContext";
 import "../chat.css";
 
@@ -131,11 +130,10 @@ function ThreadView({ threadId }) {
   if (pending) messages.push({ role: "user", content: pending });
   return <section className="chat-page">
     <ThreadHeader detail={detail} sending={sending} onRestart={restart} />
-    <div className="chat-scroll"><MessageList messages={messages} streaming={sending ? streaming : ""} />
-      <RunSection runs={threadRuns(data.runs, detail)} threadId={threadId} />
-      <LaunchControl thread={detail} /></div>
+    <div className="chat-scroll"><MessageList messages={messages} streaming={sending ? streaming : ""} /></div>
     {specInvalid && <SpecInvalidNotice onRestart={restart} />}
-    <Composer pinnedNodes={detail.nodes} sending={sending} onSend={send} onPin={pin} /></section>;
+    <Composer pinnedNodes={detail.nodes} sending={sending} onSend={send} onPin={pin}
+      accessory={<ResearchControls thread={detail} runs={threadRuns(data.runs, detail)} />} /></section>;
 }
 
 
@@ -143,22 +141,6 @@ function SpecInvalidNotice({ onRestart }) {
   return <div className="spec-notice" role="status">
     <span>此对话的 Agent 配置已变更，需要重启会话</span>
     <button className="button secondary" onClick={onRestart}><RotateCcw size={14} />重启会话</button></div>;
-}
-
-
-function RunSection({ runs, threadId }) {
-  const [open, setOpen] = useState(false);
-  const [hidden, setHidden] = useState(() => new Set());
-  if (!runs.length) return null;
-  const visible = runs.filter((run) => !hidden.has(run.id));
-  const Toggle = open ? ChevronDown : ChevronRight;
-  const hide = (runId) => setHidden((current) => new Set([...current, runId]));
-  const restore = () => setHidden(new Set());
-  return <section className="chat-runs"><header className="chat-runs-head">
-    <button className="run-section-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
-      <Toggle size={14} /><span>研究运行</span><em>{visible.length === runs.length ? runs.length : `${visible.length}/${runs.length}`}</em></button></header>
-    {open && visible.map((run) => <RunCard key={run.id} run={run} threadId={threadId} onDismiss={hide} />)}
-    {open && hidden.size > 0 && <button className="run-restore" onClick={restore}>恢复已移出的 {hidden.size} 项</button>}</section>;
 }
 
 

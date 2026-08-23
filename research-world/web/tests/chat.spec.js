@@ -68,11 +68,16 @@ test("uses one chat scroll container and keeps the composer reachable", async ({
   const messages = Array.from({ length: 30 }, (_, index) => ({ role: "assistant", content: `回复 ${index}` }));
   await mockChat(page, threadDetail({ runtime: { ...threadDetail().runtime, messages } }));
   await page.goto("/chat/thread%3At1");
-  await expect(page.locator(".chat-runs")).toBeVisible();
-  const overflow = await page.evaluate(() => Object.fromEntries([".chat-page", ".chat-scroll", ".message-list", ".chat-runs"]
+  await expect(page.locator(".chat-page")).toBeVisible();
+  await expect(page.locator(".chat-runs")).toHaveCount(0);
+  const overflow = await page.evaluate(() => Object.fromEntries([".chat-page", ".chat-scroll"]
     .map((selector) => [selector, getComputedStyle(document.querySelector(selector)).overflowY])));
-  expect(overflow).toEqual({ ".chat-page": "hidden", ".chat-scroll": "auto", ".message-list": "visible", ".chat-runs": "visible" });
+  expect(overflow).toEqual({ ".chat-page": "hidden", ".chat-scroll": "auto" });
   await expect.poll(() => page.locator(".chat-scroll").evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+  const scrollHeight = await page.locator(".chat-scroll").evaluate((element) => element.scrollHeight);
+  await page.getByRole("button", { name: "研究运行" }).click();
+  await expect(page.getByRole("dialog", { name: "研究运行与流程" })).toBeVisible();
+  expect(await page.locator(".chat-scroll").evaluate((element) => element.scrollHeight)).toBe(scrollHeight);
   const composer = await page.locator(".composer-wrap").boundingBox();
   expect(Math.abs(composer.y + composer.height - await page.evaluate(() => innerHeight))).toBeLessThanOrEqual(1);
 });
@@ -126,12 +131,42 @@ test("launches a pipeline explicitly with the thread id in the payload", async (
     return route.fulfill({ status: 201, json: run() });
   });
   await page.goto("/chat/thread%3At1");
+  await page.getByRole("button", { name: "研究运行" }).click();
   await page.getByLabel("选择流程").selectOption("research");
   await page.getByRole("button", { name: "启动流程" }).click();
   await expect.poll(() => request).toBeTruthy();
   expect(request.pipeline_id).toBe("research");
   expect(request.node_id).toBe("node:q");
   expect(request.payload.thread_id).toBe("thread:t1");
+});
+
+
+test("dismisses the research popover and restores trigger focus", async ({ page }) => {
+  await mockChat(page);
+  await page.goto("/chat/thread%3At1");
+  const trigger = page.getByRole("button", { name: "研究运行" });
+  await trigger.click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "研究运行与流程" })).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  await trigger.click();
+  await page.locator(".thread-header h1").click();
+  await expect(page.getByRole("dialog", { name: "研究运行与流程" })).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+});
+
+
+test("keeps long research runs inside the composer popover on mobile", async ({ page }) => {
+  const runs = Array.from({ length: 12 }, (_, index) => run({ id: `run:r${index}` }));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockBase(page, bootstrap({ runs }));
+  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill({ json: threadDetail() }));
+  await page.goto("/chat/thread%3At1");
+  await page.getByRole("button", { name: "研究运行" }).click();
+  await expect.poll(() => page.locator(".research-popover-runs").evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect(page.getByRole("button", { name: "发送" })).toBeVisible();
+  await page.screenshot({ path: "test-results/research-popover-mobile.png" });
 });
 
 

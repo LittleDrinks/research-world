@@ -44,7 +44,7 @@ function usePinning(onPin) {
 }
 
 
-export function Composer({ pinnedNodes, onSend, onPin, sending }) {
+export function Composer({ pinnedNodes, onSend, onPin, sending, accessory }) {
   const [draft, setDraft] = useState("");
   const { pinning, pin } = usePinning(onPin);
   const query = mentionQuery(draft);
@@ -58,6 +58,7 @@ export function Composer({ pinnedNodes, onSend, onPin, sending }) {
   return <div className="composer-wrap">
     {choices.length > 0 && <div className="mention-menu">{choices.map((node) =>
       <button key={node.id} onClick={() => choose(node)}><i className={`kind-dot kind-${node.kind}`} /><b className="mono">@{node.id}</b><span>{KIND_LABELS[node.kind]} · {node.title}</span></button>)}</div>}
+    {accessory && <div className="composer-tools">{accessory}</div>}
     <div className="composer"><textarea aria-label="消息" value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={keyDown}
       placeholder="发消息，输入 @ 引用节点" rows={3} />
       <button className="icon-button send-button" aria-label="发送" title={pinning ? "正在钉入节点" : "发送"} disabled={sending || pinning || !draft.trim()} onClick={submit}><SendHorizontal size={18} /></button></div></div>;
