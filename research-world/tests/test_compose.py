@@ -18,6 +18,17 @@ def test_only_runtime_receives_model_credentials():
             assert not {"RUNTIME_API_BASE", "RUNTIME_API_KEY"} & set(environment)
 
 
+def test_runtime_owns_endpoint_definitions_and_root_env():
+    services = compose()["services"]
+    assert services["runtime"]["env_file"] == ["../.env"]
+    assert "RUNTIME_ENDPOINTS" in services["runtime"]["environment"]
+    for name in ("control", "worker"):
+        environment = services[name]["environment"]
+        assert {"RW_EMBEDDING_ENDPOINT", "RW_EMBEDDING_MODEL"} <= set(environment)
+        assert not {"RUNTIME_ENDPOINTS", "RUNTIME_API_KEY"} & set(environment)
+        assert "env_file" not in services[name]
+
+
 def test_obsolete_harness_is_not_in_compose():
     value = compose()
     assert "harness" not in value["services"]

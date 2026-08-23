@@ -9,6 +9,8 @@ services:
       RW_AGENTS_ROOT: /app/agents
       RW_PIPELINES_ROOT: /app/pipelines
       RUNTIME_URL: http://runtime:8098
+      RW_EMBEDDING_ENDPOINT: ${RW_EMBEDDING_ENDPOINT:-openai-compatible}
+      RW_EMBEDDING_MODEL: ${RW_EMBEDDING_MODEL:-qwen3.7-text-embedding}
       RUNNER_CONTROLLER_URL: http://runner-controller:8096
     ports:
       - "8095:8095"
@@ -38,6 +40,7 @@ services:
       RW_AGENTS_ROOT: /app/agents
       RW_PIPELINES_ROOT: /app/pipelines
       RUNTIME_URL: http://runtime:8098
+      RW_EMBEDDING_ENDPOINT: ${RW_EMBEDDING_ENDPOINT:-openai-compatible}
       RW_EMBEDDING_MODEL: ${RW_EMBEDDING_MODEL:-qwen3.7-text-embedding}
       RUNNER_CONTROLLER_URL: http://runner-controller:8096
     volumes:
@@ -56,10 +59,14 @@ services:
     build:
       context: ..
       dockerfile: runtime/Dockerfile
+    env_file:
+      - ../.env
     environment:
       RUNTIME_API_BASE: ${baseurl:-}
       RUNTIME_API_KEY: ${apikey:-}
+      RUNTIME_ENDPOINTS: ${RUNTIME_ENDPOINTS:-}
       RUNTIME_MODEL: ${RW_MODEL_NAME:-qwen3.7-flash}
+      RUNTIME_EMBEDDING_MODEL: ${RW_EMBEDDING_MODEL:-qwen3.7-text-embedding}
       RUNTIME_DATA: /runtime-data
       RUNTIME_SKILLS_PATHS: /user-agent-skills:/codex-source/skills:/app/skills
       CODEX_SOURCE: /codex-source
