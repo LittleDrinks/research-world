@@ -1,9 +1,7 @@
-import { Activity, GitBranch, MessageSquare, Play } from "lucide-react";
+import { Activity, Check, Copy, GitBranch, Play } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { createThread } from "../api";
 import { useWorld } from "../context/WorldContext";
-import { nodeText, RUN_STATUS, shortId } from "../utils/labels";
+import { nodeText, RUN_STATUS } from "../utils/labels";
 
 
 const LABELS = { question: "问题", source: "来源", direction: "方向", experiment: "实验",
@@ -15,7 +13,7 @@ export function Inspector({ node, nodes, edges, run, onSelect, onStart, onOpen }
   if (!node) return <aside className="inspector inspector-empty">选择节点查看上下文。</aside>;
   return <aside className="inspector"><div className="inspector-scroll"><NodeHeader node={node} run={run} onStart={onStart} onOpen={onOpen} />
     <NodeRecord node={node} /><Relations node={node} nodes={nodes} edges={edges} onSelect={onSelect} />
-    <Claims node={node} /><Reviews node={node} />{node.life_state === "admitted" && <DiscussEntry node={node} />}</div></aside>;
+    <Claims node={node} /><Reviews node={node} />{node.life_state === "admitted" && <NodeIdEntry node={node} />}</div></aside>;
 }
 
 
@@ -109,29 +107,11 @@ function label(value) {
 }
 
 
-function useDiscuss(node) {
-  const { data, projectId, refresh, setError } = useWorld();
-  const navigate = useNavigate();
-  const [busy, setBusy] = useState(false);
-  const thread = data.threads.find((item) => item.nodes.some((pinned) => pinned.id === node.id));
-  const open = async () => {
-    if (thread) return navigate(`/chat/${encodeURIComponent(thread.id)}`);
-    setBusy(true);
-    try {
-      const created = await createThread(projectId, { node_ids: [node.id] });
-      await refresh(projectId);
-      navigate(`/chat/${encodeURIComponent(created.id)}`);
-    } catch (error) { setError(error.message); }
-    finally { setBusy(false); }
-  };
-  return { thread, busy, open };
-}
-
-
-function DiscussEntry({ node }) {
-  const { thread, busy, open } = useDiscuss(node);
-  const label = thread ? `继续对话 · ${thread.title}` : busy ? "正在创建对话..." : "新建对话并钉入该节点";
-  return <section className="inspector-section"><h2><MessageSquare size={15} />讨论</h2>
-    <button className="button secondary workflow-start" disabled={busy} onClick={open}>{label}</button>
-    <p className="muted mono">{shortId(node.id)}</p></section>;
+function NodeIdEntry({ node }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => { await navigator.clipboard.writeText(node.id); setCopied(true); };
+  return <section className="inspector-section"><h2>节点 ID</h2><div className="node-id">
+    <code className="mono">{node.id}</code>
+    <button className="icon-button" aria-label={copied ? "已复制节点 ID" : "复制节点 ID"} title={copied ? "已复制" : "复制节点 ID"} onClick={copy}>
+      {copied ? <Check size={15} /> : <Copy size={15} />}</button></div></section>;
 }

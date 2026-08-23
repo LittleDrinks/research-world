@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { bootstrap, mockBase, node, run, thread, threadDetail } from "./fixtures";
+import { bootstrap, mockBase, node, run } from "./fixtures";
 
 
 function mapFixture() {
@@ -228,31 +228,21 @@ test("scrolls the map workspace down to the inspector on mobile", async ({ page 
   const workspace = page.locator(".map-workspace");
   expect(await workspace.evaluate((element) => getComputedStyle(element).overflowY)).toBe("auto");
   await workspace.evaluate((element) => { element.scrollTop = element.scrollHeight; });
-  await expect(page.locator(".inspector-section", { hasText: "讨论" })).toBeInViewport();
+  await expect(page.locator(".inspector-section", { hasText: "节点 ID" })).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
 
 
-test("enters the thread that already pinned the node", async ({ page }) => {
+test("copies the exact node id from the inspector without conversation controls", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: "http://127.0.0.1:8095" });
   await mockBase(page, mapFixture());
-  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill({ json: threadDetail() }));
-  await page.goto("/map?node=node%3Aq");
-  await page.getByRole("button", { name: /继续对话/ }).click();
-  await expect(page).toHaveURL(/\/chat\/thread%3At1$/);
-});
-
-
-test("creates a thread pinned to the node from the inspector", async ({ page }) => {
-  let body;
-  await mockBase(page, mapFixture());
-  await page.route(/\/api\/v1\/projects\/project%3Atest\/threads/, (route) => {
-    if (route.request().method() !== "POST") return route.fulfill({ json: [thread()] });
-    body = route.request().postDataJSON();
-    return route.fulfill({ status: 201, json: thread({ id: "thread:t2", title: "新对话", nodes: [] }) });
-  });
-  await page.route(/\/api\/v1\/threads\/thread%3At2$/, (route) => route.fulfill({ json: threadDetail({ id: "thread:t2", title: "新对话" }) }));
   await page.goto("/map?node=node%3Ad");
-  await page.getByRole("button", { name: "新建对话并钉入该节点" }).click();
-  await expect.poll(() => body).toEqual({ node_ids: ["node:d"] });
-  await expect(page).toHaveURL(/\/chat\/thread%3At2/);
+  const inspector = page.locator(".inspector");
+  const section = inspector.locator(".inspector-section", { hasText: "节点 ID" });
+  await expect(section.locator("code")).toHaveText("node:d");
+  await section.getByRole("button", { name: "复制节点 ID" }).click();
+  await expect(section.getByRole("button", { name: "已复制节点 ID" })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("node:d");
+  await expect(inspector.locator(".inspector-section", { hasText: "讨论" })).toHaveCount(0);
+  await expect(inspector.getByRole("button", { name: /对话/ })).toHaveCount(0);
 });
