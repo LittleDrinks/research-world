@@ -300,6 +300,7 @@ test("wraps long Connector catalog values at 390px without exposing its location
   await expect(page.locator(".capability-chip", { hasText: longName })).toBeVisible();
   await expect(page.getByText("https://private.example/mcp")).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
-  const widths = await page.locator(".capability-picker").evaluate((element) => [element.scrollWidth, element.clientWidth]);
+  const picker = page.locator(".capability-picker").filter({ hasText: longName });
+  const widths = await picker.evaluate((element) => [element.scrollWidth, element.clientWidth]);
   expect(widths[0]).toBeLessThanOrEqual(widths[1]);
 });
