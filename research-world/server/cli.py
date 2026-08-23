@@ -57,7 +57,7 @@ def main(
 
 async def dispatch(args, kernel: ResearchKernel):
     if args.group == "serve":
-        return serve(args)
+        return await serve(args)
     if args.group == "doctor":
         return await doctor_embedding(kernel) if args.embedding else {"ok": True}
     if args.group == "project":
@@ -84,10 +84,11 @@ async def doctor_embedding(kernel: ResearchKernel) -> dict:
     return {"ok": True, "dimensions": dimensions}
 
 
-def serve(args):
+async def serve(args):
     import uvicorn
 
-    uvicorn.run(app, host=args.host, port=args.port)
+    config = uvicorn.Config(app, host=args.host, port=args.port)
+    await uvicorn.Server(config).serve()
     return {"stopped": True}
 
 
