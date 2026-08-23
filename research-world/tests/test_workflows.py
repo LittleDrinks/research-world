@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+import asyncio
+from pathlib import Path
+
 import pytest
-from server.app import run_view
+
+from server.artifacts import ArtifactStore
 from server.execution_evidence import build_evidence
+from server.kernel import KernelQuery, ResearchKernel
 from server.workflows import AgentFacade, PipelineEngine, fail_run, mmr
 
 
@@ -212,12 +217,12 @@ def agent_spec(agent_id):
     return {
         "id": agent_id,
         "name": "Configured agent",
-        "runtime": "codex",
+        "endpoint": "codex",
         "model": "gpt-5.6-codex",
         "instructions": "Use the saved definition.",
         "skills": ["evidence-review"],
         "tools": ["read_skill"],
-        "mcp_servers": ["zotero"],
+        "connectors": ["zotero"],
         "options": {"reasoning_effort": "high"},
     }
 
@@ -594,6 +599,11 @@ def test_plan_creates_one_audited_action(world, project):
     output = world.steps(run["id"])[0]["output"]
     assert output["replay"]["code"] == "match"
     assert output["artifact_id"].startswith("artifact:")
+    store = ArtifactStore(world.artifacts_root, project["id"])
+    assert store.get(output["artifact_id"])["project_id"] == project["id"]
+    other = world.create_project("artifact-scope", Path(project["root"]), "Other?")
+    with pytest.raises(KeyError):
+        ArtifactStore(world.artifacts_root, other["id"]).get(output["artifact_id"])
     assert world.steps(run["id"])[0]["payload"] == action
     assert agents.action_reviews == [{"action": action}]
 
@@ -722,7 +732,7 @@ def test_double_review_conflict_escalates_to_human(world, project):
     )
 
 
-def test_agent_session_event_names_owning_stage(world, project):
+def test_agent_session_event_names_owning_stage(world, project, tmp_path):
     question = world.nodes(project["id"])[0]
     world.embedding = FakeEmbedding(
         {question["payload"]["text"]: [1, 0], "Novel": [1, 0]}
@@ -732,7 +742,11 @@ def test_agent_session_event_names_owning_stage(world, project):
         project["id"], world.nodes(project["id"])[0]["id"], brainstorm_pipeline()
     )
     engine(world, agents, world.embedding).run(run["id"])
-    view = run_view(world, world.run(run["id"]))
+    view = asyncio.run(
+        ResearchKernel(world, projects_root=tmp_path / "projects").query(
+            KernelQuery("run", values={"run_id": run["id"]})
+        )
+    )
     event = next(item for item in view["events"] if item["type"] == "agent_session")
     assert event["payload"] == {
         "stage_id": "generate",

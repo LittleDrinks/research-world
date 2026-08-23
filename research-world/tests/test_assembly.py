@@ -4,12 +4,14 @@ import pytest
 from fastapi.testclient import TestClient
 
 from server.app import create_app
+from server.kernel import ResearchKernel
 from server.library import DEFAULT_ASSEMBLY, resolve_assembly
 
 
 @pytest.fixture
-def client(world):
-    return TestClient(create_app(world))
+def client(world, tmp_path):
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
+    return TestClient(create_app(kernel))
 
 
 def hook(arguments: dict) -> dict:
@@ -48,11 +50,25 @@ def test_create_project_api_rejects_unknown_package(client, tmp_path):
 
 def test_graph_query_get_returns_full_payload(client, world, project):
     node = world.create_node(project["id"], "direction", {"text": "Resonance", "quality": 0.7})
+    world.admit_node(node["id"])
     response = client.post("/api/v1/tools/graph-query",
                            json=hook({"action": "get", "project_id": project["id"],
                                       "node_id": node["id"]}))
     assert response.status_code == 200
     assert response.json() == {"text": "Resonance", "quality": 0.7}
+
+
+def test_graph_query_get_hides_pending_nodes(client, world, project):
+    node = world.create_node(project["id"], "direction", {"text": "Unreviewed"})
+
+    response = client.post(
+        "/api/v1/tools/graph-query",
+        json=hook(
+            {"action": "get", "project_id": project["id"], "node_id": node["id"]}
+        ),
+    )
+
+    assert response.status_code == 404
 
 
 def test_graph_query_get_rejects_cross_project(client, world, project, tmp_path):
@@ -66,6 +82,7 @@ def test_graph_query_get_rejects_cross_project(client, world, project, tmp_path)
 
 def test_graph_query_search_returns_summaries(client, world, project):
     node = world.create_node(project["id"], "direction", {"text": "orbital resonance stability"})
+    world.admit_node(node["id"])
     world.create_node(project["id"], "direction", {"text": "unrelated chaos theory"})
     response = client.post("/api/v1/tools/graph-query",
                            json=hook({"action": "search", "project_id": project["id"],
@@ -73,8 +90,24 @@ def test_graph_query_search_returns_summaries(client, world, project):
     hits = response.json()
     assert [hit["id"] for hit in hits] == [node["id"]]
     assert hits[0]["kind"] == "direction"
-    assert hits[0]["life_state"] == "pending"
+    assert hits[0]["life_state"] == "admitted"
     assert "orbital resonance stability" in hits[0]["summary"]
+
+
+def test_graph_query_search_hides_ghosts(client, world, project):
+    node = world.create_node(
+        project["id"], "direction", {"text": "ghost resonance secret"}
+    )
+    world.ghost_node(node["id"], "rejected")
+
+    response = client.post(
+        "/api/v1/tools/graph-query",
+        json=hook(
+            {"action": "search", "project_id": project["id"], "query": "resonance"}
+        ),
+    )
+
+    assert response.json() == []
 
 
 def test_graph_query_rejects_unknown_action(client, project):

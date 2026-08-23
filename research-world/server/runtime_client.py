@@ -28,13 +28,26 @@ class RuntimeCapabilityError(RuntimeError):
 
 
 class RuntimeClient:
-    def __init__(self, url: str, world=None, project_id: str | None = None):
+    def __init__(self, url: str, project_id: str | None = None):
         self.url = _websocket_url(url)
-        self.world = world
         self.project_id = project_id
+        self.kernel = None
+
+    def bind_kernel(self, kernel) -> None:
+        self.kernel = kernel
 
     async def recognize(self, workspace: str) -> dict:
         return await self._extension("runtime/discover", {"workspace": workspace})
+
+    async def register_connector(self, connector: dict) -> dict:
+        return await self._extension(
+            "runtime/connectors/register", {"connector": connector}
+        )
+
+    async def validate_agent(self, agent_spec: dict) -> dict:
+        return await self._extension(
+            "runtime/agents/validate", {"agent_spec": agent_spec}
+        )
 
     async def launch(self, agent_spec: dict, workspace: str, **values) -> str:
         payload = {"agent_spec": agent_spec, "workspace": workspace, **values}
@@ -44,9 +57,11 @@ class RuntimeClient:
     async def inspect(self, session_id: str) -> dict:
         return await self._extension("runtime/inspect", {"session_id": session_id})
 
-    async def embed(self, model: str, texts: list[str]) -> list[list[float]]:
+    async def embed(
+        self, endpoint: str, model: str, texts: list[str]
+    ) -> list[list[float]]:
         result = await self._extension(
-            "runtime/embed", {"model": model, "texts": texts}
+            "runtime/embed", {"endpoint": endpoint, "model": model, "texts": texts}
         )
         return result["value"]
 
@@ -57,7 +72,7 @@ class RuntimeClient:
         project_id: str | None = None,
         node_ids: list[str] | None = None,
     ):
-        client = KernelClient(self.world, project_id or self.project_id)
+        client = KernelClient(self._kernel(), project_id or self.project_id)
         async with self._connect(client) as connection:
             blocks = _prompt_blocks(message, node_ids or [])
             task = asyncio.create_task(connection.prompt(session_id, blocks))
@@ -92,7 +107,7 @@ class RuntimeClient:
     ):
         requested = _operation_session_id(operation_id) if operation_id else None
         session_id = await self.launch(
-            agent_spec, self._workspace(), session_id=requested
+            agent_spec, await self._workspace(), session_id=requested
         )
         if cached := _cached_json(await self.inspect(session_id), required, session_id):
             return cached
@@ -109,7 +124,7 @@ class RuntimeClient:
 
     async def _extension(self, method: str, params: dict) -> dict:
         async with self._connect(
-            KernelClient(self.world, self.project_id)
+            KernelClient(self._kernel(), self.project_id)
         ) as connection:
             return await connection.ext_method(method, params)
 
@@ -129,15 +144,22 @@ class RuntimeClient:
         finally:
             await connection.close()
 
-    def _workspace(self) -> str:
-        if self.world is None or self.project_id is None:
+    async def _workspace(self) -> str:
+        if self.project_id is None:
             raise RuntimeError("project-bound RuntimeClient required")
-        return self.world.project(self.project_id)["root"]
+        from .kernel import KernelQuery
+
+        return await self._kernel().query(KernelQuery("workspace", self.project_id))
+
+    def _kernel(self):
+        if self.kernel is None:
+            raise RuntimeError("RuntimeClient requires a bound ResearchKernel")
+        return self.kernel
 
 
 class KernelClient:
-    def __init__(self, world, project_id):
-        self.world = world
+    def __init__(self, kernel, project_id):
+        self.kernel = kernel
         self.project_id = project_id
         self.updates: asyncio.Queue = asyncio.Queue()
 
@@ -145,39 +167,98 @@ class KernelClient:
         await self.updates.put(update)
 
     async def read_text_file(self, session_id, path, **kwargs):
-        node = self._node(path.lstrip("@"))
+        node = await self._node(path.lstrip("@"))
         return ReadTextFileResponse(content=_node_document(node))
 
     async def ext_method(self, method: str, params: dict) -> dict | list:
-        if method.lstrip("_") != "research/graph_query":
+        extension = method.lstrip("_")
+        if extension == "research/capture_artifact":
+            return await self._capture_artifact(params)
+        if extension == "research/submit_observation":
+            return await self._submit_observation(params)
+        if extension == "research/report_validate":
+            return await self._report_validate(params)
+        if extension == "research/report_projection":
+            return await self._report_projection(params)
+        if extension == "research/export_bibtex":
+            return await self._export_bibtex(params)
+        if extension != "research/graph_query":
             raise RuntimeError(f"unsupported client extension: {method}")
         if params["action"] == "get":
-            return self._node(params["node_id"])
+            return await self._node(params["node_id"])
         if params["action"] == "search":
-            return [
-                _node_summary(node)
-                for node in self.world.search(self.project_id, params.get("query", ""))
-            ]
+            return await self._search(params.get("query", ""))
         raise ValueError("unknown graph action")
 
     async def ext_notification(self, method: str, params: dict) -> None:
         return None
 
-    def _node(self, node_id: str) -> dict:
-        node = self.world.node(_canonical_node_id(node_id))
-        if node["project_id"] != self.project_id:
-            raise PermissionError("node belongs to another project")
-        return node
+    async def _node(self, node_id: str) -> dict:
+        from .kernel import KernelQuery
+
+        values = {"node_id": _canonical_node_id(node_id)}
+        return await self.kernel.query(
+            KernelQuery("admitted_node", self.project_id, values)
+        )
+
+    async def _search(self, text: str) -> list[dict]:
+        from .kernel import KernelQuery
+
+        return await self.kernel.query(
+            KernelQuery("graph_search", self.project_id, {"text": text})
+        )
+
+    async def _report_validate(self, params: dict) -> dict:
+        from .kernel import KernelQuery
+
+        values = {"facts": params.get("facts")}
+        return await self.kernel.query(
+            KernelQuery("report_validate", self.project_id, values)
+        )
+
+    async def _report_projection(self, params: dict) -> dict:
+        from .kernel import KernelQuery
+
+        return await self.kernel.query(
+            KernelQuery("report_projection", self.project_id)
+        )
+
+    async def _export_bibtex(self, params: dict) -> dict:
+        from .kernel import KernelQuery
+
+        values = {"artifact_id": params["artifact_id"]}
+        return await self.kernel.query(
+            KernelQuery("report_bibtex", self.project_id, values)
+        )
+
+    async def _capture_artifact(self, params: dict) -> dict:
+        from .kernel import KernelCommand
+
+        values = {
+            "content": params["content"].encode(),
+            "media_type": params["media_type"],
+        }
+        return await self.kernel.command(
+            KernelCommand("capture_artifact", self.project_id, values)
+        )
+
+    async def _submit_observation(self, params: dict) -> dict:
+        from .kernel import KernelCommand
+
+        return await self.kernel.command(
+            KernelCommand("observation", self.project_id, params)
+        )
 
 
 class RuntimeEmbedding:
-    def __init__(self, client: RuntimeClient, model: str):
+    def __init__(self, client: RuntimeClient, endpoint: str, model: str):
         self.client = client
+        self.endpoint = endpoint
         self.model = model
 
     def __call__(self, text: str) -> list[float]:
         try:
-            return asyncio.run(self.client.embed(self.model, [text]))[0]
+            return asyncio.run(self.client.embed(self.endpoint, self.model, [text]))[0]
         except Exception as error:
             raise RuntimeCapabilityError(str(error)) from error
 
@@ -240,9 +321,7 @@ def _json_result(value: dict, session_id: str, turn: dict) -> dict:
     }
 
 
-def _cached_json(
-    view: dict, required: tuple[str, ...], session_id: str
-) -> dict | None:
+def _cached_json(view: dict, required: tuple[str, ...], session_id: str) -> dict | None:
     for turn in reversed(view.get("turns", [])):
         value, missing = _validated_json(turn.get("output") or "", required)
         if not missing:

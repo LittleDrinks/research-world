@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
-from server.app import bootstrap_data
+from server.kernel import KernelQuery, ResearchKernel
 from server.world import EDGE_POLARITIES, NODE_KINDS
 
 
@@ -51,11 +53,15 @@ def test_edge_requires_polarity_and_one_project(world, project, tmp_path):
         world.add_edge(evidence["id"], world.nodes(other["id"])[0]["id"], "refutes")
 
 
-def test_bootstrap_includes_all_life_states(world, project):
+def test_bootstrap_includes_all_life_states(world, project, tmp_path):
     world.create_node(project["id"], "direction", {"text": "Pending"})
     ghost = world.create_node(project["id"], "experiment", {"title": "Failed"})
     world.ghost_node(ghost["id"], "audit rejected")
-    data = bootstrap_data(world, project["id"])
+    data = asyncio.run(
+        ResearchKernel(world, projects_root=tmp_path / "projects").query(
+            KernelQuery("bootstrap", project["id"])
+        )
+    )
     assert {node["life_state"] for node in data["nodes"]} == {
         "admitted",
         "pending",
@@ -75,12 +81,17 @@ def test_bootstrap_includes_all_life_states(world, project):
     ],
 )
 def test_bootstrap_project_cards_distinguish_active_runs(
-    world, project, status, active
+    world, project, tmp_path, status, active
 ):
     pipeline = {"id": "research", "name": "Research", "stages": []}
     run = world.create_run(project["id"], world.nodes(project["id"])[0]["id"], pipeline)
     world.update_run(run["id"], "test", status)
-    card = bootstrap_data(world, project["id"])["projects"][0]
+    data = asyncio.run(
+        ResearchKernel(world, projects_root=tmp_path / "projects").query(
+            KernelQuery("bootstrap", project["id"])
+        )
+    )
+    card = data["projects"][0]
     assert (card["run_count"], card["active_run_count"]) == (1, active)
 
 

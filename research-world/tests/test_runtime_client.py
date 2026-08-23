@@ -4,6 +4,7 @@ import json
 
 import pytest
 
+from server.kernel import KernelCommand, ResearchKernel
 from server.runtime_client import (
     KernelClient,
     RuntimeCapabilityError,
@@ -36,13 +37,20 @@ class RetryingRuntime(RuntimeClient):
         turn = {"id": f"turn:{len(self.prompts)}", "output": output, "events": []}
         return {"session": {"id": session_id}, "turns": [turn]}
 
-    def _workspace(self):
+    async def _workspace(self):
         return "/workspace"
 
 
 def test_runtime_url_uses_acp_websocket():
     assert _websocket_url("http://runtime:8098") == "ws://runtime:8098/acp/"
     assert _websocket_url("https://runtime.test/base") == "wss://runtime.test/base/acp/"
+
+
+def test_runtime_client_requires_kernel_binding():
+    runtime = RuntimeClient("http://runtime:8098")
+
+    with pytest.raises(RuntimeError, match="bound ResearchKernel"):
+        runtime._kernel()
 
 
 def test_json_object_repairs_fenced_model_output():
@@ -96,9 +104,10 @@ def test_prompt_resources_are_node_ids():
 
 
 @pytest.mark.asyncio
-async def test_kernel_client_exposes_project_nodes(world, project):
+async def test_kernel_client_exposes_project_nodes(world, project, tmp_path):
     node = world.nodes(project["id"])[0]
-    client = KernelClient(world, project["id"])
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
+    client = KernelClient(kernel, project["id"])
     bare_id = node["id"].removeprefix("node:")
     content = await client.read_text_file("session", f"@{bare_id}")
     assert json.loads(content.content)["id"] == node["id"]
@@ -108,10 +117,48 @@ async def test_kernel_client_exposes_project_nodes(world, project):
     assert result["id"] == node["id"]
 
 
+@pytest.mark.asyncio
+async def test_kernel_client_captures_artifact_then_submits_observation(
+    world, project, tmp_path
+):
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
+    client = KernelClient(kernel, project["id"])
+    artifact = await client.ext_method(
+        "research/capture_artifact",
+        {"content": "measured result", "media_type": "text/plain"},
+    )
+    assert set(artifact) == {"id", "sha256", "media_type", "size", "created_at"}
+    observation = await client.ext_method(
+        "research/submit_observation", observation_record(artifact["id"])
+    )
+    await kernel.command(
+        KernelCommand(
+            "resolve_admission",
+            project["id"],
+            {"node_id": observation["id"], "decision": "approve"},
+        )
+    )
+    projection = await client.ext_method("research/report_projection", {})
+
+    assert observation["life_state"] == "pending"
+    assert observation["payload"]["artifact_ids"] == [artifact["id"]]
+    assert projection["artifacts"] == [artifact]
+
+
 def test_embedding_wraps_runtime_failure():
     class FailedRuntime:
-        async def embed(self, model, texts):
+        async def embed(self, endpoint, model, texts):
             raise RuntimeError("embeddings unavailable")
 
     with pytest.raises(RuntimeCapabilityError, match="embeddings unavailable"):
-        RuntimeEmbedding(FailedRuntime(), "embedding-model")("orbit")
+        RuntimeEmbedding(FailedRuntime(), "primary", "embedding-model")("orbit")
+
+
+def observation_record(artifact_id):
+    return {
+        "kind": "source",
+        "payload": {"title": "Connector measurement"},
+        "provenance": {"actor": "connector:test", "method": "tool call"},
+        "observed_at": "2026-08-23T09:30:00+08:00",
+        "artifact_ids": [artifact_id],
+    }

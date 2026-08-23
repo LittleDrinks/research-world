@@ -42,7 +42,7 @@ def test_replay_distinguishes_input_and_content_mismatch():
 
 def test_execution_credential_is_bound_to_immutable_artifact(tmp_path):
     evidence = build_evidence(spec(), output())
-    store = ArtifactStore(tmp_path)
+    store = ArtifactStore(tmp_path, "project:test")
 
     artifact_id = persist_evidence_artifact(evidence, store)
 
@@ -52,7 +52,7 @@ def test_execution_credential_is_bound_to_immutable_artifact(tmp_path):
 
 def test_artifact_reference_cannot_be_swapped(tmp_path):
     evidence = build_evidence(spec(), output())
-    store = ArtifactStore(tmp_path)
+    store = ArtifactStore(tmp_path, "project:test")
     other = store.add(b"other", "text/plain")["id"]
 
     result = verify_evidence_artifact(evidence, other, store)

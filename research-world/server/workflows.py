@@ -167,7 +167,6 @@ class PipelineEngine:
     pipelines: object
 
     def __post_init__(self) -> None:
-        self.artifacts = ArtifactStore(self.world.artifacts_root)
         handlers = {
             "generate-directions": self._generate_directions,
             "deduplicate-directions": self._deduplicate_directions,
@@ -565,37 +564,43 @@ class PipelineEngine:
     def _execute_step(self, run: dict, step: dict) -> None:
         self.world.update_step(step["id"], "running")
         payload = {**step["payload"], "execution_id": step["id"]}
-        output = self._execute_with_replay(payload)
-        status = "completed" if self._verified_execution(output) else "failed"
+        output = self._execute_with_replay(run["project_id"], payload)
+        status = (
+            "completed"
+            if self._verified_execution(run["project_id"], output)
+            else "failed"
+        )
         self.world.update_step(step["id"], status, output)
         self._event(
             run["id"], "runner", "tool_result", {"step_id": step["id"], **output}
         )
 
-    def _execute_with_replay(self, payload: dict) -> dict:
+    def _execute_with_replay(self, project_id: str, payload: dict) -> dict:
+        artifacts = ArtifactStore(self.world.artifacts_root, project_id)
         evidence = self.runner.run(payload)
         if not verify_evidence(evidence)["ok"]:
             return evidence
-        artifact_id = persist_evidence_artifact(evidence, self.artifacts)
+        artifact_id = persist_evidence_artifact(evidence, artifacts)
         replay = self.runner.replay(payload)
         return {
             **evidence,
             "artifact_id": artifact_id,
-            "replay": self._replay_record(evidence, replay),
+            "replay": self._replay_record(evidence, replay, artifacts),
         }
 
-    def _replay_record(self, evidence: dict, replay: dict) -> dict:
+    def _replay_record(self, evidence: dict, replay: dict, artifacts) -> dict:
         comparison = compare_replay(evidence, replay)
         if not verify_evidence(replay)["ok"]:
             return comparison
-        artifact_id = persist_evidence_artifact(replay, self.artifacts)
+        artifact_id = persist_evidence_artifact(replay, artifacts)
         return {**comparison, "artifact_id": artifact_id}
 
-    def _verified_execution(self, output: dict) -> bool:
+    def _verified_execution(self, project_id: str, output: dict) -> bool:
         if output.get("exit_code") != 0 or not output.get("replay", {}).get("ok"):
             return False
+        artifacts = ArtifactStore(self.world.artifacts_root, project_id)
         artifact = verify_evidence_artifact(
-            output, output.get("artifact_id", ""), self.artifacts
+            output, output.get("artifact_id", ""), artifacts
         )
         replay = output["replay"]
         return artifact["ok"] and replay.get("artifact_id") == output["artifact_id"]
@@ -620,7 +625,8 @@ class PipelineEngine:
 
     def _experiment_review(self, run, experiment, outputs, agent):
         mechanical = all(
-            output and self._verified_execution(output) for output in outputs
+            output and self._verified_execution(run["project_id"], output)
+            for output in outputs
         )
         extra = {"mechanical": mechanical, "outputs": outputs}
         found, outcome = _stored_review(experiment)
@@ -970,12 +976,14 @@ def _validate_claim(claim: dict) -> None:
         raise TypeError("each claim requires an evidence list")
 
 
-def default_engine(world: World, project_id: str) -> PipelineEngine:
+def default_engine(world: World, project_id: str, kernel) -> PipelineEngine:
     settings = load_settings()
-    runtime = RuntimeClient(settings.runtime_url, world, project_id)
+    runtime = RuntimeClient(settings.runtime_url, project_id)
+    runtime.bind_kernel(kernel)
     agents = AgentFacade(runtime, AgentRegistry(settings.agents_root))
+    endpoint = os.environ["RW_EMBEDDING_ENDPOINT"]
     model = os.getenv("RW_EMBEDDING_MODEL", "qwen3.7-text-embedding")
-    embedding = RuntimeEmbedding(runtime, model)
+    embedding = RuntimeEmbedding(runtime, endpoint, model)
     runner = RunnerClient(
         os.getenv("RUNNER_CONTROLLER_URL", "http://runner-controller:8096")
     )

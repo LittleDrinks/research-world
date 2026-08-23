@@ -437,16 +437,7 @@ class World:
                 "UPDATE pipeline_runs SET stage=?,status=?,payload=?,updated_at=? WHERE id=?",
                 (stage, status, json.dumps(payload), timestamp, run_id),
             )
-            connection.execute(
-                "INSERT INTO pipeline_events(run_id,actor,type,payload,time) VALUES(?,?,?,?,?)",
-                (
-                    run_id,
-                    event["actor"],
-                    event["type"],
-                    json.dumps(event["payload"]),
-                    timestamp,
-                ),
-            )
+            _append_run_event(connection, run_id, event, timestamp)
         return self.run(run_id)
 
     def queue_run_signal(self, run_id: str, signal: dict) -> dict:
@@ -631,6 +622,19 @@ def step_values(step_id, run_id, ordinal, stage, payload, confirm) -> tuple:
         None,
         None,
         None,
+    )
+
+
+def _append_run_event(connection, run_id, event, timestamp) -> None:
+    connection.execute(
+        "INSERT INTO pipeline_events(run_id,actor,type,payload,time) VALUES(?,?,?,?,?)",
+        (
+            run_id,
+            event["actor"],
+            event["type"],
+            json.dumps(event["payload"]),
+            timestamp,
+        ),
     )
 
 

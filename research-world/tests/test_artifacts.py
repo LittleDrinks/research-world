@@ -1,10 +1,12 @@
+from pathlib import Path
+
 import pytest
 
 from server.artifacts import ArtifactIntegrityError, ArtifactStore
 
 
 def test_artifact_registration_is_content_addressed_and_idempotent(tmp_path):
-    store = ArtifactStore(tmp_path)
+    store = ArtifactStore(tmp_path, "project:test")
 
     first = store.add(b"result", "text/plain")
     second = store.add(b"result", "text/plain")
@@ -15,9 +17,9 @@ def test_artifact_registration_is_content_addressed_and_idempotent(tmp_path):
 
 
 def test_artifact_read_detects_tampering(tmp_path):
-    store = ArtifactStore(tmp_path)
+    store = ArtifactStore(tmp_path, "project:test")
     artifact = store.add(b"result", "text/plain")
-    tmp_path.joinpath(artifact["sha256"][:2], artifact["sha256"]).write_bytes(b"bad")
+    Path(artifact["path"]).write_bytes(b"bad")
 
     with pytest.raises(ArtifactIntegrityError) as captured:
         store.read(artifact["id"])
@@ -31,7 +33,7 @@ def test_artifact_read_detects_tampering(tmp_path):
 
 
 def test_duplicate_hash_rejects_conflicting_metadata(tmp_path):
-    store = ArtifactStore(tmp_path)
+    store = ArtifactStore(tmp_path, "project:test")
     artifact = store.add(b"result", "text/plain")
 
     with pytest.raises(ArtifactIntegrityError) as captured:

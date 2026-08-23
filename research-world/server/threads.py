@@ -63,6 +63,8 @@ class ThreadManager:
         return await self.detail(thread_id)
 
     def pin(self, thread_id: str, node_id: str) -> dict:
+        thread = self.world.thread(thread_id)
+        self._nodes(thread["project_id"], [node_id])
         return self.world.pin_thread_node(thread_id, node_id)
 
     def unpin(self, thread_id: str, node_id: str) -> dict:
@@ -72,4 +74,6 @@ class ThreadManager:
         nodes = [self.world.node(node_id) for node_id in node_ids]
         if any(node["project_id"] != project_id for node in nodes):
             raise ValueError("thread node belongs to another project")
+        if any(node["life_state"] != "admitted" for node in nodes):
+            raise ValueError("thread nodes must be admitted")
         return nodes

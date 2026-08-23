@@ -1,47 +1,56 @@
+import asyncio
+
+from server.kernel import KernelCommand, ResearchKernel
 from worker import __main__ as worker
 
 
-class FailingEngine:
+class FailingKernel:
+    def __init__(self):
+        self.failed = []
+        self.heartbeats = []
+
     def run(self, _run_id):
         raise RuntimeError("model unavailable")
 
+    async def command(self, command):
+        if command.tag == "fail":
+            self.failed.append((command.values["run_id"], str(command.values["error"])))
+        return True
 
-def test_worker_failure_preserves_run_context(world, project, monkeypatch):
+
+def test_worker_delegates_failure_to_kernel():
+    kernel = FailingKernel()
+
+    worker.execute(kernel, "run:test")
+
+    assert kernel.failed == [("run:test", "model unavailable")]
+
+
+def test_kernel_claim_returns_domain_lease(world, project, tmp_path):
     root = world.nodes(project["id"])[0]
-    run = world.create_run(
-        project["id"], root["id"], {"id": "test", "name": "test", "stages": []},
-        {"thread_id": "thread:test"},
+    world.create_run(
+        project["id"], root["id"], {"id": "test", "name": "test", "stages": []}
     )
-    world.set_working(root["id"], True)
-    monkeypatch.setattr(worker, "default_engine", lambda *_: FailingEngine())
-    worker.execute(world, run)
-    failed = world.run(run["id"])
-    assert failed["status"] == "failed"
-    assert failed["payload"]["thread_id"] == "thread:test"
-    assert failed["payload"]["error"] == "model unavailable"
-    assert world.node(root["id"])["working"] == 0
+
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
+    lease = asyncio.run(kernel.command(KernelCommand("claim")))
+
+    assert lease.project_id == project["id"]
+    assert lease.run_id.startswith("run:")
 
 
-def test_claim_recovers_only_expired_running_run(world, project):
+def test_kernel_heartbeat_hides_run_storage(world, project, tmp_path):
     root = world.nodes(project["id"])[0]
     run = world.create_run(
         project["id"], root["id"], {"id": "test", "name": "test", "stages": []}
     )
-    assert world.claim_run()["id"] == run["id"]
-    assert world.claim_run() is None
-    with world.db.connect() as connection:
-        connection.execute(
-            "UPDATE pipeline_runs SET updated_at='2000-01-01T00:00:00+00:00' WHERE id=?",
-            (run["id"],),
-        )
-    assert world.claim_run()["id"] == run["id"]
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
 
-
-def test_touch_only_renews_running_run(world, project):
-    root = world.nodes(project["id"])[0]
-    run = world.create_run(
-        project["id"], root["id"], {"id": "test", "name": "test", "stages": []}
+    values = {"run_id": run["id"]}
+    assert (
+        asyncio.run(kernel.command(KernelCommand("heartbeat", values=values))) is False
     )
-    assert world.touch_run(run["id"]) is False
-    world.claim_run()
-    assert world.touch_run(run["id"]) is True
+    asyncio.run(kernel.command(KernelCommand("claim")))
+    assert (
+        asyncio.run(kernel.command(KernelCommand("heartbeat", values=values))) is True
+    )

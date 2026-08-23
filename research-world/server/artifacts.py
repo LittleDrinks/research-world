@@ -18,9 +18,11 @@ class ArtifactIntegrityError(ValueError):
 
 
 class ArtifactStore:
-    def __init__(self, root: Path):
-        self.root = root
-        root.mkdir(parents=True, exist_ok=True)
+    def __init__(self, root: Path, project_id: str):
+        scope = hashlib.sha256(project_id.encode("utf-8")).hexdigest()
+        self.project_id = project_id
+        self.root = root / scope
+        self.root.mkdir(parents=True, exist_ok=True)
 
     def add(self, content: bytes, media_type: str) -> dict:
         digest = hashlib.sha256(content).hexdigest()
@@ -54,7 +56,7 @@ class ArtifactStore:
         record = self._record(artifact_id, media_type, size)
         self._write_once(self._metadata_path(digest), _encode(record))
         stored = self.get(artifact_id)
-        fields = ("id", "sha256", "media_type", "size")
+        fields = ("id", "project_id", "sha256", "media_type", "size")
         if any(stored[field] != record[field] for field in fields):
             raise ArtifactIntegrityError("metadata_conflict", artifact_id)
         return {field: stored[field] for field in (*fields, "created_at")}
@@ -62,6 +64,7 @@ class ArtifactStore:
     def _record(self, artifact_id: str, media_type: str, size: int) -> dict:
         return {
             "id": artifact_id,
+            "project_id": self.project_id,
             "sha256": self._digest(artifact_id),
             "media_type": media_type,
             "size": size,

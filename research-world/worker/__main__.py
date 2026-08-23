@@ -1,40 +1,42 @@
 from __future__ import annotations
 
+import asyncio
 import time
 from threading import Event, Thread
 
-from server.cli import default_world
-from server.workflows import default_engine, fail_run
+from server.kernel import KernelCommand, default_kernel
 
 HEARTBEAT_SECONDS = 5
 
 
 def main() -> None:
-    world = default_world()
+    kernel = default_kernel()
     while True:
-        run = world.claim_run()
-        if run:
-            execute(world, run)
+        lease = asyncio.run(kernel.command(KernelCommand("claim")))
+        if lease:
+            execute(kernel, lease.run_id)
         else:
             time.sleep(1)
 
 
-def execute(world, run) -> None:
+def execute(kernel, run_id: str) -> None:
     stop = Event()
-    heartbeat = Thread(target=_heartbeat, args=(world, run["id"], stop), daemon=True)
+    heartbeat = Thread(target=_heartbeat, args=(kernel, run_id, stop), daemon=True)
     heartbeat.start()
     try:
-        default_engine(world, run["project_id"]).run(run["id"])
+        kernel.run(run_id)
     except Exception as error:  # noqa: BLE001 - worker persists terminal failures.
-        fail_run(world, run["id"], error)
+        values = {"run_id": run_id, "error": error}
+        asyncio.run(kernel.command(KernelCommand("fail", values=values)))
     finally:
         stop.set()
         heartbeat.join()
 
 
-def _heartbeat(world, run_id: str, stop: Event) -> None:
+def _heartbeat(kernel, run_id: str, stop: Event) -> None:
     while not stop.wait(HEARTBEAT_SECONDS):
-        if not world.touch_run(run_id):
+        values = {"run_id": run_id}
+        if not asyncio.run(kernel.command(KernelCommand("heartbeat", values=values))):
             return
 
 
