@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-
 from server.app import run_view
 from server.execution_evidence import build_evidence
 from server.workflows import AgentFacade, PipelineEngine, fail_run, mmr
@@ -107,12 +106,20 @@ class FakeRunner:
 
 class FakeAgents:
     def __init__(
-        self, candidates=None, decisions=None, action=None, action_decision="approve"
+        self,
+        candidates=None,
+        decisions=None,
+        action=None,
+        action_decision="approve",
+        needs_experiment=False,
+        review_evidence=None,
     ):
         self.candidates = candidates or []
         self.decisions = list(decisions or [])
         self.action = action or {"image": "busybox:1.36", "command": ["true"]}
         self.action_decision = action_decision
+        self.needs_experiment = needs_experiment
+        self.review_evidence = review_evidence
         self.pairs = []
         self.brainstorm_contexts = []
         self.plan_contexts = []
@@ -159,10 +166,14 @@ class FakeAgents:
         self.agent_ids.append(("review", agent))
         self.review_contexts.append((subject, stance, context))
         decision = self.decisions.pop(0) if self.decisions else "approve"
+        evidence = self.review_evidence
+        if evidence is None:
+            evidence = [context["evidence_nodes"][0]["id"]]
         return {
             "decision": decision,
             "argument": stance,
-            "evidence": ["claim:1"],
+            "evidence": evidence,
+            "needs_experiment": self.needs_experiment,
             "stance": stance,
         }
 
@@ -260,6 +271,7 @@ def assert_brainstorm_result(world, project, run, agents):
         for node in directions
     )
     assert agents.brainstorm_contexts[0]["instruction"] == "只考虑长期稳定性"
+    assert all("quality" not in node["payload"] for node in directions)
 
 
 def assert_reflection_reviewed(world, project, agents):
@@ -287,8 +299,11 @@ def assert_research_result(world, project, direction, agents):
 
 
 def test_arbitrary_pipeline_id_executes_registered_stages(world, project):
-    world.embedding = FakeEmbedding({"Novel": [1, 0]})
-    agents = FakeAgents([{"text": "Novel", "quality": 0.8}])
+    question = world.nodes(project["id"])[0]
+    world.embedding = FakeEmbedding(
+        {question["payload"]["text"]: [1, 0], "Novel": [1, 0]}
+    )
+    agents = FakeAgents([{"text": "Novel"}], needs_experiment=True)
     run = world.create_run(
         project["id"],
         world.nodes(project["id"])[0]["id"],
@@ -302,6 +317,11 @@ def test_arbitrary_pipeline_id_executes_registered_stages(world, project):
         for node in world.nodes(project["id"])
     )
     assert ("brainstorm", "assistant") in agents.agent_ids
+    direction = next(
+        node for node in world.nodes(project["id"]) if node["kind"] == "direction"
+    )
+    assert direction["rebuttal"]["reviewer_a"]["needs_experiment"] is True
+    assert direction["rebuttal"]["reviewer_a"]["evidence"] == [question["id"]]
 
 
 def test_pipeline_id_does_not_choose_implementation(world, project):
@@ -319,7 +339,7 @@ def test_pipeline_id_does_not_choose_implementation(world, project):
 def test_pipeline_execution_stops_after_last_defined_stage(world, project):
     definition = brainstorm_pipeline("generate-only")
     definition["stages"] = definition["stages"][:1]
-    agents = FakeAgents([{"text": "Novel", "quality": 0.8}])
+    agents = FakeAgents([{"text": "Novel"}])
     run = world.create_run(
         project["id"], world.nodes(project["id"])[0]["id"], definition
     )
@@ -334,8 +354,11 @@ def test_run_executes_definition_snapshot(world, project):
         project["id"], world.nodes(project["id"])[0]["id"], definition
     )
     definition["stages"] = research_pipeline()["stages"]
-    world.embedding = FakeEmbedding({"Novel": [1, 0]})
-    agents = FakeAgents([{"text": "Novel", "quality": 0.8}])
+    question = world.nodes(project["id"])[0]
+    world.embedding = FakeEmbedding(
+        {question["payload"]["text"]: [1, 0], "Novel": [1, 0]}
+    )
+    agents = FakeAgents([{"text": "Novel"}])
     result = engine(world, agents, world.embedding).run(run["id"])
     assert result["status"] == "completed"
     assert len(agents.brainstorm_contexts) == 1
@@ -349,7 +372,16 @@ def test_brainstorm_agent_enforces_named_response_contract():
             {"text": "Why?"}, 2, "assistant"
         )
     assert '"candidates"' in runtime.call[1]
+    assert "quality" not in runtime.call[1]
     assert runtime.call[2] == {"text": "Why?", "count": 2}
+
+
+def test_brainstorm_discards_model_supplied_candidate_metadata():
+    runtime = FakeRuntime({"candidates": [{"text": "x", "quality": 1.0}]})
+    result = AgentFacade(runtime, FakeAgentRegistry()).brainstorm(
+        {"text": "Why?"}, 1, "assistant"
+    )
+    assert result["candidates"] == [{"text": "x"}]
 
 
 def test_plan_agent_requires_one_action():
@@ -359,22 +391,62 @@ def test_plan_agent_requires_one_action():
 
 
 def test_review_contracts_are_dimension_specific():
-    value = {"decision": "approve", "argument": "grounded", "evidence": ["claim:1"]}
+    value = {
+        "decision": "approve",
+        "argument": "grounded",
+        "evidence": ["node:1"],
+        "needs_experiment": True,
+    }
     runtime = FakeRuntime(value)
     facade = AgentFacade(runtime, FakeAgentRegistry())
     facade.review({}, "direction", "support", "assistant")
     assert "机制新颖性" in runtime.call[1]
     facade.review({}, "experiment", "challenge", "assistant")
     assert "产物哈希" in runtime.call[1]
+    assert facade.review({}, "direction", "support", "assistant")["needs_experiment"]
 
 
-def test_mmr_balances_quality_and_similarity():
+def test_review_contract_requires_structured_experiment_need():
+    value = {"decision": "approve", "argument": "grounded", "evidence": ["node:1"]}
+    facade = AgentFacade(FakeRuntime(value), FakeAgentRegistry())
+    with pytest.raises(ValueError, match="needs_experiment"):
+        facade.review({}, "direction", "support", "assistant")
+
+
+@pytest.mark.parametrize("evidence", [[], ["node:missing"]])
+def test_direction_review_rejects_unverifiable_evidence(world, project, evidence):
+    root = world.nodes(project["id"])[0]
+    candidate = world.create_node(
+        project["id"], "direction", {"text": "candidate"}, parent_id=root["id"]
+    )
+    run = world.create_run(project["id"], root["id"], brainstorm_pipeline())
+    service = engine(world, FakeAgents(review_evidence=evidence))
+    with pytest.raises(ValueError, match="admitted node"):
+        service._admission_review(
+            world.run(run["id"]), candidate, "direction", agent="reviewer"
+        )
+
+
+def test_direction_review_rejects_pending_evidence(world, project):
+    root = world.nodes(project["id"])[0]
+    candidate = world.create_node(
+        project["id"], "direction", {"text": "candidate"}, parent_id=root["id"]
+    )
+    run = world.create_run(project["id"], root["id"], brainstorm_pipeline())
+    service = engine(world, FakeAgents(review_evidence=[candidate["id"]]))
+    with pytest.raises(ValueError, match="admitted node"):
+        service._admission_review(
+            world.run(run["id"]), candidate, "direction", agent="reviewer"
+        )
+
+
+def test_mmr_balances_embedding_relevance_and_diversity():
     candidates = [
-        {"text": "a", "quality": 0.9, "vector": [1, 0]},
-        {"text": "b", "quality": 0.88, "vector": [0.99, 0.01]},
-        {"text": "c", "quality": 0.8, "vector": [0, 1]},
+        {"text": "a", "vector": [0.8, 0.6]},
+        {"text": "b", "vector": [0.79, 0.61]},
+        {"text": "c", "vector": [0.7, -0.7]},
     ]
-    assert [item["text"] for item in mmr(candidates, 2)] == ["a", "c"]
+    assert [item["text"] for item in mmr(candidates, 2, [1, 0])] == ["a", "c"]
 
 
 def test_brainstorm_blocks_duplicates_and_admits_selected(world, project):
@@ -388,9 +460,9 @@ def test_brainstorm_blocks_duplicates_and_admits_selected(world, project):
         }
     )
     world.update_node(existing["id"], payload={"text": "Existing direction"})
-    agents = FakeAgents(
-        [{"text": "Duplicate", "quality": 0.9}, {"text": "Novel", "quality": 0.8}]
-    )
+    question = world.nodes(project["id"])[0]
+    world.embedding.vectors[question["payload"]["text"]] = [0, 1]
+    agents = FakeAgents([{"text": "Duplicate"}, {"text": "Novel"}])
     run = world.create_run(
         project["id"],
         world.nodes(project["id"])[0]["id"],
@@ -431,7 +503,9 @@ def test_gray_similarity_uses_pairwise_judge(world, project):
         "Reconciled direction": [0, 1],
     }
     world.embedding = FakeEmbedding(vectors)
-    agents = FakeAgents([{"text": "Gray", "quality": 0.7}])
+    question = world.nodes(project["id"])[0]
+    vectors[question["payload"]["text"]] = [0, 1]
+    agents = FakeAgents([{"text": "Gray"}])
     run = world.create_run(
         project["id"],
         world.nodes(project["id"])[0]["id"],
@@ -453,8 +527,12 @@ def test_ghost_direction_only_discloses_similarity_slice(world, project):
         project["id"], "direction", {"text": "Rejected route"}, parent_id=root["id"]
     )
     world.ghost_node(ghost["id"], "private full rejection")
-    vectors = {"Rejected route": [1, 0], "Reconciled direction": [0, 1]}
-    agents = FakeAgents([{"text": "Rejected route", "quality": 0.7}])
+    vectors = {
+        root["payload"]["text"]: [1, 0],
+        "Rejected route": [1, 0],
+        "Reconciled direction": [0, 1],
+    }
+    agents = FakeAgents([{"text": "Rejected route"}])
     run = world.create_run(project["id"], root["id"], brainstorm_pipeline())
     engine(world, agents, FakeEmbedding(vectors)).run(run["id"])
     context = agents.reconcile_contexts[0]
@@ -645,8 +723,11 @@ def test_double_review_conflict_escalates_to_human(world, project):
 
 
 def test_agent_session_event_names_owning_stage(world, project):
-    world.embedding = FakeEmbedding({"Novel": [1, 0]})
-    agents = FakeAgents([{"text": "Novel", "quality": 0.8}])
+    question = world.nodes(project["id"])[0]
+    world.embedding = FakeEmbedding(
+        {question["payload"]["text"]: [1, 0], "Novel": [1, 0]}
+    )
+    agents = FakeAgents([{"text": "Novel"}])
     run = world.create_run(
         project["id"], world.nodes(project["id"])[0]["id"], brainstorm_pipeline()
     )
@@ -662,7 +743,7 @@ def test_agent_session_event_names_owning_stage(world, project):
 
 
 def test_facade_passes_saved_agent_spec_to_runtime():
-    runtime = FakeRuntime({"candidates": [{"text": "x", "quality": 0.1}]})
+    runtime = FakeRuntime({"candidates": [{"text": "x"}]})
     spec = agent_spec("assistant")
     AgentFacade(runtime, FakeAgentRegistry({"assistant": spec})).brainstorm(
         {"text": "Why?"}, 1, "assistant"
@@ -686,8 +767,11 @@ def test_pins_inject_node_content_into_agent_context(world, project):
     pinned = world.create_node(
         project["id"], "source", {"title": "Kepler 1609"}, life_state="admitted"
     )
-    world.embedding = FakeEmbedding({"Novel": [1, 0]})
-    agents = FakeAgents([{"text": "Novel", "quality": 0.5}])
+    question = world.nodes(project["id"])[0]
+    world.embedding = FakeEmbedding(
+        {question["payload"]["text"]: [1, 0], "Novel": [1, 0]}
+    )
+    agents = FakeAgents([{"text": "Novel"}])
     run = world.create_run(
         project["id"],
         world.nodes(project["id"])[0]["id"],
@@ -736,7 +820,7 @@ def test_direction_review_resumes_from_persisted_node(world, project):
     run = world.create_run(project["id"], root["id"], brainstorm_pipeline())
     values = {
         "origin": root["id"],
-        "directions": [{"text": "Stable candidate", "quality": 0.8}],
+        "directions": [{"text": "Stable candidate"}],
     }
     payload = {"_pipeline": {"cursor": 3, "values": values, "gate": None}}
     world.update_run(run["id"], "review", "running", payload)

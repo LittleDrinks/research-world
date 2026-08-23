@@ -31,21 +31,28 @@ def cosine(left: list[float], right: list[float]) -> float:
     )
 
 
-def mmr(candidates: list[dict], count: int, weight: float = 0.2) -> list[dict]:
+def mmr(
+    candidates: list[dict],
+    count: int,
+    query_vector: list[float],
+    weight: float = 0.2,
+) -> list[dict]:
     selected = []
     remaining = list(candidates)
     while remaining and len(selected) < count:
-        best = max(remaining, key=lambda item: _mmr_score(item, selected, weight))
+        score = lambda item: _mmr_score(item, selected, query_vector, weight)
+        best = max(remaining, key=score)
         selected.append(best)
         remaining.remove(best)
     return selected
 
 
-def _mmr_score(candidate: dict, selected: list[dict], weight: float) -> float:
+def _mmr_score(candidate, selected, query_vector, weight) -> float:
+    relevance = cosine(candidate["vector"], query_vector)
     similarity = max(
         (cosine(candidate["vector"], item["vector"]) for item in selected), default=0
     )
-    return float(candidate.get("quality", 0)) - weight * similarity
+    return relevance - weight * similarity
 
 
 class AgentFacade:
@@ -79,12 +86,8 @@ class AgentFacade:
             ("candidates",),
             operation_id,
         )
-        candidates = required(value, "candidates")
-        if not isinstance(candidates, list) or len(candidates) < count:
-            raise ValueError(
-                f"runtime field 'candidates' must contain at least {count} items"
-            )
-        return {**value, "candidates": candidates[:count]}
+        candidates = validate_candidates(required(value, "candidates"), count)
+        return {**value, "candidates": candidates}
 
     def pairwise(self, left: str, right: str, operation_id: str | None = None) -> dict:
         value = self._call(
@@ -134,7 +137,7 @@ class AgentFacade:
         agent: str,
         operation_id: str | None = None,
     ) -> dict:
-        fields = ("decision", "argument", "evidence")
+        fields = ("decision", "argument", "evidence", "needs_experiment")
         value = self._call(
             agent,
             REVIEW_PROMPTS[subject],
@@ -142,7 +145,7 @@ class AgentFacade:
             fields,
             operation_id,
         )
-        return {**validate_verdict(value), "stance": stance}
+        return {**validate_review_verdict(value), "stance": stance}
 
     def reconcile(
         self, context: dict, agent: str, operation_id: str | None = None
@@ -241,6 +244,9 @@ class PipelineEngine:
         payload = _stage_payload(run["payload"], cursor, values, gate)
         status = "waiting_human" if gate else "running"
         event = "gate_waiting" if gate else "stage_completed"
+        return self._transition_stage(run, stage, status, payload, event)
+
+    def _transition_stage(self, run, stage, status, payload, event) -> dict:
         return self.world.transition_run(
             run["id"],
             stage["id"],
@@ -275,7 +281,9 @@ class PipelineEngine:
         run, values = context["run"], context["values"]
         count = int(run["payload"].get("select", 4))
         weight = float(_policy_params(stage).get("weight", 0.2))
-        selected = mmr(values["pool"], count, weight)
+        origin = self.world.node(values["origin"])
+        query = self.embedding(origin["payload"].get("text", ""))
+        selected = mmr(values["pool"], count, query, weight)
         directions = [_without_vector(item) for item in selected]
         return _stage_result(
             run, {"directions": directions}, drop=("candidates", "pool")
@@ -368,7 +376,6 @@ class PipelineEngine:
         self._record_agent(run["id"], "reflector", value)
         return {
             "text": value["text"],
-            "quality": candidate.get("quality", 0),
             "vector": self.embedding(value["text"]),
             "lineage_id": node["lineage_id"],
         }
@@ -397,14 +404,10 @@ class PipelineEngine:
 
     def _candidate_node(self, run, origin, candidate) -> dict:
         lineage = candidate.get("lineage_id") or f"lineage:{secrets.token_hex(12)}"
-        payload = {
-            "text": candidate["text"],
-            "quality": float(candidate.get("quality", 0)),
-        }
         return self.world.create_node(
             run["project_id"],
             "direction",
-            payload,
+            {"text": candidate["text"]},
             parent_id=origin["id"],
             lineage_id=lineage,
         )
@@ -608,18 +611,22 @@ class PipelineEngine:
                 stage, run, experiment, values, signal
             )
         outputs = values["outputs"]
-        mechanical = all(
-            output and self._verified_execution(output) for output in outputs
-        )
-        extra = {"mechanical": mechanical, "outputs": outputs}
-        found, outcome = _stored_review(experiment)
-        if not found:
-            outcome = self._review_evidence(run, experiment, extra, stage["agent"])
+        outcome = self._experiment_review(run, experiment, outputs, stage["agent"])
         if outcome is None:
             gate = {"kind": "review", "node_id": experiment["id"]}
             return _stage_result(run, outcome="conflict", gate=gate)
         self._apply_experiment_review(stage, run, experiment, outcome, outputs)
         return _stage_result(run, outcome="approve" if outcome else "reject")
+
+    def _experiment_review(self, run, experiment, outputs, agent):
+        mechanical = all(
+            output and self._verified_execution(output) for output in outputs
+        )
+        extra = {"mechanical": mechanical, "outputs": outputs}
+        found, outcome = _stored_review(experiment)
+        return (
+            outcome if found else self._review_evidence(run, experiment, extra, agent)
+        )
 
     def _review_evidence(self, run, experiment, extra, agent):
         self._audit_claims(run, experiment, "experiment", extra, agent)
@@ -656,20 +663,22 @@ class PipelineEngine:
             "subject": subject,
             "node": node["payload"],
             "claims": claims,
+            "evidence_nodes": self._review_evidence_nodes(run),
             **(extra or {}),
         }
         reviews = self._review_pair(run, node, subject, context, agent)
-        self.world.update_node(
-            node["id"],
-            rebuttal={
-                "reviewer_a": clean(reviews[0]),
-                "reviewer_b": clean(reviews[1]),
-            },
-        )
+        self._store_reviews(node, reviews)
         decisions = [review.get("decision") == "approve" for review in reviews]
         if decisions[0] != decisions[1]:
             return None
         return decisions[0]
+
+    def _store_reviews(self, node: dict, reviews: list[dict]) -> None:
+        rebuttal = {
+            "reviewer_a": clean(reviews[0]),
+            "reviewer_b": clean(reviews[1]),
+        }
+        self.world.update_node(node["id"], rebuttal=rebuttal)
 
     def _audit_claims(self, run, node, subject, extra, agent) -> list[dict]:
         if claims := node["payload"].get("claims"):
@@ -689,9 +698,37 @@ class PipelineEngine:
         for stance in ("support", "challenge"):
             operation = f"{run['id']}:{subject}:{node['id']}:{stance}"
             review = self.agents.review(context, subject, stance, agent, operation)
+            self._validate_review_evidence(run, review)
             self._record_agent(run["id"], f"reviewer-{stance}", review)
             reviews.append(review)
         return reviews
+
+    def _review_evidence_nodes(self, run: dict) -> list[dict]:
+        node_ids = [run["node_id"], *run["payload"].get("pins", [])]
+        nodes = [self.world.node(node_id) for node_id in dict.fromkeys(node_ids)]
+        admitted = [
+            node
+            for node in nodes
+            if node["project_id"] == run["project_id"]
+            and node["life_state"] == "admitted"
+        ]
+        return [{"id": node["id"], "kind": node["kind"]} for node in admitted]
+
+    def _validate_review_evidence(self, run: dict, review: dict) -> None:
+        if not review["evidence"]:
+            raise ValueError("review evidence must reference an admitted node")
+        for node_id in review["evidence"]:
+            try:
+                node = self.world.node(node_id)
+            except KeyError as error:
+                raise ValueError(
+                    "review evidence must reference an admitted node"
+                ) from error
+            if (
+                node["project_id"] != run["project_id"]
+                or node["life_state"] != "admitted"
+            ):
+                raise ValueError("review evidence must reference an admitted node")
 
     def _resolve_node(self, run, node, approved: bool, reason: str) -> None:
         result = self.world.resolve_direction_review(node["id"], approved, reason)
@@ -725,23 +762,26 @@ class PipelineEngine:
         if values.get("directions"):
             return _stage_result(run, {"directions": values["directions"]})
         experiment = self.world.node(values["experiment"])
-        outputs = values["outputs"]
-        context = {"experiment": experiment["payload"], "outputs": outputs}
+        prompt = {"experiment": experiment["payload"], "outputs": values["outputs"]}
         operation = f"{run['id']}:{stage['id']}:reflect"
         value = self.agents.reflect(
-            self._agent_context(run, context), stage["agent"], operation
+            self._agent_context(run, prompt), stage["agent"], operation
         )
         self._record_agent(run["id"], "reflector", value)
-        node = self.world.create_node(
-            run["project_id"],
-            "direction",
-            {"text": value["text"]},
-            parent_id=run["node_id"],
-            lineage_id=experiment["lineage_id"],
-        )
+        node = self._reflection_node(run, experiment, value["text"])
         directions = [{"node_id": node["id"]}]
         self._checkpoint(run["id"], {**values, "directions": directions})
         return _stage_result(run, {"directions": directions})
+
+    def _reflection_node(self, run, experiment, text):
+        node = self.world.create_node(
+            run["project_id"],
+            "direction",
+            {"text": text},
+            parent_id=run["node_id"],
+            lineage_id=experiment["lineage_id"],
+        )
+        return node
 
     def _complete(self, run_id: str) -> dict:
         run = self.world.run(run_id)
@@ -891,6 +931,28 @@ def validate_verdict(value: dict) -> dict:
     return value
 
 
+def validate_review_verdict(value: dict) -> dict:
+    validate_verdict(value)
+    needed = required(value, "needs_experiment")
+    if not isinstance(needed, bool):
+        raise TypeError("runtime field 'needs_experiment' must be boolean")
+    return value
+
+
+def validate_candidates(value, count: int) -> list[dict]:
+    if not isinstance(value, list) or len(value) < count:
+        raise ValueError(
+            f"runtime field 'candidates' must contain at least {count} items"
+        )
+    candidates = []
+    for candidate in value[:count]:
+        text = candidate.get("text") if isinstance(candidate, dict) else None
+        if not isinstance(text, str) or not text.strip():
+            raise ValueError("each candidate requires text")
+        candidates.append({"text": text.strip()})
+    return candidates
+
+
 def validate_claims(value) -> list[dict]:
     if not isinstance(value, list) or not value:
         raise ValueError("runtime field 'claims' must be a non-empty list")
@@ -965,7 +1027,7 @@ def _pipeline_agents(pipeline: dict) -> set[str]:
 
 BRAINSTORM_PROMPT = (
     "输入节点内容与 instruction 是研究约束，count 是候选数。严格执行 instruction，生成恰好 count 个相互差异显著、"
-    '可证伪的研究方向。严格返回 {"candidates":[{"text":"...","quality":0.0}]}，quality 范围 0-1。'
+    '可证伪的研究方向。严格返回 {"candidates":[{"text":"..."}]}。'
 )
 PAIR_PROMPT = (
     "判断 left 与 right 是否在研究问题、方法和可证伪结论上实质重复。"
@@ -992,13 +1054,15 @@ CLAIM_AUDIT_PROMPT = (
 )
 MECHANISM_REVIEW_PROMPT = (
     "审核 direction 的机制新颖性、任务适配与可证伪性。stance=support 时给最强支持论证，"
-    "stance=challenge 时主动寻找重合、泄漏与反例。严格返回 "
-    '{"decision":"approve|reject","argument":"...","evidence":["claim/source 引用"]}。'
+    "stance=challenge 时主动寻找重合、泄漏与反例。evidence 只能引用 evidence_nodes 中的 admitted node id；"
+    "缺少决定性实验时 needs_experiment=true。严格返回 "
+    '{"decision":"approve|reject","argument":"...","evidence":["node:id"],"needs_experiment":false}。'
 )
 EVIDENCE_REVIEW_PROMPT = (
     "审核 experiment 的输入边界、执行凭据、产物哈希与逐条 claim 证据。stance=support 时给最强支持论证，"
-    "stance=challenge 时主动寻找不可复现、越界与反例。严格返回 "
-    '{"decision":"approve|reject","argument":"...","evidence":["claim/artifact 引用"]}。'
+    "stance=challenge 时主动寻找不可复现、越界与反例。evidence 只能引用 evidence_nodes 中的 admitted node id；"
+    "仍需补实验时 needs_experiment=true。严格返回 "
+    '{"decision":"approve|reject","argument":"...","evidence":["node:id"],"needs_experiment":false}。'
 )
 REVIEW_PROMPTS = {
     "direction": MECHANISM_REVIEW_PROMPT,
