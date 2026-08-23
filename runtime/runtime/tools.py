@@ -74,9 +74,21 @@ REPORT_VALIDATE = {
                         "additionalProperties": False,
                     },
                 },
-                "endpoint_ready": {"type": "boolean"},
             },
-            "required": ["facts", "endpoint_ready"],
+            "required": ["facts"],
+            "additionalProperties": False,
+        },
+    },
+}
+EXPORT_BIBTEX = {
+    "type": "function",
+    "function": {
+        "name": "export_bibtex",
+        "description": "Export an admitted source artifact as validated BibTeX.",
+        "parameters": {
+            "type": "object",
+            "properties": {"artifact_id": {"type": "string"}},
+            "required": ["artifact_id"],
             "additionalProperties": False,
         },
     },
@@ -152,6 +164,7 @@ BUILTINS = {
     "graph_query": GRAPH_QUERY,
     "report_projection": REPORT_PROJECTION,
     "report_validate": REPORT_VALIDATE,
+    "export_bibtex": EXPORT_BIBTEX,
     "submit_observation": SUBMIT_OBSERVATION,
     "read_file": READ_FILE,
     "write_file": WRITE_FILE,
@@ -213,7 +226,7 @@ class ToolBox:
             "connector_tool": name,
         }
         artifact = await self.client.ext_method("research/capture_artifact", capture)
-        return _captured_result(artifact["artifact_id"], content, capture["media_type"])
+        return _captured_result(artifact["id"], content, capture["media_type"])
 
     async def _read_skill(self, session_id: str, values: dict) -> str:
         return self.skills[values["name"]].body()
@@ -235,7 +248,17 @@ class ToolBox:
     async def _report_validate(self, session_id: str, values: dict) -> str:
         if self.client is None:
             raise RuntimeError("client does not provide report validation")
+        if set(values) != {"facts"}:
+            raise ValueError("unexpected report validation fields")
         result = await self.client.ext_method("research/report_validate", values)
+        return json.dumps(result, ensure_ascii=False)
+
+    async def _export_bibtex(self, session_id: str, values: dict) -> str:
+        if self.client is None:
+            raise RuntimeError("client does not provide BibTeX export")
+        if set(values) != {"artifact_id"}:
+            raise ValueError("unexpected BibTeX export fields")
+        result = await self.client.ext_method("research/export_bibtex", values)
         return json.dumps(result, ensure_ascii=False)
 
     async def _report_projection(self, session_id: str, values: dict) -> str:

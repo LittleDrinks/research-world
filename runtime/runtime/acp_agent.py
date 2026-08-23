@@ -79,12 +79,9 @@ class RuntimeAgent:
         handlers = {
             "runtime/discover": lambda: self.runtime.recognize(params["workspace"]),
             "runtime/launch": lambda: self.runtime.launch(params),
-            "runtime/inspect": lambda: _async_value(
-                self.runtime.inspect(params["session_id"])
-            ),
-            "runtime/connectors/register": lambda: _async_value(
-                self.runtime.register_connector(params["connector"])
-            ),
+            "runtime/inspect": lambda: _async_value(self._inspect(params)),
+            "runtime/agents/validate": lambda: _async_value(self._validate(params)),
+            "runtime/connectors/register": lambda: _async_value(self._register(params)),
             "runtime/embed": lambda: self.runtime.embed(
                 params["endpoint"],
                 params["model"],
@@ -93,6 +90,15 @@ class RuntimeAgent:
         }
         value = await handlers[method.lstrip("_")]()
         return {"value": value} if isinstance(value, list) else value
+
+    def _inspect(self, params):
+        return self.runtime.inspect(params["session_id"])
+
+    def _validate(self, params):
+        return self.runtime.validate_agent(params["agent_spec"])
+
+    def _register(self, params):
+        return self.runtime.register_connector(params["connector"])
 
     async def ext_notification(self, method: str, params: dict[str, Any]) -> None:
         return None

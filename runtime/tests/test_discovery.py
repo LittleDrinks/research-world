@@ -36,9 +36,19 @@ def test_discovers_mcp_without_exposing_secrets(tmp_path, monkeypatch):
 
     connector = discover_connectors(tmp_path)["search"]
 
-    assert connector.public()["url"] == "https://mcp.test"
-    assert connector.public()["header_names"] == ["Authorization"]
-    assert "headers" not in connector.public()
+    public = connector.public()
+    assert set(public) == {
+        "id",
+        "name",
+        "description",
+        "transport",
+        "source",
+        "available",
+    }
+    assert public["source"] == "workspace"
+    assert "https://mcp.test" not in json.dumps(public)
+    assert "SEARCH_TOKEN" not in json.dumps(public)
+    assert str(tmp_path) not in json.dumps(public)
 
 
 async def test_catalog_contains_only_detected_workspace_assets(tmp_path, monkeypatch):
@@ -54,4 +64,5 @@ async def test_catalog_contains_only_detected_workspace_assets(tmp_path, monkeyp
     assert all(set(item) == {"id", "endpoint"} for item in value["models"])
     assert "report_projection" in {item["id"] for item in value["tools"]}
     assert "report_validate" in {item["id"] for item in value["tools"]}
+    assert "export_bibtex" in {item["id"] for item in value["tools"]}
     assert "submit_observation" in {item["id"] for item in value["tools"]}

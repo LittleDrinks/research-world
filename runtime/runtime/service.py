@@ -42,6 +42,10 @@ class Runtime:
     def register_connector(self, value: dict[str, Any]) -> dict[str, Any]:
         return self.connectors.register(value)
 
+    def validate_agent(self, value: dict[str, Any]) -> dict[str, bool]:
+        AgentSpec.parse(value)
+        return {"valid": True}
+
     async def launch(self, value: dict[str, Any]) -> dict[str, Any]:
         workspace = _workspace(value["workspace"])
         spec = AgentSpec.parse(value["agent_spec"])
@@ -125,12 +129,7 @@ class Runtime:
         messages = _messages(self._events(session_id), meta)
         endpoint = self.endpoints.require(spec.endpoint, spec.model)
         specs = tools.specs() if endpoint.adapter == "openai-compatible" else []
-        self.trace.append(
-            session_id,
-            "model_request",
-            {"model": spec.model, "messages": messages, "tools": specs},
-            turn_id,
-        )
+        self._record_request(session_id, turn_id, spec.model, messages, specs)
         endpoint_id, result = await self._generate(
             session_id, spec, meta, messages, specs, emit
         )
@@ -142,6 +141,10 @@ class Runtime:
         if not calls and not content.strip():
             raise RuntimeError("model returned an empty assistant response")
         return not calls, content
+
+    def _record_request(self, session_id, turn_id, model, messages, tools):
+        data = {"model": model, "messages": messages, "tools": tools}
+        self.trace.append(session_id, "model_request", data, turn_id)
 
     async def _generate(self, session_id, spec, meta, messages, tools, emit):
         context = _provider_context(meta, self._events(session_id))

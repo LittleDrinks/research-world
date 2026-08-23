@@ -12,6 +12,7 @@ TOOLS = (
     {"id": "graph_query", "name": "查询研究图谱"},
     {"id": "report_projection", "name": "读取报告投影"},
     {"id": "report_validate", "name": "校验科研报告"},
+    {"id": "export_bibtex", "name": "导出 BibTeX"},
     {"id": "submit_observation", "name": "提交人工观测"},
     {"id": "read_file", "name": "读取工作区文件"},
     {"id": "write_file", "name": "写入工作区文件"},

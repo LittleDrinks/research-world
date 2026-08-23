@@ -26,6 +26,23 @@ def test_agent_spec_rejects_legacy_fields(legacy):
         AgentSpec.parse({**spec(), **legacy})
 
 
+@pytest.mark.parametrize(
+    "invalid",
+    [
+        {"name": ""},
+        {"runtime": "legacy"},
+        {"options": {"max_rounds": 0}},
+        {"connectors": ["lean4", "lean4"]},
+    ],
+)
+def test_runtime_validates_agent_spec_with_the_canonical_schema(tmp_path, invalid):
+    runtime = Runtime(tmp_path / "data", [endpoint(FakeProvider([]))])
+
+    assert runtime.validate_agent(spec()) == {"valid": True}
+    with pytest.raises(SpecError):
+        runtime.validate_agent({**spec(), **invalid})
+
+
 async def test_launch_rejects_unrecognized_capability(tmp_path, monkeypatch):
     monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
     monkeypatch.setenv("RUNTIME_API_KEY", "secret")

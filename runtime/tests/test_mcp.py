@@ -77,4 +77,4 @@ class ArtifactClient:
 
     async def ext_method(self, method, params):
         self.calls.append((method, params))
-        return {"artifact_id": "artifact:" + "a" * 64}
+        return {"id": "artifact:" + "a" * 64}

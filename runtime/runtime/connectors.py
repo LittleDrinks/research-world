@@ -9,7 +9,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qsl, urlparse
+from urllib.parse import urlparse
 
 from .config import codex_config_path
 
@@ -31,7 +31,7 @@ class Connector:
     source: str
 
     def public(self) -> dict[str, Any]:
-        value = {
+        return {
             "id": self.id,
             "name": self.name,
             "description": self.description,
@@ -39,7 +39,6 @@ class Connector:
             "source": self.source,
             "available": self.available(),
         }
-        return {**value, **_safe_config(self.config)}
 
     def available(self) -> bool:
         try:
@@ -120,7 +119,7 @@ def _from_workspace(workspace: Path) -> dict[str, Connector]:
     if not path.is_file():
         return {}
     data = json.loads(path.read_text(encoding="utf-8"))
-    return _parse_rows(data.get("mcpServers") or {}, str(path))
+    return _parse_rows(data.get("mcpServers") or {}, "workspace")
 
 
 def _from_codex() -> dict[str, Connector]:
@@ -128,7 +127,7 @@ def _from_codex() -> dict[str, Connector]:
     if not path.is_file():
         return {}
     data = tomllib.loads(path.read_text(encoding="utf-8"))
-    return _parse_rows(data.get("mcp_servers") or {}, str(path))
+    return _parse_rows(data.get("mcp_servers") or {}, "codex")
 
 
 def _parse_rows(rows, source) -> dict[str, Connector]:
@@ -186,11 +185,10 @@ def _validate_location(transport: str, config: dict[str, Any]) -> None:
         raise ValueError("connector url must be absolute http(s)")
     if parsed.username or parsed.password:
         raise ValueError("connector credentials must use environment-backed headers")
-    for key, _value in parse_qsl(parsed.query):
-        if SENSITIVE.search(key):
-            raise ValueError(
-                "connector credentials must use environment-backed headers"
-            )
+    if parsed.query:
+        raise ValueError("connector url must not include query parameters")
+    if parsed.fragment:
+        raise ValueError("connector url must not include a fragment")
 
 
 def _validate_command(command, args) -> None:
@@ -237,12 +235,3 @@ def _environment_value(match: re.Match) -> str:
     if name not in os.environ:
         raise RuntimeError("connector credential is unavailable")
     return os.environ[name]
-
-
-def _safe_config(config: dict[str, Any]) -> dict[str, Any]:
-    safe = {key: config[key] for key in ("url", "command") if config.get(key)}
-    if config.get("env"):
-        safe["env_keys"] = sorted(config["env"])
-    if config.get("headers"):
-        safe["header_names"] = sorted(config["headers"])
-    return safe

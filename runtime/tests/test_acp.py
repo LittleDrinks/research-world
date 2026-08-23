@@ -105,13 +105,39 @@ async def test_report_validate_crosses_the_client_boundary(tmp_path):
         content, failed = await tools.call(
             "session",
             "report_validate",
-            json.dumps({"facts": facts, "endpoint_ready": True}),
+            json.dumps({"facts": facts}),
         )
 
     assert failed is False
     assert json.loads(content) == {"valid": True, "delivery_level": 4}
+    assert client.calls == [("research/report_validate", {"facts": facts})]
+
+
+async def test_report_validate_rejects_caller_readiness(tmp_path):
+    client = KernelClient()
+    values = {"facts": [], "endpoint_ready": True}
+    async with ToolBox(tmp_path, {}, ("report_validate",), [], client) as tools:
+        content, failed = await tools.call(
+            "session", "report_validate", json.dumps(values)
+        )
+
+    assert failed is True
+    assert "unexpected report validation fields" in content
+    assert client.calls == []
+
+
+async def test_export_bibtex_crosses_the_client_boundary(tmp_path):
+    client = KernelClient()
+    artifact_id = "artifact:" + "a" * 64
+    async with ToolBox(tmp_path, {}, ("export_bibtex",), [], client) as tools:
+        content, failed = await tools.call(
+            "session", "export_bibtex", json.dumps({"artifact_id": artifact_id})
+        )
+
+    assert failed is False
+    assert json.loads(content) == {"id": artifact_id, "content": "@article{x}"}
     assert client.calls == [
-        ("research/report_validate", {"facts": facts, "endpoint_ready": True})
+        ("research/export_bibtex", {"artifact_id": artifact_id})
     ]
 
 
@@ -200,6 +226,17 @@ async def test_runtime_extensions_register_connector_and_embed(tmp_path):
     assert vectors == {"value": [[0.0]]}
 
 
+async def test_runtime_extension_validates_agent_spec(tmp_path):
+    runtime = Runtime(tmp_path / "data", [endpoint(FakeProvider([]))])
+    agent = RuntimeAgent(runtime)
+
+    result = await agent.ext_method(
+        "runtime/agents/validate", {"agent_spec": valid_agent_spec()}
+    )
+
+    assert result == {"valid": True}
+
+
 class KernelClient:
     def __init__(self):
         self.calls = []
@@ -210,6 +247,8 @@ class KernelClient:
             return {"facts": [], "claims": [], "sources": []}
         if method == "research/report_validate":
             return {"valid": True, "delivery_level": 4}
+        if method == "research/export_bibtex":
+            return {"id": params["artifact_id"], "content": "@article{x}"}
         if method == "research/submit_observation":
             return {"id": "node:observation", "life_state": "pending"}
         raise AssertionError(method)
@@ -236,4 +275,14 @@ def observation():
         "observed_at": "2026-08-23T09:30:00+08:00",
         "artifact_ids": ["artifact:" + "a" * 64],
         "parent_id": "node:direction",
+    }
+
+
+def valid_agent_spec():
+    return {
+        "id": "researcher",
+        "name": "Researcher",
+        "endpoint": "embedding",
+        "model": "embed-model",
+        "instructions": "Use evidence.",
     }
