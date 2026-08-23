@@ -67,6 +67,16 @@ async def test_json_retries_malformed_output_in_same_session():
 
 
 @pytest.mark.asyncio
+async def test_json_retries_non_object_output_in_same_session():
+    runtime = RetryingRuntime(
+        ['{"subject":"direction"}\n{"duplicate":false}', '{"duplicate":false}']
+    )
+    result = await runtime._json({}, "compare", {}, ("duplicate",))
+    assert result["duplicate"] is False
+    assert "valid JSON object" in runtime.prompts[1]
+
+
+@pytest.mark.asyncio
 async def test_json_reuses_completed_operation_without_prompting():
     runtime = RetryingRuntime(['{"duplicate":false}'])
     runtime.prompts.append("already completed")

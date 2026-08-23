@@ -258,7 +258,7 @@ def _operation_session_id(operation_id: str) -> str:
 def _validated_json(output: str, required: tuple[str, ...]) -> tuple[dict, list[str]]:
     try:
         value = json_object(output)
-    except ValueError:
+    except (TypeError, ValueError):
         return {}, ["valid JSON object"]
     return value, [field for field in required if field not in value]
 
