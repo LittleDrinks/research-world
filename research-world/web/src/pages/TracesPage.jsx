@@ -67,7 +67,8 @@ function RunHeader({ run, from }) {
   return <header className="run-header">
     {from && <button className="button secondary" onClick={() => navigate(`/chat/${encodeURIComponent(from)}`)}><ArrowLeft size={15} />返回对话</button>}
     <div className="run-title"><h1>{run.definition_snapshot?.name || run.pipeline_id} <span className="mono">{shortId(run.id)}</span></h1>
-      <span>节点 {shortId(run.node_id)} · 当前阶段 {run.stage} · {formatDate(run.created_at)}</span></div>
+      <span>节点 {shortId(run.node_id)} · 当前阶段 {run.stage} · {formatDate(run.created_at)}</span>
+      {run.payload?.error && <p className="trace-error">{run.payload.error}</p>}</div>
     <StatusPill status={run.status} label={RUN_STATUS[run.status]} />
     {run.status === "waiting_human" && <HumanGate run={run} busy={busy} act={act} />}
   </header>;

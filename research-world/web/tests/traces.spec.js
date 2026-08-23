@@ -32,6 +32,14 @@ test("marks sessions unavailable instead of fabricating them", async ({ page }) 
 });
 
 
+test("shows the durable failure reason in the run header", async ({ page }) => {
+  const failed = run({ status: "failed", stage: "failed", payload: { error: "runtime response must be a JSON object" } });
+  await mockBase(page, bootstrap({ runs: [failed] }));
+  await page.goto("/traces/run%3Ar1");
+  await expect(page.locator(".run-header .trace-error")).toHaveText("runtime response must be a JSON object");
+});
+
+
 test("confirms a waiting run through the real API", async ({ page }) => {
   let confirmed = false;
   let rejected;
