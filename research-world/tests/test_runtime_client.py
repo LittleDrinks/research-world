@@ -217,8 +217,8 @@ def test_embedding_wraps_runtime_failure():
 def observation_record(artifact_id):
     return {
         "kind": "source",
-        "payload": {"title": "Connector measurement"},
-        "provenance": {"actor": "connector:test", "method": "tool call"},
+        "payload": {"title": "Tool measurement"},
+        "provenance": {"actor": "tool:test", "method": "tool call"},
         "observed_at": "2026-08-23T09:30:00+08:00",
         "artifact_ids": [artifact_id],
     }

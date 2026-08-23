@@ -176,12 +176,6 @@ def runtime_routes(app, kernel) -> None:
     async def catalog(project_id: str):
         return await kernel.query(KernelQuery("catalog", project_id))
 
-    @app.post("/api/v1/runtime/connectors", status_code=201)
-    async def register_connector(request: Request):
-        return await kernel.command(
-            KernelCommand("register_connector", values=await request.json())
-        )
-
     @app.get("/api/v1/runtime/sessions/{session_id}")
     async def session(session_id: str):
         return await kernel.query(
@@ -193,6 +187,11 @@ def agent_routes(app, kernel) -> None:
     @app.get("/api/v1/agents")
     async def all_agents():
         return await kernel.query(KernelQuery("agents"))
+
+    @app.post("/api/v1/agents", status_code=201)
+    async def create_agent(request: Request):
+        values = {"value": await request.json()}
+        return await kernel.command(KernelCommand("create_agent", values=values))
 
     @app.get("/api/v1/agents/{agent_id}")
     async def agent(agent_id: str):

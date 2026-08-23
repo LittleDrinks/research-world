@@ -4,6 +4,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { createThread } from "../api";
 import { useWorld } from "../context/WorldContext";
 import { KIND_LABELS, nodeText, RUN_STATUS, shortId } from "../utils/labels";
+import { NewAgentDialog } from "./agents/NewAgentDialog";
 
 
 const TITLES = { "/map": "节点", "/chat": "对话", "/traces": "运行", "/agents": "Agent" };
@@ -15,7 +16,8 @@ export function RecordList({ module, close }) {
   const Toggle = open ? ChevronDown : ChevronRight;
   return <section className="record-list">
     <header><button className="record-toggle" aria-expanded={open} onClick={() => setOpen(!open)}><Toggle size={14} />{TITLES[module]}</button>
-      {module === "/chat" && <NewThreadButton close={close} />}</header>
+      {module === "/chat" && <NewThreadButton close={close} />}
+      {module === "/agents" && <NewAgentButton close={close} />}</header>
     {open && <div className="record-items"><Records module={module} close={close} /></div>}</section>;
 }
 
@@ -67,6 +69,20 @@ function AgentRecords({ agents, close }) {
   return agents.map((agent) => <button key={agent.id} className={`record-item ${agent.id === agentId ? "selected" : ""}`}
     onClick={() => { navigate(`/agents/${encodeURIComponent(agent.id)}`); close(); }}>
     <span>{agent.name || agent.id}</span><small className="mono">{agent.model}</small></button>);
+}
+
+
+function NewAgentButton({ close }) {
+  const { projectId, refresh, setError } = useWorld();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const done = async (agent) => {
+    try { await refresh(projectId); close(); navigate(`/agents/${encodeURIComponent(agent.id)}`); }
+    catch (error) { setError(error.message); }
+  };
+  return <>
+    <button className="icon-button record-add" aria-label="新建 Agent" title="新建 Agent" onClick={() => setOpen(true)}><Plus size={15} /></button>
+    <NewAgentDialog open={open} onClose={() => setOpen(false)} done={done} /></>;
 }
 
 

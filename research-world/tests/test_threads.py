@@ -14,7 +14,6 @@ class FakeRuntime:
         self.launches = []
         self.prompts = []
         self.sessions = {}
-        self.connectors = []
         self.validated = []
         self.kernel = None
 
@@ -35,12 +34,8 @@ class FakeRuntime:
             "workspace": workspace,
             "endpoints": [],
             "skills": [],
-            "connectors": self.connectors,
+            "tools": [],
         }
-
-    async def register_connector(self, value):
-        self.connectors.append(value)
-        return value
 
     async def validate_agent(self, value):
         self.validated.append(value)
@@ -262,18 +257,34 @@ def test_agent_api_validates_before_registry_write(world, tmp_path):
     assert agents.get("research-assistant")["name"] == "研究助手"
 
 
-def test_connector_registration_is_delegated_to_runtime(world, project, tmp_path):
+def test_agent_api_creates_without_upserting(world, tmp_path):
     runtime = FakeRuntime()
+    agents = _agents(tmp_path)
     kernel = ResearchKernel(
-        world,
-        projects_root=tmp_path / "projects",
-        runtime=runtime,
-        agents=_agents(tmp_path),
+        world, projects_root=tmp_path / "projects", runtime=runtime, agents=agents
     )
     client = TestClient(create_app(kernel))
-    connector = {"id": "lean4", "transport": "stdio", "command": "lean-mcp"}
+    value = {**agents.get("research-assistant"), "id": "proof-reviewer"}
 
-    response = client.post("/api/v1/runtime/connectors", json=connector)
+    created = client.post("/api/v1/agents", json=value)
+    duplicate = client.post("/api/v1/agents", json={**value, "name": "覆盖"})
 
-    assert response.status_code == 201
-    assert runtime.connectors == [connector]
+    assert created.status_code == 201
+    assert created.json() == value
+    assert duplicate.status_code == 400
+    assert agents.get("proof-reviewer")["name"] == "研究助手"
+    assert runtime.validated == [value]
+
+
+def test_agent_update_requires_existing_id(world, tmp_path):
+    runtime = FakeRuntime()
+    agents = _agents(tmp_path)
+    kernel = ResearchKernel(
+        world, projects_root=tmp_path / "projects", runtime=runtime, agents=agents
+    )
+    value = {**agents.get("research-assistant"), "id": "missing"}
+
+    response = TestClient(create_app(kernel)).put("/api/v1/agents/missing", json=value)
+
+    assert response.status_code == 404
+    assert not (agents.root / "missing.yaml").exists()

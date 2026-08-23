@@ -172,9 +172,6 @@ class ResearchKernel:
 
         return fail_run(self._world, command.values["run_id"], command.values["error"])
 
-    async def _command_register_connector(self, command: KernelCommand) -> dict:
-        return await self._require_runtime().register_connector(command.values)
-
     async def _command_create_thread(self, command: KernelCommand) -> dict:
         value = command.values
         return await self._require_threads().create(
@@ -198,6 +195,13 @@ class ResearchKernel:
     def _command_unpin_thread(self, command: KernelCommand) -> dict:
         value = command.values
         return self._require_threads().unpin(value["thread_id"], value["node_id"])
+
+    async def _command_create_agent(self, command: KernelCommand) -> dict:
+        _validate_fields(command.values, {"value"}, {"value"})
+        value = command.values["value"]
+        self._require_agents().validate_new(value)
+        await self._require_runtime().validate_agent(value)
+        return self._require_agents().create(value)
 
     async def _command_save_agent(self, command: KernelCommand) -> dict:
         _validate_fields(command.values, {"agent_id", "value"}, {"agent_id", "value"})

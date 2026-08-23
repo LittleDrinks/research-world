@@ -238,7 +238,6 @@ def agent_spec(agent_id):
         "instructions": "Use the saved definition.",
         "skills": ["evidence-review"],
         "tools": ["read_skill"],
-        "connectors": ["zotero"],
         "options": {"reasoning_effort": "high"},
     }
 

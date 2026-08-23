@@ -54,11 +54,6 @@ class RuntimeClient:
     async def recognize(self, workspace: str) -> dict:
         return await self._extension("runtime/discover", {"workspace": workspace})
 
-    async def register_connector(self, connector: dict) -> dict:
-        return await self._extension(
-            "runtime/connectors/register", {"connector": connector}
-        )
-
     async def validate_agent(self, agent_spec: dict) -> dict:
         return await self._extension(
             "runtime/agents/validate", {"agent_spec": agent_spec}

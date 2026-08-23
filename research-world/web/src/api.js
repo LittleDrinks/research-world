@@ -58,10 +58,10 @@ export const searchNodes = (projectId, query) => fetch("/api/v1/tools/graph-quer
 export const getNode = (nodeId) => fetch(`/api/v1/nodes/${enc(nodeId)}`).then(decode);
 
 export const getCatalog = (projectId) => fetch(`/api/v1/runtime/catalog?project_id=${enc(projectId)}`).then(decode);
-export const registerConnector = (body) => fetch("/api/v1/runtime/connectors", json("POST", body)).then(decode);
 export const getSession = (sessionId) => fetch(`/api/v1/runtime/sessions/${enc(sessionId)}`).then(decode);
 
 export const listAgents = () => fetch("/api/v1/agents").then(decode);
+export const createAgent = (body) => fetch("/api/v1/agents", json("POST", body)).then(decode);
 export const saveAgent = (agentId, body) => fetch(`/api/v1/agents/${enc(agentId)}`, json("PUT", body)).then(decode);
 
 export const listRuns = (projectId) => fetch(`/api/v1/projects/${enc(projectId)}/runs`).then(decode);

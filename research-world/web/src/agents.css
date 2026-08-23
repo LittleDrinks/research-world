@@ -12,15 +12,6 @@
 .catalog-failure { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid color-mix(in oklab, var(--state-failed) 40%, var(--line)); border-radius: 8px; color: var(--state-failed); background: var(--state-failed-surface); }
 .catalog-failure b, .catalog-failure span { display: block; }
 .catalog-failure span { margin-top: 3px; font-size: 12px; }
-.connector-field > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 18px 0 8px; }
-.connector-field > header > span { font-size: 13px; font-weight: 650; }
-.connector-form { margin-bottom: 10px; padding: 12px 0 14px; border-block: 1px solid var(--line); }
-.connector-form .agent-grid { margin-bottom: 0; }
-.connector-form > .button { margin-top: 2px; }
-.connector-credential { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
-.connector-credential .field { min-width: 0; margin-bottom: 0; }
-.connector-field .capability-picker { margin-top: 0; }
-
 .capability-picker { margin-bottom: 16px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-raised); }
 .capability-picker h2 { margin-bottom: 10px; font-size: 13px; }
 .capability-picker > input { width: 100%; padding: 8px 10px; font-size: 13px; }
@@ -39,8 +30,8 @@
 .capability-options small { color: var(--text-faint); font-size: 11px; }
 
 @media (max-width: 720px) {
-  .agent-grid, .connector-credential { grid-template-columns: minmax(0, 1fr); }
-  .agent-form, .connector-field, .connector-form, .capability-picker { min-width: 0; }
+  .agent-grid { grid-template-columns: minmax(0, 1fr); }
+  .agent-form, .capability-picker { min-width: 0; }
   .agent-form-footer span { min-width: 0; overflow-wrap: anywhere; }
   .agent-form-footer .button { flex: 0 0 auto; }
   .catalog-failure { align-items: flex-start; flex-direction: column; }

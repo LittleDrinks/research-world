@@ -211,7 +211,7 @@ select { min-height: 38px; padding: 0 10px; }
 .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--line); }
 .modal-header h2 { font-size: 16px; }
 .modal-body { padding: 18px; }
-.form-stack .field { margin-bottom: 14px; }
+.form-stack .field { display: block; margin-bottom: 14px; }
 .field > span { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 12px; font-weight: 600; }
 .field > small { display: block; margin-top: 5px; color: var(--text-faint); font-size: 11px; }
 .field input, .field textarea, .field select { width: 100%; padding: 9px 11px; }

@@ -1,10 +1,11 @@
-import { Bot, Plus, RefreshCw, Save, X } from "lucide-react";
+import { Bot, RefreshCw, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
-import { getCatalog, registerConnector, saveAgent } from "../api";
+import { getCatalog, saveAgent } from "../api";
 import { EmptyState } from "../components/bits";
 import { CapabilityPicker } from "../components/agents/CapabilityPicker";
 import { useWorld } from "../context/WorldContext";
+import { AGENT_OPTION_DEFAULTS } from "../utils/agents";
 import { REASONING_EFFORTS } from "../utils/labels";
 import "../agents.css";
 
@@ -17,7 +18,7 @@ export function AgentsPage() {
   const { data, loading } = useWorld();
   if (loading) return <div className="page-loading">正在载入 Agent...</div>;
   if (!agentId && data.agents.length) return <Navigate to={`/agents/${encodeURIComponent(data.agents[0].id)}`} replace />;
-  if (!agentId) return <EmptyState icon={Bot} title="暂无 Agent" hint="Agent 定义来自服务端 agents 目录。" />;
+  if (!agentId) return <EmptyState icon={Bot} title="暂无 Agent" hint="点击侧栏 + 新建 Agent。" />;
   const agent = data.agents.find((item) => item.id === agentId);
   if (!agent) return <EmptyState icon={Bot} title="Agent 不存在" />;
   return <AgentEditor key={agent.id} agent={agent} />;
@@ -66,7 +67,7 @@ function AgentEditor({ agent }) {
     <header className="agent-form-header"><h1>{form.name || form.id}</h1><span className="mono">{form.id}</span></header>
     {failed ? <CatalogFailure message={failed} retry={retry} />
       : !catalog ? <p className="record-empty">正在载入 runtime catalog...</p>
-      : <CatalogFields form={form} patch={patch} patchOption={patchOption} catalog={catalog} retry={retry} />}</div>
+      : <CatalogFields form={form} patch={patch} patchOption={patchOption} catalog={catalog} />}</div>
     <footer className="agent-form-footer"><span>{issue || (state === "saved" ? "已保存" : state === "saving" ? "保存中..." : "")}</span>
       <button className="button primary" disabled={!catalog || Boolean(issue) || state === "saving"} onClick={save}><Save size={15} />保存</button></footer></section>;
 }
@@ -104,29 +105,33 @@ function formIssue(form) {
 
 
 function missingCapabilities(form, catalog) {
-  const groups = [[form.skills, catalog.skills], [form.tools, catalog.tools], [form.connectors, catalog.connectors]];
+  const groups = [[form.skills, catalog.skills], [form.tools, catalog.tools]];
   return groups.flatMap(([selected, options]) => {
-    const known = new Set(options.filter((item) => item.available !== false).map((item) => item.id));
+    const known = new Set(options.filter(availableCapability).map((item) => item.id));
     return selected.filter((id) => !known.has(id));
   });
 }
 
 
-function CatalogFields({ form, patch, patchOption, catalog, retry }) {
+function availableCapability(item) {
+  return item.available !== false && (!item.status || item.status === "ready");
+}
+
+
+function CatalogFields({ form, patch, patchOption, catalog }) {
   return <>
     <IdentityFields form={form} patch={patch} />
     <EndpointFields form={form} patch={patch} patchOption={patchOption} catalog={catalog} />
     <CapabilityPicker label="Skills" options={catalog.skills} selected={form.skills} onChange={(value) => patch("skills", value)} />
-    <CapabilityPicker label="工具" options={catalog.tools.map((tool) => ({ ...tool, description: tool.name }))} selected={form.tools} onChange={(value) => patch("tools", value)} />
-    <ConnectorField form={form} patch={patch} catalog={catalog} retry={retry} />
+    <CapabilityPicker label="工具" options={catalog.tools.map(toolOption)} selected={form.tools} onChange={(value) => patch("tools", value)} />
     <label className="field"><span>指令</span><textarea required rows={6} value={form.instructions} onChange={(event) => patch("instructions", event.target.value)} /></label>
     <AdvancedFields form={form} patchOption={patchOption} /></>;
 }
 
 
 function normalize(agent) {
-  return { skills: [], tools: [], connectors: [], options: {}, ...agent,
-    options: { reasoning_effort: "medium", sandbox: "read-only", max_rounds: 12, token_budget: 200000, ...(agent.options || {}) } };
+  return { skills: [], tools: [], options: {}, ...agent,
+    options: { ...AGENT_OPTION_DEFAULTS, ...(agent.options || {}) } };
 }
 
 
@@ -155,89 +160,16 @@ function EndpointFields({ form, patch, patchOption, catalog }) {
 }
 
 
-function ConnectorField({ form, patch, catalog, retry }) {
-  const [adding, setAdding] = useState(false);
-  const options = catalog.connectors.map(connectorOption);
-  return <section className="connector-field"><header><span>Connectors</span>
-    <button className="button secondary" onClick={() => setAdding(!adding)}>
-      {adding ? <X size={14} /> : <Plus size={14} />}{adding ? "取消" : "添加"}</button></header>
-    {adding && <ConnectorForm done={(connector) => {
-      patch("connectors", [...new Set([...form.connectors, connector.id])]);
-      setAdding(false); retry();
-    }} />}
-    <CapabilityPicker label="已识别 Connector" options={options} selected={form.connectors}
-      onChange={(value) => patch("connectors", value)} /></section>;
-}
-
-
-function connectorOption(item) {
-  const summary = [item.transport, item.source].filter(Boolean).join(" · ");
-  return { id: item.id, name: item.name, description: item.description || summary,
-    source: item.source, available: item.available };
-}
-
-
-function ConnectorForm({ done }) {
-  const { setError } = useWorld();
-  const [form, setForm] = useState({ id: "", name: "", transport: "stdio", location: "", args: "", credentialKey: "", credentialEnv: "" });
-  const [busy, setBusy] = useState(false);
-  const patch = (key, value) => setForm((current) => ({ ...current, [key]: value }));
-  const submit = async (event) => {
-    event.preventDefault(); setBusy(true);
-    try { const connector = await registerConnector(connectorPayload(form)); setError(""); done(connector); }
-    catch (error) { setError(error.message); }
-    finally { setBusy(false); }
-  };
-  return <form className="connector-form" onSubmit={submit}><ConnectorInputs form={form} patch={patch} />
-    <button className="button primary" disabled={busy} type="submit"><Plus size={14} />注册 Connector</button></form>;
-}
-
-
-function ConnectorInputs({ form, patch }) {
-  return <><div className="agent-grid">
-    <label className="field"><span>ID</span><input required pattern="[A-Za-z][A-Za-z0-9_-]*" value={form.id} onChange={(event) => patch("id", event.target.value)} /></label>
-    <label className="field"><span>名称</span><input required value={form.name} onChange={(event) => patch("name", event.target.value)} /></label>
-    <label className="field"><span>Transport</span><select value={form.transport} onChange={(event) => patch("transport", event.target.value)}><option value="stdio">stdio</option><option value="http">HTTP</option><option value="sse">SSE</option></select></label></div>
-    <label className="field"><span>{form.transport === "stdio" ? "命令" : "URL"}</span><input required value={form.location} onChange={(event) => patch("location", event.target.value)} /></label>
-    {form.transport === "stdio" && <label className="field"><span>参数</span><textarea rows={3} value={form.args} onChange={(event) => patch("args", event.target.value)} /></label>}
-    <CredentialInputs form={form} patch={patch} />
-  </>;
-}
-
-
-function CredentialInputs({ form, patch }) {
-  const stdio = form.transport === "stdio";
-  const required = Boolean(form.credentialKey || form.credentialEnv);
-  return <div className="connector-credential">
-    <label className="field"><span>{stdio ? "进程 Env key" : "Header 名"}</span><input required={required}
-      pattern={stdio ? "[A-Za-z_][A-Za-z0-9_]*" : undefined} value={form.credentialKey}
-      onChange={(event) => patch("credentialKey", event.target.value)} /></label>
-    <label className="field"><span>来源环境变量</span><input required={required} pattern="[A-Za-z_][A-Za-z0-9_]*"
-      value={form.credentialEnv} onChange={(event) => patch("credentialEnv", event.target.value)} /></label></div>;
-}
-
-
-function connectorPayload(form) {
-  const base = { id: form.id.trim(), name: form.name.trim(), transport: form.transport };
-  const args = form.args.split("\n").map((value) => value.trim()).filter(Boolean);
-  const field = form.transport === "stdio" ? "env" : "headers";
-  const credential = credentialPayload(form, field);
-  if (form.transport === "stdio") return { ...base, command: form.location.trim(), args, ...credential };
-  return { ...base, url: form.location.trim(), ...credential };
-}
-
-
-function credentialPayload(form, field) {
-  const key = form.credentialKey.trim();
-  const env = form.credentialEnv.trim();
-  return key && env ? { [field]: { [key]: `\${${env}}` } } : {};
+function toolOption(tool) {
+  return { ...tool, description: tool.description || tool.name,
+    available: availableCapability(tool) };
 }
 
 
 function agentPayload(form) {
   return { id: form.id, name: form.name.trim(), endpoint: form.endpoint, model: form.model,
     instructions: form.instructions.trim(), skills: [...form.skills], tools: [...form.tools],
-    connectors: [...form.connectors], options: optionPayload(form.options) };
+    options: optionPayload(form.options) };
 }
 
 

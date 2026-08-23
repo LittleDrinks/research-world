@@ -53,14 +53,14 @@ export function catalog() {
   return { endpoints: [{ id: "openai-compatible", name: "OpenAI 兼容端点", available: true }, { id: "codex", name: "Codex CLI", available: true }],
     models: [{ id: "qwen3.7-flash", endpoint: "openai-compatible" }, { id: "gpt-5.2", endpoint: "codex" }],
     skills: [{ id: "skill-review", name: "文献综述", description: "检索并综述相关文献", source: "workspace" }],
-    tools: [{ id: "read_resource", name: "读取引用节点" }, { id: "graph_query", name: "查询研究图谱" }],
-    connectors: [{ id: "literature", name: "文献数据库", transport: "http", source: "runtime", available: true }] };
+    tools: [{ id: "read_resource", name: "读取引用节点", status: "ready" },
+      { id: "graph_query", name: "查询研究图谱", status: "ready" }] };
 }
 
 
 export function agents() {
   return [{ id: "research-assistant", name: "研究助手", endpoint: "openai-compatible", model: "qwen3.7-flash",
-    instructions: "围绕研究问题进行严谨讨论。", skills: [], tools: ["read_resource"], connectors: [],
+    instructions: "围绕研究问题进行严谨讨论。", skills: [], tools: ["read_resource"],
     options: { reasoning_effort: "high", sandbox: "read-only", max_rounds: 12, token_budget: 200000 } }];
 }
 

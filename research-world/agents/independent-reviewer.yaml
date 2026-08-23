@@ -8,7 +8,6 @@ skills: []
 tools:
   - read_resource
   - graph_query
-connectors: []
 options:
   reasoning_effort: high
   sandbox: read-only

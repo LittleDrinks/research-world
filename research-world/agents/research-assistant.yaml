@@ -13,7 +13,6 @@ tools:
   - report_validate
   - export_bibtex
   - submit_observation
-connectors: []
 options:
   reasoning_effort: high
   sandbox: read-only

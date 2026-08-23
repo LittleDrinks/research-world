@@ -19,13 +19,32 @@ class AgentRegistry:
             raise KeyError(agent_id)
         return self._read(path)
 
+    def create(self, value: dict) -> dict:
+        self.validate_new(value)
+        self._path(value["id"]).write_text(
+            yaml.safe_dump(value, allow_unicode=True, sort_keys=False), encoding="utf-8"
+        )
+        return self.get(value["id"])
+
     def save(self, agent_id: str, value: dict) -> dict:
         if value.get("id") != agent_id:
             raise ValueError("agent id cannot change")
+        if not self._path(agent_id).is_file():
+            raise KeyError(agent_id)
         self._path(agent_id).write_text(
             yaml.safe_dump(value, allow_unicode=True, sort_keys=False), encoding="utf-8"
         )
         return self.get(agent_id)
+
+    def validate_new(self, value: dict) -> None:
+        agent_id = value.get("id")
+        if not isinstance(agent_id, str):
+            raise ValueError("invalid agent id")
+        if self._path(agent_id).exists():
+            raise ValueError(f"agent already exists: {agent_id}")
+        for key in ("name", "instructions"):
+            if not str(value.get(key) or "").strip():
+                raise ValueError(f"agent {key} is required")
 
     def _path(self, agent_id: str) -> Path:
         if not agent_id or any(
