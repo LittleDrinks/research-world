@@ -87,10 +87,16 @@
 .polarity { font-size: 11px; font-weight: 600; }
 .polarity.supports { color: var(--state-success); }
 .polarity.refutes { color: var(--state-failed); }
-.rebuttal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-.rebuttal-grid > div { padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-raised); }
-.rebuttal-grid p { margin: 6px 0; font-size: 12px; }
-.rebuttal-grid span { color: var(--text-muted); font-size: 11px; }
+.claim-list, .audit-evidence { margin: 10px 0 0; padding: 0; list-style: none; }
+.claim-list { display: grid; gap: 8px; counter-reset: claims; }
+.claim-list > li { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.claim-list header, .review-grid header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.claim-list b { min-width: 0; font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+.claim-list span, .review-grid span { flex: 0 0 auto; color: var(--text-muted); font-size: 11px; }
+.review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.review-grid article { min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-raised); }
+.review-grid p { margin: 6px 0; font-size: 12px; overflow-wrap: anywhere; }
+.audit-evidence { display: grid; gap: 3px; color: var(--text-faint); font-size: 11px; overflow-wrap: anywhere; }
 /* —— 科研日志 —— */
 .journal { min-height: 0; overflow-y: auto; margin: 0; padding: 14px max(18px, calc((100% - 860px) / 2)) 40px; list-style: none; background: var(--app-canvas); }
 .journal li { display: flex; align-items: baseline; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); }
@@ -108,6 +114,7 @@
   .map-tools { gap: 6px; }
   .map-workspace { grid-template-columns: 1fr; grid-template-rows: minmax(420px, 58vh) auto; overflow-y: auto; }
   .inspector { min-height: 420px; border-top: 1px solid var(--line); border-left: 0; }
+  .review-grid { grid-template-columns: 1fr; }
   .journal li { flex-wrap: wrap; gap: 6px; }
 }
 @media (prefers-reduced-motion: reduce) {

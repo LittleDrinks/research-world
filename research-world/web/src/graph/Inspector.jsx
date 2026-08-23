@@ -7,14 +7,15 @@ import { RUN_STATUS, shortId } from "../utils/labels";
 
 
 const LABELS = { question: "问题", source: "来源", direction: "方向", experiment: "实验",
-  pending: "待审查", admitted: "已入图", ghost: "已驳回", proposed: "待验证", supported: "已支持", refuted: "已反驳" };
+  pending: "待审查", admitted: "已入图", ghost: "已驳回", proposed: "待验证", supported: "已支持", refuted: "已反驳",
+  uncertain: "不确定", approve: "通过", reject: "驳回", support: "支持方", challenge: "质疑方", mechanical: "机械校验" };
 
 
 export function Inspector({ node, nodes, edges, run, onSelect, onStart, onOpen }) {
   if (!node) return <aside className="inspector inspector-empty">选择节点查看上下文。</aside>;
   return <aside className="inspector"><div className="inspector-scroll"><NodeHeader node={node} run={run} onStart={onStart} onOpen={onOpen} />
     <NodeRecord node={node} /><Relations node={node} nodes={nodes} edges={edges} onSelect={onSelect} />
-    <Rebuttal node={node} /><DiscussEntry node={node} /></div></aside>;
+    <Claims node={node} /><Reviews node={node} />{node.life_state === "admitted" && <DiscussEntry node={node} />}</div></aside>;
 }
 
 
@@ -23,7 +24,7 @@ function NodeHeader({ node, run, onStart, onOpen }) {
   return <header className="inspector-header"><div className="eyebrow"><span>{LABELS[node.kind]}</span><span>{LABELS[node.life_state]}</span>{node.direction_status && <span>{LABELS[node.direction_status]}</span>}</div>
     <h1>{title}</h1>{node.rejection_reason && <p className="rejection-reason">{node.rejection_reason}</p>}
     {run && <button className="button primary workflow-start" onClick={() => onOpen(run)}><Activity size={16} />{RUN_STATUS[run.status] || run.status} · 查看轨迹</button>}
-    {!run && <PipelineLauncher node={node} onStart={onStart} />}</header>;
+    {!run && node.life_state === "admitted" && <PipelineLauncher node={node} onStart={onStart} />}</header>;
 }
 
 
@@ -55,9 +56,38 @@ function Relations({ node, nodes, edges, onSelect }) {
 }
 
 
-function Rebuttal({ node }) {
+function Claims({ node }) {
+  const claims = node.payload?.claims || [];
+  if (!claims.length) return null;
+  return <section className="inspector-section"><h2>原子主张</h2><ol className="claim-list">
+    {claims.map((claim, index) => <li key={claim.id || index}><header><b>{claim.text}</b><span>{label(claim.verdict)}</span></header>
+      <Evidence values={claim.evidence} /></li>)}</ol></section>;
+}
+
+
+function Reviews({ node }) {
   if (!node.rebuttal) return null;
-  return <section className="inspector-section"><h2>双审意见</h2><div className="rebuttal-grid">{Object.entries(node.rebuttal).map(([reviewer, value]) => <div key={reviewer}><b>{reviewer === "reviewer_a" ? "审查 A" : "审查 B"}</b><p>{value.rebuttal || value.feedback || value.decision}</p><span>{value.quality ?? "-"} / {value.diversity ?? "-"}</span></div>)}</div></section>;
+  return <section className="inspector-section"><h2>审计意见</h2><div className="review-grid">
+    {Object.entries(node.rebuttal).map(([name, value]) => <Review key={name} name={name} value={value} />)}
+  </div></section>;
+}
+
+
+function Review({ name, value }) {
+  const title = label(value.stance) || name;
+  return <article><header><b>{title}</b><span>{label(value.decision || value.stance)}</span></header>
+    <p>{value.argument || value.reason}</p><Evidence values={value.evidence} /></article>;
+}
+
+
+function Evidence({ values = [] }) {
+  if (!values.length) return null;
+  return <ul className="audit-evidence">{values.map((value, index) => <li key={`${value}:${index}`} className="mono">{value}</li>)}</ul>;
+}
+
+
+function label(value) {
+  return LABELS[value] || value;
 }
 
 

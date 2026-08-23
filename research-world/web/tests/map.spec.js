@@ -105,6 +105,48 @@ test("selects a node from the sidebar record list", async ({ page }) => {
 });
 
 
+test("does not offer a Thread entry for a ghost node", async ({ page }) => {
+  const ghost = node("node:g", "direction", { life_state: "ghost", rejection_reason: "证据不足" });
+  await mockBase(page, bootstrap({ nodes: [node("node:q", "question"), ghost] }));
+  await page.goto("/map?node=node%3Ag");
+  const inspector = page.locator(".inspector");
+  await expect(inspector).toContainText("已驳回");
+  await expect(inspector.locator(".inspector-section", { hasText: "讨论" })).toHaveCount(0);
+  await expect(inspector.getByRole("button", { name: "新建对话并钉入该节点" })).toHaveCount(0);
+  await expect(inspector.getByRole("button", { name: "发起运行" })).toHaveCount(0);
+  await expect(inspector.getByLabel("选择流程")).toHaveCount(0);
+});
+
+
+test("shows claim evidence and support challenge arguments without scores", async ({ page }) => {
+  const reviewed = node("node:d", "direction", {
+    payload: { text: "可验证方向", claims: [{ id: "claim:1", text: "效应高于基线", verdict: "supported", evidence: ["node:s"] }] },
+    rebuttal: {
+      reviewer_a: { stance: "support", decision: "approve", argument: "来源支持该机制", evidence: ["claim:1", "node:s"] },
+      reviewer_b: { stance: "challenge", decision: "reject", argument: "仍需补实验", evidence: ["artifact:abc"] },
+    },
+  });
+  await mockBase(page, bootstrap({ nodes: [node("node:q", "question"), reviewed] }));
+  await page.goto("/map?node=node%3Ad");
+  const inspector = page.locator(".inspector");
+  const claim = inspector.locator(".claim-list > li");
+  await expect(claim).toContainText("效应高于基线");
+  await expect(claim).toContainText("已支持");
+  await expect(claim).toContainText("node:s");
+  const reviews = inspector.locator(".review-grid article");
+  await expect(reviews.nth(0)).toContainText("支持方");
+  await expect(reviews.nth(0)).toContainText("通过");
+  await expect(reviews.nth(0)).toContainText("claim:1");
+  await expect(reviews.nth(0)).toContainText("node:s");
+  await expect(reviews.nth(1)).toContainText("质疑方");
+  await expect(reviews.nth(1)).toContainText("驳回");
+  await expect(reviews.nth(1)).toContainText("仍需补实验");
+  await expect(reviews.nth(1)).toContainText("artifact:abc");
+  await expect(inspector).not.toContainText("quality");
+  await expect(inspector).not.toContainText("diversity");
+});
+
+
 test("keeps graph and inspector side by side on a desktop grid", async ({ page }) => {
   await mockBase(page, mapFixture());
   await page.goto("/map");
