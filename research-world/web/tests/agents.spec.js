@@ -311,13 +311,34 @@ test("browses a Profile Preset and applies it as an editable creation draft", as
 
 test("blocks applying a Preset whose Tool is unavailable", async ({ page }) => {
   const value = catalog();
-  value.presets = [preset({ tools: [{ id: "lean4", status: "missing" }] })];
+  value.presets = [preset({ tools: [{ id: "lean4", status: "unavailable", reason: "not_installed" }] })];
   value.tools = value.tools.filter((tool) => tool.id !== "lean4");
   await mockBase(page);
   await page.route(/\/api\/v1\/runtime\/catalog/, (route) => route.fulfill({ json: value }));
   await page.goto("/agents/research-assistant");
+  await expect(page.getByRole("region", { name: "Profile Presets" }))
+    .toContainText("lean4（unavailable / not_installed）");
   await page.getByRole("button", { name: "应用为草稿" }).click();
   const dialog = page.getByRole("dialog", { name: "应用 Preset：数学证明" });
-  await expect(dialog.getByRole("alert")).toContainText("lean4（missing）");
-  await expect(dialog.getByRole("button", { name: "创建 Agent" })).toBeDisabled();
+  await expect(dialog.getByRole("alert")).toContainText("lean4（unavailable / not_installed）");
+  const submit = dialog.getByRole("button", { name: "创建 Agent", exact: true });
+  await expect(submit).toHaveText("创建 Agent");
+  await expect(submit).toBeDisabled();
+});
+
+
+test("shows an unavailable Tool reason separately from the disabled save command", async ({ page }) => {
+  const value = catalog();
+  value.tools = value.tools.filter((tool) => tool.id !== "lean4");
+  value.presets = [preset({ tools: [{ id: "lean4", status: "unavailable", reason: "not_installed" }] })];
+  await mockBase(page);
+  await page.route(/\/api\/v1\/agents$/, (route) => route.fulfill({ json: [{ ...agents()[0], tools: ["lean4"] }] }));
+  await page.route(/\/api\/v1\/runtime\/catalog/, (route) => route.fulfill({ json: value }));
+
+  await page.goto("/agents/research-assistant");
+
+  await expect(page.getByRole("alert")).toContainText("Tool 不可用：lean4（unavailable / not_installed）");
+  const save = page.getByRole("button", { name: "保存", exact: true });
+  await expect(save).toHaveText("保存");
+  await expect(save).toBeDisabled();
 });

@@ -2,6 +2,7 @@ import { Sparkles } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { createAgent, draftAgent, getCatalog } from "../../api";
+import { blockedTools, toolStatus } from "../../utils/agents";
 import { AgentDraftEditor } from "../agents/AgentDraftEditor";
 import { useWorld } from "../../context/WorldContext";
 import { usePopoverDismiss } from "./usePopoverDismiss";
@@ -89,10 +90,9 @@ function cloneSpec(spec) {
 
 
 function blockedIssues(draft, spec) {
-  const status = new Map(draft.catalog.tools.map((tool) => [tool.id, tool.status || "ready"]));
   const server = draft.issues.filter((issue) => !issue.startsWith("tool unavailable:"));
-  return spec.tools.filter((id) => (status.get(id) || "missing") !== "ready")
-    .map((id) => `Tool 不可用：${id}（${status.get(id) || "missing"}）`).concat(server);
+  const tools = blockedTools(spec.tools, draft.tools, draft.catalog.tools);
+  return tools.map((tool) => `Tool 不可用：${toolStatus(tool)}`).concat(server);
 }
 
 

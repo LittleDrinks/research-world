@@ -12,7 +12,7 @@ def agent_draft(preset_id: str, catalog: dict) -> dict:
     preset = _preset(preset_id, catalog)
     spec = {**preset["spec"], **_defaults(catalog), "options": dict(DEFAULT_OPTIONS)}
     issues = [
-        f"tool unavailable: {tool['id']} ({tool['status']})"
+        _tool_issue(tool)
         for tool in preset["tools"]
         if tool["status"] != "ready"
     ]
@@ -27,16 +27,29 @@ def agent_draft(preset_id: str, catalog: dict) -> dict:
 
 
 def require_tools_ready(catalog: dict, value: dict) -> None:
-    status = {
-        item["id"]: item.get("status", "ready") for item in catalog.get("tools", [])
-    }
+    states = _tool_states(catalog)
     blocked = [
-        f"{tool} ({status.get(tool, 'missing')})"
+        _tool_issue(states.get(tool, {"id": tool, "status": "missing"}))
         for tool in value.get("tools", [])
-        if status.get(tool, "missing") != "ready"
+        if states.get(tool, {}).get("status") != "ready"
     ]
     if blocked:
-        raise ValueError(f"tool unavailable: {', '.join(blocked)}")
+        raise ValueError(", ".join(blocked))
+
+
+def _tool_states(catalog: dict) -> dict[str, dict]:
+    states = {}
+    for preset in catalog.get("presets", []):
+        for tool in preset.get("tools", []):
+            states[tool["id"]] = {**states.get(tool["id"], {}), **tool}
+    for tool in catalog.get("tools", []):
+        states[tool["id"]] = {**states.get(tool["id"], {}), **tool}
+    return states
+
+
+def _tool_issue(tool: dict) -> str:
+    state = " / ".join(filter(None, [tool["status"], tool.get("reason")]))
+    return f"tool unavailable: {tool['id']} ({state})"
 
 
 def _preset(preset_id: str, catalog: dict) -> dict:

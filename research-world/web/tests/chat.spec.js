@@ -328,8 +328,11 @@ test("does not insert the mention when the pin fails", async ({ page }) => {
 
 test("drafts an Agent profile from a Preset and confirms creation", async ({ page }) => {
   const values = agents();
+  const editableCatalog = catalog();
+  editableCatalog.models.push({ id: "gpt-5.3", endpoint: "codex" });
   let created;
   await mockChat(page);
+  await page.route(/\/api\/v1\/runtime\/catalog/, (route) => route.fulfill({ json: editableCatalog }));
   await page.route(/\/api\/v1\/projects\/project%3Atest\/agent-drafts/, (route) =>
     route.fulfill({ status: 201, json: agentDraft() }));
   await page.route(/\/api\/v1\/agents(\?|$)/, (route) => {
@@ -345,12 +348,21 @@ test("drafts an Agent profile from a Preset and confirms creation", async ({ pag
   await expect(card.getByLabel("ID")).toHaveValue("math-proof");
   await expect(card.getByLabel("Endpoint")).toHaveValue("openai-compatible");
   await page.screenshot({ path: "test-results/profile-draft-desktop.png", fullPage: true });
+  await card.getByLabel("Endpoint").selectOption("codex");
+  await card.getByLabel("模型").selectOption("gpt-5.3");
+  await card.getByLabel("指令").fill("逐项检查并形式化证明。");
   await card.getByLabel("推理强度").selectOption("high");
   await card.getByText("权限与限制").click();
   await card.getByLabel("Sandbox").selectOption("workspace-write");
+  await card.getByLabel("最大轮次").fill("20");
+  await card.getByLabel("Token 预算").fill("300000");
   const skills = card.locator(".capability-picker", { hasText: "Skills" });
   await skills.getByLabel("搜索Skills").fill("文献综述");
   await skills.locator(".capability-options button").click();
+  const tools = card.locator(".capability-picker", { hasText: "工具" });
+  await tools.getByRole("button", { name: "移除 Lean4" }).click();
+  await tools.getByLabel("搜索工具").fill("图谱");
+  await tools.locator(".capability-options button").click();
   await page.setViewportSize({ width: 390, height: 844 });
   const mask = page.locator(".sidebar-mask");
   if (await mask.count()) await mask.click({ force: true });
@@ -364,9 +376,12 @@ test("drafts an Agent profile from a Preset and confirms creation", async ({ pag
   await card.getByRole("button", { name: "确认创建" }).click();
   await expect.poll(() => created).toBeTruthy();
   expect(created.name).toBe("证明助手");
-  expect(created.tools).toEqual(["lean4"]);
+  expect(created.endpoint).toBe("codex");
+  expect(created.model).toBe("gpt-5.3");
+  expect(created.instructions).toBe("逐项检查并形式化证明。");
+  expect(created.tools).toEqual(["graph_query"]);
   expect(created.skills).toEqual(["skill-review"]);
-  expect(created.options).toMatchObject({ reasoning_effort: "high", sandbox: "workspace-write" });
+  expect(created.options).toEqual({ reasoning_effort: "high", sandbox: "workspace-write", max_rounds: 20, token_budget: 300000 });
   await page.getByRole("link", { name: "打开 Agent 设置" }).click();
   await expect(page).toHaveURL(/\/agents\/math-proof$/);
 });
@@ -406,8 +421,8 @@ test("keeps the Profile draft local and discards it on cancel", async ({ page })
 
 
 test("blocks confirmation while a Preset Tool is unavailable and shows id and status", async ({ page }) => {
-  const draft = agentDraft({ tools: [{ id: "lean4", status: "missing" }], confirmable: false,
-    issues: ["tool unavailable: lean4 (missing)"] });
+  const draft = agentDraft({ tools: [{ id: "lean4", status: "unavailable", reason: "not_installed" }], confirmable: false,
+    issues: ["tool unavailable: lean4 (unavailable / not_installed)"] });
   await mockChat(page);
   await page.route(/\/api\/v1\/projects\/project%3Atest\/agent-drafts/, (route) =>
     route.fulfill({ status: 201, json: draft }));
@@ -420,10 +435,12 @@ test("blocks confirmation while a Preset Tool is unavailable and shows id and st
   await page.getByRole("button", { name: "起草 Agent" }).click();
   await page.getByRole("menuitem", { name: /数学证明/ }).click();
   const card = page.getByRole("region", { name: "Agent 草稿" });
-  await expect(card.getByRole("alert")).toContainText("Tool 不可用：lean4（missing）");
-  await expect(card.getByRole("button", { name: "确认创建" })).toBeDisabled();
+  await expect(card.getByRole("alert")).toContainText("Tool 不可用：lean4（unavailable / not_installed）");
+  const submit = card.getByRole("button", { name: "确认创建", exact: true });
+  await expect(submit).toHaveText("确认创建");
+  await expect(submit).toBeDisabled();
   await card.getByRole("button", { name: "移除 lean4" }).click();
-  await expect(card.getByRole("button", { name: "确认创建" })).toBeEnabled();
+  await expect(submit).toBeEnabled();
 });
 
 

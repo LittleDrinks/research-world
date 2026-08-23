@@ -6,7 +6,7 @@ import { EmptyState } from "../components/bits";
 import { CapabilityPicker } from "../components/agents/CapabilityPicker";
 import { NewAgentDialog } from "../components/agents/NewAgentDialog";
 import { useWorld } from "../context/WorldContext";
-import { AGENT_OPTION_DEFAULTS } from "../utils/agents";
+import { AGENT_OPTION_DEFAULTS, blockedTools, toolStatus } from "../utils/agents";
 import { REASONING_EFFORTS } from "../utils/labels";
 import "../agents.css";
 
@@ -74,7 +74,8 @@ function AgentEditor({ agent }) {
     {failed ? <CatalogFailure message={failed} retry={retry} />
       : !catalog ? <p className="record-empty">正在载入 runtime catalog...</p>
       : <CatalogFields form={form} patch={patch} patchOption={patchOption} catalog={catalog} />}</div>
-    <footer className="agent-form-footer"><span>{issue || (state === "saved" ? "已保存" : state === "saving" ? "保存中..." : "")}</span>
+    <footer className="agent-form-footer">{issue ? <span role="alert">{issue}</span>
+      : <span>{state === "saved" ? "已保存" : state === "saving" ? "保存中..." : ""}</span>}
       <button className="button primary" disabled={!catalog || Boolean(issue) || state === "saving"} onClick={save}><Save size={15} />保存</button></footer>
     <NewAgentDialog open={Boolean(preset)} preset={preset} onClose={() => setPreset(null)} done={created} /></section>;
 }
@@ -89,7 +90,7 @@ function PresetPanel({ catalog, onApply }) {
 
 
 function PresetRow({ preset, onApply }) {
-  const tools = preset.tools.map((tool) => `${tool.id}（${tool.status}）`).join("、") || "无";
+  const tools = preset.tools.map(toolStatus).join("、") || "无";
   return <div className="preset-row"><div className="preset-info"><b>{preset.name}</b><span className="mono">{preset.id}</span>
     <p>{preset.description}</p><small>推荐 Tool：{tools}</small></div>
     <button className="button secondary" onClick={onApply}>应用为草稿</button></div>;
@@ -110,8 +111,19 @@ function catalogIssue(form, catalog) {
   if (!endpoint?.available) return "Endpoint 当前不可用";
   const model = catalog.models.some((item) => item.endpoint === form.endpoint && item.id === form.model);
   if (!model) return "模型与 Endpoint 不匹配";
-  const missing = missingCapabilities(form, catalog);
-  return missing.length ? `能力未被 Runtime 识别：${missing.join("、")}` : "";
+  return capabilityIssue(form, catalog);
+}
+
+
+function capabilityIssue(form, catalog) {
+  const presets = catalog.presets.flatMap((preset) => preset.tools);
+  const blocked = blockedTools(form.tools, presets, catalog.tools);
+  const unknown = missingSkills(form, catalog)
+    .concat(blocked.filter((tool) => tool.status === "missing").map((tool) => tool.id));
+  const unavailable = blocked.filter((tool) => tool.status !== "missing");
+  const issues = unknown.length ? [`能力未被 Runtime 识别：${unknown.join("、")}`] : [];
+  if (unavailable.length) issues.push(`Tool 不可用：${unavailable.map(toolStatus).join("、")}`);
+  return issues.join("；");
 }
 
 
@@ -127,12 +139,9 @@ function formIssue(form) {
 }
 
 
-function missingCapabilities(form, catalog) {
-  const groups = [[form.skills, catalog.skills], [form.tools, catalog.tools]];
-  return groups.flatMap(([selected, options]) => {
-    const known = new Set(options.filter(availableCapability).map((item) => item.id));
-    return selected.filter((id) => !known.has(id));
-  });
+function missingSkills(form, catalog) {
+  const known = new Set(catalog.skills.filter(availableCapability).map((item) => item.id));
+  return form.skills.filter((id) => !known.has(id));
 }
 
 
