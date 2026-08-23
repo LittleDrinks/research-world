@@ -3,8 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createThread } from "../api";
 import { useWorld } from "../context/WorldContext";
-import { RUN_STATUS, shortId } from "../utils/labels";
-import { nodeTitle } from "./nodeText";
+import { nodeText, RUN_STATUS, shortId } from "../utils/labels";
 
 
 const LABELS = { question: "问题", source: "来源", direction: "方向", experiment: "实验",
@@ -21,7 +20,7 @@ export function Inspector({ node, nodes, edges, run, onSelect, onStart, onOpen }
 
 
 function NodeHeader({ node, run, onStart, onOpen }) {
-  const title = nodeTitle(node.payload);
+  const title = nodeText(node);
   return <header className="inspector-header"><div className="eyebrow"><span>{LABELS[node.kind]}</span><span>{LABELS[node.life_state]}</span>{node.direction_status && <span>{LABELS[node.direction_status]}</span>}</div>
     <h1>{title}</h1>{node.rejection_reason && <p className="rejection-reason">{node.rejection_reason}</p>}
     {run && <button className="button primary workflow-start" onClick={() => onOpen(run)}><Activity size={16} />{RUN_STATUS[run.status] || run.status} · 查看轨迹</button>}
@@ -53,7 +52,7 @@ function NodeRecord({ node }) {
 function Relations({ node, nodes, edges, onSelect }) {
   const byId = new Map(nodes.map((item) => [item.id, item]));
   const related = edges.filter((edge) => edge.source === node.id || edge.target === node.id).map((edge) => ({ edge, node: byId.get(edge.source === node.id ? edge.target : edge.source) })).filter((item) => item.node);
-  return <section className="inspector-section"><h2><GitBranch size={15} />证据关系</h2>{related.length ? <ul className="relation-list">{related.map(({ edge, node: item }) => <li key={`${edge.source}:${edge.target}:${edge.polarity}`}><button onClick={() => onSelect(item.id)}><span className={`polarity ${edge.polarity}`}>{edge.polarity === "supports" ? "支持" : "反驳"}</span><b>{nodeTitle(item.payload)}</b></button></li>)}</ul> : <p className="muted">暂无关系</p>}</section>;
+  return <section className="inspector-section"><h2><GitBranch size={15} />证据关系</h2>{related.length ? <ul className="relation-list">{related.map(({ edge, node: item }) => <li key={`${edge.source}:${edge.target}:${edge.polarity}`}><button onClick={() => onSelect(item.id)}><span className={`polarity ${edge.polarity}`}>{edge.polarity === "supports" ? "支持" : "反驳"}</span><b>{nodeText(item)}</b></button></li>)}</ul> : <p className="muted">暂无关系</p>}</section>;
 }
 
 

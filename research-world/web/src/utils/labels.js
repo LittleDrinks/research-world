@@ -6,7 +6,8 @@ export const REASONING_EFFORTS = ["low", "medium", "high"];
 
 
 export function nodeText(node) {
-  return node?.payload?.title || node?.payload?.text || node?.payload?.summary || "未命名节点";
+  const values = [node?.payload?.title, node?.payload?.text, node?.payload?.summary];
+  return values.find((value) => typeof value === "string" && value.trim()) || "未命名节点";
 }
 
 

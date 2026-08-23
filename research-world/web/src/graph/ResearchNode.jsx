@@ -1,6 +1,6 @@
 import { BookOpen, CircleHelp, Compass, FlaskConical, LoaderCircle, X } from "lucide-react";
 import { Handle, Position } from "@xyflow/react";
-import { nodeTitle } from "./nodeText";
+import { nodeText } from "../utils/labels";
 
 
 const ICONS = { question: CircleHelp, source: BookOpen, direction: Compass, experiment: FlaskConical };
@@ -26,7 +26,7 @@ function statusBadge(data) {
 
 export function ResearchNode({ data, selected }) {
   const Icon = ICONS[data.kind] || Compass;
-  const title = nodeTitle(data.payload);
+  const title = nodeText(data);
   const badge = statusBadge(data);
   return <article className={`research-node kind-${data.kind} life-${data.life_state} ${data.working ? "is-working" : ""} ${data.justCompleted ? "just-completed" : ""} ${selected ? "selected" : ""}`}>
     <Handles type="target" />
