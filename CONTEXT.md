@@ -3,8 +3,12 @@
 ## Language
 **Project**：一个科学问题及其研究状态；id 是稳定、不承载业务语义的标识符。
 _Avoid_: 课题、任务
+**Research Kernel**：项目研究状态的唯一写入门；解释 commands、queries 与 Pipeline，内部拥有图谱、准入、运行和投影。
+_Avoid_: World 服务、CRUD 层
 **节点**：图谱内容单元，固定四类：question / source / direction / experiment；实验结果并入 experiment 负载，claim 是审计单位不是节点。
 _Avoid_: brief、result、setup 节点类型
+**准入**：提交节点时强制执行的审核过程；先形成 pending 候选，再由策略给出 admitted 或 ghost 结论。
+_Avoid_: 数据库 before-save hook、可绕过校验
 **Life state**：节点准入状态：pending（可查看，不能生长依赖）→ admitted（双审通过）或 ghost（驳回隔离）。
 _Avoid_: 保存、发布、删除
 **幽灵节点**：ghost 态节点，带驳回理由与抗辩，隔离留存，只在后续审核时做相似性匹配。
@@ -29,6 +33,8 @@ _Avoid_: 裸路径、覆盖写
 _Avoid_: 日志片段、口头复现
 **AgentSpec**：Runtime、模型、Instructions、Skills、Tools、MCP 与执行参数的声明；启动时编译并快照。
 _Avoid_: 能力装配模块、动态挂载
+**Connector**：AgentSpec 选择的 MCP server；向 Agent 暴露外部数据库、科学软件、搜索服务或实验设施，凭证只由 Agent Runtime 解析。
+_Avoid_: Kernel 专用后端、Pipeline 特判
 **识别**：Runtime 对工作区真实可用能力的探测；AgentSpec 只能引用识别结果。
 _Avoid_: 手填 Runtime、手填 Skill、手填 MCP
 **渐进披露**：Skill 与节点正文默认不进入模型请求；模型调用读取工具后才进入 Trace。
