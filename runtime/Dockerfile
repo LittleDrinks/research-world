@@ -9,7 +9,7 @@ COPY --from=codex /usr/local/bin/node /usr/local/bin/node
 COPY --from=codex /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s /usr/local/lib/node_modules/@openai/codex/bin/codex.js /usr/local/bin/codex
 COPY runtime/pyproject.toml runtime/uv.lock ./
-RUN uv sync --frozen --no-dev
+RUN --mount=type=cache,target=/root/.cache/uv UV_HTTP_TIMEOUT=120 uv sync --frozen --no-dev
 COPY runtime/runtime/ runtime/
 COPY runtime/schemas/ schemas/
 COPY .agents/skills/ /app/skills/

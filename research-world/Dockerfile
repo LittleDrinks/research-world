@@ -10,7 +10,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPATH=/app PATH=/app/.venv
 WORKDIR /app
 RUN pip install --no-cache-dir uv==0.8.13
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev
+RUN --mount=type=cache,target=/root/.cache/uv UV_HTTP_TIMEOUT=120 uv sync --frozen --no-dev
 COPY server/ server/
 COPY worker/ worker/
 COPY library/ library/
