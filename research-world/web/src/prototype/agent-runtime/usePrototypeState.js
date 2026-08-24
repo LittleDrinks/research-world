@@ -1,17 +1,21 @@
 import { useMemo, useState } from "react";
 import { DRAFTS, ENDPOINTS, PREPARE_STEPS, PROFILES, RUNTIMES, SKILLS, TOOLS } from "./seed";
+import { runtimeKey } from "./runtimeKey";
 
 export function usePrototypeState() {
   const state = useCoreState();
   const profile = useMemo(() => selectedProfile(state), [state.profiles, state.selectedId]);
+  const savedProfile = useMemo(() => profileById(state.savedProfiles, state.selectedId), [state.savedProfiles, state.selectedId]);
+  const dirty = useMemo(() => profileDirty(profile, savedProfile), [profile, savedProfile]);
   const readiness = useMemo(() => readinessFor(profile), [profile]);
   const draftReadiness = useMemo(() => readinessFor(state.draft), [state.draft]);
   const visibleAgents = useMemo(() => filterProfiles(state), [state.profiles, state.agentQuery]);
-  return { ...state, profile, readiness, draftReadiness, visibleAgents, ...buildActions(state) };
+  return { ...state, profile, savedProfile, dirty, readiness, draftReadiness, visibleAgents, ...buildActions(state) };
 }
 
 function useCoreState() {
-  const [profiles, setProfiles] = useState(PROFILES);
+  const [profiles, setProfiles] = useState(() => clone(PROFILES));
+  const [savedProfiles, setSavedProfiles] = useState(() => clone(PROFILES));
   const [selectedId, setSelectedId] = useState(PROFILES[0].id);
   const [activeTab, setActiveTab] = useState("runtime");
   const [agentQuery, setAgentQuery] = useState("");
@@ -21,7 +25,7 @@ function useCoreState() {
   const [draft, setDraft] = useState(null);
   const [prepare, setPrepare] = useState(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  return { profiles, setProfiles, selectedId, setSelectedId, activeTab, setActiveTab, agentQuery, setAgentQuery, catalogQuery, setCatalogQuery, inventoryState, setInventoryState, notice, setNotice, draft, setDraft, prepare, setPrepare, deleteOpen, setDeleteOpen };
+  return { profiles, setProfiles, savedProfiles, setSavedProfiles, selectedId, setSelectedId, activeTab, setActiveTab, agentQuery, setAgentQuery, catalogQuery, setCatalogQuery, inventoryState, setInventoryState, notice, setNotice, draft, setDraft, prepare, setPrepare, deleteOpen, setDeleteOpen };
 }
 
 function buildActions(state) {
@@ -35,6 +39,7 @@ function profileActions(state) {
     refresh: () => refreshInventory(state),
     copyAgent: () => copyAgent(state),
     deleteAgent: () => deleteAgent(state),
+    cancel: () => cancelProfile(state),
     save: () => saveProfile(state),
   };
 }
@@ -61,7 +66,11 @@ function prepareActions(state) {
 }
 
 function selectedProfile(state) {
-  return state.profiles.find((item) => item.id === state.selectedId) || state.profiles[0];
+  return profileById(state.profiles, state.selectedId) || state.profiles[0];
+}
+
+function profileById(profiles, id) {
+  return profiles.find((item) => item.id === id);
 }
 
 function filterProfiles(state) {
@@ -77,7 +86,7 @@ function profileSearchText(item) {
 
 function patchProfile(state, value) {
   state.setProfiles((items) => items.map((item) => (
-    item.id === state.selectedId ? { ...item, ...value, modified: "unsaved" } : item
+    item.id === state.selectedId ? { ...item, ...value } : item
   )));
 }
 
@@ -121,7 +130,7 @@ function confirmDraft(state) {
   delete profile.mode;
   delete profile.rationale;
   delete profile.goal;
-  state.setProfiles((items) => [...items, profile]);
+  addSavedProfile(state, profile);
   state.setSelectedId(profile.id);
   state.setDraft(null);
   state.setNotice(`已创建 ${profile.id}；未调用 prepare 或模型。`);
@@ -131,7 +140,7 @@ function copyAgent(state) {
   const source = selectedProfile(state);
   const id = copyId(source.id, state.profiles);
   const copy = { ...clone(source), id, name: `${source.name} Copy`, preset: `copy:${source.id}`, modified: "now" };
-  state.setProfiles((items) => [...items, copy]);
+  addSavedProfile(state, copy);
   state.setSelectedId(id);
   state.setNotice(`已复制为 ${id}；两个 Profile state 相互独立。`);
 }
@@ -147,17 +156,39 @@ function copyId(id, profiles) {
 function deleteAgent(state) {
   const remaining = state.profiles.filter((item) => item.id !== state.selectedId);
   state.setProfiles(remaining);
+  state.setSavedProfiles((items) => items.filter((item) => item.id !== state.selectedId));
   state.setSelectedId(remaining[0]?.id || "");
   state.setDeleteOpen(false);
   state.setNotice("Profile 已从 prototype 页面内存删除。");
 }
 
 function saveProfile(state) {
-  if (readinessFor(selectedProfile(state)).status !== "ready") return;
-  state.setProfiles((items) => items.map((item) => (
-    item.id === state.selectedId ? { ...item, modified: "now" } : item
-  )));
+  const current = selectedProfile(state);
+  if (readinessFor(current).status !== "ready") return;
+  const saved = { ...clone(current), modified: "now" };
+  state.setProfiles((items) => replaceProfile(items, saved));
+  state.setSavedProfiles((items) => replaceProfile(items, clone(saved)));
   state.setNotice("Profile snapshot 已保存到 prototype 页面内存。");
+}
+
+function cancelProfile(state) {
+  const saved = profileById(state.savedProfiles, state.selectedId);
+  if (!saved) return;
+  state.setProfiles((items) => replaceProfile(items, clone(saved)));
+  state.setNotice("已恢复最后保存的 Profile snapshot。");
+}
+
+function addSavedProfile(state, profile) {
+  state.setProfiles((items) => [...items, clone(profile)]);
+  state.setSavedProfiles((items) => [...items, clone(profile)]);
+}
+
+function replaceProfile(profiles, profile) {
+  return profiles.map((item) => item.id === profile.id ? profile : item);
+}
+
+export function profileDirty(profile, saved) {
+  return JSON.stringify(profile) !== JSON.stringify(saved);
 }
 
 function openPrepare(state, runtime) {
@@ -204,7 +235,8 @@ function stepState(steps, value) {
 
 export function readinessFor(profile) {
   if (!profile?.id && !profile?.runtime && !profile?.endpoint) return blankReadiness(profile);
-  const runtime = RUNTIMES.find((item) => item.id === profile.runtime && item.realm === profile.realm);
+  const key = runtimeKey(profile.runtime, profile.realm);
+  const runtime = RUNTIMES.find((item) => runtimeKey(item.id, item.realm) === key);
   const endpoint = ENDPOINTS.find((item) => item.id === profile.endpoint);
   const issues = readinessIssues(profile, runtime, endpoint);
   return { status: issues.length ? "blocked" : "ready", issues, groups: readinessGroups(profile, runtime, endpoint) };
@@ -235,7 +267,9 @@ function endpointIssues(profile, endpoint) {
   if (!profile.model) return [{ code: "model_required", message: "Model 未决" }];
   if (!endpoint.models.includes(profile.model)) return [{ code: "model_mismatch", message: "Model 与 Endpoint 不匹配" }];
   if (!endpoint.runtimes.includes(profile.runtime)) return [{ code: "endpoint_runtime_mismatch", message: "Endpoint 与 Runtime 不匹配" }];
-  return ["missing", "unknown"].includes(endpoint.secret) ? [{ code: "secret_unresolved", message: `Secret 状态为 ${endpoint.secret}` }] : [];
+  if (secretReadiness(endpoint.secret) === "ready") return [];
+  const reason = endpoint.secretReason || "secret_status_unknown";
+  return [{ code: "secret_unresolved", message: `Secret ${endpoint.secret}: ${reason}` }];
 }
 
 function capabilityIssues(profile) {
@@ -266,7 +300,7 @@ function readinessGroups(profile, runtime, endpoint) {
 }
 
 function endpointReady(profile, endpoint) {
-  return Boolean(endpoint && endpoint.models.includes(profile.model) && endpoint.runtimes.includes(profile.runtime) && !["missing", "unknown"].includes(endpoint.secret));
+  return Boolean(endpoint && endpoint.models.includes(profile.model) && endpoint.runtimes.includes(profile.runtime) && secretReadiness(endpoint.secret) === "ready");
 }
 
 function group(name, ready, detail) {
@@ -275,7 +309,14 @@ function group(name, ready, detail) {
 
 function secretGroup(endpoint) {
   const status = endpoint?.secret || "unknown";
-  return { name: "Secrets", status: ["configured", "not-required"].includes(status) ? "ready" : "unknown", detail: status };
+  const detail = endpoint?.secretReason ? `${status} · ${endpoint.secretReason}` : status;
+  return { name: "Secrets", status: secretReadiness(status), detail };
+}
+
+export function secretReadiness(status) {
+  if (["configured", "not-required"].includes(status)) return "ready";
+  if (["missing", "invalid"].includes(status)) return "blocked";
+  return "unknown";
 }
 
 function blankReadiness(profile) {

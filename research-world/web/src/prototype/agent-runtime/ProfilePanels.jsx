@@ -29,7 +29,8 @@ export function Reasoning({ value, patch }) {
 function SecretSection({ state }) {
   const endpoint = ENDPOINTS.find((item) => item.id === state.profile.endpoint);
   const status = endpoint?.secret || "unknown";
-  return <Section title="环境变量与 Secret" detail="只显示 provider、scope 和状态；值永不进入页面或诊断。"><div className="arp-definition-list"><div><ShieldCheck size={15} /><code>{state.profile.endpoint || "endpoint unresolved"}</code><span>Runtime-managed</span><Status value={status} /></div><div><ShieldCheck size={15} /><code>Kimi config</code><span>valid != authenticated</span><Status value="unknown" /></div></div><button onClick={() => state.setNotice("只刷新 secret 状态；未读取值。")}><FlaskConical size={15} />检查状态</button></Section>;
+  const detail = endpoint?.secretReason || "status confirmed";
+  return <Section title="环境变量与 Secret" detail="只显示 provider、scope 和状态；值永不进入页面或诊断。"><div className="arp-definition-list"><div><ShieldCheck size={15} /><code>{state.profile.endpoint || "endpoint unresolved"}</code><span>{detail}</span><Status value={status} /></div><div><ShieldCheck size={15} /><code>Kimi config</code><span>valid != authenticated</span><Status value="unknown" /></div></div><button onClick={() => state.setNotice("只刷新 secret 状态；未读取值。")}><FlaskConical size={15} />检查状态</button></Section>;
 }
 
 export function DiagnosticsPanel({ state }) {

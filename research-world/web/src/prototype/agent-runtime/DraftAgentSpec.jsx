@@ -1,6 +1,7 @@
 import { ENDPOINTS, RUNTIMES, SKILLS, TOOLS } from "./seed";
 import { Field, Status } from "./shared";
 import { Reasoning, Section } from "./ProfilePanels";
+import { runtimeKey } from "./runtimeKey";
 
 export function DraftAgentSpec({ state }) {
   const draft = state.draft;
@@ -17,12 +18,13 @@ function Execution({ state, draft }) {
 
 function RuntimeField({ state, draft }) {
   const change = (event) => selectRuntime(state, event.target.value);
-  return <Field label="Runtime"><select aria-label="Draft Runtime" value={draft.runtime} onChange={change}><option value="">未选择</option>{RUNTIMES.map((item) => <option key={item.id + ":" + item.realm} value={item.id}>{item.name} · {item.status}</option>)}</select></Field>;
+  const value = draft.runtime && draft.realm ? runtimeKey(draft.runtime, draft.realm) : "";
+  return <Field label="Runtime"><select aria-label="Draft Runtime" value={value} onChange={change}><option value="">未选择</option>{RUNTIMES.map((item) => <option key={runtimeKey(item.id, item.realm)} value={runtimeKey(item.id, item.realm)}>{item.name} · {item.realm} · {item.status}</option>)}</select></Field>;
 }
 
-function selectRuntime(state, id) {
-  const runtime = RUNTIMES.find((item) => item.id === id);
-  state.patchDraft({ runtime: id, realm: runtime?.realm || "" });
+function selectRuntime(state, key) {
+  const runtime = RUNTIMES.find((item) => runtimeKey(item.id, item.realm) === key);
+  state.patchDraft({ runtime: runtime?.id || "", realm: runtime?.realm || "" });
 }
 
 function RealmField({ state, draft }) {

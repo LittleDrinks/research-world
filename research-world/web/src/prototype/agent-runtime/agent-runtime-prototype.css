@@ -25,7 +25,8 @@
 .arp-rail > footer { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--line); }
 .arp-rail > footer button { border: 0; border-radius: 0; background: transparent; font-size: 10px; }
 .arp-rail > footer button + button { border-left: 1px solid var(--line); }
-.arp-workspace { min-width: 0; min-height: 0; height: 100dvh; display: grid; grid-template-rows: auto 47px minmax(0, 1fr) 58px; background: var(--app-canvas); }
+.arp-workspace { min-width: 0; min-height: 0; height: 100dvh; display: grid; grid-template-rows: auto 47px minmax(0, 1fr); background: var(--app-canvas); }
+.arp-workspace.is-dirty { grid-template-rows: auto 47px minmax(0, 1fr) 58px; }
 .arp-workspace-header { min-height: 92px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 14px 24px; border-bottom: 1px solid var(--line); background: var(--app-topbar); }
 .arp-workspace-header > div:first-child { min-width: 0; }
 .arp-workspace-header span, .arp-workspace-header p { color: var(--text-faint); font-size: 10px; }
@@ -62,7 +63,7 @@
 .arp-status.is-ready, .arp-status.is-configured, .arp-status.is-not-required, .arp-status.is-succeeded { color: var(--state-success); border-color: color-mix(in oklab, var(--state-success) 35%, var(--line)); background: var(--state-success-surface); }
 .arp-status.is-found, .arp-status.is-unknown { color: var(--state-selected); border-color: color-mix(in oklab, var(--state-selected) 35%, var(--line)); background: var(--state-selected-surface); }
 .arp-status.is-auth-required, .arp-status.is-blocked, .arp-status.is-setup-required { color: var(--state-blocked); border-color: color-mix(in oklab, var(--state-blocked) 35%, var(--line)); background: var(--state-blocked-surface); }
-.arp-status.is-error, .arp-status.is-missing, .arp-status.is-failed { color: var(--state-failed); border-color: color-mix(in oklab, var(--state-failed) 35%, var(--line)); background: var(--state-failed-surface); }
+.arp-status.is-error, .arp-status.is-missing, .arp-status.is-invalid, .arp-status.is-failed { color: var(--state-failed); border-color: color-mix(in oklab, var(--state-failed) 35%, var(--line)); background: var(--state-failed-surface); }
 .arp-status.is-running { color: var(--state-running); border-color: color-mix(in oklab, var(--state-running) 35%, var(--line)); background: var(--state-running-surface); }
 .arp-status.is-unsupported, .arp-status.is-unavailable, .arp-status.is-cancelled, .arp-status.is-queued { color: var(--text-muted); background: var(--surface-muted); }
 .arp-runtime-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
@@ -168,7 +169,8 @@
   .arp-agent-list > button { flex: 0 0 230px; min-height: 62px; grid-template-columns: 16px minmax(0, 1fr) auto; padding: 9px 12px; border-right: 1px solid var(--line); border-bottom: 0; }
   .arp-agent-list > button small { display: none; }.arp-agent-list > button .arp-status { grid-column: 3; grid-row: 1; }
   .arp-rail > footer { grid-column: 2; grid-row: 2; display: flex; margin: 4px 8px 4px 0; border: 0; }.arp-rail > footer button { width: 42px; font-size: 0; border: 1px solid var(--line); }.arp-rail > footer button + button { border-left: 0; }
-  .arp-workspace { grid-row: 2; height: auto; min-height: 0; grid-template-rows: auto 47px minmax(0, 1fr) 58px; }
+  .arp-workspace { grid-row: 2; height: auto; min-height: 0; grid-template-rows: auto 47px minmax(0, 1fr); }
+  .arp-workspace.is-dirty { grid-template-rows: auto 47px minmax(0, 1fr) 58px; }
   .arp-workspace-header { min-height: 84px; padding: 11px 14px; }
   .arp-header-actions .arp-status { display: none; }.arp-tabs { padding: 0 8px; }
   .arp-content { padding: 0 14px; }.arp-section { padding: 20px 0 24px; }
@@ -185,7 +187,7 @@
   .arp-catalog-toolbar { align-items: stretch; flex-direction: column; }.arp-catalog-toolbar label { min-width: 0; }.arp-catalog-toolbar > span { align-self: flex-end; }
   .arp-cap-list > article { grid-template-columns: minmax(0, 1fr) auto; }.arp-cap-facts { grid-template-columns: 1fr; }
   .arp-definition-list > div { grid-template-columns: 20px minmax(0, 1fr) auto; }.arp-definition-list > div > span:nth-child(3) { grid-column: 2; }
-  .arp-savebar { padding: 8px 10px; }.arp-savebar > span { display: none; }.arp-savebar > button { width: 100%; }
+  .arp-savebar { padding: 8px 10px; }.arp-savebar > span { display: none; }.arp-savebar > div { width: 100%; }.arp-savebar > div button { flex: 1; }
   .arp-draft-choices { grid-template-columns: 1fr; }.arp-draft-choices button { min-height: 92px; }
   .arp-overlay { padding: 8px; }.arp-dialog { max-height: calc(100dvh - 16px); }
   .arp-draft-capabilities label { grid-template-columns: 16px minmax(0, 1fr); }.arp-draft-capabilities .arp-status { grid-column: 2; }

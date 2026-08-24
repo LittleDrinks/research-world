@@ -1,5 +1,6 @@
 export const RUNTIMES = [
-  { id: "codex", realm: "wsl:ubuntu", name: "Codex CLI", executable: "codex", version: "0.149.0", source: "installer", path: "~/.local/bin/codex", resolvedPath: "~/.codex/packages/standalone/releases/0.149.0-x86_64-unknown-linux-musl/bin/codex", status: "ready", reason: "Adapter、版本与认证已确认", checked: "2026-08-24 18:20:00", caps: ["streaming", "resume", "model-select", "auth-probe"] },
+  { id: "codex", realm: "wsl:ubuntu", name: "Codex CLI", executable: "codex", version: "0.149.1", source: "installer", path: "~/.local/bin/codex", resolvedPath: "~/.codex/packages/standalone/releases/0.149.1-x86_64-unknown-linux-musl/bin/codex", status: "ready", reason: "Adapter、版本与认证已确认", checked: "2026-08-24T14:23:05Z", caps: ["streaming", "resume", "model-select", "auth-probe"] },
+  { id: "codex", realm: "windows:host", name: "Codex CLI", executable: "codex.exe", version: null, source: "path", path: null, resolvedPath: null, status: "missing", reason: "not_on_path · fixture 的 Windows realm 未找到", checked: "2026-08-24T14:23:05Z", caps: [] },
   { id: "kimi-code", realm: "wsl:ubuntu", name: "Kimi Code CLI", executable: "kimi", version: "0.38.0", source: "installer", path: "~/.kimi-code/bin/kimi", resolvedPath: "~/.kimi-code/bin/kimi", status: "found", reason: "auth_probe_unavailable · config valid 不等于 authenticated", checked: "2026-08-24 18:20:00", caps: ["interactive", "workspace"] },
   { id: "pi", realm: "wsl:ubuntu", name: "Pi Coding Agent", executable: "pi", version: "0.84.2", source: "npm", path: "~/.nvm/versions/node/v24.14.0/bin/pi", resolvedPath: "~/.nvm/versions/node/v24.14.0/lib/node_modules/@earendil-works/pi-coding-agent/dist/cli.js", status: "found", reason: "auth_probe_unavailable · 未推断 authenticated", checked: "2026-08-24 18:20:00", caps: ["model-select"] },
   { id: "gemini", realm: "wsl:ubuntu", name: "Gemini CLI", executable: "gemini", version: null, source: "path", path: null, resolvedPath: null, status: "missing", reason: "not_on_path · 当前 execution realm 未找到", checked: "2026-08-24 18:20:00", caps: [] },
@@ -8,9 +9,10 @@ export const RUNTIMES = [
 ];
 
 export const ENDPOINTS = [
-  { id: "codex-account", name: "Codex account", runtimes: ["codex"], secret: "not-required", models: ["gpt-5.6-sol-2026-08-20-enterprise-reasoning-preview", "gpt-5.6-terra"] },
-  { id: "openai-compatible", name: "OpenAI compatible", runtimes: ["codex", "pi", "kimi-code"], secret: "missing", models: ["qwen3.7-flash", "deepseek-v3.2-speciale-experimental-long-context"] },
-  { id: "anthropic", name: "Anthropic API", runtimes: ["claude", "pi"], secret: "configured", models: ["claude-opus-4-1"] },
+  { id: "codex-account", name: "Codex account", runtimes: ["codex"], secret: "not-required", secretReason: null, models: ["gpt-5.6-sol-2026-08-20-enterprise-reasoning-preview", "gpt-5.6-terra"] },
+  { id: "openai-compatible", name: "OpenAI compatible", runtimes: ["codex", "pi", "kimi-code"], secret: "missing", secretReason: "secret_not_configured", models: ["qwen3.7-flash", "deepseek-v3.2-speciale-experimental-long-context"] },
+  { id: "invalid-endpoint", name: "Invalid credential fixture", runtimes: ["codex"], secret: "invalid", secretReason: "secret_validation_failed", models: ["gpt-5.6-terra"] },
+  { id: "anthropic", name: "Anthropic API", runtimes: ["claude", "pi"], secret: "configured", secretReason: null, models: ["claude-opus-4-1"] },
 ];
 
 export const SKILLS = [
@@ -37,6 +39,7 @@ const SOURCE_PROFILE = {
 export const PROFILES = [
   SOURCE_PROFILE,
   { ...SOURCE_PROFILE, id: "agent:proof-reviewer", name: "Proof Reviewer", preset: "math-proof", model: "gpt-5.6-terra", instructions: "复核证明步骤、工具证据与反例边界。", skills: ["codebase-design"], tools: ["read_skill"], modified: "2 h" },
+  { ...SOURCE_PROFILE, id: "agent:windows-codex", name: "Windows Codex Snapshot", preset: "blank", realm: "windows:host", modified: "1 d" },
   { ...SOURCE_PROFILE, id: "agent:legacy-scout", name: "Legacy Scout", preset: "blank", runtime: "kimi-code", endpoint: "openai-compatible", model: "deepseek-v3.2-speciale-experimental-long-context", reasoning: "medium", skills: [], tools: [], modified: "3 d" },
 ];
 

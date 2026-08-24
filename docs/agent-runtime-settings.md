@@ -130,9 +130,10 @@ Agent 列表、Profile、Preset、Runtime inventory 与 Capability catalog 分�
 | CLI discovery、MCP 来源、secret 状态、诊断、导入导出、复制/删除 | 缺失 | 当前 Agent 页面没有对应入口 |
 当前桌面截图为 `research-world/web/screenshots/issue63-current-agents-desktop.png` 与 `issue63-current-chat-draft-desktop.png`；390px 截图为 `issue63-current-agents-mobile-390.png` 与 `issue63-current-chat-draft-mobile-390.png`。桌面表单可用但 Preset 与 Profile 视觉权重接近；移动端 Preset 区过长，首屏无法看到当前 Agent 关键 readiness，draft 中模型和能力落到较深滚动位置。
 ## 本机只读 CLI Probe
+以下 host inventory 是 `2026-08-24T14:23:05Z` 的点时 probe 结果，不是产品固定版本或长期保证。Codex version argv 固定为 `['codex', '--version']`；Kimi Code version argv 固定为 `['kimi', '--version']`，不登记或执行 Kimi 认证 probe，不运行 `doctor`、读取配置或访问 secret。
 | Realm | CLI | `path` | `resolved_path` | `source` | Version | 认证事实与结论 |
 |---|---|---|---|---|---|---|
-| `wsl:ubuntu` | Codex CLI | `~/.local/bin/codex` | `~/.codex/packages/standalone/releases/0.149.0-x86_64-unknown-linux-musl/bin/codex` | `installer` | 0.149.0 | 官方 status 报告已配置；掩码输出丢弃。现有 Adapter 可判 ready |
+| `wsl:ubuntu` | Codex CLI | `~/.local/bin/codex` | `~/.codex/packages/standalone/releases/0.149.1-x86_64-unknown-linux-musl/bin/codex` | `installer` | 0.149.1 | 当前固定 version probe 与既有安全 status 事实支持 ready；probe 输出解析后丢弃 |
 | `wsl:ubuntu` | Claude Code | `~/.local/bin/claude` | `~/.local/share/claude/versions/2.1.237` | `installer` | 2.1.237 | 官方 JSON status 报告 OAuth 已登录；Runtime Adapter 未实现，unsupported |
 | `wsl:ubuntu` | Pi Coding Agent | `~/.nvm/versions/node/v24.14.0/bin/pi` | 用户 NVM package 的 `dist/cli.js` | `npm` | 0.84.2 | 当前版本无已确认安全认证 status argv；found/`auth_probe_unavailable` |
 | `wsl:ubuntu` | Kimi Code CLI | `~/.kimi-code/bin/kimi` | 同入口 | `installer` | 0.38.0 | `doctor config` 只证明配置语法有效；认证 unknown，found/`auth_probe_unavailable` |
@@ -148,11 +149,12 @@ OpenCLI 1.8.6 与 Chrome extension 1.0.22 只证明 `browser.opencli` Tool 和 W
 ### Agent 列表
 顶栏提供搜索、readiness 筛选、导入和新建。行字段为 `name`、`id`、Preset 来源、Runtime、model、Skills/Tools 数量、readiness、最近修改时间；行操作为选择编辑、复制、导出、删除。删除先展示引用该 Profile 的 Pipeline/Thread 数量并二次确认。
 ### 新建与草稿
-新建入口只提供 `Preset`、`空白`、`描述目标` 三种模式。三种结果共享完整可编辑 AgentSpec 表单：name/id、runtime、Endpoint、model、Instructions、Skills、Tools、MCP 来源、reasoning、sandbox 与 workspace policy；同时展示字段级推荐理由、readiness 与 unresolved。空白模式不预填 runtime、Endpoint、model、Skill、Tool 或 MCP 能力。自然语言模式消费 #41 orchestrator 草稿，不在此范围实现模型调用。缺 runtime/Endpoint/model、secret unknown/missing 或能力未就绪时不可保存为 ready。任何模式都不得 prepare、登录、安装或启动 Agent。
+新建入口只提供 `Preset`、`空白`、`描述目标` 三种模式。三种结果共享完整可编辑 AgentSpec 表单：name/id、runtime、Endpoint、model、Instructions、Skills、Tools、MCP 来源、reasoning、sandbox 与 workspace policy；同时展示字段级推荐理由、readiness 与 unresolved。空白模式不预填 runtime、Endpoint、model、Skill、Tool 或 MCP 能力。自然语言模式消费 #41 orchestrator 草稿，不在此范围实现模型调用。缺 runtime/Endpoint/model、secret unknown/missing/invalid 或能力未就绪时不可保存为 ready。任何模式都不得 prepare、登录、安装或启动 Agent。
 ### Profile 详情
-固定 header 显示名称、stable id、来源、保存状态和聚合 readiness；tab 为 `Profile`、`Runtime`、`模型`、`Skills`、`Tools 与 MCP`、`诊断`。页面 footer 仅在 dirty 时出现取消与保存。
+固定 header 显示名称、stable id、来源、保存状态和聚合 readiness；tab 为 `Profile`、`Runtime`、`模型`、`Skills`、`Tools 与 MCP`、`诊断`。编辑工作副本与最后保存 snapshot 独立，dirty 由两者显式深比较；页面 footer 仅在 dirty 时出现 Cancel 与 Save。Cancel 恢复最后保存 snapshot，Save 写入新 snapshot 后清除 dirty。
 ### Runtime
 Runtime inventory 行展示 product、realm、executable、version、source、path、resolved path、status/reason、last checked 和 capabilities。刷新是只读操作并显式呈现 `loading`、`refreshing`、`empty`。状态全集为 `found`、`ready`、`auth-required`、`missing`、`error`、`unsupported`。
+`runtimeKey(id, realm) = JSON.stringify([id, realm])` 是 runtime option value、React key 与选择回读 key。选择和 Profile snapshot 同时保存 `id`、`realm`；禁止只按 `id` 查找或回退到第一个 realm。
 ### 模型与 Endpoint
 先选择 execution runtime，再选择其支持的 Endpoint 与 model；endpoint URL 默认只显示 origin，凭证只显示 `configured`、`missing`、`invalid`、`not-required`，永不显示值。reasoning、service tier 等只在 Adapter 声明 capability 后出现。
 ### Skills
@@ -162,7 +164,7 @@ Tool 行展示 stable Tool id、名称、描述、readiness 和来源 badge；`M
 ### Workspace、环境与 Secret
 Profile 保存 workspace policy，不保存任意宿主绝对路径。环境变量只列允许的名称、来源和状态，不展示值；secret 只显示 provider、scope、last checked 与状态。继承 login shell、WSL、Windows 与 container 来源必须可区分。
 ### Readiness 与诊断
-聚合 readiness 分解为 Runtime、Endpoint/model、Skills、Tools、workspace 和 secrets 六组。每项给稳定 reason code、可执行下一步和最近检查时间；未知保持 unknown，不用绿色代替。诊断可复制脱敏摘要，原始 stdout/stderr、环境值与 token 不进入 UI。
+聚合 readiness 分解为 Runtime、Endpoint/model、Skills、Tools、workspace 和 secrets 六组。secret `configured`、`not-required` 映射为 `ready`，`missing`、`invalid` 映射为 `blocked`，仅 `unknown` 映射为 `unknown`；缺失或无效的 reason code 可见并阻止保存与 Launch。诊断可复制脱敏摘要，原始 stdout/stderr、环境值与 token 不进入 UI。
 ### 显式 Prepare
 CLI 的 `查看准备计划` 先生成只读 plan：目标、受控 action、版本/来源、预计文件与进程变化、权限、网络、可回滚边界。状态机为 `plan -> confirm -> running -> succeeded | failed | cancelled`；failed/cancelled 可 retry，重试追加日志而不覆盖既有记录。Tool prepare 消费 #43，不进入 CLI prepare。Discovery、页面进入、保存 Profile 与 Chat 起草均不得触发 prepare。
 ## 响应式规格
@@ -184,7 +186,7 @@ CLI 的 `查看准备计划` 先生成只读 plan：目标、受控 action、版
 | orchestrator 草稿 | Research Kernel orchestrator -> Agent Runtime validation | AgentSpec draft + rationale + unresolved | #41 未完成自然语言路径 |
 | import、export、copy、delete | Agent Runtime `catalog` | AgentSpec document operations | 缺引用检查、确认和可移植格式 |
 ## Prototype
-唯一交互原型路由为 `/prototype/agent-runtime`，实现位于 `research-world/web/src/prototype/agent-runtime/`。fixture 覆盖 Profile CRUD、三种完整草稿、readiness 阻断、六种 CLI 状态、loading/refreshing/empty、prepare 全状态与日志保留，以及长 path/model/Skill；fixture 不代表本机实时事实。
+唯一交互原型路由为 `/prototype/agent-runtime`，实现位于 `research-world/web/src/prototype/agent-runtime/`。fixture 同时包含 WSL/Windows Codex descriptor，并覆盖 Profile snapshot dirty/Cancel/Save、三种完整草稿、secret missing/invalid 阻断、六种 CLI 状态、loading/refreshing/empty、prepare 全状态与日志保留，以及长 path/model/Skill；fixture 不代表本机实时事实。
 可复现验收为 `research-world/web/tests/issue63-agent-runtime-prototype.spec.js`。截图为 `research-world/web/screenshots/issue63-prototype-desktop.png`、`issue63-prototype-mobile-390.png`、`issue63-prototype-mobile-skills-390.png` 与 `issue63-prototype-mobile-model-390.png`。验收只证明 prototype，不是 #41、#43、#54 或生产实现的独立 QA。
 ## Implementation Subissues
 依赖顺序：1 -> 2 -> 3 -> 4；5 依赖 1/4；6 依赖 2/3/4 并消费 #41/#54。#43 是 3 的 Tool catalog 上游，不由任何草案重做。

@@ -1,4 +1,4 @@
-import { Copy, Save, Trash2 } from "lucide-react";
+import { Copy, RotateCcw, Save, Trash2 } from "lucide-react";
 import { TABS } from "./seed";
 import { IconButton, Status } from "./shared";
 import { DiagnosticsPanel, ModelPanel, ProfilePanel } from "./ProfilePanels";
@@ -7,12 +7,13 @@ import { RuntimePanel } from "./RuntimePanel";
 
 export function AgentWorkspace({ state }) {
   if (!state.profile) return <main className="arp-workspace arp-no-profile">没有 Profile</main>;
-  return <main className="arp-workspace"><WorkspaceHeader state={state} /><TabBar state={state} /><div className="arp-content"><ActivePanel state={state} /></div><SaveBar state={state} /></main>;
+  return <main className={`arp-workspace ${state.dirty ? "is-dirty" : ""}`}><WorkspaceHeader state={state} /><TabBar state={state} /><div className="arp-content"><ActivePanel state={state} /></div><SaveBar state={state} /></main>;
 }
 
 function WorkspaceHeader({ state }) {
   const text = state.readiness.status === "ready" ? "ready" : `${state.readiness.issues.length} 项阻塞`;
-  return <header className="arp-workspace-header"><div><span>Profile · {state.profile.id}</span><h1>{state.profile.name}</h1><p>Preset: {state.profile.preset} · modified {state.profile.modified}</p></div><div className="arp-header-actions"><Status value={state.readiness.status} text={text} /><IconButton label="复制 Agent" onClick={state.copyAgent}><Copy size={16} /></IconButton><IconButton label="删除 Agent" onClick={() => state.setDeleteOpen(true)}><Trash2 size={16} /></IconButton></div></header>;
+  const modified = state.dirty ? "unsaved" : state.profile.modified;
+  return <header className="arp-workspace-header"><div><span>Profile · {state.profile.id}</span><h1>{state.profile.name}</h1><p>Preset: {state.profile.preset} · modified {modified}</p></div><div className="arp-header-actions"><Status value={state.readiness.status} text={text} /><IconButton label="复制 Agent" onClick={state.copyAgent}><Copy size={16} /></IconButton><IconButton label="删除 Agent" onClick={() => state.setDeleteOpen(true)}><Trash2 size={16} /></IconButton></div></header>;
 }
 
 function TabBar({ state }) {
@@ -29,6 +30,7 @@ function ActivePanel({ state }) {
 }
 
 function SaveBar({ state }) {
+  if (!state.dirty) return null;
   const blocked = state.readiness.status !== "ready";
-  return <footer className="arp-savebar"><span>{blocked ? state.readiness.issues[0]?.message : "AgentSpec snapshot ready"}</span><button className="primary" disabled={blocked} onClick={state.save}><Save size={15} />保存 Profile</button></footer>;
+  return <footer className="arp-savebar"><span>{blocked ? state.readiness.issues[0]?.message : "AgentSpec snapshot ready"}</span><div><button onClick={state.cancel}><RotateCcw size={15} />取消</button><button className="primary" disabled={blocked} onClick={state.save}><Save size={15} />保存 Profile</button></div></footer>;
 }

@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 
 const ROUTE = "/prototype/agent-runtime";
 const SHOTS = "screenshots/issue63-prototype";
+const WSL_CODEX = JSON.stringify(["codex", "wsl:ubuntu"]);
+const WINDOWS_CODEX = JSON.stringify(["codex", "windows:host"]);
 
 async function openPrototype(page, width = 1440, height = 900) {
   await page.setViewportSize({ width, height });
@@ -64,10 +66,46 @@ test("Profile selection and CRUD keep independent snapshots", async ({ page }) =
   await expect(page.getByRole("heading", { name: "Proof Reviewer" })).toBeVisible();
 });
 
+test("Profile footer follows explicit dirty snapshot cancel and save", async ({ page }) => {
+  await openPrototype(page);
+  await page.getByRole("button", { name: "Profile", exact: true }).click();
+  const name = page.getByLabel("Profile 名称");
+  await expect(page.locator(".arp-savebar")).toHaveCount(0);
+  await name.fill("Cancelled Source Researcher");
+  await expect(page.locator(".arp-savebar")).toBeVisible();
+  await expect(page.getByText("modified unsaved")).toBeVisible();
+  await page.getByRole("button", { name: "取消", exact: true }).click();
+  await expect(name).toHaveValue("Source Researcher");
+  await expect(page.locator(".arp-savebar")).toHaveCount(0);
+  await name.fill("Saved Source Researcher");
+  await page.getByRole("button", { name: "保存 Profile" }).click();
+  await expect(page.locator(".arp-savebar")).toHaveCount(0);
+  await page.getByRole("button", { name: "选择 Proof Reviewer" }).click();
+  await page.getByRole("button", { name: "选择 Saved Source Researcher" }).click();
+  await expect(page.getByLabel("Profile 名称")).toHaveValue("Saved Source Researcher");
+});
+
+test("runtime keys select and read back WSL and Windows Codex independently", async ({ page }) => {
+  await openPrototype(page);
+  await expect(page.locator('input[name="runtime"]:checked')).toHaveValue(WSL_CODEX);
+  await page.getByRole("button", { name: "选择 Windows Codex Snapshot" }).click();
+  await expect(page.locator('input[name="runtime"]:checked')).toHaveValue(WINDOWS_CODEX);
+  await chooseDraft(page, "Preset");
+  const runtime = page.getByLabel("Draft Runtime");
+  await expect(runtime).toHaveValue(WSL_CODEX);
+  await runtime.selectOption(WINDOWS_CODEX);
+  await expect(runtime).toHaveValue(WINDOWS_CODEX);
+  await expect(page.getByLabel("Draft Realm")).toHaveValue("windows:host");
+  await expect(page.getByRole("alert")).toContainText("runtime_not_ready");
+  await runtime.selectOption(WSL_CODEX);
+  await expect(runtime).toHaveValue(WSL_CODEX);
+  await expect(page.getByLabel("Draft Realm")).toHaveValue("wsl:ubuntu");
+});
+
 test("all three complete AgentSpec drafts expose readiness", async ({ page }) => {
   await openPrototype(page);
   await chooseDraft(page, "Preset");
-  await expect(page.getByLabel("Draft Runtime")).toHaveValue("codex");
+  await expect(page.getByLabel("Draft Runtime")).toHaveValue(WSL_CODEX);
   await expect(page.getByText("AgentSpec 草稿可以保存")).toBeVisible();
   await page.getByRole("button", { name: "确认创建 Profile" }).click();
   await expect(page.getByRole("heading", { name: "Source Researcher Copy" })).toBeVisible();
@@ -88,7 +126,7 @@ test("all three complete AgentSpec drafts expose readiness", async ({ page }) =>
   await expect(page.getByRole("button", { name: "确认创建 Profile" })).toBeEnabled();
 });
 
-test("readiness blocks unresolved secret and keeps Kimi auth unknown", async ({ page }) => {
+test("missing and invalid secrets are blocked with visible reasons", async ({ page }) => {
   await openPrototype(page);
   await page.getByRole("button", { name: "模型" }).click();
   await page.getByLabel("Endpoint").selectOption("openai-compatible");
@@ -97,6 +135,16 @@ test("readiness blocks unresolved secret and keeps Kimi auth unknown", async ({ 
   await expect(page.getByText("valid != authenticated")).toBeVisible();
   await page.getByRole("button", { name: "诊断" }).click();
   await expect(page.getByRole("alert")).toContainText("secret_unresolved");
+  const secrets = page.locator(".arp-readiness > div").filter({ hasText: "Secrets" });
+  await expect(secrets).toContainText("blocked");
+  await expect(secrets).toContainText("secret_not_configured");
+  await page.getByRole("button", { name: "模型" }).click();
+  await page.getByLabel("Endpoint").selectOption("invalid-endpoint");
+  await page.getByLabel("Model").fill("gpt-5.6-terra");
+  await expect(page.getByRole("button", { name: "保存 Profile" })).toBeDisabled();
+  await page.getByRole("button", { name: "诊断" }).click();
+  await expect(secrets).toContainText("blocked");
+  await expect(secrets).toContainText("secret_validation_failed");
 });
 
 test("CLI prepare covers cancel failure retry success and retains logs", async ({ page }) => {
@@ -118,7 +166,7 @@ test("CLI prepare covers cancel failure retry success and retains logs", async (
 
 test("inventory scenarios and desktop geometry handle long values", async ({ page }) => {
   await openPrototype(page);
-  await expect(page.locator(".arp-runtime-row")).toHaveCount(6);
+  await expect(page.locator(".arp-runtime-row")).toHaveCount(7);
   await expect(page.locator(".arp-runtime-list")).not.toContainText("OpenCLI");
   await expect(page.getByText("Pi Coding Agent").locator("..", { hasText: "0.84.2" })).toBeVisible();
   await page.getByRole("button", { name: "Loading" }).click();
@@ -127,7 +175,7 @@ test("inventory scenarios and desktop geometry handle long values", async ({ pag
   await expect(page.getByText("没有 CLI candidates")).toBeVisible();
   await page.getByRole("button", { name: "内容" }).click();
   await page.getByRole("button", { name: "刷新" }).click();
-  await expect(page.getByText("正在隔离探测 6 个 candidates")).toBeVisible();
+  await expect(page.getByText("正在隔离探测 7 个 candidates")).toBeVisible();
   await expectNoPageOverflow(page);
   await page.getByRole("button", { name: "导出" }).click();
   await expectOverlayInsideViewport(page, ".arp-notice");
