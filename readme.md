@@ -16,11 +16,11 @@ verified: 2026-08-24
 ## 提交约束
 - 技术方案 PPT/PDF 不超过 20 页。模板 P1 的“不超过30页”与首页说明、P20 自检冲突，采用两处一致且更严格的 20 页。
 - 作品简介、Qwen 与 AI 技术说明各不超过 300 字；模板未设其他总字数上限。填写系统报名作品名、最终作品名、赛道方向和可选宣传材料链接。
-- 团队信息处粘贴盖章报名表第一页、第二页截图。
+- 团队信息按模板粘贴盖章报名表第一页、第二页截图；报名所需个人信息按模板提交，非必需个人信息脱敏。
 - 方向 A 保留官方 125 题逐题输出；失败、证据不足和需人工判断的题目不得省略。
-- 交付源码、环境、依赖、运行方法、Qwen 调用方式及凭证或截图、125 题输出、代表案例输入与两轮结果及必要日志、测试 API、示例请求和可交互前端。
+- 交付源码、环境、依赖、运行方法、Qwen 调用方式及凭证或截图、125 题输出、代表案例输入与两次有次序的 Pipeline run 结果及必要日志、测试 API、示例请求和可交互前端。
 - 演示视频可选，不超过 10 分钟；视频经夸克网盘提交分享链接。
-- 候选假设和研究计划仍需研究者审查，不得表述为已验证科学发现；密钥、受限数据和个人信息不得进入交付物。
+- 候选假设和研究计划仍需研究者审查，不得表述为已验证科学发现；受限数据与密钥不得进入交付物，Qwen 调用凭证或截图不得暴露 API 密钥。
 ## 模板结构
 - Word 元数据：21 页、1125 词、6415 字符、7525 个含空格字符。
 - 正文：封面加 P1-P20，161 个段落、26 张表、1 张页眉图片；脚注、尾注和嵌入附件均为空。
@@ -30,38 +30,38 @@ verified: 2026-08-24
 - 较长代码、日志和数据表进入允许的附件，不挤占论证正文。
 ## 展示 Project
 选择覆盖文献证据、数值计算和结构化实验计划三种报告形态；Project 身份只使用小写 `qNNN`。
-| Project | 科学问题 | 报告覆盖理由 | 所需 Profile / Tool | 预计 Pipeline run | 主要风险与缺口 |
+| Project | 科学问题 | 报告覆盖理由 | 所需 Profile / Tool | 预计 Pipeline run / 展示验收 | 主要风险与缺口 |
 |---|---|---|---|---|---|
-| `q021` | Can we ever overcome antibiotic resistance? | 文献密集且涉及全球监测、冲突证据和政策边界；覆盖 P4、P5、P12、P19。仓库已有 Q21 worker 中断恢复的 UI 证据，可展示失败恢复但不能代替科学结果。 | 文献研究员；一手检索、浏览器/PDF、PubMed/WHO、Project Files。 | 1 次 brainstorm；每个 admitted direction 进入 research/review，证据变化后 reflect；实际次数由 `admitted >=100` 停止条件决定。 | 文献研究员与 Tool readiness 未完成：#43、#54；正向研究结果和 100+ 节点未完成：#48。 |
-| `q049` | Why don’t the orbits of planets decay and cause them to crash into each other? | 可形成文献约束、数值积分、复跑哈希、支持/反驳和反思；覆盖 P7、P11、P12、P14-P18。 | 文献研究员、数值研究 Agent；一手检索、Python scientific stack、SymPy、Project Files。 | 1 次 brainstorm；选中方向逐一 research/review；数值 Artifact 复跑后 reflect；实际次数由 `admitted >=100` 停止条件决定。 | `orbits-49` 运行只作历史 Trace/Artifact，不能证明当前 `q049` 完成；#48。 |
-| `q112` | Can we create an environmentally friendly replacement for plastics? | 同时要求材料来源、工艺变量、实验条件、统计优化和规模化边界；覆盖 P4、P8-P11、P18、P19，并能明确湿实验需人工返回。 | 文献研究员、实验规划 Agent；一手检索、PDF/表格抽取、Python 统计、Project Files、人工 gate。 | 1 次 brainstorm；候选材料路线分别 research/review；计划与人工反馈后 reflect；实际次数由 `admitted >=100` 停止条件决定。 | 不得把论文既有实验写成系统执行结果；真实 Pipeline、人工反馈和 100+ 节点未完成：#48、#54。 |
+| `q021` | Can we ever overcome antibiotic resistance? | 文献密集且涉及全球监测、冲突证据和政策边界；覆盖 P4、P5、P12、P19。仓库已有 Q21 worker 中断恢复的 UI 证据，可展示失败恢复但不能代替科学结果。 | 文献研究员；一手检索、浏览器/PDF、PubMed/WHO、Project Files。 | 1 次 brainstorm；每个 admitted direction 进入 research/review，证据变化后 reflect。“轮”只表示现有 Pipeline run；每次 run 按自身 stage、on、gate 和人工裁决终止。#60 的累计 `admitted >=100` 只是展示验收规模代理，不是领域状态或单次 run 停止条件。 | 文献研究员与 Tool readiness 未完成：#43、#54；正向研究结果和展示规模未完成：#60。 |
+| `q049` | Why don’t the orbits of planets decay and cause them to crash into each other? | 可形成文献约束、数值积分、复跑哈希、支持/反驳和反思；覆盖 P7、P11、P12、P14-P18。 | 文献研究员、数值研究 Agent；一手检索、Python scientific stack、SymPy、Project Files。 | 1 次 brainstorm；选中方向逐一 research/review；数值 Artifact 复跑后 reflect。“轮”只表示现有 Pipeline run；每次 run 按自身 stage、on、gate 和人工裁决终止。#59 的累计 `admitted >=100` 只是展示验收规模代理，不是领域状态或单次 run 停止条件。 | `orbits-49` 运行只作历史 Trace/Artifact，不能证明当前 `q049` 完成；#59。 |
+| `q112` | Can we create an environmentally friendly replacement for plastics? | 同时要求材料来源、工艺变量、实验条件、统计优化和规模化边界；覆盖 P4、P8-P11、P18、P19，并能明确湿实验需人工返回。 | 文献研究员、实验规划 Agent；一手检索、PDF/表格抽取、Python 统计、Project Files、人工 gate。 | 1 次 brainstorm；候选材料路线分别 research/review；计划与人工反馈后 reflect。“轮”只表示现有 Pipeline run；每次 run 按自身 stage、on、gate 和人工裁决终止。#61 的累计 `admitted >=100` 只是展示验收规模代理，不是领域状态或单次 run 停止条件。 | 不得把论文既有实验写成系统执行结果；真实 Pipeline、人工反馈和展示规模未完成：#54、#61。 |
 `research-world/projects/q049/project.json` 与已删除的 `orbits-49/project.json` 经空白规范化后 title、full_text 完全相同；唯一 Project identity 为 `q049`。`research-world/evidence/orbits-49-*` 仅保留 2026-08-11 历史 Artifact/Trace。
 ## P1-P20 证据矩阵
-“可写事实”仅表示现有文件能支持该句；设计 ADR 不证明运行完成，历史 Artifact/Trace 不证明当前 Pipeline 完成。
-| 章节 | 模板字段 | 现有系统证据 | 当前可写事实 | 缺口 issue |
-|---|---|---|---|---|
-| P1 | 团队/作品信息、核心问题、方法、两项代表结果、局限、官网提交项 | `research-world/projects/q021|q049|q112/project.json` | 三个 Project 输入和报告覆盖选择已固定；无代表结果可写。 | 团队字段人工填写；结果 #48 |
-| P2 | 实际解决的问题、已完成功能、总体思路图、125 题测试、与直接问答差异 | `docs/adr/0017-research-world-redesign.md`、`docs/adr/0027-research-kernel.md`、125 个 Project 输入 | 图谱、Pipeline、准入与报告投影已有设计和代码证据；125 题只有输入，不是输出。 | #45、#48 |
-| P3 | 事实/解释/推断区分、知识缺口、可检验/证伪、反证、候选非结论 | `CONTEXT.md`、`docs/adr/0017-research-world-redesign.md`、`docs/adr/0021-review-pipeline.md` | claim 审计、Direction 状态和 ghost 隔离是当前领域设计；三题尚无统一实跑证据。 | #12、#23、#48 |
-| P4 | 实际来源、获得与使用、作用、局限、冲突处理、引用对应 | `docs/submission-reference-manifest.json`；`research-world/evidence/orbits-49-run.json` 为历史 Trace | 三份一手全文已远端归档并校验；当前三题尚无 admitted Source 链。 | #30、#48、#54 |
-| P5 | 评价内容、方法、样本、主体、轮次口径、继续/停止/人工判断 | `benchmarks/README.md` 的冻结指标与边界；#55 已完成 SciFact dev 300、top-3 | 可写 SciFact Hit one 0.8467、Hit all 0.8333 及已有组件指标边界；不能据此评价三个展示 Project。 | #47、#56、#57 |
-| P6 | 真实架构图、模块输入/处理/输出、非一次问答闭环 | `docs/adr/0017-research-world-redesign.md`、`docs/adr/0026-agent-runtime.md`、`docs/adr/0027-research-kernel.md` | Research Kernel 与 Agent Runtime 的职责和事件流可写；无提交版架构截图。 | #48、#50 |
-| P7 | Qwen 模型/调用、任务、上下文、结构约束、Tool 协作、真实上下文图 | `docs/adr/0022-agent-spec.md`；历史 `orbits-49-run.json` 记录 `qwen3.7-flash`、20 请求、657082 token | 只能把该模型与用量写成历史 Artifact 事实，不能写成当前三题调用结果。 | #41、#43、#44、#48、#54 |
-| P8 | 对象/范围、变量、已有认识/争议/未知、知识缺口及真实中间结果 | 三个 `project.json` 只含原始问题 | 可写原始问题；无当前 Pipeline 解析结果。 | #48 |
-| P9 | 多候选、支持/反对证据、重复控制、统一假设表达 | `docs/adr/0017-research-world-redesign.md`；历史 q049 Trace 含多轮 revise | 生成、查重和 reflect 是设计事实；三题候选数量与质量不可写。 | #13、#20、#24、#48 |
-| P10 | 相关性、证据一致性、冲突引用、可检验/证伪、重复、筛选 | `docs/adr/0021-review-pipeline.md`；历史 q049 Trace 含双 reviewer | 可写审核 contract 和历史审核事件；当前三题筛选结果不可写。 | #12、#23、#35、#48 |
-| P11 | 预测、数据/条件、步骤/分析、支持/反对判据、停止/回退/补证 | `docs/adr/0021-review-pipeline.md`、`docs/adr/0020-graph-and-evidence.md` | Action 审核、执行凭据和 Artifact 是设计/代码事实；三题无当前计划和执行凭据。 | #21、#22、#46、#48 |
-| P12 | 一次完整运行图、反馈返回点、失败处理、自动/人工反馈、前后变化 | 历史 q049 Trace；`benchmarks/README.md` 记录 Q21 worker 恢复和 Q49 UI 闭环 | Q21 恢复与 Q49 历史闭环可写为既有验收事实；均未达到本次三题验收。 | #45、#48、#50 |
-| P13 | 125 题全量方法、共同输出、总体评价、失败保留、案例选择理由 | `docs/questions.json`；`research-world/projects/q001` 至 `q125` | 125 个连续输入存在，三题按报告覆盖选择；没有 125 题逐题输出。 | #45、#48 |
-| P14 | 案例原文、变量、认识/证据、缺口、不确定性、第一轮设置 | `q021/q049/q112 project.json` 与三份全文 manifest | 案例输入和首份来源已固定；尚无第一轮真实设置。 | #48、#54 |
-| P15 | 第一轮 H-01..03、依据、反证/替代、预测、处理结果、三步计划 | 历史 q049 报告/Trace 仅作旧系统 Artifact | 只能说明历史 Artifact 存在；不能填入当前第一轮表。 | #48 |
-| P16 | 第一轮问题、判断依据、影响、第二轮调整、触发证据/人工意见 | 历史 q049 Trace 记录 revise 与 reviewer 反馈 | 可引用历史 revise 机制示例；当前案例没有第一轮问题分析。 | #48、#50 |
-| P17 | 两轮证据/假设/筛选/计划/边界变化、改善、代价、停止原因 | 历史 q049 报告及 report review | 可写历史 report review 明示的范围限制；当前两轮对照不可写。 | #48、#50 |
-| P18 | 至少一种同条件对照/消融、评价、结果、优势、代价 | `benchmarks/README.md` 含已冻结组件对照 | 组件对照可写入技术评测，不可冒充展示 Project 的同条件对照。 | #47、#56、#57 |
-| P19 | 125 题完成/部分/失败/稳健性数量，失败原因，边界，泛化 | 125 个输入文件；项目语料存在跨题文本串位 | 可披露输入完整但输出未运行，并把语料串位列为数据边界；无完成率可写。 | #45、#48 |
-| P20 | 源码/环境/运行、Qwen 凭证、125 输出、案例日志、API/前端、视频、自检 | 仓库源码、`research-world/README.md`、历史 q049 Artifact/Trace | 源码和 Compose 入口存在；本次未启动服务，不能写“可正常核验”。 | #44、#46、#48、#50 |
+设计 ADR 只证明约定；历史 Artifact/Trace 只证明对应历史运行；科学结果必须由当前 Project 的 admitted 节点、Trace、Artifact 和评价记录共同支持。
+| 章节 | 模板要求字段 | 所需系统能力/科学结果 | 证据位置 | 当前状态 | 缺口 issue |
+|---|---|---|---|---|---|
+| P1 | 盖章报名表第 1、2 页截图；系统报名作品名、最终作品名、赛道方向、300 字作品简介、300 字 Qwen/AI 说明、可选宣传链接；具体问题、核心方法、代表结果 1/2（对象、口径、结果）、主要局限；API/前端、代表案例、报告、源码、Qwen 调用凭证/截图、125 题输出、可选 10 分钟视频 | 汇总经核验的作品身份、方法、两项科学结果与限制；从 Project/报告投影生成可追溯摘要；报名所需个人信息按模板提交，非必需个人信息脱敏，受限数据、密钥不交付 | 原模板 `docs/赛道一-方向1A-科学假设生成与研究计划设计-提交要求及模板.docx`；三个 `project.json`；后续报告投影、Artifact、提交入口 | 原模板和三个案例输入已固定；报名截图/字段、两项代表结果、300 字文本和交付入口未形成 | 报名信息由团队提供；#44、#46、#50、#59、#60、#61 |
+| P2 | 现有方法的具体不足、实际解决范围；已实现的科学问题理解、证据组织、候选生成、比较筛选、研究计划、反馈修订；总体思路图；主要输出；125 题实际测试；与直接大模型问答的差异 | 形成“问题→知识缺口→证据→候选→筛选→计划→反馈”闭环并逐项证明已实现功能、实际输出、全量结果和同条件直接问答差异 | `docs/adr/0017-research-world-redesign.md`、`docs/adr/0027-research-kernel.md`；`research-world/projects/q001` 至 `q125` | 图谱、Pipeline、准入和报告投影有设计/代码；125 项仅有输入，未形成总体思路成图、全量输出或直接问答实测 | #45、#47、#50、#59、#60、#61 |
+| P3 | 对事实/文献解释/模型推断、知识缺口转候选、可检验/证伪、反对证据/替代解释、候选非结论五项分别填写实际做法与理由；说明识别缺口的信息、约束假设的证据及支持/削弱/否定结果 | claim/source 对应、Direction 状态机、正反证据极性、ghost 隔离与独立审核；展示三题中每项原则的实际输入、判据和 verdict | `CONTEXT.md`；`docs/adr/0017-research-world-redesign.md`、`docs/adr/0020-graph-and-evidence.md`、`docs/adr/0021-review-pipeline.md` | 五项原则有领域设计；三题尚无同口径实跑结果证明实际采用及效果 | #12、#23、#35、#59、#60、#61 |
+| P4 | 每条实际资料的名称、获得/使用方式、对假设的作用、局限；来源可用性判断；证据不足/冲突处理；引用与证据对应；只列实际使用内容 | 获取全文、核验 authors/year/identifier/license/hash、归档并提交 Source admission；claim 绑定来源与 Artifact，冲突进入审核且保留正反证据 | `docs/submission-reference-manifest.json`；远端 `/data/zsm/ai4s/references/issue-53/`；历史 `research-world/evidence/orbits-49-run.json` | Q021/Q049/Q112 各一份官方全文的书目、许可、URL、PDF 属性、哈希和归档路径已核验；尚未成为当前三题 admitted Source/claim 链 | #30、#54、#59、#60、#61 |
+| P5 | 每项评价内容、具体方法、对象/样本、结果如何影响后续；评价重点与理由；程序/模型/团队/专家主体；两次 Pipeline run 口径是否一致及变化原因；继续、停止、转人工条件 | 从事件/Trace 计算过程指标，冻结样本与评价口径；评价结果路由准入、退修、ghost、人工 gate 或后续 Pipeline run；报告口径变化 | `benchmarks/README.md`；`docs/adr/0019-evaluation.md`、`docs/adr/0024-deterministic-metrics.md` | SciFact dev 300、top-3 的 Hit one 0.8467、Hit all 0.8333 可写为组件指标；三题评价表、运行间口径和处理结果未形成 | #47、#56、#57、#59、#60、#61 |
+| P6 | 真实架构图；科学问题理解、证据获取组织、候选生成、核验筛选、计划/反馈五模块各自输入、核心处理、输出、下一模块关系；说明非一次问答及进入后续 run 的中间结果 | Research Kernel 与 Agent Runtime 分责；question/source/direction/experiment、Pipeline、Admission、Trace、Artifact、反馈事件构成闭环 | `docs/adr/0017-research-world-redesign.md`、`docs/adr/0026-agent-runtime.md`、`docs/adr/0027-research-kernel.md` | 模块职责和数据流有设计/代码；提交版真实架构图及五模块逐格运行证据未形成 | #45、#50、#59、#60、#61 |
+| P7 | 实际 Qwen 模型/调用方式、具体任务、单次上下文、结构化输出/格式约束、检索/代码/Tool 协作；真实上下文结构图含问题、已有/反对证据、关键约束、历史结果、反馈；抑制无依据生成措施、更新/多次调用触发、实际变化 | AgentSpec 快照模型与 Tool；渐进披露、节点引用、schema、独立审核；Trace 证明真实上下文、调用次数、触发条件和前后结果 | `docs/adr/0022-agent-spec.md`、`docs/adr/0026-agent-runtime.md`；历史 `research-world/evidence/orbits-49-run.json` | 历史 q049 可证明 `qwen3.7-flash`、20 请求、657082 token；不能作为当前三题模型、上下文和效果证据，真实上下文图未形成 | #41、#43、#44、#54、#59、#60、#61 |
+| P8 | 识别对象/范围、条件/关键变量、已有认识/争议/未知、可处理知识缺口四步的实际做法、中间结果、对假设生成的用途；一题真实中间结果示例 | Pipeline 把 question 解析为结构化约束与可引用知识缺口，并将中间结果交给候选生成 | `research-world/projects/q021/project.json`、`research-world/projects/q049/project.json`、`research-world/projects/q112/project.json`；后续 Project 节点/Trace | 只有原始科学问题；对象、变量、认识/争议/未知、缺口及用途尚无当前运行结果 | #59、#60、#61 |
+| P9 | 从缺口形成解释、多个可区分候选、纳入支持/反对证据、控制重复/空泛/不可检验、统一表达五项实际做法及解决的问题；每条候选含核心陈述、依据、正反证据、预测、替代解释、不确定性 | brainstorm 生成多候选，检索/相似度与审核控制重复，统一 Direction payload 保存完整假设要素；给出真实候选数量和内容 | `docs/adr/0017-research-world-redesign.md`；历史 q049 Trace/Artifact | 生成、查重、reflect 有设计和历史样例；三题没有按模板字段形成的当前候选结果 | #13、#20、#24、#59、#60、#61 |
+| P10 | 相关性、证据一致性、冲突/错引、可检验/证伪、候选重复、是否进入计划六项的判断与处理结果；说明保留、合并、降级、淘汰规则；给出一组选/不选实例 | 双审与人工分歧 gate 产生逐项 verdict，更新 admitted/ghost、Direction 状态和后续计划资格；保留对比候选及理由 | `docs/adr/0021-review-pipeline.md`；历史 `research-world/evidence/orbits-49-run.json` | 审核 contract 和历史双 reviewer 事件存在；当前三题六项结果及选/不选对照未形成 | #12、#23、#35、#59、#60、#61 |
+| P11 | 待验证预测、所需数据/资料/实验条件、研究步骤/分析方法、各结果支持/反对对象、停止/回退/补证条件；具体/可复核检查；已具备执行条件与建议项；禁止“进一步研究”空话 | plan 产出可执行 Action 与判据；执行前审核条件，执行后保存 command/files/seed/limits/exit/hash；Pipeline 自身 stage/on/gate/人工裁决决定单次 run 终止 | `docs/adr/0020-graph-and-evidence.md`、`docs/adr/0021-review-pipeline.md`、`docs/adr/0027-research-kernel.md` | 计划、执行凭据和终止语义有设计/代码；三题无按字段生成的计划或当前执行凭据 | #21、#22、#46、#59、#60、#61 |
+| P12 | 真实全流程图及反馈返回点；至少三项实际反馈/失败的情况、发现、处理、后续影响；自动反馈、人工调整、保留的前后变化 | Pipeline run 串联接题、候选、计划、执行、review、reflect；失败转 ghost/暂停/恢复，事件与 Trace 区分自动和人工反馈 | `benchmarks/README.md`；历史 q049 Trace/Artifact；Q21 worker 恢复记录 | Q21 恢复和 q049 历史闭环可写为既有验收事实；当前三题完整 run、三项失败表、前后变化及流程图未形成 | #45、#50、#59、#60、#61 |
+| P13 | 125 题单题运行方式、共同输出、总体评价、证据不足/失败/人工判断保留；案例领域/特点、选择理由、展示能力、不能代表的题目/条件 | 对 125 个 canonical Project 使用同一 Pipeline/评价并保留全部状态；按研究形态选择案例且声明外推边界 | `docs/questions.json`；`research-world/projects/q001` 至 `q125`；`readme.md` 的展示 Project 记录 | Q001-Q125 identity 连续唯一，三题选择理由已记录；125 题共同输出/评价未运行，案例边界待实证 | #45、#59、#60、#61、#62 |
+| P14 | 案例问题原文、对象/变量、已有认识/主要证据、知识缺口、不确定性/争议；第一轮证据/约束、生成目标、模型/方法设置、评价口径 | 将 canonical question、admitted Source 和约束投影为首个 Pipeline run 输入快照，保存模型、方法和评价设置 | 三个 `project.json`；`docs/submission-reference-manifest.json`；后续 run definition/Trace | 案例原文和首份官方来源已固定；其余科学内容与第一轮设置没有当前运行证据 | #54、#59、#60、#61 |
+| P15 | H-01/H-02/H-03 的依据、反证/替代、预测、第一轮处理结果；三步计划内容及每步可支持/反对/区分对象；保留重复、证据不足、不可检验和不具体的原始结果 | 首个 Pipeline run 保留全部候选、review verdict、ghost 和计划，不以人工精选覆盖原结果 | 历史 q049 Trace/报告仅作旧系统 Artifact；后续当前 Project 节点/Trace | 历史 Artifact 存在；当前展示案例没有可填入第一轮表的真实候选和计划 | #59、#60、#61 |
+| P16 | 至少三项第一轮具体问题、判断依据、科学结论/计划影响、第二轮实际调整；触发证据/评价/人工意见；增删改、不变项及理由、预期改善 | review/rebuttal/人工 gate 绑定问题与调整，后续 Pipeline run 引用触发证据并保留未改项 | 历史 q049 Trace 的 revise/reviewer 反馈；后续 run lineage/Research event | 历史 revise 可作机制样例；当前案例无逐项第一轮问题、触发依据和第二轮调整 | #50、#59、#60、#61 |
+| P17 | 两次 Pipeline run 的证据、候选、筛选、计划、不确定性/边界及变化原因/结果；第二轮改善、未改善/新代价、停止或继续理由 | 以同一评价口径比较两个有次序的现有 Pipeline run，Trace/Artifact/lineage 证明变化；不新增 Round 领域对象 | 历史 q049 report/review；后续两次 completed run、报告投影 | 历史 review 有范围限制；当前案例尚无两次可比 run 或停止/继续结论 | #50、#59、#60、#61 |
+| P18 | 至少一种同条件对照/消融：对象、相同条件、评价方法、本作品结果、对照结果、结论/代价；分别说明科学逻辑、技术方法、结果改善及未改善/成本 | 冻结输入、模型/预算与评价口径执行对照，保存两侧 Trace/Artifact 和确定性指标 | `benchmarks/README.md`；`docs/adr/0019-evaluation.md`、`docs/adr/0024-deterministic-metrics.md` | 已有组件指标可写技术评测，不能冒充展示 Project 同条件对照；模板要求的结果表未形成 | #47、#56、#57、#59、#60、#61 |
+| P19 | 125 题完整形成、部分/证据不足、无法处理/需人工、重复运行/稳健性的数量/比例、判断口径、表现/原因；至少三类失败/边界的表现、原因、当前能力；可选外部泛化来源/方法/结果；候选与计划仍需研究者审查 | 汇总全部 Project 状态并保留失败；复跑计算稳健性；披露输入串位、适用边界和人工审查，不把结构合法当语义正确 | `docs/questions.json`；125 个 Project 输入；后续全量输出/评价；跨题文本串位事实 #62 | 仅能证明 Q001-Q125 identity/结构连续，不能报告完成率；Q107/Q109、Q118/Q121 等跨题文本串位不在 #53 修改，作为边界披露 | #45、#59、#60、#61、#62 |
+| P20 | 源码/环境/依赖/运行方法；Qwen 模型/调用及不含密钥的凭证或截图；125 题逐题输出；案例输入、两次 run 结果、必要日志；测试 API/示例请求/交互前端；可选视频；≤20 页、事实一致、125 题不省略、案例不代替总体、入口可核验、候选非结论、敏感信息妥善处理自检 | 形成自包含交付包与可复现入口；逐项校验文件、服务、调用证据、输出、日志、API/前端和隐私；报名所需个人信息按 P1 模板交付，非必需个人信息脱敏，受限数据/密钥排除 | 仓库源码；`research-world/README.md`；原模板；后续 125 题输出、案例 Trace/Artifact、API/前端入口 | 原模板、源码和 Compose 说明存在；服务未启动，Qwen 调用证明、125 输出、两次 run、API/前端实测、视频与最终自检未完成 | #44、#46、#50、#59、#60、#61 |
 ## 当前阻塞
-- #48 尚未通过 WebUI 真实运行 `q021`、`q049`、`q112` 到各自 `admitted >=100`，所以 P1、P8-P17、P19 不得填入结果性陈述。
+- #59/#60/#61 尚未通过 WebUI 真实运行 `q049`、`q021`、`q112` 并取得展示证据；各 Project 累计 `admitted >=100` 只作展示验收规模代理，不是领域状态或单次 Pipeline run 停止规则，所以 P1、P8-P19 不得填入当前结果性陈述。
 - #54 尚未提供文献研究员 Preset；三份远端全文只是引用准备，不是 Source Admission。
 - #56、#57 尚未完成官方全量 Benchmark；#55 的完整 SciFact 检索指标仍是组件指标，不得写成完整系统分数。
-- 125 题输入存在跨题文本串位，当前没有独立修复 issue；#45/#48 运行时须原样披露，不能静默改题或省略失败。
+- 125 题输入的跨题文本串位由 #62 修正；#45/#59/#60/#61 运行与 P19 汇总须原样披露，不能静默改题或省略失败。
