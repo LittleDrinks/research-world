@@ -1,29 +1,30 @@
-import { Bot, Check, ChevronRight, CircleAlert, CircleDot, FlaskConical, Plus, Wrench } from "lucide-react";
+import { Check, CircleAlert, CircleDashed, CircleDot, Clock3, Copy, X } from "lucide-react";
 
-export function AgentRail({ state }) {
-  return <aside className="ar-agent-rail"><header><span>AGENTS</span><button className="ar-add-agent" title="新建 Agent" onClick={state.beginNew}><Plus size={20} /></button></header>
-    <button className="active"><Bot size={17} /><span><b>{state.draft.name || "New Agent"}</b><small>{state.draft.id}</small></span><ChevronRight size={17} /></button>
-    {state.agents.map((agent) => <button key={agent.id}><Bot size={17} /><span><b>{agent.name}</b><small>{agent.id}</small></span></button>)}</aside>;
+const ICONS = { ready: Check, found: CircleDot, "auth-required": CircleAlert, missing: CircleDashed, error: CircleAlert, unsupported: CircleDashed, blocked: CircleAlert, unknown: CircleDot, "setup-required": Clock3, unavailable: CircleDashed };
+
+export function Status({ value, text }) {
+  const Icon = ICONS[value] || CircleDot;
+  return <span className={`arp-status is-${value}`}><Icon size={12} />{text || value}</span>;
 }
 
-export function TestButton({ id, state, label }) {
-  const status = state.tests[id];
-  return <button className="od-test" disabled={status === "testing"} onClick={() => state.test(id)}>
-    {status === "passed" ? <Check size={15} /> : <FlaskConical className={status === "testing" ? "spinning" : ""} size={15} />}
-    {status === "passed" ? "通过" : status === "testing" ? "测试中" : label}</button>;
+export function IconButton({ label, children, ...props }) {
+  return <button className="arp-icon-button" title={label} aria-label={label} {...props}>{children}</button>;
 }
 
-export function Status({ status, label }) {
-  const Icon = status === "ready" ? Check : status === "missing" ? CircleAlert : CircleDot;
-  return <span className={`ar-status ${status}`}><Icon size={12} />{label}</span>;
+export function Field({ label, hint, children }) {
+  return <label className="arp-field"><span>{label}{hint && <small>{hint}</small>}</span>{children}</label>;
+}
+
+export function CopyValue({ children, label = "复制" }) {
+  const copy = () => navigator.clipboard?.writeText(String(children));
+  return <div className="arp-copy-value"><code>{children}</code><IconButton label={label} onClick={copy}><Copy size={14} /></IconButton></div>;
 }
 
 export function Notice({ state }) {
   if (!state.notice) return null;
-  return <div className="ar-notice" role="status"><Wrench size={16} /><pre>{state.notice}</pre><button onClick={() => state.setNotice("")} aria-label="关闭">×</button></div>;
+  return <div className="arp-notice" role="status"><span>{state.notice}</span><IconButton label="关闭" onClick={() => state.setNotice("")}><X size={15} /></IconButton></div>;
 }
 
-export function StatePeek({ state }) {
-  const visible = { agent: state.draft, scan: state.scan, tests: state.tests, custom: state.custom, memoryAgents: state.agents };
-  return <details className="ar-state"><summary>Prototype state</summary><pre>{JSON.stringify(visible, null, 2)}</pre></details>;
+export function EmptyState({ title, detail, action }) {
+  return <div className="arp-empty"><CircleDashed size={22} /><b>{title}</b><span>{detail}</span>{action}</div>;
 }

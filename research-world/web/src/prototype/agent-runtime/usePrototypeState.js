@@ -1,86 +1,89 @@
 import { useMemo, useState } from "react";
-import { CAPABILITIES, DEFAULT_DRAFT, PROVIDERS, RUNTIMES } from "./seed";
+import { AGENTS, DEFAULT_PROFILE, PREPARE_STEPS } from "./seed";
 
 export function usePrototypeState() {
-  const core = useCoreState();
-  const runtime = RUNTIMES.find((item) => item.id === core.draft.runtimeId) || RUNTIMES[0];
-  const provider = PROVIDERS.find((item) => item.id === core.draft.providerId) || PROVIDERS[0];
-  const inventory = useMemo(() => filterInventory(core.query, core.custom), [core.query, core.custom]);
-  return { ...core, runtime, provider, inventory, ...buildActions(core) };
+  const state = useCoreState();
+  const visibleAgents = useMemo(() => filterAgents(state.agents, state.agentQuery), [state.agents, state.agentQuery]);
+  return { ...state, visibleAgents, ...buildActions(state) };
 }
 
 function useCoreState() {
-  const [draft, setDraft] = useState({ ...DEFAULT_DRAFT });
-  const [agents, setAgents] = useState([{ id: "agent:reviewer", name: "Independent Reviewer", runtime: "codex" }]);
-  const [scan, setScan] = useState({ status: "done", label: "刚刚完成", count: 20 });
-  const [tests, setTests] = useState({});
-  const [query, setQuery] = useState("");
-  const [group, setGroup] = useState("skills");
-  const [custom, setCustom] = useState({ skills: [], tools: [], mcp: [] });
+  const [agents, setAgents] = useState(AGENTS);
+  const [selectedId, setSelectedId] = useState(AGENTS[0].id);
+  const [profile, setProfile] = useState(DEFAULT_PROFILE);
+  const [activeTab, setActiveTab] = useState("runtime");
+  const [agentQuery, setAgentQuery] = useState("");
+  const [catalogQuery, setCatalogQuery] = useState("");
+  const [inventoryState, setInventoryState] = useState("content");
   const [notice, setNotice] = useState("");
-  return { draft, setDraft, agents, setAgents, scan, setScan, tests, setTests, query, setQuery, group, setGroup, custom, setCustom, notice, setNotice };
+  const [draft, setDraft] = useState(null);
+  const [prepare, setPrepare] = useState(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  return { agents, setAgents, selectedId, setSelectedId, profile, setProfile, activeTab, setActiveTab, agentQuery, setAgentQuery, catalogQuery, setCatalogQuery, inventoryState, setInventoryState, notice, setNotice, draft, setDraft, prepare, setPrepare, deleteOpen, setDeleteOpen };
 }
 
-function buildActions({ draft, setDraft, agents, setAgents, custom, setCustom, setScan, setTests, setNotice }) {
-  const patch = (value) => setDraft((current) => ({ ...current, ...value }));
-  const selectRuntime = (item) => item.status === "ready" && patch({ channel: "cli", runtimeId: item.id, model: item.models[0], effort: item.efforts[1] || item.efforts[0] });
-  const selectProvider = (item) => item.status === "ready" && patch({ channel: "api", providerId: item.id,
-    model: item.models[0] || "", effort: item.efforts[1] || item.efforts[0] });
-  const toggle = (type, id) => setDraft((current) => ({ ...current, selected: toggleSelected(current.selected, type, id) }));
-  const test = (key) => runTimed(setTests, key);
-  const rescan = () => runScan(setScan);
-  const beginNew = () => startDraft(setDraft, setNotice);
-  const create = () => createAgent(draft, agents, setAgents, setDraft, setNotice);
-  const addCapability = (type, path) => addCustomCapability(type, path, custom, setCustom, setNotice);
-  return { patch, selectRuntime, selectProvider, toggle, test, rescan, beginNew, create, addCapability };
+function buildActions(state) {
+  return {
+    patchProfile: (value) => state.setProfile((current) => ({ ...current, ...value })),
+    toggleCapability: (type, id) => toggleCapability(state, type, id),
+    refresh: () => refreshInventory(state),
+    beginDraft: () => state.setDraft({ step: "choose", mode: null, goal: "" }),
+    chooseDraft: (mode) => chooseDraft(state, mode),
+    patchDraft: (value) => state.setDraft((current) => ({ ...current, ...value })),
+    generateDraft: () => state.setDraft((current) => ({ ...current, step: "confirm", mode: "orchestrator" })),
+    confirmDraft: () => confirmDraft(state),
+    openPrepare: () => state.setPrepare({ state: "plan", steps: PREPARE_STEPS }),
+    runPrepare: () => runPrepare(state),
+    deleteAgent: () => deleteAgent(state),
+    save: () => state.setNotice("Prototype：Profile 已保存到页面内存。"),
+  };
 }
 
-function filterInventory(query, custom) {
+function filterAgents(agents, query) {
   const needle = query.trim().toLowerCase();
-  const merged = Object.fromEntries(Object.entries(CAPABILITIES).map(([key, items]) => [key, [...items, ...custom[key]]]));
-  if (!needle) return merged;
-  return Object.fromEntries(Object.entries(merged).map(([key, items]) => [key, items.filter((item) =>
-    `${item.name} ${item.source} ${item.path} ${item.detail}`.toLowerCase().includes(needle))]));
+  if (!needle) return agents;
+  return agents.filter((item) => `${item.name} ${item.id} ${item.runtime} ${item.model}`.toLowerCase().includes(needle));
 }
 
-function addCustomCapability(type, path, custom, setCustom, setNotice) {
-  const cleanPath = path.trim().replace(/\/$/, "");
-  if (!cleanPath) return;
-  const name = cleanPath.split("/").pop() || `custom-${type}`;
-  const item = { id: `custom-${type}-${custom[type].length + 1}`, name, path: cleanPath, source: "自定义来源", status: "ready", detail: customDetail(type) };
-  setCustom((value) => ({ ...value, [type]: [...value[type], item] }));
-  setNotice(`已识别 ${name}；保存 Agent 前不会写入配置。`);
+function toggleCapability(state, type, id) {
+  state.setProfile((current) => {
+    const values = current[type];
+    const next = values.includes(id) ? values.filter((item) => item !== id) : [...values, id];
+    return { ...current, [type]: next };
+  });
 }
 
-function customDetail(type) {
-  return type === "skills" ? "从自定义目录识别的 SKILL.md" : "从自定义路径识别的本地工具";
+function refreshInventory(state) {
+  state.setInventoryState("refreshing");
+  window.setTimeout(() => state.setInventoryState("content"), 900);
 }
 
-function toggleSelected(selected, type, id) {
-  const current = selected[type];
-  const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
-  return { ...selected, [type]: next };
+function chooseDraft(state, mode) {
+  const step = mode === "orchestrator" ? "describe" : "confirm";
+  state.setDraft({ step, mode, goal: "", name: mode === "preset" ? "Source Researcher Copy" : "Untitled Agent" });
 }
 
-function runTimed(setTests, key) {
-  setTests((value) => ({ ...value, [key]: "testing" }));
-  window.setTimeout(() => setTests((value) => ({ ...value, [key]: "passed" })), 650);
+function confirmDraft(state) {
+  const index = state.agents.length + 1;
+  const name = state.draft.name || `Agent ${index}`;
+  const item = { id: `agent:draft-${index}`, name, preset: state.draft.mode, runtime: "Codex CLI", model: "gpt-5.6-sol", status: "ready", modified: "now" };
+  state.setAgents((items) => [...items, item]);
+  state.setDraft(null);
+  state.setNotice(`Prototype：已确认 ${item.id}，未调用 prepare 或模型。`);
 }
 
-function runScan(setScan) {
-  setScan({ status: "scanning", label: "正在扫描", count: 0 });
-  window.setTimeout(() => setScan({ status: "done", label: "刚刚完成", count: 20 }), 850);
+function runPrepare(state) {
+  state.setPrepare((current) => ({ ...current, state: "running", steps: setStepState(current.steps, "running") }));
+  window.setTimeout(() => state.setPrepare((current) => ({ ...current, state: "done", steps: setStepState(current.steps, "succeeded") })), 1200);
 }
 
-function startDraft(setDraft, setNotice) {
-  setDraft({ ...DEFAULT_DRAFT, id: "agent:new", name: "", instructions: "", selected: { skills: [], tools: [], mcp: [] } });
-  setNotice("已开启空白 Agent 草稿；确认前不会写入任何配置。\n原型中的创建也只保存在页面内存。");
+function setStepState(steps, value) {
+  return steps.map((item) => ({ ...item, state: value }));
 }
 
-function createAgent(draft, agents, setAgents, setDraft, setNotice) {
-  const suffix = String(agents.length + 1).padStart(2, "0");
-  const next = { id: `agent:${suffix}`, name: draft.name || `Agent ${suffix}`, runtime: draft.channel === "cli" ? draft.runtimeId : draft.providerId };
-  setAgents((items) => [...items, next]);
-  setDraft((value) => ({ ...value, id: next.id }));
-  setNotice(`已在内存中创建 ${next.id}`);
+function deleteAgent(state) {
+  state.setAgents((items) => items.filter((item) => item.id !== state.selectedId));
+  state.setSelectedId(AGENTS[1].id);
+  state.setDeleteOpen(false);
+  state.setNotice("Prototype：Agent 已从页面内存删除。" );
 }
