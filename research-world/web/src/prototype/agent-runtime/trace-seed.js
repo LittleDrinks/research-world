@@ -13,9 +13,14 @@ export const SOURCE_LABEL = {
 };
 
 export const TRACE_RUNS = [
-  { id: "fixture:run-completed", name: "规划与验证", node: "node:fixture-completed", status: "completed", time: "08/23 07:24", source: "existing" },
-  { id: "fixture:run-running", name: "轨道敏感性复算", node: "node:fixture-running", status: "running", time: "08/24 14:08", source: "existing" },
-  { id: "fixture:run-failed", name: "规划与验证", node: "node:fixture-failed", status: "failed", time: "08/23 07:13", source: "existing" },
+  { id: "fixture:run-completed", project: "project:q49", thread: "thread:archive", name: "规划与验证", status: "completed", time: "08/23 07:24", source: "existing" },
+  { id: "fixture:run-running", project: "project:q49", thread: "thread:orbital", name: "轨道敏感性复算", status: "running", time: "08/24 14:08", source: "existing" },
+  { id: "fixture:run-failed", project: "project:q49", thread: "thread:orbital", name: "规划与验证", status: "failed", time: "08/23 07:13", source: "existing" },
+];
+
+export const TRACE_THREADS = [
+  { id: "thread:orbital", project: "project:q49" },
+  { id: "thread:archive", project: "project:q49" },
 ];
 
 export const TRACE_ROWS = [
@@ -29,8 +34,9 @@ export const TRACE_ROWS = [
   { id: "tool-long-json", parent: "session-a", depth: 3, type: "tool", label: "read_trace_fixture", meta: ">200 JSON lines", status: "completed", start: 27, width: 12, duration: "48s", tokens: "--", source: "existing" },
   { id: "step-2", parent: "stage-execute", depth: 1, type: "step", label: "执行 #2", meta: "扰动扫描", status: "running", start: 34, width: 42, duration: "进行中", tokens: "8.9k", source: "existing" },
   { id: "session-b", parent: "step-2", depth: 2, type: "session", label: "experiment-b", meta: "gpt-5.6-sol", status: "running", start: 35, width: 40, duration: "进行中", tokens: "8.9k", source: "existing" },
-  { id: "tool-large-output", parent: "session-b", depth: 3, type: "tool", label: "stream_output", meta: ">256 KiB output", status: "completed", start: 43, width: 14, duration: "52s", tokens: "--", source: "existing" },
-  { id: "tool-search", parent: "session-b", depth: 3, type: "tool", label: "graph_query", meta: "检索 admitted source", status: "running", start: 60, width: 14, duration: "进行中", tokens: "--", source: "existing" },
+  { id: "turn-execute", parent: "session-b", depth: 3, type: "turn", label: "Turn 2", meta: "2 Tool calls", status: "running", start: 38, width: 35, duration: "进行中", tokens: "8.9k", source: "existing" },
+  { id: "tool-large-output", parent: "turn-execute", depth: 4, type: "tool", label: "stream_output", meta: ">256 KiB output", status: "completed", start: 43, width: 14, duration: "52s", tokens: "--", source: "existing" },
+  { id: "tool-search", parent: "turn-execute", depth: 4, type: "tool", label: "graph_query", meta: "检索 admitted source", status: "running", start: 60, width: 14, duration: "进行中", tokens: "--", source: "existing" },
   { id: "step-3", parent: "stage-execute", depth: 1, type: "step", label: "执行 #3", meta: "边界复算", status: "queued", start: 80, width: 8, duration: "--", tokens: "--", source: "existing" },
   { id: "stage-review", depth: 0, type: "stage", label: "review", meta: "independent-reviewer", status: "queued", start: 90, width: 8, duration: "--", tokens: "--", source: "existing" },
 ];
@@ -45,7 +51,7 @@ export const TRACE_SUMMARY = [
 ];
 
 export const TRACE_RELATIONS = [
-  { label: "Node", value: "node:fixture-running", source: "existing", action: "node" },
+  { label: "Node", value: "当前 Compose 无可达 Node", source: "missing" },
   { label: "Lineage", value: "lineage:fixture", source: "existing" },
   { label: "Direction", value: "待 API/不可用", source: "missing" },
   { label: "Source", value: "待 API/不可用", source: "missing" },
@@ -67,6 +73,12 @@ export const TRACE_CONTENT = {
     title: "stream_output", subtitle: "Tool result · completed · fixture", source: "existing",
     input: { source: "existing", value: { fixture: ">256 KiB ASCII output" } },
     output: { source: "existing", value: largeOutput },
+    diff: unavailable, artifact: unavailable,
+  },
+  "tool-search": {
+    title: "graph_query", subtitle: "Tool result · failed · fixture", source: "existing",
+    input: { source: "existing", value: { query: "admitted orbital stability source" } },
+    output: { source: "existing", value: "error: graph query fixture failed" },
     diff: unavailable, artifact: unavailable,
   },
 };

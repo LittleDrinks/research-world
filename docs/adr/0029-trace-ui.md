@@ -162,7 +162,7 @@ sources:
   - id: prototype-opencli-desktop
     title: Trace prototype desktop
     path: docs/adr/assets/0029-trace-ui/prototype/trace-desktop-opencli.png
-    capture: OpenCLI Chrome 1536x674
+    capture: OpenCLI Chrome 1536x730 failed scene
     accessed: 2026-08-24
   - id: prototype-playwright-desktop
     title: Trace prototype desktop geometry check
@@ -269,10 +269,10 @@ complete run 首屏为“规划与验证”、节点 `6038aad`、当前 stage `c
 | Project | Project 行或运行摘要的“查看 Trace” | `/traces?project_id=<Project>&from=/projects`；可附已知 `run_id` | Trace Project/Graph navigation issue |
 | Graph | node inspector 的“查看运行” | `/traces/<run>?project_id=<Project>&from=/map?node=<node>` | Trace Project/Graph navigation issue |
 | Chat | composer 恒定高度“研究运行 N” | `/traces?project_id=<Project>&thread_id=<Thread>&from=/chat/<Thread>` | #65；不得出现 composer 内联 panel/popover/list |
-独立 Trace shell 不复制三类入口组件。Project 与 Graph 可打开 Project-scoped runs；Chat 由 #65 提供 Thread→run association 和恰好 N 条关联 run。Trace 内 Node 动作返回 `/map?node=<node>`；缺 typed relation 或路由的 Direction、Source、Admission、Review、Artifact 动作 disabled。
+独立 Trace shell 不复制三类入口组件。Project 与 Graph 可打开 Project-scoped runs；Chat 由 #65 提供 Thread→run association 和恰好 N 条关联 run。Project run history/detail 与 run↔node/Artifact/review 导航由 #50 提供，Trace 只消费已校验目标。Trace 内 Node 动作仅在目标属于当前 Project 且当前 Graph 数据存在该 node 时返回 `/map?node=<node>`；否则显示 `missing` 并 disabled，不生成 href。缺 typed relation 或路由的 Direction、Source、Admission、Review、Artifact 动作同样 disabled。
 ### 上下文校验与回退
 1. `project_id` 必须通过当前身份可访问 Project 查询；无效或无权访问时不请求 run/Thread，重定向 `/projects`。
-2. `run_id` 必须属于已校验 Project；不匹配时显示 Project-scoped “运行不存在”，不跨 Project 回查。
+2. `run_id` 先校验格式，再校验属于已验证 Project 与可选 Thread scope；非法、未知或跨 scope 时不按该 id 查询、不跨 Project/Thread 回查，显示原因并回退 scope 内首个可见 run；scope 内无 run 时进入 empty。
 3. `thread_id` 必须通过 `/projects/<Project>/threads/<Thread>` 归属查询；缺失时保留 Project scope，无效时删除 Thread scope 并显示上下文错误。
 4. `from` 按相对 URL 解析，要求同源、无 fragment、路径恰为 `/projects`、`/map`、`/map?node=<当前 Project 可访问 node>` 或 `/chat/<已校验 Thread>`；拒绝绝对外域、scheme-relative、未知 query、编码后路径穿越和不匹配 Thread。
 5. 安全回退顺序为已校验 Thread 的 `/chat/<Thread>`、已校验 Project 的 `/map`、`/projects`。浏览器 referrer、History state 和未校验 query 不参与授权或回退。
@@ -312,18 +312,18 @@ complete run 首屏为“规划与验证”、节点 `6038aad`、当前 stage `c
 ## 状态模型
 | 状态 | 页面行为 |
 |---|---|
-| empty | 空运行列表显示启动入口语义；不渲染空树，卸载旧 inspector 与其选择态 |
-| loading | rail 与 summary 固定尺寸 skeleton；首次 loading 卸载 inspector，局部 Session loading 不移除已载入树 |
+| empty | 空运行列表显示启动入口语义；清空 selection，不渲染空树，卸载旧 inspector |
+| loading | rail 与 summary 固定尺寸 skeleton；清空 selection 并卸载 inspector，局部 Session loading 不移除已载入树 |
 | queued | header 显示排队，overview 保留待开始位置，duration 为空 |
 | running | 当前路径展开，未结束项 duration 显示进行中而非估算；默认跟随尾部 |
 | waiting_human | 当前 gate 展开，保留已有安全操作；动作成功后原位刷新 |
 | completed | summary 固定最终值，默认折叠成功的低层事件 |
-| failed | header 错误摘要可跳至首个失败项；树展开失败路径，成功同级折叠 |
+| failed | header 错误摘要清除冲突筛选、展开失败路径、选中首个失败项并打开 inspector；成功同级折叠 |
 | paused | 显示暂停原因与可用动作，不等同失败 |
 | cancelled | Runtime Turn 可显示；Run 级只在 Kernel 持久化后启用 |
 | partial | Kernel run 已载入但一个 Session inspect 失败；该 Session 局部错误和重试，不遮挡其他内容 |
 ## 交互
-1. 行点击选中并更新 `?item=`；折叠按钮只改变展开态，不改变选中。
+1. 行点击选中并更新 `?item=`；折叠按钮只改变展开态，不改变选中；run 或 scene 切换先清空旧 selection，empty/loading 不保留可恢复的旧 selection。
 2. Trace 消费“导航规格”中的已校验上下文；Project/Graph 显示 Project-scoped runs，Chat 的 Thread scope 与关联数量由 #65 提供。
 3. 返回动作只使用规范化 `from`；失败时按安全回退顺序导航，不从浏览器 referrer 推断。
 4. 搜索匹配 label、id、Tool name 与已加载文本；结果保留祖先并标亮，未加载内容不宣称已搜索。
@@ -378,22 +378,22 @@ complete run 首屏为“规划与验证”、节点 `6038aad`、当前 stage `c
 3. Tool I/O、prompt、response、Artifact preview 默认继承 Project 访问边界。复制、导出和外链打开均记录明确目标，不自动复制隐藏内容。
 4. Markdown 禁止脚本、事件属性、iframe 与不受控图片；JSON key 命中敏感名时二次遮罩并显示非事实性保护提示。
 ## Prototype
-入口为 `/prototype/agent-runtime?view=trace&project_id=project:q49&thread_id=thread:orbital&from=/chat/thread:orbital`；实现位于 `research-world/web/src/prototype/agent-runtime/`，验证脚本为 `research-world/web/tests/trace-prototype-qa.mjs`。所有静态值显示 `existing API · fixture`、`derived` 或 `missing`；fixture ID 使用 `fixture:` 前缀，不伪装真实 Run ID。cost、retry、Run cancelled、thinking、diff、Artifact reference/metadata/read、Admission/Review relation 与 Thread→run query 显示“待 API/不可用”。
-场景覆盖 complete、running、failed、cancelled、empty、loading；empty/loading 不挂载 inspector。`read_trace_fixture` 含 220 项、1102 行 JSON，默认显示 200 行；`stream_output` 含 282799 bytes，显示 256 KiB 与明确截断标记。两者提供可见内容复制和检查器内局部滚动。Node 关系导航 `/map?node=…`；其他无路由或缺 API 的关系与 Artifact 按钮 disabled。
+入口为 `/prototype/agent-runtime?view=trace&project_id=project:q49&thread_id=thread:orbital&from=/chat/thread:orbital`；实现位于 `research-world/web/src/prototype/agent-runtime/`，验证脚本为 `research-world/web/tests/trace-prototype-qa.mjs`。所有静态值显示 `existing API · fixture`、`derived` 或 `missing`；fixture ID 使用 `fixture:` 前缀，不伪装真实 Run ID。prototype 仅认可 `project:q49`、其 `thread:orbital` 与所属 fixture run；非法、未知或跨 Project/Thread 的 `run_id` 显示回退原因并选择 scope 内默认 run。cost、retry、Run cancelled、thinking、diff、Artifact reference/metadata/read、Admission/Review relation 与 Thread→run query 显示“待 API/不可用”。
+场景覆盖 complete、running、failed、cancelled、empty、loading；scene 切换清空 selection，empty/loading 不挂载 inspector。failed banner 选中并打开失败 `graph_query`；Inspector 的 status、duration、Session、event type/id 与来源取自当前 scene 的实际 row。cancelled fixture 保留 Session→Turn→Tool，只有真实 Turn 使用 `cancelled`。`read_trace_fixture` 含 220 项、1102 行 JSON，默认显示 200 行；`stream_output` 含 282799 bytes，显示 256 KiB 与明确截断标记。两者提供可见内容复制和检查器内局部滚动。当前 Compose 无 Project/node 数据，Node 显示 `missing` 并 disabled，不生成 href；其他无路由或缺 API 的关系与 Artifact 按钮 disabled。
 ### Prototype 验证证据
-1. `docker compose -p issue64-trace -f compose.yaml -f /tmp/issue64-trace.override.yaml up --build -d` 构建并启动 control、runtime、runner-controller、worker；control `:8195/api/v1/health` 与 runtime `:8198/health` 返回 `{"ok":true}`。override 复用归属 `research-world` 的 `research-world_control`、`research-world_worker-egress` 网络，没有删除网络或容器。
-2. OpenCLI 只绑定真实 Chrome 做浏览器自动化；1536x674 核对 Project/Graph/Chat 返回 href、外域/畸形编码 `from` 回退、非法 Project 回退、failed/empty/loading、搜索/筛选/折叠、Tool 长内容、Node 导航和 disabled Artifact。Graph 点击后的 `/projects` 是空数据环境的 Project guard，不改变已核对的 `/map?node=…` href。
-3. `TRACE_PROTOTYPE_BASE_URL=http://127.0.0.1:8195 node tests/trace-prototype-qa.mjs` 在 Chromium 验证 1440x900 与 390x844：六种场景、Project/Graph/Chat URL、外域/畸形编码/非法 Project 回退、组合筛选、折叠、错误定位、1102 行 JSON 的 200 行折叠/展开/复制/局部滚动、282799-byte output 的 256 KiB 截断/复制/局部滚动、missing Diff 与 disabled Artifact、mobile drawer/sheet；无相邻行控件重叠或页面级横向溢出。
+1. `docker compose --env-file /home/q2635/wsl-workspace/ai4sci/.env -p issue64-trace -f compose.yaml -f /tmp/issue64-trace.override.yaml up --build -d` 构建并启动 control、runtime、runner-controller、worker；control `:8195/api/v1/health` 与 runtime `:8198/health` 返回 `{"ok":true}`。未停止服务或删除容器、网络、卷。
+2. OpenCLI 真实 Chrome 1536x730 打开 valid failed URL，读取 failed 因果树、错误 banner 与 disabled Node；跨 Thread `run_id` 显示回退原因并落到 scope 内 `fixture:run-completed`。当前 Compose `/api/v1/projects` 为空，header/relations 的 Node 均为 disabled 且不生成 href。OpenCLI bridge 对当前 React 控件只改变 DOM value、未触发 state，未把其 select/click 回执计为交互证据。
+3. `TRACE_PROTOTYPE_BASE_URL=http://127.0.0.1:8195 node tests/trace-prototype-qa.mjs` 在 Playwright Chromium 验证 1440x900 与 390x844：非法/未知/跨 Project/Thread `run_id` 可见回退、scene/empty/loading selection reset、failed Inspector 的 row/source、错误 banner 选中并打开 `graph_query`、唯一 cancelled Turn 的 Session→Turn→Tool 层级、空 Compose 下 Node 无 href 且 disabled、Project/Graph/Chat 安全返回、组合筛选、折叠、1102 行 JSON 的 200 行折叠/展开/复制/局部滚动、282799-byte output 的 256 KiB 截断/复制/局部滚动、missing Diff/Artifact、mobile drawer/sheet；无相邻行控件重叠或页面级横向溢出。
 ## 实施 subissue 草案
-Chat composer 固定高度入口、Thread→run query/数量和返回原对话只由 #65 跟踪。以下草案不修改 Chat，不创建 GitHub issue。
-### 1. Kernel run detail projection
-范围：新增 Project-scoped 单 run query，返回 run、Stage、Step、Kernel event、node/lineage、typed Direction/Source/Admission/Review relation 与 Session references；不返回 Runtime 内容或 Artifact metadata。
-前端可见验收：complete/failed/waiting_human 的 header、Stage 进度、错误定位和每个可用关系入口来自一个响应；缺失值为 `null`，不解析自由文本。
-依赖闭合：Research Kernel query + HTTP GET；先校验 run 属于 Project；沿用现有表。
+Project run history/detail 与 run↔node/Artifact/review 导航只由 #50 跟踪；通用 error/attempt/retry contract 只由 #32 跟踪；Artifact SHA-256 与 replay 只由 #21 跟踪；Chat composer 固定高度入口、Thread→run query/数量和返回原对话只由 #65 跟踪。以下草案不修改这些 owner，不创建 GitHub issue。
+### 1. Kernel Trace causal projection
+范围：把 #50 已校验的单 run detail 投影为 Stage、Step、Kernel event 与 Session reference 的 typed 因果输入；不实现 Project run history/detail、关系导航、Artifact/review 展示或 Runtime 内容。
+前端可见验收：打开 #50 提供的 run 后，Trace 树能显示 Stage/Step 与 Session 占位；缺失 reference 明确不可用，不解析自由文本。
+依赖闭合：消费 #50 单 run detail；Research Kernel 只增加 Trace 所需的 typed Stage/Step/event/Session reference 投影。
 ### 2. Runtime ordered event envelope
-范围：为 Session inspect 定义稳定 event id、exclusive cursor、时间戳、parent/child Session reference、typed error class/source event 与终止原因；不定义内容 renderer。
-前端可见验收：两次 cursor 读取无丢失/重复；child 可跳父项；failed/cancelled/limit 指向具体 event。
-依赖闭合：Agent Runtime JSONL writer/inspect API；cursor 按 append sequence，不增加第二事实源。
+范围：为 Session inspect 定义稳定 event id、exclusive cursor、时间戳、parent/child Session reference、终止原因与 #32 error reference；不定义通用 error 分类、retry 或内容 renderer。
+前端可见验收：两次 cursor 读取无丢失/重复；child 可跳父项；failed/cancelled/limit 指向具体 event，有错误时打开 #32 详情。
+依赖闭合：Agent Runtime JSONL writer/inspect API + #32 error identity；cursor 按 append sequence，不增加第二事实源。
 ### 3. Runtime content parts and redaction
 范围：定义 text/markdown/json/terminal/thinking/diff/tool input/tool output/Artifact reference parts 与 `redacted/rule_id/original_bytes`；写前脱敏，不从 provider 或 shell 文本猜测。
 前端可见验收：thinking/diff 仅在 typed part 存在时出现；敏感 Tool 字段显示规则与字节数且不可展开；Artifact reference 为 typed id。
@@ -402,30 +402,30 @@ Chat composer 固定高度入口、Thread→run query/数量和返回原对话�
 范围：为每次 model response 保存 provider/model、input/output token、计价单位、金额、币种和不可变 `pricing_revision`；禁止按当前价格回算历史。
 前端可见验收：有 revision 显示 response/Turn/Session cost，无 revision 显示“待 API/不可用”，聚合不双计。
 依赖闭合：Runtime usage event + 版本化 pricing snapshot owner；subissue 2 event id 作为关联键。
-### 5. Retry attempt and predecessor contract
-范围：为 Pipeline run/Step 与 Runtime Turn 定义 `attempt`、`predecessor_id`、retry reason；不把时间相邻项当重试。
-前端可见验收：重试组显示 attempt 序号、前任与原因；普通重复运行不被合并。
-依赖闭合：Kernel run/step schema、Runtime turn envelope；subissue 1/2 投影 typed relation。
-### 6. Project-scoped Artifact metadata/read API
-范围：新增按 Project 校验的 Artifact metadata 与 range/read endpoint，返回 id、SHA-256、media type、size、created_at、content disposition；不承担 run relation 推断。
-前端可见验收：typed Artifact reference 可打开 metadata/preview/download；跨 Project id 与未知 id 均不泄漏存在性。
-依赖闭合：`ArtifactStore.get/read` + Kernel authorization + HTTP GET；消费 subissue 3 reference。
+### 5. Trace retry presentation
+范围：只渲染 #32 提供的 error class、attempt、predecessor 与 retry reason；不定义 retry schema、策略、动作或执行行为。
+前端可见验收：有 #32 typed relation 时显示 attempt 序号、前任、原因和最终结果；缺失时显示未记录，普通重复运行不被合并。
+依赖闭合：消费 #32 error/attempt/retry contract 与 subissue 1/2 稳定 item id。
+### 6. Trace execution evidence presentation
+范围：只渲染 #21 提供的 Artifact SHA-256、replay 结果与 execution environment；不新增 Artifact store/API、hash/replay contract 或 run↔Artifact 导航。
+前端可见验收：执行 Step inspector 显示 hash、replay、environment；replay 不一致高亮，字段缺失时明确未记录。
+依赖闭合：消费 #21 execution evidence；Artifact 入口与返回路径消费 #50 导航。
 ### 7. Trace shell and state isolation
-范围：实现独立 Run rail、header、summary、relation strip 与 empty/loading/partial/terminal state；不实现 Project/Graph/Chat 入口或返回行为。
-前端可见验收：1440px 切换状态时尺寸稳定；empty/loading DOM 无旧 tree/inspector；partial 只替换失败 Session 区域；完整 fixture id 可复制。
-依赖闭合：subissue 1/2/4/5 的 nullable projection；Chat scope 只消费 #65 输出。
-### 8. Project and Graph Trace navigation
-范围：为 Project 与 Graph 增加独立 Trace 入口、上下文白名单、服务端归属校验与安全回退；不修改 Chat。
-前端可见验收：从 `/projects` 与 `/map?node=…` 进入 scoped Trace 并返回原位置；恶意/跨 Project/错误编码参数回退且不发越权查询。
-依赖闭合：subissue 1、7；Thread 路径与数量只由 #65 提供。
+范围：实现独立 Run rail、header、summary、relation strip、selection lifecycle 与 empty/loading/partial/terminal state；不实现入口、关系目标或返回路由。
+前端可见验收：scene/run 切换清空旧 selection；empty/loading DOM 无旧 tree/inspector；partial 只替换失败 Session 区域；完整 id 可复制。
+依赖闭合：subissue 1/2/4 的 nullable projection；关系动作消费 #50，Chat scope 消费 #65。
+### 8. Trace inbound context guard
+范围：校验 `project_id/thread_id/run_id/from` 并选择 scope 内 run 或安全回退；不实现 #50 的 Project run history/detail、Project/Graph 入口或 run↔node/Artifact/review 导航，不修改 Chat。
+前端可见验收：非法、未知、跨 Project/Thread 与错误编码参数显示原因，不发越权查询；有效 #50/#65 链接打开对应 run 并返回已校验来源。
+依赖闭合：消费 #50 的 Project/Graph links 与 run ownership、#65 的 Thread association/return；subissue 7 显示回退状态。
 ### 9. Causal tree and timeline overview
 范围：实现 Stage/Step/Session/Turn/event 因果树、共享时间尺度、并行 lane、选中与折叠。
 前端可见验收：重叠 Session 显示在不同 lane；parent/child 有连线；运行中未结束项不显示伪造 duration。
-依赖闭合：subissue 1/2/5 的 typed parent、predecessor 与 timestamp；不新增执行层级。
+依赖闭合：subissue 1/2 的 typed parent 与 timestamp；retry 标记只消费 subissue 5，不新增执行层级。
 ### 10. Trace content inspector
-范围：实现 Input/Output/Artifact/raw tabs 与 text/Markdown/JSON/terminal/thinking/diff renderer、200 行折叠、256 KiB 截断、复制和局部滚动。
-前端可见验收：>200 行默认折叠且可展开/复制；>256 KiB 有字节截断标记；diff/Artifact 缺 part 时 disabled，不出现假内容或按钮。
-依赖闭合：subissue 3 typed parts、subissue 6 Artifact API；Markdown 禁止 raw HTML。
+范围：实现 Overview/Input/Output/raw tabs 与 text/Markdown/JSON/terminal/thinking/diff renderer、200 行折叠、256 KiB 截断、复制和局部滚动；不实现 Artifact evidence 或导航。
+前端可见验收：Inspector status/duration/Session/type/id 来自所选 row；>200 行默认折叠且可展开/复制；>256 KiB 有字节截断标记；缺 typed part 时 disabled。
+依赖闭合：subissue 2/3 typed envelope/content；execution evidence tab 消费 subissue 6；Markdown 禁止 raw HTML。
 ### 11. Trace search, filters and deep links
 范围：实现已加载文本搜索、类型/状态/仅异常筛选、匹配祖先保留、`?item=` 深链和加载范围提示；不含导出。
 前端可见验收：组合筛选可清除；深链刷新定位同一 event；未加载内容不宣称命中。
@@ -433,15 +433,15 @@ Chat composer 固定高度入口、Thread→run query/数量和返回原对话�
 ### 12. Canonical Trace export
 范围：新增 Kernel 协调的 run + referenced Sessions 一致快照导出；不复用浏览器已加载片段拼接。
 前端可见验收：导出按钮在 snapshot API ready 前 disabled；完成后下载含 schema version、run id、Session ids、固定 cursor 与 redaction metadata。
-依赖闭合：subissue 1/2/3/6；Kernel 获取并冻结 Runtime cursor，权限沿用 Project。
-### 13. Trace responsive layout
-范围：实现 390px Run drawer、全宽 inspector sheet、代码局部滚动与桌面三栏；不含实时、重试或焦点策略。
-前端可见验收：1440/390 无页面级横向溢出、文本/控件重叠或裁切；drawer/sheet 开闭不改变主内容宽度。
-依赖闭合：subissue 7/9/10/11 的稳定 DOM 与尺寸契约。
-### 14. Trace live, retry and focus behavior
-范围：实现 cursor tail follow、暂停/恢复、Session 局部重试与键盘焦点恢复；不修改响应式布局。
-前端可见验收：新增 event 不抢历史选择；上滚暂停后可恢复；一个 Session 重试不遮挡其余内容；键盘操作后焦点回到触发项。
-依赖闭合：subissue 2 cursor/error、subissue 7 partial state、subissue 9 stable item id；不增加第二实时协议。
+依赖闭合：subissue 1/2/3；#21 evidence 与 #50 relation 只按已投影引用导出；Kernel 获取并冻结 Runtime cursor，权限沿用 Project。
+### 13. Trace responsive shell and focus
+范围：实现 390px Run drawer、全宽 inspector sheet、代码局部滚动、桌面三栏与 drawer/sheet 的键盘焦点进入/恢复；不含实时或 retry。
+前端可见验收：1440/390 无页面级横向溢出、文本/控件重叠或裁切；drawer/sheet 开闭不改变主内容宽度；键盘关闭后焦点回到触发项。
+依赖闭合：subissue 7/9/10/11 的稳定 DOM、selection 与尺寸契约。
+### 14. Trace live tail
+范围：只实现 exclusive cursor 的增量读取、tail follow、暂停与恢复；不实现 retry、错误 contract、响应式布局或键盘焦点。
+前端可见验收：新增 event 不抢历史选择；停留尾部时持续追加，上滚或选中历史项时暂停，显式恢复后从原 cursor 无丢失/重复继续。
+依赖闭合：subissue 2 exclusive cursor、subissue 7 selection lifecycle、subissue 9 stable item id；不增加第二实时协议。
 ## 不采纳
 不把所有事件画成一张自由缩放 graph：密集文本的主要任务是定位与阅读，graph 只保留可证实的 parent/child 与并行关系。
 不从 timestamps 推断 parent/child，不从 shell 文本推断 file diff，不按当前模型价格回算历史 cost，不把 provider 私有字段固定成 thinking schema。

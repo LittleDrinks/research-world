@@ -47,6 +47,7 @@
 .tp-heading h1 code { margin-left: 8px; color: var(--text-faint); font-size: 10px; font-weight: 500; }
 .tp-heading p { margin: 5px 0 0; color: var(--text-muted); font: 10px "Geist Mono", monospace; }
 .tp-heading a { color: inherit; }
+.tp-node-disabled { padding: 0; border: 0; color: var(--text-faint); background: transparent; font: inherit; cursor: not-allowed; }
 .tp-header-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 7px; }
 .tp-back-chat { min-height: 34px; display: inline-flex; align-items: center; gap: 6px; padding: 0 9px; border: 1px solid var(--line); border-radius: 6px; color: var(--text); background: var(--surface-raised); font-size: 10px; text-decoration: none; white-space: nowrap; }
 .tp-scene select { height: 34px; min-height: 34px; border-radius: 6px; color: var(--text-muted); font-size: 10px; }
@@ -59,6 +60,8 @@
 .tp-status-badge.compact { min-width: 68px; padding: 0 7px; justify-content: flex-start; font-size: 9px; }
 .tp-status-badge .tp-status-mark { margin-top: 0; }
 .tp-error-banner, .tp-cancel-banner { width: 100%; min-height: 42px; display: flex; align-items: center; gap: 9px; padding: 8px 22px; border: 0; border-bottom: 1px solid color-mix(in oklab, var(--state-failed) 25%, var(--line)); color: var(--state-failed); background: var(--state-failed-surface); text-align: left; }
+.tp-context-banner { min-height: 38px; display: flex; align-items: center; gap: 8px; padding: 7px 22px; border-bottom: 1px solid color-mix(in oklab, var(--state-blocked) 25%, var(--line)); color: var(--state-blocked); background: var(--state-blocked-surface); font-size: 10px; }
+.tp-context-banner span { min-width: 0; overflow-wrap: anywhere; }
 .tp-error-banner { cursor: pointer; }
 .tp-error-banner span, .tp-cancel-banner span { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
 .tp-error-banner b, .tp-cancel-banner b { font-size: 11px; }
@@ -121,6 +124,7 @@
 .tp-filter-empty b { color: var(--text-muted); font-size: 12px; }
 .tp-filter-empty button, .tp-state-screen button { min-height: 34px; padding: 0 11px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-raised); cursor: pointer; }
 .tp-inspector { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto auto auto minmax(0, 1fr); border-left: 1px solid var(--line); background: var(--surface-raised); }
+.tp-inspector-empty { grid-template-rows: auto minmax(0, 1fr); }
 .tp-inspector > header { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 15px; border-bottom: 1px solid var(--line); }
 .tp-inspector > header div { min-width: 0; }
 .tp-inspector > header span, .tp-inspector > header b, .tp-inspector > header small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
