@@ -7,12 +7,14 @@ import { useMemo, useState } from "react";
 import {
   FALLBACK_CONTENT, SOURCE_LABEL, STATUS_LABEL, TRACE_CONTENT, TRACE_RELATIONS, TRACE_ROWS, TRACE_RUNS, TRACE_SUMMARY, TRACE_THREADS,
 } from "./trace-seed";
+import { treeKeyAction, truncateUtf8, writeClipboard } from "./trace-content";
 import "./trace-page-prototype.css";
 
 const TYPE_ICON = { stage: GitBranch, step: Zap, session: Activity, turn: MessageSquareText, response: Braces, tool: TerminalSquare };
 const SCENES = ["running", "completed", "failed", "cancelled", "empty", "loading"];
 const TABS = ["overview", "input", "output", "diff", "artifact", "raw"];
 const TAB_LABEL = { overview: "概览", input: "输入", output: "输出", diff: "Diff", artifact: "Artifact", raw: "原始" };
+const COPY_LABEL = { success: "复制成功", unavailable: "剪贴板不可用", failed: "复制失败" };
 const MAX_LINES = 200;
 const MAX_CONTENT = 256 * 1024;
 
@@ -208,9 +210,11 @@ function SceneSelect({ model }) {
 }
 
 function CopyButton({ value, title = "复制可见内容" }) {
-  const [copied, setCopied] = useState(false);
-  const copy = () => navigator.clipboard?.writeText(value).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1200); });
-  return <button className="tp-icon-button" onClick={copy} title={title} aria-label={title}>{copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}</button>;
+  const [status, setStatus] = useState("idle");
+  const label = COPY_LABEL[status] || title;
+  const Icon = status === "success" ? CheckCircle2 : status === "idle" ? Copy : AlertTriangle;
+  return <><button className="tp-icon-button" onClick={async () => setStatus(await writeClipboard(navigator.clipboard, value))} title={label} aria-label={label}><Icon size={16} /></button>
+    <span className="sr-only" role="status" aria-live="polite">{COPY_LABEL[status] || ""}</span></>;
 }
 
 function jumpToError(model) {
@@ -269,11 +273,32 @@ function TraceRow({ row, model }) {
   const open = model.expanded.has(row.id);
   const select = () => { model.setSelected(row.id); model.setInspectorOpen(true); };
   const toggle = (event) => { event.stopPropagation(); model.setExpanded((value) => { const next = new Set(value); next.has(row.id) ? next.delete(row.id) : next.add(row.id); return next; }); };
-  return <button id={row.id} role="treeitem" aria-selected={model.selected === row.id} className={`tp-row ${model.selected === row.id ? "selected" : ""}`} style={{ "--depth": row.depth }} onClick={select}>
+  return <button id={row.id} role="treeitem" aria-level={row.depth + 1} aria-expanded={expandable ? open : undefined} aria-selected={model.selected === row.id} tabIndex={0} className={`tp-row ${model.selected === row.id ? "selected" : ""}`} style={{ "--depth": row.depth }} onClick={select} onKeyDown={(event) => treeKeyDown(event, row, model, expandable, open)}>
     <span className="tp-branch">{expandable ? <span onClick={toggle}>{open ? <ChevronDown size={15} /> : <ChevronRight size={15} />}</span> : <i />}</span><Icon className="tp-type-icon" size={15} />
     <span className="tp-row-copy"><b>{row.label}</b><small>{row.type.toUpperCase()} · {row.meta}</small><SourceTag source={row.source} /></span><StatusBadge status={row.status} compact />
     <time>{row.duration}</time><code>{row.tokens}</code><PanelRightOpen className="tp-open-inspector" size={15} />
   </button>;
+}
+
+function setRowExpanded(model, id, open) {
+  model.setExpanded((value) => {
+    const next = new Set(value);
+    open ? next.add(id) : next.delete(id);
+    return next;
+  });
+}
+
+function focusRow(id) {
+  requestAnimationFrame(() => document.getElementById(id)?.focus());
+}
+
+function treeKeyDown(event, row, model, expandable, open) {
+  const firstChild = model.rows.find((item) => item.parent === row.id)?.id;
+  const action = treeKeyAction(event.key, { expandable, open, parent: row.parent, firstChild });
+  if (!action) return;
+  event.preventDefault();
+  if (action.type === "focus") return focusRow(action.id);
+  setRowExpanded(model, row.id, action.type === "expand");
 }
 
 function TraceInspector({ model }) {
@@ -333,10 +358,9 @@ function JsonBlock({ field }) {
 }
 
 function OutputContent({ field }) {
-  const bytes = new TextEncoder().encode(field.value).length;
-  const visible = field.value.slice(0, MAX_CONTENT);
-  return <section className="tp-bounded"><header><SourceTag source={field.source} /><span>{bytes} bytes</span><CopyButton value={visible} /></header><section className="tp-terminal"><header><TerminalSquare size={13} />stdout</header><pre>{visible}</pre></section>
-    {bytes > MAX_CONTENT && <div className="tp-truncated" role="status">已显示 256 KiB；其余 {bytes - MAX_CONTENT} bytes 已截断。Artifact：待 API/不可用 <SourceTag source="missing" /></div>}</section>;
+  const content = truncateUtf8(field.value, MAX_CONTENT);
+  return <section className="tp-bounded"><header><SourceTag source={field.source} /><span>{content.totalBytes} bytes</span><CopyButton value={content.visible} /></header><section className="tp-terminal"><header><TerminalSquare size={13} />stdout</header><pre>{content.visible}</pre></section>
+    {content.remainingBytes > 0 && <div className="tp-truncated" role="status">已显示 {content.visibleBytes} bytes（上限 256 KiB）；其余 {content.remainingBytes} bytes 已截断。Artifact：待 API/不可用 <SourceTag source="missing" /></div>}</section>;
 }
 
 function MissingContent({ label }) {

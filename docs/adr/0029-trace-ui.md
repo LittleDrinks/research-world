@@ -323,15 +323,15 @@ complete run 首屏为“规划与验证”、节点 `6038aad`、当前 stage `c
 | cancelled | Runtime Turn 可显示；Run 级只在 Kernel 持久化后启用 |
 | partial | Kernel run 已载入但一个 Session inspect 失败；该 Session 局部错误和重试，不遮挡其他内容 |
 ## 交互
-1. 行点击选中并更新 `?item=`；折叠按钮只改变展开态，不改变选中；run 或 scene 切换先清空旧 selection，empty/loading 不保留可恢复的旧 selection。
+1. 行点击选中并更新 `?item=`；可折叠 treeitem 暴露 `aria-expanded`，`ArrowRight` 展开或进入首个子项，`ArrowLeft` 折叠或返回父项；折叠不改变选中；run 或 scene 切换先清空旧 selection，empty/loading 不保留可恢复的旧 selection。
 2. Trace 消费“导航规格”中的已校验上下文；Project/Graph 显示 Project-scoped runs，Chat 的 Thread scope 与关联数量由 #65 提供。
 3. 返回动作只使用规范化 `from`；失败时按安全回退顺序导航，不从浏览器 referrer 推断。
 4. 搜索匹配 label、id、Tool name 与已加载文本；结果保留祖先并标亮，未加载内容不宣称已搜索。
 5. 类型、状态与仅异常筛选可组合；筛选后空态显示清除筛选。
 6. Overview 点击区间滚动并选中对应行；拖动只缩放时间范围，不修改因果树。
 7. running 默认 tail follow；用户上滚、展开历史项或选中项后暂停，显式按钮恢复。
-8. `Copy` 复制当前 tab 的可见原文；复制 id 与复制深链分开；导出只在服务端提供 canonical trace 导出后启用。
-9. Inspector tabs 保留各自滚动位置。超过 200 行的 JSON 默认折叠；超过 256 KiB 的内容显示截断标记和 Artifact 打开动作，不能静默裁剪。
+8. `Copy` 复制当前 tab 的可见原文；先检查 Clipboard API 与 `writeText`，同步异常和异步拒绝都显示可访问失败状态，成功显示可访问确认；复制 id 与复制深链分开；导出只在服务端提供 canonical trace 导出后启用。
+9. Inspector tabs 保留各自滚动位置。超过 200 行的 JSON 默认折叠；超过 256 KiB 的内容按 UTF-8 完整 code point 截断，remaining 为总字节减实际可见字节，并显示截断标记和 Artifact 打开动作，不能静默裁剪。
 10. Markdown 禁止执行内嵌 HTML；外链明确域名。diff 保留行号、增删色和独立横向滚动；颜色不是唯一状态信号。
 ## 字段映射
 `已有`表示当前 schema/API 直接给出；`可派生`表示不新增事实即可确定计算；`缺失`表示必须先改 owner 的 schema/API。
@@ -379,11 +379,12 @@ complete run 首屏为“规划与验证”、节点 `6038aad`、当前 stage `c
 4. Markdown 禁止脚本、事件属性、iframe 与不受控图片；JSON key 命中敏感名时二次遮罩并显示非事实性保护提示。
 ## Prototype
 入口为 `/prototype/agent-runtime?view=trace&project_id=project:q49&thread_id=thread:orbital&from=/chat/thread:orbital`；实现位于 `research-world/web/src/prototype/agent-runtime/`，验证脚本为 `research-world/web/tests/trace-prototype-qa.mjs`。所有静态值显示 `existing API · fixture`、`derived` 或 `missing`；fixture ID 使用 `fixture:` 前缀，不伪装真实 Run ID。prototype 仅认可 `project:q49`、其 `thread:orbital` 与所属 fixture run；非法、未知或跨 Project/Thread 的 `run_id` 显示回退原因并选择 scope 内默认 run。cost、retry、Run cancelled、thinking、diff、Artifact reference/metadata/read、Admission/Review relation 与 Thread→run query 显示“待 API/不可用”。
-场景覆盖 complete、running、failed、cancelled、empty、loading；scene 切换清空 selection，empty/loading 不挂载 inspector。failed banner 选中并打开失败 `graph_query`；Inspector 的 status、duration、Session、event type/id 与来源取自当前 scene 的实际 row。cancelled fixture 保留 Session→Turn→Tool，只有真实 Turn 使用 `cancelled`。`read_trace_fixture` 含 220 项、1102 行 JSON，默认显示 200 行；`stream_output` 含 282799 bytes，显示 256 KiB 与明确截断标记。两者提供可见内容复制和检查器内局部滚动。当前 Compose 无 Project/node 数据，Node 显示 `missing` 并 disabled，不生成 href；其他无路由或缺 API 的关系与 Artifact 按钮 disabled。
+场景覆盖 complete、running、failed、cancelled、empty、loading；scene 切换清空 selection，empty/loading 不挂载 inspector。failed banner 选中并打开失败 `graph_query`；Inspector 的 status、duration、Session、event type/id 与来源取自当前 scene 的实际 row。cancelled fixture 保留 Session→Turn→Tool，只有真实 Turn 使用 `cancelled`。`read_trace_fixture` 含 220 项、1102 行 JSON，默认显示 200 行；`stream_output` 含中文和 emoji，多字节边界按 UTF-8 安全截断到不超过 256 KiB，并报告实际可见与 remaining bytes。两者提供可见内容复制和检查器内局部滚动；复制能力缺失或权限拒绝显示可访问失败状态。可折叠 treeitem 支持 `aria-expanded` 与 `ArrowRight`/`ArrowLeft` 树导航。当前 Compose 无 Project/node 数据，Node 显示 `missing` 并 disabled，不生成 href；其他无路由或缺 API 的关系与 Artifact 按钮 disabled。
 ### Prototype 验证证据
 1. `docker compose --env-file /home/q2635/wsl-workspace/ai4sci/.env -p issue64-trace -f compose.yaml -f /tmp/issue64-trace.override.yaml up --build -d` 构建并启动 control、runtime、runner-controller、worker；control `:8195/api/v1/health` 与 runtime `:8198/health` 返回 `{"ok":true}`。未停止服务或删除容器、网络、卷。
 2. OpenCLI 真实 Chrome 1536x730 打开 valid failed URL，读取 failed 因果树、错误 banner 与 disabled Node；跨 Thread `run_id` 显示回退原因并落到 scope 内 `fixture:run-completed`。当前 Compose `/api/v1/projects` 为空，header/relations 的 Node 均为 disabled 且不生成 href。OpenCLI bridge 对当前 React 控件只改变 DOM value、未触发 state，未把其 select/click 回执计为交互证据。
-3. `TRACE_PROTOTYPE_BASE_URL=http://127.0.0.1:8195 node tests/trace-prototype-qa.mjs` 在 Playwright Chromium 验证 1440x900 与 390x844：非法/未知/跨 Project/Thread `run_id` 可见回退、scene/empty/loading selection reset、failed Inspector 的 row/source、错误 banner 选中并打开 `graph_query`、唯一 cancelled Turn 的 Session→Turn→Tool 层级、空 Compose 下 Node 无 href 且 disabled、Project/Graph/Chat 安全返回、组合筛选、折叠、1102 行 JSON 的 200 行折叠/展开/复制/局部滚动、282799-byte output 的 256 KiB 截断/复制/局部滚动、missing Diff/Artifact、mobile drawer/sheet；无相邻行控件重叠或页面级横向溢出。
+3. 前置 Playwright QA 在 1440x900 与 390x844 验证导航、状态隔离、Inspector、cancelled 层级、筛选、长内容、missing Diff/Artifact、mobile drawer/sheet、行控件重叠与页面级横向溢出；当时的 `stream_output` 为 282799-byte ASCII fixture。
+4. 三项阻断修复由 `node tests/trace-prototype-unit.mjs` 验证中文、emoji 与多字节边界、Clipboard 能力缺失/同步异常/异步拒绝、treeitem 左右键动作；`npm run build` 与 `git diff --check` 通过。现有 `:8195` 不属于当前 worktree，未把其专用 QA 失败计入当前实现；Compose、Playwright 与 OpenCLI 动态复验留给全新独立 QA。
 ## 实施 subissue 草案
 Project run history/detail 与 run↔node/Artifact/review 导航只由 #50 跟踪；通用 error/attempt/retry contract 只由 #32 跟踪；Artifact SHA-256 与 replay 只由 #21 跟踪；Chat composer 固定高度入口、Thread→run query/数量和返回原对话只由 #65 跟踪。以下草案不修改这些 owner，不创建 GitHub issue。
 ### 1. Kernel Trace causal projection

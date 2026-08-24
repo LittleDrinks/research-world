@@ -3,8 +3,7 @@ const longJson = Object.fromEntries(Array.from({ length: 220 }, (_, index) => [
   { sequence: index + 1, status: "recorded", source: "existing API fixture" },
 ]));
 
-const largeOutput = Array.from({ length: 280 }, (_, index) =>
-  `line ${String(index + 1).padStart(3, "0")} ${"x".repeat(1000)}`).join("\n");
+const largeOutput = `${"x".repeat(256 * 1024 - 1)}中😀${"y".repeat(20655)}`;
 
 export const SOURCE_LABEL = {
   existing: "existing API · fixture",

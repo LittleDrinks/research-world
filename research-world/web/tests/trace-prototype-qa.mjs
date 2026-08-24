@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
+import { truncateUtf8 } from "../src/prototype/agent-runtime/trace-content.js";
 
 const base = process.env.TRACE_PROTOTYPE_BASE_URL || "http://127.0.0.1:8195";
 const trace = "/prototype/agent-runtime?view=trace&project_id=project%3Aq49&thread_id=thread%3Aorbital&run_id=fixture%3Arun-running&from=%2Fchat%2Fthread%3Aorbital";
@@ -154,17 +155,72 @@ async function locallyScrollable(page, selector) {
 async function largeContent(page) {
   await page.locator("#tool-large-output").click();
   await page.getByRole("button", { name: "输出" }).click();
-  await assertText(page, "282799 bytes");
-  assert.equal(await page.locator(".tp-terminal pre").evaluate((node) => node.textContent.length), 262144);
-  await assertText(page, "其余 20655 bytes 已截断");
+  await assertText(page, "282805 bytes");
+  const visible = await page.locator(".tp-terminal pre").innerText();
+  assert.equal(new TextEncoder().encode(visible).length, 262143);
+  assert.equal(visible.includes("�"), false);
+  await assertText(page, "已显示 262143 bytes（上限 256 KiB）");
+  await assertText(page, "其余 20662 bytes 已截断");
   assert.equal(await locallyScrollable(page, ".tp-terminal"), true);
   await page.locator(".tp-bounded .tp-icon-button").click();
-  assert.equal((await page.evaluate(() => navigator.clipboard.readText())).length, 262144);
+  assert.equal(new TextEncoder().encode(await page.evaluate(() => navigator.clipboard.readText())).length, 262143);
   await page.screenshot({ path: `${shots}/trace-long-output-playwright.png`, fullPage: false });
   await page.locator(".tp-inspector>nav button").nth(3).click();
   await assertText(page, "normalized diff");
   await page.locator(".tp-inspector>nav button").nth(4).click();
   assert.equal(await page.getByRole("button", { name: "打开 Artifact" }).isDisabled(), true);
+}
+
+function utf8Boundaries() {
+  const cases = [
+    { value: "中文", limit: 4, visible: "中", visibleBytes: 3, remainingBytes: 3 },
+    { value: "A😀B", limit: 4, visible: "A", visibleBytes: 1, remainingBytes: 5 },
+    { value: "你😀好", limit: 7, visible: "你😀", visibleBytes: 7, remainingBytes: 3 },
+  ];
+  for (const item of cases) assert.deepEqual(truncateUtf8(item.value, item.limit), {
+    visible: item.visible, visibleBytes: item.visibleBytes,
+    totalBytes: new TextEncoder().encode(item.value).length, remainingBytes: item.remainingBytes,
+  });
+}
+
+async function keyboardTree(page) {
+  await page.goto(`${base}${trace}`);
+  const stage = page.locator("#stage-execute");
+  await stage.focus();
+  assert.equal(await stage.getAttribute("aria-expanded"), "true");
+  await page.keyboard.press("ArrowLeft");
+  assert.equal(await stage.getAttribute("aria-expanded"), "false");
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  assert.equal(await page.evaluate(() => document.activeElement?.id), "step-1");
+  await page.keyboard.press("ArrowLeft");
+  assert.equal(await page.locator("#step-1").getAttribute("aria-expanded"), "false");
+  await page.keyboard.press("ArrowLeft");
+  assert.equal(await page.evaluate(() => document.activeElement?.id), "stage-execute");
+  assert.equal(await page.locator("#tool-large-output").getAttribute("aria-expanded"), null);
+}
+
+async function clipboardFailures(browser) {
+  for (const [mode, label] of [["missing", "剪贴板不可用"], ["sync", "复制失败"], ["reject", "复制失败"]]) {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto(`${base}${trace}`);
+    await stubClipboard(page, mode);
+    await page.locator(".tp-header-actions .tp-icon-button").click();
+    await page.getByRole("button", { name: label }).waitFor();
+    assert.equal((await page.locator(".tp-header-actions").getByRole("status").innerText()).trim(), label);
+    await context.close();
+  }
+}
+
+async function stubClipboard(page, mode) {
+  await page.evaluate((kind) => {
+    const writeText = () => {
+      if (kind === "sync") throw new Error("blocked");
+      return Promise.reject(new DOMException("denied", "NotAllowedError"));
+    };
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: kind === "missing" ? undefined : { writeText } });
+  }, mode);
 }
 
 async function navigation(page) {
@@ -238,6 +294,7 @@ async function desktop(browser) {
   await page.screenshot({ path: `${shots}/trace-desktop-playwright.png`, fullPage: false });
   await navigation(page);
   await context.close();
+  await clipboardFailures(browser);
 }
 
 async function mobile(browser) {
@@ -261,7 +318,11 @@ async function mobile(browser) {
 
 const browser = await chromium.launch({ headless: true });
 try {
+  utf8Boundaries();
   await desktop(browser);
+  const keyboardContext = await browser.newContext();
+  await keyboardTree(await keyboardContext.newPage());
+  await keyboardContext.close();
   await mobile(browser);
   console.log("issue64 prototype QA passed");
 } finally {
