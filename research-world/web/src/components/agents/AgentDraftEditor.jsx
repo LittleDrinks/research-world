@@ -45,7 +45,7 @@ function RuntimeFields({ spec, catalog, onChange, patch, patchOption }) {
 function CapabilityFields({ spec, catalog, patch }) {
   return <>
     <CapabilityPicker label="Skills" options={catalog.skills} selected={spec.skills} onChange={(value) => patch("skills", value)} />
-    <CapabilityPicker label="工具" options={catalog.tools.map(toolOption)} selected={spec.tools} onChange={(value) => patch("tools", value)} />
+    <CapabilityPicker id="tool-catalog" label="工具" options={catalog.tools.map(toolOption)} selected={spec.tools} onChange={(value) => patch("tools", value)} />
   </>;
 }
 

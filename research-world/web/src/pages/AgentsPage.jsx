@@ -1,12 +1,13 @@
 import { Bot, RefreshCw, Save } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { getCatalog, saveAgent } from "../api";
 import { EmptyState } from "../components/bits";
 import { CapabilityPicker } from "../components/agents/CapabilityPicker";
 import { NewAgentDialog } from "../components/agents/NewAgentDialog";
+import { PresetCapabilities } from "../components/agents/PresetCapabilities";
 import { useWorld } from "../context/WorldContext";
-import { AGENT_OPTION_DEFAULTS, blockedTools, toolStatus } from "../utils/agents";
+import { AGENT_OPTION_DEFAULTS, blockedSkills, blockedTools, toolStatus } from "../utils/agents";
 import { REASONING_EFFORTS } from "../utils/labels";
 import "../agents.css";
 
@@ -16,9 +17,10 @@ const AGENT_SANDBOXES = ["read-only", "workspace-write"];
 
 export function AgentsPage() {
   const { agentId } = useParams();
+  const { hash } = useLocation();
   const { data, loading } = useWorld();
   if (loading) return <div className="page-loading">正在载入 Agent...</div>;
-  if (!agentId && data.agents.length) return <Navigate to={`/agents/${encodeURIComponent(data.agents[0].id)}`} replace />;
+  if (!agentId && data.agents.length) return <Navigate to={`/agents/${encodeURIComponent(data.agents[0].id)}${hash}`} replace />;
   if (!agentId) return <EmptyState icon={Bot} title="暂无 Agent" hint="点击侧栏 + 新建 Agent。" />;
   const agent = data.agents.find((item) => item.id === agentId);
   if (!agent) return <EmptyState icon={Bot} title="Agent 不存在" />;
@@ -90,9 +92,8 @@ function PresetPanel({ catalog, onApply }) {
 
 
 function PresetRow({ preset, onApply }) {
-  const tools = preset.tools.map(toolStatus).join("、") || "无";
   return <div className="preset-row"><div className="preset-info"><b>{preset.name}</b><span className="mono">{preset.id}</span>
-    <p>{preset.description}</p><small>推荐 Tool：{tools}</small></div>
+    <p>{preset.description}</p><PresetCapabilities preset={preset} /></div>
     <button className="button secondary" onClick={onApply}>应用为草稿</button></div>;
 }
 
@@ -116,13 +117,15 @@ function catalogIssue(form, catalog) {
 
 
 function capabilityIssue(form, catalog) {
-  const presets = catalog.presets.flatMap((preset) => preset.tools);
-  const blocked = blockedTools(form.tools, presets, catalog.tools);
-  const unknown = missingSkills(form, catalog)
-    .concat(blocked.filter((tool) => tool.status === "missing").map((tool) => tool.id));
-  const unavailable = blocked.filter((tool) => tool.status !== "missing");
+  const presetTools = catalog.presets.flatMap((preset) => preset.tools);
+  const presetSkills = catalog.presets.flatMap((preset) => preset.skills || []);
+  const tools = blockedTools(form.tools, presetTools, catalog.tools);
+  const skills = blockedSkills(form.skills, presetSkills, catalog.skills);
+  const blocked = [...tools, ...skills];
+  const unknown = blocked.filter((item) => item.status === "missing").map((item) => item.id);
+  const unavailable = blocked.filter((item) => item.status !== "missing");
   const issues = unknown.length ? [`能力未被 Runtime 识别：${unknown.join("、")}`] : [];
-  if (unavailable.length) issues.push(`Tool 不可用：${unavailable.map(toolStatus).join("、")}`);
+  if (unavailable.length) issues.push(`能力不可用：${unavailable.map(toolStatus).join("、")}`);
   return issues.join("；");
 }
 
@@ -139,12 +142,6 @@ function formIssue(form) {
 }
 
 
-function missingSkills(form, catalog) {
-  const known = new Set(catalog.skills.filter(availableCapability).map((item) => item.id));
-  return form.skills.filter((id) => !known.has(id));
-}
-
-
 function availableCapability(item) {
   return item.available !== false && (!item.status || item.status === "ready");
 }
@@ -155,7 +152,7 @@ function CatalogFields({ form, patch, patchOption, catalog }) {
     <IdentityFields form={form} patch={patch} />
     <EndpointFields form={form} patch={patch} patchOption={patchOption} catalog={catalog} />
     <CapabilityPicker label="Skills" options={catalog.skills} selected={form.skills} onChange={(value) => patch("skills", value)} />
-    <CapabilityPicker label="工具" options={catalog.tools.map(toolOption)} selected={form.tools} onChange={(value) => patch("tools", value)} />
+    <CapabilityPicker id="tool-catalog" label="工具" options={catalog.tools.map(toolOption)} selected={form.tools} onChange={(value) => patch("tools", value)} />
     <label className="field"><span>指令</span><textarea required rows={6} value={form.instructions} onChange={(event) => patch("instructions", event.target.value)} /></label>
     <AdvancedFields form={form} patchOption={patchOption} /></>;
 }

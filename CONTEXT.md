@@ -31,6 +31,8 @@ _Avoid_: 模型消息、工具细节
 _Avoid_: 节点消息表、草稿区
 **Artifact**：Project 内按 SHA-256 寻址的不可变产物；相同哈希不产生跨 Project 可见性。
 _Avoid_: 裸路径、覆盖写
+**SourceCandidate**：文献研究 Pipeline 的结构化候选，携带书目元数据、检索谱系、与 Direction 的用途和全文 Artifact 描述；不是节点，只有 Research Kernel 提交准入后才形成 pending source。
+_Avoid_: Research Round、Evidence node、Tool 直接写图
 **报告投影**：Research Kernel 从 admitted claim、source 与关联 Artifact 确定性生成的交付输入。
 _Avoid_: 跨表拼装、Agent 自报事实
 **执行凭据**：step 的完整执行描述与结果：image、command、files、seed、limits、退出码、输出哈希。

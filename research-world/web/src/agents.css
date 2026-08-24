@@ -47,7 +47,21 @@
 .preset-info p { margin: 4px 0; color: var(--text-muted); font-size: 12px; overflow-wrap: anywhere; }
 .preset-info small { color: var(--text-faint); font-size: 11px; overflow-wrap: anywhere; }
 .preset-row .button { flex: 0 0 auto; min-height: 32px; font-size: 12px; }
+.preset-capabilities { display: grid; gap: 5px; margin: 8px 0 0; padding: 0; list-style: none; }
+.preset-capabilities li { min-width: 0; display: grid; grid-template-columns: minmax(110px, .7fr) minmax(160px, 1fr) auto; align-items: baseline; gap: 8px; font-size: 11px; }
+.preset-capabilities li > span { min-width: 0; display: flex; gap: 5px; overflow-wrap: anywhere; }
+.preset-capabilities b { font-family: "Geist Mono", ui-monospace, monospace; font-size: 11px; }
+.preset-capabilities p { min-width: 0; margin: 0; color: var(--text-muted); overflow-wrap: anywhere; }
+.preset-capabilities em { color: var(--state-success); font-style: normal; white-space: nowrap; }
+.preset-capabilities em:not([data-status="ready"]) { color: var(--state-failed); }
+.capability-alert { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 9px; padding: 9px 10px; border: 1px solid color-mix(in oklab, var(--state-failed) 40%, var(--line)); border-radius: 8px; color: var(--state-failed); background: var(--state-failed-surface); }
+.capability-alert p { min-width: 0; margin: 0; font-size: 12px; overflow-wrap: anywhere; }
+.capability-alert .button { min-height: 32px; color: var(--text); white-space: nowrap; }
 
 @media (max-width: 640px) {
   .preset-row { flex-wrap: wrap; }
+  .preset-capabilities li { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .preset-capabilities em { white-space: normal; }
+  .capability-alert { grid-template-columns: auto minmax(0, 1fr); }
+  .capability-alert .button { grid-column: 1 / -1; justify-self: start; }
 }

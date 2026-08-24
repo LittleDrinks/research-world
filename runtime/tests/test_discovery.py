@@ -4,6 +4,8 @@ from runtime.adapters import discover_adapters
 from runtime.service import Runtime
 from runtime.skills import discover_skills
 
+SOURCE_TOOLS = {"crossref", "openalex", "arxiv", "pubmed", "project_files"}
+
 
 def test_discovers_skill_frontmatter(tmp_path):
     folder = tmp_path / ".agents" / "skills" / "evidence-review"
@@ -81,10 +83,11 @@ async def test_catalog_lists_unavailable_lean4_in_math_preset(tmp_path, monkeypa
     presets = {item["id"]: item for item in value["presets"]}
     preset = presets["math-proof"]
     assert preset["spec"]["tools"] == ["lean4"]
-    assert preset["tools"] == [
-        {"id": "lean4", "status": "unavailable", "reason": "not_installed"}
-    ]
-    assert set(preset) == {"id", "name", "description", "spec", "tools"}
+    assert preset["tools"][0]["id"] == "lean4"
+    assert preset["tools"][0]["status"] == "unavailable"
+    assert preset["tools"][0]["reason"] == "not_installed"
+    assert preset["tools"][0]["recommendation"]
+    assert set(preset) == {"id", "name", "description", "spec", "tools", "skills"}
 
 
 async def test_preset_tool_status_follows_adapter_readiness(tmp_path, monkeypatch):
@@ -104,5 +107,42 @@ async def test_preset_tool_status_follows_adapter_readiness(tmp_path, monkeypatc
     value = await runtime.recognize(str(tmp_path))
 
     preset = {item["id"]: item for item in value["presets"]}["math-proof"]
-    assert preset["tools"] == [{"id": "lean4", "status": "ready"}]
+    assert preset["tools"][0]["id"] == "lean4"
+    assert preset["tools"][0]["status"] == "ready"
+    assert preset["tools"][0]["recommendation"]
     assert sys.executable not in json.dumps(preset)
+
+
+async def test_source_researcher_uses_stable_catalog_ids_and_readiness(tmp_path, monkeypatch):
+    monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
+    monkeypatch.setenv("RUNTIME_API_KEY", "secret")
+    monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
+    folder = tmp_path / ".agents" / "skills" / "source-research"
+    folder.mkdir(parents=True)
+    folder.joinpath("SKILL.md").write_text(
+        "---\nname: source-research\ndescription: Verify primary sources.\n---\nRead full text.\n"
+    )
+
+    value = await Runtime(tmp_path / "data").recognize(str(tmp_path))
+
+    preset = {item["id"]: item for item in value["presets"]}["source-researcher"]
+    assert set(preset["spec"]["tools"]) == SOURCE_TOOLS
+    assert preset["spec"]["skills"] == ["source-research"]
+    assert {item["id"] for item in preset["tools"]} == SOURCE_TOOLS
+    assert all(item["status"] == "ready" and item["recommendation"] for item in preset["tools"])
+    assert preset["skills"][0]["status"] == "ready"
+    assert "http" not in json.dumps(preset).lower()
+
+
+async def test_source_researcher_discloses_missing_skill_without_preparing(tmp_path, monkeypatch):
+    monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
+    monkeypatch.setenv("RUNTIME_API_KEY", "secret")
+    monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
+
+    value = await Runtime(tmp_path / "data").recognize(str(tmp_path))
+
+    preset = {item["id"]: item for item in value["presets"]}["source-researcher"]
+    assert preset["skills"] == [{
+        "id": "source-research", "status": "unavailable", "reason": "not_recognized",
+        "recommendation": "执行全文、元数据与证据边界检查",
+    }]

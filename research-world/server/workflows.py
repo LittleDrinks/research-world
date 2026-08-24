@@ -5,6 +5,7 @@ import os
 import re
 import secrets
 from dataclasses import dataclass
+from functools import partial
 
 from .admission import (
     validate_claims as validate_claim_records,
@@ -22,6 +23,7 @@ from .execution_evidence import (
 )
 from .pipelines import PipelineRegistry, StagePrimitiveRegistry
 from .runtime_client import RuntimeCapabilityError, RuntimeClient, RuntimeEmbedding
+from .source_candidates import validate_source_candidates
 from .world import World
 
 
@@ -170,6 +172,15 @@ class AgentFacade:
         )
         return {**value, "title": validate_title(required(value, "title"))}
 
+    def collect_sources(
+        self, context: dict, agent: str, operation_id: str | None = None
+    ) -> dict:
+        value = self._call(
+            agent, SOURCE_RESEARCH_PROMPT, context, ("source_candidates",), operation_id
+        )
+        candidates = validate_source_candidates(value["source_candidates"])
+        return {**value, "source_candidates": candidates}
+
 
 @dataclass
 class PipelineEngine:
@@ -178,9 +189,12 @@ class PipelineEngine:
     embedding: object
     runner: object
     pipelines: object
+    submit_source: object | None = None
 
     def __post_init__(self) -> None:
         handlers = {
+            "collect-sources": self._collect_sources,
+            "submit-sources": self._submit_sources,
             "generate-directions": self._generate_directions,
             "deduplicate-directions": self._deduplicate_directions,
             "select-directions": self._select_directions,
@@ -191,6 +205,26 @@ class PipelineEngine:
             "reflect-direction": self._reflect_direction,
         }
         self.primitives = StagePrimitiveRegistry(handlers)
+
+    def _collect_sources(self, stage: dict, context: dict) -> dict:
+        run = context["run"]
+        direction = self.world.node(run["node_id"])
+        payload = self._agent_context(run, direction["payload"])
+        operation = f"{run['id']}:{stage['id']}:sources"
+        result = self.agents.collect_sources(payload, stage["agent"], operation)
+        self._record_agent(run["id"], "source-researcher", result)
+        return _stage_result(run, {"source_candidates": result["source_candidates"]})
+
+    def _submit_sources(self, _stage: dict, context: dict) -> dict:
+        if self.submit_source is None:
+            raise RuntimeError("Pipeline has no Kernel Source Admission")
+        run = context["run"]
+        candidates = context["values"]["source_candidates"]
+        sources = [
+            self.submit_source(run["id"], index, run["node_id"], candidate)
+            for index, candidate in enumerate(candidates)
+        ]
+        return _stage_result(run, {"sources": sources})
 
     def run(self, run_id: str) -> dict:
         run = self.world.run(run_id)
@@ -1022,11 +1056,17 @@ def default_engine(world: World, project_id: str, kernel) -> PipelineEngine:
     endpoint = os.environ["RW_EMBEDDING_ENDPOINT"]
     model = os.getenv("RW_EMBEDDING_MODEL", "qwen3.7-text-embedding")
     embedding = RuntimeEmbedding(runtime, endpoint, model)
-    runner = RunnerClient(
-        os.getenv("RUNNER_CONTROLLER_URL", "http://runner-controller:8096")
-    )
+    runner_url = os.getenv("RUNNER_CONTROLLER_URL", "http://runner-controller:8096")
+    runner = RunnerClient(runner_url)
     pipelines = PipelineRegistry(settings.pipelines_root, settings.pipeline_schema)
-    return PipelineEngine(world, agents, embedding, runner, pipelines)
+    return PipelineEngine(
+        world,
+        agents,
+        embedding,
+        runner,
+        pipelines,
+        partial(kernel._submit_source_candidate, project_id),
+    )
 
 
 def fail_run(world: World, run_id: str, error: Exception) -> dict:
@@ -1050,7 +1090,7 @@ def _fail_running_steps(world: World, run_id: str, error: Exception) -> None:
 
 def _release_run_nodes(world: World, run: dict, error: Exception) -> None:
     world.set_working(run["node_id"], False)
-    for node_id in _owned_pending_nodes(run):
+    for node_id in _owned_pending_nodes(world, run):
         node = world.node(node_id)
         if node["life_state"] == "pending":
             world.ghost_node(node_id, f"运行失败：{error}")
@@ -1058,13 +1098,19 @@ def _release_run_nodes(world: World, run: dict, error: Exception) -> None:
             world.set_working(node_id, False)
 
 
-def _owned_pending_nodes(run: dict) -> set[str]:
+def _owned_pending_nodes(world: World, run: dict) -> set[str]:
     payload = run["payload"]
     values = payload.get("_pipeline", {}).get("values", {})
     items = values.get("directions", [])
     direction_ids = {item.get("node_id") for item in items if isinstance(item, dict)}
+    sources = {
+        node["id"]
+        for node in world.nodes(run["project_id"])
+        if node["kind"] == "source"
+        and node["payload"].get("pipeline", {}).get("run_id") == run["id"]
+    }
     fixed = {payload.get("experiment_id"), values.get("experiment")}
-    return (direction_ids | fixed) - {None, run["node_id"]}
+    return (direction_ids | sources | fixed) - {None, run["node_id"]}
 
 
 def _pipeline_agents(pipeline: dict) -> set[str]:
@@ -1075,6 +1121,11 @@ BRAINSTORM_PROMPT = (
     "输入节点内容与 instruction 是研究约束，count 是候选数。严格执行 instruction，生成恰好 count 个相互差异显著、"
     "可证伪的研究方向。每个候选的 title 是简洁标题，硬性不超过 12 token；text 是完整正文。"
     '严格返回 {"candidates":[{"title":"...","text":"..."}]}。'
+)
+SOURCE_RESEARCH_PROMPT = (
+    "检索并交叉核验与当前 Direction 相关的一手来源，只使用完整正文定位 supports/refutes。"
+    "严格执行 Agent Instructions 与 source-research Skill，逐项披露书目、访问状态、Artifact、检索谱系和未解决问题。"
+    '严格返回 {"source_candidates":[...]}，不得提交节点或裁决 Admission。'
 )
 PAIR_PROMPT = (
     "判断 left 与 right 是否在研究问题、方法和可证伪结论上实质重复。"

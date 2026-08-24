@@ -317,10 +317,11 @@ test("blocks applying a Preset whose Tool is unavailable", async ({ page }) => {
   await page.route(/\/api\/v1\/runtime\/catalog/, (route) => route.fulfill({ json: value }));
   await page.goto("/agents/research-assistant");
   await expect(page.getByRole("region", { name: "Profile Presets" }))
-    .toContainText("lean4（unavailable / not_installed）");
+    .toContainText("unavailable / not_installed");
   await page.getByRole("button", { name: "应用为草稿" }).click();
   const dialog = page.getByRole("dialog", { name: "应用 Preset：数学证明" });
-  await expect(dialog.getByRole("alert")).toContainText("lean4（unavailable / not_installed）");
+  await expect(dialog.getByRole("alert")).toContainText("Tool lean4：unavailable / not_installed");
+  await expect(dialog.getByRole("link", { name: "Tool Catalog" })).toBeVisible();
   const submit = dialog.getByRole("button", { name: "创建 Agent", exact: true });
   await expect(submit).toHaveText("创建 Agent");
   await expect(submit).toBeDisabled();
@@ -337,7 +338,7 @@ test("shows an unavailable Tool reason separately from the disabled save command
 
   await page.goto("/agents/research-assistant");
 
-  await expect(page.getByRole("alert")).toContainText("Tool 不可用：lean4（unavailable / not_installed）");
+  await expect(page.getByRole("alert")).toContainText("能力不可用：lean4（unavailable / not_installed）");
   const save = page.getByRole("button", { name: "保存", exact: true });
   await expect(save).toHaveText("保存");
   await expect(save).toBeDisabled();

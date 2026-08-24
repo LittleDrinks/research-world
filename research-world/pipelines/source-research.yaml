@@ -1,0 +1,10 @@
+id: source-research
+name: 文献检索与全文核验
+stages:
+  - id: collect
+    type: prompt
+    prompt: collect-sources
+    agent: source-researcher
+  - id: submit
+    type: tool
+    tool: submit-sources

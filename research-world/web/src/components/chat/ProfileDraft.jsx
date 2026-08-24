@@ -2,8 +2,9 @@ import { Sparkles } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { createAgent, draftAgent, getCatalog } from "../../api";
-import { blockedTools, toolStatus } from "../../utils/agents";
+import { blockedCapabilities } from "../../utils/agents";
 import { AgentDraftEditor } from "../agents/AgentDraftEditor";
+import { CapabilityAlert, PresetCapabilities } from "../agents/PresetCapabilities";
 import { useWorld } from "../../context/WorldContext";
 import { usePopoverDismiss } from "./usePopoverDismiss";
 
@@ -44,7 +45,14 @@ function PresetMenu({ presets, busy, onChoose }) {
   if (!presets.length) return <div className="preset-menu"><p className="record-empty">Runtime 未提供 Preset</p></div>;
   return <div className="preset-menu" role="menu">{presets.map((preset) =>
     <button type="button" role="menuitem" key={preset.id} disabled={busy} onClick={() => onChoose(preset.id)}>
-      <b>{preset.name}</b><span className="mono">{preset.id}</span></button>)}</div>;
+      <span><b>{preset.name}</b><small>{preset.description}</small></span>
+      <em>{presetState(preset)}</em></button>)}</div>;
+}
+
+
+function presetState(preset) {
+  const items = [...(preset.tools || []), ...(preset.skills || [])];
+  return items.some((item) => item.status !== "ready") ? "需配置" : "已就绪";
 }
 
 
@@ -56,8 +64,10 @@ export function ProfileDraftCard({ draft, onCancel }) {
   if (created) return <DraftCreated agent={created} />;
   return <div className="profile-draft" role="region" aria-label="Agent 草稿">
     <header className="draft-header"><Sparkles size={15} /><div><b>Agent 草稿</b><p className="preset-reason">{draft.reason}</p></div></header>
+    <PresetCapabilities preset={draft} />
+    <CapabilityAlert tools={blocked.tools} skills={blocked.skills} />
     <AgentDraftEditor spec={spec} catalog={draft.catalog} onChange={setSpec} />
-    {blocked.length > 0 && <p className="preset-blocked" role="alert">{blocked.join("；")}</p>}
+    {blocked.other.length > 0 && <p className="preset-blocked" role="alert">{blocked.other.join("；")}</p>}
     {error && <p className="preset-blocked" role="alert">{error}</p>}
     <DraftActions busy={busy} blocked={blocked} onConfirm={confirm} onCancel={onCancel} /></div>;
 }
@@ -90,9 +100,9 @@ function cloneSpec(spec) {
 
 
 function blockedIssues(draft, spec) {
-  const server = draft.issues.filter((issue) => !issue.startsWith("tool unavailable:"));
-  const tools = blockedTools(spec.tools, draft.tools, draft.catalog.tools);
-  return tools.map((tool) => `Tool 不可用：${toolStatus(tool)}`).concat(server);
+  const blocked = blockedCapabilities(spec, draft, draft.catalog);
+  const other = draft.issues.filter((issue) => !/^tool|^skill/.test(issue));
+  return { ...blocked, other, length: blocked.tools.length + blocked.skills.length + other.length };
 }
 
 
