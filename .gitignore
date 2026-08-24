@@ -34,3 +34,11 @@ benchmarks/**/*.safetensors
 /datasets/research-kernel-papers/raw/
 /scripts/sub2api-account-4-quota.sh
 /scripts/wake-current-codex-pane.sh
+
+# Machine-private operator state
+/.dsh-home/
+/scripts/dsh
+/prototype/kimi/node_modules
+
+# Runtime Project directories; the q001-q125 corpus remains tracked.
+/research-world/projects/[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]/

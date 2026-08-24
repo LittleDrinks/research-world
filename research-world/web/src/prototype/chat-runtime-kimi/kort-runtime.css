@@ -1,0 +1,210 @@
+/* THROWAWAY PROTOTYPE 变体 E — Kort 字符场: 近黑底 + 紫罗兰字符场, ae- 前缀完整隔离。 */
+.ae-root, .ae-projects {
+  --v: #7568bd; --v-dim: #4f3d95; --v-faint: #322272; --v-hot: #cecaf0;
+  --warn: #ffe066; --err: #ff5f5f; --run: #9d8cff;
+  background: #0a0812; color: var(--v-hot); color-scheme: dark;
+  font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px; line-height: 1.5;
+}
+.ae-root button, .ae-projects button, .ae-root input, .ae-root select, .ae-root textarea,
+.ae-projects input, .ae-projects select, .ae-projects textarea { font-family: inherit; }
+.ae-root input, .ae-root select, .ae-root textarea, .ae-projects input, .ae-projects select, .ae-projects textarea {
+  background: rgba(50, 34, 114, 0.18); border: 1px solid var(--v-faint); color: var(--v-hot); padding: 5px 9px; font-size: 12px; outline: none;
+}
+.ae-root input:focus, .ae-root select:focus, .ae-root textarea:focus { border-color: var(--v); }
+.ae-root select option { background: #0a0812; color: var(--v-hot); }
+.ae-root button { cursor: pointer; }
+.ae-time { color: var(--v-dim); font-size: 10px; }
+.ae-dim { color: var(--v-dim); }
+.ae-err { color: var(--err); }
+.ae-mention { color: #fff; }
+.ae-st-运行中 { color: var(--run); font-style: normal; }
+.ae-st-排队中 { color: var(--warn); font-style: normal; }
+.ae-st-已完成 { color: var(--v); font-style: normal; }
+.ae-st-失败 { color: var(--err); font-style: normal; }
+.ae-pulse { color: var(--run); }
+
+/* —— 项目选择 —— */
+.ae-projects { position: relative; height: 100%; overflow-y: auto; padding: 64px max(20px, calc((100% - 860px) / 2)); }
+.ae-wave { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0.65; }
+.ae-hero { position: relative; margin-bottom: 34px; }
+.ae-hero span { color: var(--v); font-size: 11px; letter-spacing: 3px; }
+.ae-hero h1 { margin: 10px 0; font-size: 34px; font-weight: 700; letter-spacing: 6px; color: #fff; }
+.ae-hero p { margin: 0; color: var(--v); font-size: 12px; }
+.ae-project-list { position: relative; display: grid; gap: 2px; }
+.ae-project-list > button { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px; padding: 14px 16px;
+  border: 1px solid var(--v-faint); background: rgba(10, 8, 18, 0.82); color: var(--v-hot); text-align: left; }
+.ae-project-list > button:hover, .ae-project-list > button.on { border-color: var(--v); background: rgba(50, 34, 114, 0.3); }
+.ae-project-list b { font-size: 13px; }
+.ae-project-list span { grid-column: 1; color: var(--v); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ae-project-list small { grid-column: 2; grid-row: 1 / 3; align-self: center; color: var(--v-dim); font-size: 10px; }
+.ae-project-list .ae-project-new { color: var(--v); border-style: dashed; justify-content: start; }
+
+/* —— 骨架: 顶栏 + 记录条 —— */
+.ae-root { height: 100%; display: grid; grid-template-rows: 46px 40px minmax(0, 1fr); overflow: hidden; }
+.ae-top { display: flex; align-items: center; gap: 20px; padding: 0 16px; border-bottom: 1px solid var(--v-faint); }
+.ae-brand { display: flex; align-items: baseline; gap: 9px; min-width: 0; }
+.ae-mark { color: var(--run); font-size: 16px; }
+.ae-brand b { font-size: 13px; color: #fff; letter-spacing: 1px; }
+.ae-brand small { color: var(--v-dim); font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ae-tabs { display: flex; gap: 2px; }
+.ae-tabs button { padding: 5px 14px; border: 1px solid transparent; background: transparent; color: var(--v); font-size: 12px; }
+.ae-tabs button:hover { color: var(--v-hot); }
+.ae-tabs button.on { border-color: var(--v-faint); background: rgba(50, 34, 114, 0.3); color: #fff; }
+.ae-exit { margin-left: auto; padding: 5px 12px; border: 1px solid var(--v-faint); background: transparent; color: var(--v); font-size: 11px; }
+.ae-exit:hover { color: var(--v-hot); border-color: var(--v); }
+.ae-strip { display: flex; align-items: center; gap: 12px; padding: 0 16px; border-bottom: 1px solid var(--v-faint); min-height: 0; }
+.ae-strip-label { color: var(--v-dim); font-size: 10px; letter-spacing: 2px; flex-shrink: 0; }
+.ae-strip-items { display: flex; gap: 6px; overflow-x: auto; min-width: 0; padding: 6px 0; }
+.ae-strip-items button { flex-shrink: 0; display: flex; align-items: baseline; gap: 7px; padding: 3px 10px;
+  border: 1px solid var(--v-faint); background: transparent; color: var(--v-hot); font-size: 11px; }
+.ae-strip-items button small { color: var(--v-dim); font-size: 9px; }
+.ae-strip-items button.on { border-color: var(--v); background: rgba(117, 104, 189, 0.22); color: #fff; }
+.ae-segmented { margin-left: auto; display: flex; flex-shrink: 0; border: 1px solid var(--v-faint); }
+.ae-segmented button { padding: 3px 10px; border: 0; background: transparent; color: var(--v); font-size: 11px; white-space: nowrap; }
+.ae-segmented button.on { background: var(--v-dim); color: #fff; }
+
+/* —— 地图 —— */
+.ae-map { display: grid; grid-template-columns: minmax(0, 1fr) 330px; min-height: 0; }
+.ae-graph { position: relative; min-height: 470px; overflow: auto; }
+.ae-flow { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ae-gnode { position: absolute; width: 240px; display: grid; gap: 3px; padding: 10px 12px; text-align: left;
+  border: 1px solid var(--v-faint); background: rgba(10, 8, 18, 0.88); color: var(--v-hot); }
+.ae-gnode:hover { border-color: var(--v-dim); }
+.ae-gnode.on { border-color: var(--v); box-shadow: 0 0 18px rgba(117, 104, 189, 0.35); }
+.ae-gnode span { color: var(--v); font-size: 10px; letter-spacing: 1px; }
+.ae-gnode b { font-size: 12px; font-weight: 600; }
+.ae-gnode small { color: var(--v-dim); font-size: 10px; }
+.ae-detail { border-left: 1px solid var(--v-faint); padding: 14px 16px; overflow-y: auto; }
+.ae-detail header { color: var(--v-dim); font-size: 10px; letter-spacing: 2px; margin: 14px 0 6px; }
+.ae-detail header:first-child { margin-top: 0; }
+.ae-detail-title { margin: 0 0 6px; font-size: 14px; font-weight: 600; color: #fff; }
+.ae-kv { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 10px; padding: 4px 0; align-items: start; }
+.ae-kv > span { color: var(--v-dim); font-size: 11px; }
+.ae-kv > em { font-style: normal; font-size: 12px; }
+.ae-rel { display: block; width: 100%; padding: 5px 0; border: 0; background: transparent; color: var(--v-hot);
+  font-size: 11px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ae-rel:hover { color: #fff; }
+.ae-rel b { color: var(--v); margin-right: 4px; }
+.ae-rel b.ae-err { color: var(--err); }
+.ae-detail-actions { display: grid; gap: 6px; margin-top: 16px; }
+.ae-detail-actions button { padding: 7px; border: 1px solid var(--v-faint); background: transparent; color: var(--v-hot); font-size: 12px; }
+.ae-detail-actions button:hover { border-color: var(--v); }
+.ae-detail-actions .ae-primary { background: var(--v-dim); color: #fff; border-color: var(--v-dim); }
+
+/* —— 科研日志 —— */
+.ae-journal { overflow-y: auto; padding: 0 16px 40px; }
+.ae-journal-pulse { display: block; width: 100%; height: 46px; margin: 10px 0 4px; opacity: 0.8; }
+.ae-journal ol { list-style: none; margin: 0; padding: 0; }
+.ae-journal li { display: grid; grid-template-columns: 48px 44px minmax(0, 1fr) auto; gap: 10px; padding: 8px 0;
+  border-bottom: 1px solid rgba(50, 34, 114, 0.4); align-items: baseline; }
+.ae-journal b { color: var(--v); font-size: 11px; }
+.ae-journal p { margin: 0; font-size: 12px; }
+.ae-ref { color: var(--v-dim); font-size: 10px; }
+
+/* —— 对话 —— */
+.ae-chat { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; }
+.ae-pins { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--v-faint);
+  color: var(--v-dim); font-size: 11px; }
+.ae-pin { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border: 1px solid var(--v-faint);
+  color: var(--v-hot); font-size: 11px; }
+.ae-pin button { border: 0; padding: 0; background: transparent; color: var(--v-dim); }
+.ae-pin button:hover { color: var(--err); }
+.ae-log { overflow-y: auto; padding: 18px max(16px, calc((100% - 760px) / 2)); }
+.ae-msg { margin-bottom: 16px; max-width: 88%; }
+.ae-msg.user { margin-left: auto; }
+.ae-msg > header { display: flex; gap: 10px; color: var(--v); font-size: 11px; margin-bottom: 4px; }
+.ae-msg.user > header { justify-content: flex-end; }
+.ae-msg > p { margin: 0; padding: 8px 12px; border: 1px solid var(--v-faint); background: rgba(50, 34, 114, 0.16); font-size: 13px; }
+.ae-msg.user > p { background: rgba(79, 61, 149, 0.34); }
+.ae-run { margin-top: 8px; border: 1px solid var(--v-faint); }
+.ae-run.open { border-color: var(--v-dim); }
+.ae-run-head { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; border: 0;
+  background: rgba(50, 34, 114, 0.16); color: var(--v-hot); font-size: 12px; text-align: left; }
+.ae-run-head b { color: var(--run); }
+.ae-run-head em { color: var(--v-dim); font-style: normal; font-size: 10px; }
+.ae-run-meter { width: 72px; height: 20px; margin-left: auto; flex-shrink: 0; }
+.ae-run-body { padding: 10px 12px; display: grid; gap: 8px; }
+.ae-finding { color: var(--v); font-size: 12px; }
+.ae-exec { display: grid; gap: 3px; padding: 9px 12px; border: 1px solid var(--v-faint); background: transparent;
+  color: var(--v-hot); text-align: left; font-size: 12px; }
+.ae-exec:hover { border-color: var(--v); }
+.ae-exec-agent { color: var(--v); font-size: 11px; display: flex; gap: 8px; align-items: baseline; }
+.ae-exec-agent small { color: var(--v-dim); }
+.ae-exec i { justify-self: start; font-size: 11px; }
+.ae-open { color: var(--run); font-size: 11px; }
+.ae-composer { position: relative; border-top: 1px solid var(--v-faint); padding: 10px max(16px, calc((100% - 760px) / 2)); }
+.ae-cli { display: flex; align-items: center; gap: 10px; }
+.ae-cli > span { color: var(--run); }
+.ae-cli input { flex: 1; border: 0; background: transparent; font-size: 13px; }
+.ae-cli button { border: 1px solid var(--v-faint); background: transparent; color: var(--v-hot); padding: 4px 12px; }
+.ae-cli button:disabled { opacity: 0.35; cursor: default; }
+.ae-mention-menu { position: absolute; left: 16px; right: 16px; bottom: 100%; display: grid;
+  border: 1px solid var(--v-faint); background: #0e0a1c; }
+.ae-mention-menu button { padding: 7px 12px; border: 0; background: transparent; color: var(--v-hot); font-size: 12px; text-align: left; }
+.ae-mention-menu button:hover { background: rgba(117, 104, 189, 0.22); }
+
+/* —— 轨迹 —— */
+.ae-trace { display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-height: 0; }
+.ae-trace-head { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--v-faint); font-size: 12px; }
+.ae-back { border: 1px solid var(--v-faint); background: transparent; color: var(--v-hot); padding: 4px 10px; font-size: 11px; }
+.ae-back:hover { border-color: var(--v); }
+.ae-trace-head > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.ae-trace-meter { width: 110px; height: 22px; margin-left: auto; flex-shrink: 0; }
+.ae-session-meta { padding: 7px 16px; border-bottom: 1px solid var(--v-faint); color: var(--v-dim); font-size: 11px; }
+.ae-session { overflow-y: auto; padding: 12px 16px 40px; }
+.ae-turn { margin-bottom: 18px; }
+.ae-turn > header { color: var(--v); font-size: 11px; letter-spacing: 2px; margin-bottom: 6px; }
+.ae-turn ol { list-style: none; margin: 0; padding: 0 0 0 10px; border-left: 1px solid var(--v-faint); }
+.ae-step { display: flex; gap: 10px; padding: 4px 0 4px 10px; font-size: 12px; align-items: baseline; }
+.ae-step b { color: var(--run); }
+.ae-step p { margin: 0; }
+.ae-step.user p { color: #fff; }
+.ae-step details { min-width: 0; }
+.ae-step summary { cursor: pointer; color: var(--v); }
+.ae-step summary i { color: var(--v-dim); font-style: normal; margin-left: 8px; }
+.ae-step pre { margin: 6px 0 4px; padding: 8px 10px; border: 1px solid var(--v-faint); background: rgba(50, 34, 114, 0.14);
+  color: var(--v-hot); font-size: 11px; white-space: pre-wrap; word-break: break-all; }
+
+/* —— Agent —— */
+.ae-agents { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; }
+.ae-agents-head { display: flex; align-items: center; gap: 14px; padding: 10px 16px; border-bottom: 1px solid var(--v-faint); font-size: 12px; }
+.ae-agents-head nav { margin-left: auto; display: flex; gap: 6px; }
+.ae-agents-head nav button { border: 1px solid var(--v-faint); background: transparent; color: var(--v-hot); padding: 4px 10px; font-size: 11px; }
+.ae-agents-head nav button:hover { border-color: var(--v); }
+.ae-editor { overflow-y: auto; padding: 16px; max-width: 720px; }
+.ae-editor .ae-kv { padding: 7px 0; }
+.ae-skills { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ae-skills i { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border: 1px solid var(--v-faint);
+  font-style: normal; font-size: 11px; }
+.ae-skills i button { border: 0; padding: 0; background: transparent; color: var(--v-dim); }
+.ae-skills i button:hover { color: var(--err); }
+.ae-skills input { min-width: 130px; }
+.ae-advanced { margin-top: 14px; border-top: 1px solid var(--v-faint); padding-top: 10px; }
+.ae-advanced summary { cursor: pointer; color: var(--v-dim); font-size: 11px; list-style: none; }
+.ae-advanced summary::-webkit-details-marker { display: none; }
+.ae-advanced[open] summary { color: var(--v); margin-bottom: 8px; }
+
+@media (max-width: 720px) {
+  .ae-root { grid-template-rows: auto auto minmax(0, 1fr); }
+  .ae-top { flex-wrap: wrap; gap: 8px 12px; padding: 8px 12px; }
+  .ae-brand small { display: none; }
+  .ae-exit { margin-left: 0; }
+  .ae-strip { padding: 0 10px; gap: 8px; }
+  .ae-map { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .ae-detail { border-left: 0; border-top: 1px solid var(--v-faint); max-height: 240px; }
+  .ae-log { padding-bottom: 64px; }
+  .ae-composer { padding-bottom: 60px; }
+  .ae-detail { padding-bottom: 56px; }
+  .ae-run-head { flex-wrap: wrap; row-gap: 4px; }
+  .ae-run-head em { display: none; }
+  .ae-run-meter { display: none; }
+  .ae-journal li { grid-template-columns: 44px 40px minmax(0, 1fr); }
+  .ae-journal .ae-ref { grid-column: 3; }
+  .ae-projects { padding: 40px 14px 60px; }
+  .ae-hero h1 { font-size: 24px; letter-spacing: 3px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ae-root *, .ae-projects * { animation: none !important; }
+}

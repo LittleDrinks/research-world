@@ -5,6 +5,7 @@ import binascii
 import hashlib
 import json
 import os
+import re
 import secrets
 import subprocess
 import tempfile
@@ -26,6 +27,7 @@ from .execution_evidence import (
 
 app = FastAPI(title="Research World Runner Controller")
 EXECUTION_LOCKS: defaultdict[str, Lock] = defaultdict(Lock)
+IMAGE_REF = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/:@-]{0,254}$")
 
 
 @app.get("/health")
@@ -43,7 +45,7 @@ def doctor() -> dict:
         "command": ["sh", "-c", checks],
         "network": "none",
         "read_only": True,
-        "limits": {"cpus": 1, "memory_mb": 64, "pids": 32},
+        "limits": {"cpus": 1, "memory_mb": 64, "pids": 32, "wall_seconds": 30},
     }
     result = run_container(spec)
     return {
@@ -58,6 +60,32 @@ def doctor() -> dict:
 def run(spec: dict) -> dict:
     execution_id = spec.pop("execution_id", None)
     return run_once(execution_id, spec)
+
+
+@app.post("/probe")
+def probe(spec: dict) -> dict:
+    try:
+        value = normalize_input(spec)
+    except (KeyError, TypeError, ValueError) as error:
+        return failed_result("", failure("invalid_input", detail=str(error)))
+    return execution_result(value)
+
+
+@app.post("/images/inspect")
+def inspect_image(body: dict) -> dict:
+    image = body.get("image")
+    if not isinstance(image, str) or not IMAGE_REF.fullmatch(image):
+        return {"available": False}
+    try:
+        process = subprocess.run(
+            ["docker", "image", "inspect", image],
+            capture_output=True,
+            check=False,
+            timeout=5,
+        )
+    except subprocess.TimeoutExpired:
+        return {"available": False}
+    return {"available": process.returncode == 0}
 
 
 def run_once(execution_id: str | None, spec: dict) -> dict:
@@ -232,23 +260,48 @@ def create_input_volume(root: Path) -> str:
 
 def invoke_container(spec: dict, volume: str | None) -> dict:
     started = time.monotonic()
-    command = docker_command(spec, volume)
-    process = subprocess.run(
-        command, capture_output=True, text=True, timeout=300, check=False
-    )
+    name = "rw-run-" + secrets.token_hex(8)
+    command = docker_command(spec, volume, name)
+    try:
+        process = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=spec["limits"]["wall_seconds"],
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        remove_container(name)
+        return container_result(124, "", "timeout", started)
+    return container_result(process.returncode, process.stdout, process.stderr, started)
+
+
+def container_result(exit_code: int, stdout: str, stderr: str, started: float) -> dict:
     return {
-        "exit_code": process.returncode,
-        "stdout": process.stdout,
-        "stderr": process.stderr,
+        "exit_code": exit_code,
+        "stdout": stdout,
+        "stderr": stderr,
         "usage": {"wall_ms": round((time.monotonic() - started) * 1000)},
     }
 
 
-def docker_command(spec: dict, volume: str | None = None) -> list[str]:
+def remove_container(name: str) -> None:
+    command = ["docker", "rm", "-f", name]
+    try:
+        subprocess.run(command, check=False, capture_output=True, timeout=30)
+    except subprocess.TimeoutExpired:
+        pass
+
+
+def docker_command(spec: dict, volume: str | None, name: str) -> list[str]:
     command = [
         "docker",
         "run",
         "--rm",
+        "--name",
+        name,
+        "--pull",
+        "never",
         "--network",
         "none",
         "--read-only",

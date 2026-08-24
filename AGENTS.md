@@ -11,6 +11,8 @@
 9. 原子化 git commit，利用回滚和分支明确当前进度
 10. 服务一律 `docker compose up --build -d`（research-world/）启动，不裸跑本地实例；API 凭证在仓库根 .env（小写键 apikey/baseurl，compose 已映射）。
 11. 讨论结论先落 ADR/术语，再动代码；文档没更新的实现当作不存在。
+12. 计划实现的每一个模块，都去检索一轮已有代码，作为参考
+13. Git 工作流固定为 `GitHub issue → feat/<issue>-<slug> → PR → 全新独立 Codex 验收 → 合并 PR → 关闭 issue 与 Herdr worker`：开工前 issue 须包含明确验收标准；每个 issue 独占一个分支，一个分支只服务一个 issue；提交原子化并只推送 feat 分支，禁止直接 push `main` 与 force push；PR 正文须关联对应 issue；实现者自验后交由全新独立 Codex 按 issue 验收，失败不合并、不关闭；通过后合并 PR，远端回读成功后关闭 issue 与 Herdr worker。
 
 # 文档
 
