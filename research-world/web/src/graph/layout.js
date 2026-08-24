@@ -4,14 +4,15 @@ import { Position } from "@xyflow/react";
 export const NODE_WIDTH = 280;
 export const NODE_HEIGHT = 128;
 const KIND_ORDER = ["question", "source", "direction", "experiment"];
-const COLUMN_GAP = 150;
 const OPPOSITE = { top: "bottom", right: "left", bottom: "top", left: "right" };
 const HANDLE_POINTS = [[Position.Top, NODE_WIDTH / 2, 0], [Position.Right, NODE_WIDTH, NODE_HEIGHT / 2],
   [Position.Bottom, NODE_WIDTH / 2, NODE_HEIGHT], [Position.Left, 0, NODE_HEIGHT / 2]];
 const HANDLES = ["target", "source"].flatMap((type) => HANDLE_POINTS.map(([position, x, y]) => (
   { id: `${type}-${position}`, type, position, x, y, width: 1, height: 1 })));
 const OPTIONS = { "elk.algorithm": "layered", "elk.direction": "RIGHT", "elk.edgeRouting": "ORTHOGONAL",
-  "elk.spacing.nodeNode": "76", "elk.layered.spacing.nodeNodeBetweenLayers": "150",
+  "elk.partitioning.activate": "true", "elk.separateConnectedComponents": "false",
+  "elk.spacing.nodeNode": "76", "elk.spacing.edgeNode": "32",
+  "elk.layered.spacing.nodeNodeBetweenLayers": "150", "elk.layered.spacing.edgeNodeBetweenLayers": "32",
   "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX", "elk.layered.crossingMinimization.strategy": "LAYER_SWEEP" };
 let elkEngine;
 
@@ -25,7 +26,8 @@ function validEdges(edges, ids) {
 function inputGraph(nodes, edges) {
   const ids = new Set(nodes.map((node) => node.id));
   return { id: "research-graph", layoutOptions: OPTIONS,
-    children: nodes.map((node) => ({ id: node.id, width: NODE_WIDTH, height: NODE_HEIGHT })),
+    children: nodes.map((node) => ({ id: node.id, width: NODE_WIDTH, height: NODE_HEIGHT,
+      layoutOptions: { "elk.partitioning.partition": String(KIND_ORDER.indexOf(node.kind)) } })),
     edges: validEdges(edges, ids) };
 }
 
@@ -36,24 +38,26 @@ async function engine() {
 }
 
 
+function routePoints(edge) {
+  const section = edge.sections?.[0];
+  return section ? [section.startPoint, ...(section.bendPoints || []), section.endPoint] : [];
+}
+
+
+function edgeRoutes(edges) {
+  return new Map((edges || []).map((edge) => [edge.id, routePoints(edge)]).filter(([, points]) => points.length > 1));
+}
+
+
 export async function layoutGraph(nodes, edges) {
   if (!nodes.length) return { nodes: [], routes: new Map() };
   const result = await (await engine()).layout(inputGraph(nodes, edges));
-  const source = new Map(nodes.map((node) => [node.id, node]));
-  const columns = visibleColumns(nodes);
-  return { nodes: result.children.map((node) => flowNode(node, source.get(node.id), columns)), routes: new Map() };
+  return { nodes: result.children.map(flowNode), routes: edgeRoutes(result.edges) };
 }
 
 
-function visibleColumns(nodes) {
-  const kinds = new Set(nodes.map((node) => node.kind));
-  return new Map(KIND_ORDER.filter((kind) => kinds.has(kind)).map((kind, index) => [kind, index]));
-}
-
-
-function flowNode(layout, node, columns) {
-  const x = (columns.get(node.kind) || 0) * (NODE_WIDTH + COLUMN_GAP);
-  return { id: node.id, type: "research", position: { x, y: layout.y }, width: NODE_WIDTH, height: NODE_HEIGHT,
+function flowNode(layout) {
+  return { id: layout.id, type: "research", position: { x: layout.x, y: layout.y }, width: NODE_WIDTH, height: NODE_HEIGHT,
     measured: { width: NODE_WIDTH, height: NODE_HEIGHT }, handles: HANDLES };
 }
 

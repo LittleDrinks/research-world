@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "uk-biobank",
+    "title": "The UK Biobank resource with deep phenotyping and genomic data",
+    "shortTitle": "The UK Biobank resource with deep phenotyping and genomic data",
+    "authors": "BycroftClare, FreemanColin, PetkovaDesislava et al.",
+    "year": 2018,
+    "domain": "Human and clinical research",
+    "modality": "Human / clinical",
+    "category": "human-clinical",
+    "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6786975/",
+    "localPath": "raw/uk-biobank/fulltext.xml"
+  },
+  "thesis": "Deep phenotype and genome-wide genetic data from 500,000 individuals from the UK Biobank, describing population structure and relatedness in the cohort, and imputation to increase the number of testable variants to 96 million.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "uk-biobank-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What effect or association is supported in the studied human population?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "uk-biobank-d",
+      "kind": "decision",
+      "title": "Choose cohort and endpoint",
+      "body": "A rich variety of phenotypic and health-related information is available on each participant, including biological measurements, lifestyle indicators, biomarkers in blood and urine, and imaging of the body and brain.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "uk-biobank-i",
+      "kind": "investigation",
+      "title": "Measure human outcomes",
+      "body": "Here we describe the centralized analysis of the genetic data, including genotype quality, properties of population structure and relatedness of the genetic data, and efficient phasing and genotype imputation that increases the number of testable variants to around 96 million.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "uk-biobank-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Genome-wide genotype data have been collected on all participants, providing many opportunities for the discovery of new genetic associations and the genetic bases of complex traits.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "uk-biobank-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "Deep phenotype and genome-wide genetic data from 500,000 individuals from the UK Biobank, describing population structure and relatedness in the cohort, and imputation to increase the number of testable variants to 96 million.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "uk-biobank-q",
+      "to": "uk-biobank-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "uk-biobank-d",
+      "to": "uk-biobank-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "uk-biobank-i",
+      "to": "uk-biobank-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "uk-biobank-e",
+      "to": "uk-biobank-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

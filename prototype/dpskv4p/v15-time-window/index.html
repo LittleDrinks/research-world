@@ -1,0 +1,57 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v15 · 时间窗：局部组件。挑战 PROBLEM 核心五问：研究者在时间窗口内先看增量，再逐层下钻。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v15 · 时间窗 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:light;--bg:#f6f8fa;--paper:#fff;--ink:#1c2530;--muted:#76828f;--line:#e1e7ed;--blue:#2c6db3;--red:#c2493d;--amber:#b57a14;--green:#38794b}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{max-width:1160px;margin:0 auto;padding:18px 18px 90px}
+  .head{display:flex;align-items:center;gap:14px}.head h1{font-size:20px;margin:0}
+  .windows{margin-left:auto;display:flex;gap:6px}.win{padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--paper);cursor:pointer}.win.on{background:var(--ink);color:#fff}
+  .five{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:14px}
+  .q{padding:12px;border-radius:12px;background:var(--paper);border:1px solid var(--line);border-top:3px solid var(--color)}
+  .q b{font-size:12px}.q p{margin:6px 0 0;font-size:11.5px;color:var(--muted);min-height:54px}
+  .q .n{font:700 18px ui-monospace,monospace;display:block;margin-top:6px;color:var(--color)}
+  .grid{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-top:14px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px}
+  h2{font-size:13px;margin:0 0 10px}
+  .bars{display:flex;align-items:flex-end;gap:6px;height:180px}.bar{flex:1;border-radius:6px 6px 0 0;background:color-mix(in srgb,var(--blue) 22%,white);border:1px solid color-mix(in srgb,var(--blue) 40%,white);position:relative;cursor:pointer}
+  .bar span{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font:10px ui-monospace,monospace}
+  .flow div{padding:8px 0;border-bottom:1px dashed var(--line);font-size:12px;display:flex;gap:8px}
+  .flow b{font:10px ui-monospace,monospace;color:var(--muted)}
+  .drill{margin-top:12px;padding:10px;border-radius:9px;background:#f2f6fa;font-size:12px;display:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="head"><h1>时间窗</h1><span style="color:var(--muted);font-size:12px">先看变化，再看全图——阅读成本不随轨迹线性增长</span><div class="windows" id="windows"></div></div>
+  <div class="five" id="five"></div>
+  <div class="grid">
+    <section class="card"><h2>窗口内事件分布（点击柱下钻）</h2><div class="bars" id="bars"></div><div class="drill" id="drill"></div></section>
+    <section class="card"><h2>窗口内重要流（按影响力排序）</h2><div class="flow" id="flow"></div></section>
+  </div>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const WINS={six:6,day:24,week:168,month:720};let win="day";
+function evIn(){const h=WINS[win];return RW.EVENTS.filter(e=>e.at<=h*60)}
+function render(){const ev=evIn();const n={run:ev.filter(e=>e.type==="run").length,reject:ev.filter(e=>e.type==="reject").length,approve:ev.filter(e=>e.type==="approve").length,human:ev.filter(e=>e.type==="human").length,branch:ev.filter(e=>e.type==="branch").length,fuse:ev.filter(e=>e.type==="fuse").length};
+ const projects=new Set(ev.map(e=>e.project)).size;
+ const five=[["① 新增了什么",`${n.branch} 次派生，${n.approve} 条方向被支持入图`,"#2c6db3",n.branch],
+ ["② 失败在哪",`${n.reject} 条被驳回，全部进幽灵车道并保留抗辩`,"#c2493d",n.reject],
+ ["③ 下一步做什么",`${n.human} 项等待人工；${n.fuse} 条谱系熔断待解锁`,"#b57a14",n.human+n.fuse],
+ ["④ 上游错误影响了谁",`影响半径按依赖边计算，窗口内可定位 ${Math.max(1,n.reject)} 条传播链`,"#8a5aa0",n.reject],
+ ["⑤ 证据是否可复现",`${n.run} 条执行事件全部带 exit code 与产物哈希`,"#38794b",n.run]];
+ $("five").innerHTML=five.map(([t,p,c,n])=>`<div class="q" style="--color:${c}"><b>${t}</b><p>${p}</p><span class="n">${n}</span></div>`).join("");
+ const bins=Array.from({length:12},(_,i)=>({h:Math.floor(WINS[win]/12),n:0,types:{}}));ev.forEach(e=>{const i=Math.min(11,Math.floor(e.at/(WINS[win]*60/12)));bins[i].n++;bins[i].types[e.type]=(bins[i].types[e.type]||0)+1});
+ $("bars").innerHTML=bins.map((b,i)=>`<div class="bar" style="height:${Math.max(4,b.n/Math.max(...bins.map(x=>x.n),1)*170)}px" data-i="${i}"><span>${b.n}</span></div>`).join("");
+ $("flow").innerHTML=ev.slice(0,14).map(e=>`<div><b>${Math.floor(e.at/60)}h${String(Math.floor(e.at%60)).padStart(2,"0")}m</b><span>${e.text}</span></div>`).join("");
+ $("drill").style.display="none";if(RWUI)RWUI.setState({时间窗:win+"h",窗口内事件:ev.length,涉及项目:projects});}
+document.addEventListener("click",e=>{const w=e.target.closest(".win");if(w){win=w.dataset.w;document.querySelectorAll(".win").forEach(x=>x.classList.toggle("on",x===w));render()}const b=e.target.closest(".bar");if(b){const i=+b.dataset.i;const ev=evIn();const lo=i*WINS[win]*60/12,hi=(i+1)*WINS[win]*60/12;const seg=ev.filter(x=>x.at>=lo&&x.at<hi);$("drill").style.display="block";$("drill").innerHTML=`<b>${Math.floor(lo/60)}h–${Math.floor(hi/60)}h</b>：${seg.length} 条事件 · ${Object.entries(seg.reduce((a,e)=>(a[e.type]=(a[e.type]||0)+1,a),{})).map(([k,v])=>k+"×"+v).join("，")}。可继续下钻到单条轨迹与产物。`}});
+document.addEventListener("DOMContentLoaded",()=>{$("windows").innerHTML=Object.entries(WINS).map(([k,h])=>`<div class="win ${k===win?"on":""}" data-w="${k}">${h}h</div>`).join("");render();RWUI&&RWUI.setState({设计命题:"时间窗口如何让审查五问有界可答",挑战对象:"/projects 与 /activity 全量列表",交互:"窗口切换 + 五问卡 + 柱状下钻 + 影响流",数据:"960 条确定性事件流"});});
+</script>
+</body>
+</html>

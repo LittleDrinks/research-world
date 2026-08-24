@@ -1,0 +1,9 @@
+.settings-page { height: 100%; overflow-y: auto; padding: 24px max(18px, calc((100% - 720px) / 2)) 48px; background: var(--app-canvas); }
+.settings-page h1 { margin-bottom: 18px; font-size: 19px; }
+.settings-record { margin: 0 0 18px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-raised); }
+.settings-record > div { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.settings-record > div:last-child { border-bottom: 0; }
+.settings-record dt { color: var(--text-muted); font-size: 12px; }
+.settings-record dd { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+.settings-auto { margin-bottom: 14px; }
+.settings-auto span { display: inline; font-size: 13px; color: var(--text); }

@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "atlas-higgs",
+    "title": "Observation of a new particle in the search for the Standard Model Higgs boson with the ATLAS detector at the LHC",
+    "shortTitle": "Observation of a new particle in the search for the Standard M",
+    "authors": "The ATLAS Collaboration",
+    "year": 2012,
+    "domain": "Observational science",
+    "modality": "Observation",
+    "category": "observation",
+    "sourceUrl": "https://arxiv.org/abs/1207.7214",
+    "localPath": "raw/atlas-higgs/paper.pdf"
+  },
+  "thesis": "This observation, which has a significance of 5.9 standard deviations, corresponding to a background fluctuation probability of 1.7x10^-9, is compatible with the production and decay of the Standard Model Higgs boson.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "atlas-higgs-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What phenomenon is supported by the reported observations?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "atlas-higgs-d",
+      "kind": "decision",
+      "title": "Choose instrument and selection",
+      "body": "A search for the Standard Model Higgs boson in proton-proton collisions with the ATLAS detector at the LHC is presented.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "atlas-higgs-i",
+      "kind": "investigation",
+      "title": "Acquire and analyze observations",
+      "body": "The datasets used correspond to integrated luminosities of approximately 4.8 fb^-1 collected at sqrt(s) = 7 TeV in 2011 and 5.8 fb^-1 at sqrt(s) = 8 TeV in 2012.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "atlas-higgs-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Clear evidence for the production of a neutral boson with a measured mass of 126.0 +/- 0.4(stat) +/- 0.4(sys) GeV is presented.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "atlas-higgs-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "This observation, which has a significance of 5.9 standard deviations, corresponding to a background fluctuation probability of 1.7x10^-9, is compatible with the production and decay of the Standard Model Higgs boson.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "atlas-higgs-q",
+      "to": "atlas-higgs-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "atlas-higgs-d",
+      "to": "atlas-higgs-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "atlas-higgs-i",
+      "to": "atlas-higgs-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "atlas-higgs-e",
+      "to": "atlas-higgs-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

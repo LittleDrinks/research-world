@@ -1,0 +1,9 @@
+{
+  "name":"paper-research-graph-prototype",
+  "private":true,
+  "version":"0.0.0",
+  "type":"module",
+  "scripts":{"data":"node scripts/build-data.mjs","dev":"npm run data && vite","build":"npm run data && vite build"},
+  "dependencies":{"@vitejs/plugin-react":"latest","@xyflow/react":"latest","lucide-react":"latest","vite":"latest","react":"latest","react-dom":"latest"},
+  "devDependencies":{}
+}

@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "protein-folding-stability",
+    "title": "Mega-scale experimental analysis of protein folding stability in biology and design",
+    "shortTitle": "Mega-scale experimental analysis of protein folding stability ",
+    "authors": "TsuboyamaKotaro, DauparasJustas, ChenJonathan et al.",
+    "year": 2023,
+    "domain": "Experimental biology",
+    "modality": "Wet lab",
+    "category": "wet-lab",
+    "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10412457/",
+    "localPath": "raw/protein-folding-stability/fulltext.xml"
+  },
+  "thesis": "The cDNA display proteolysis method is fast, accurate and uniquely scalable, and promises to reveal the quantitative rules for how amino acid sequences encode folding stability.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "protein-folding-stability-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "Which intervention or mechanism produces the reported experimental effect?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "protein-folding-stability-d",
+      "kind": "decision",
+      "title": "Choose construct and controls",
+      "body": "Using this extensive dataset, we quantified (1) environmental factors influencing amino acid fitness, (2) thermodynamic couplings (including unexpected interactions) between protein sites, and (3) the global divergence between evolutionary amino acid usage and protein folding stability.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "protein-folding-stability-i",
+      "kind": "investigation",
+      "title": "Run assays against controls",
+      "body": "Subject terms: High-throughput screening, Proteins, Protein databases, Thermodynamics Large-scale assays using cDNA display proteolysis are used to measure the folding stabilities of protein domains, providing a method to quantify the effects of mutations on protein folding, with applications in protein design.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "protein-folding-stability-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "From 1.8 million measurements in total, we curated a set of around 776,000 high-quality folding stabilities covering all single amino acid variants and selected double mutants of 331 natural and 148 de novo designed protein domains 40–72 amino acids in length.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "protein-folding-stability-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "The cDNA display proteolysis method is fast, accurate and uniquely scalable, and promises to reveal the quantitative rules for how amino acid sequences encode folding stability.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "protein-folding-stability-q",
+      "to": "protein-folding-stability-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "protein-folding-stability-d",
+      "to": "protein-folding-stability-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "protein-folding-stability-i",
+      "to": "protein-folding-stability-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "protein-folding-stability-e",
+      "to": "protein-folding-stability-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

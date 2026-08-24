@@ -1,0 +1,22 @@
+{
+  "name": "graph-query",
+  "summary": "研究图谱查询：按 id 取节点完整内容，或按关键词全文检索节点摘要。",
+  "prompt_segment": "可用 graph_query 查询研究图谱：action=get 按 node_id 取节点完整内容，action=search 按 query 全文检索节点摘要；project_id 取输入中的 project_id。",
+  "tools": [
+    {
+      "name": "graph_query",
+      "description": "Query the research graph. action=get returns the full payload of node_id; action=search full-text searches nodes by query and returns id/kind/life_state/summary per hit.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "action": {"type": "string", "enum": ["get", "search"]},
+          "project_id": {"type": "string"},
+          "node_id": {"type": "string"},
+          "query": {"type": "string"}
+        },
+        "required": ["action", "project_id"]
+      },
+      "path": "/api/v1/tools/graph-query"
+    }
+  ]
+}

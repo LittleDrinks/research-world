@@ -1,0 +1,23 @@
+/* THROWAWAY PROTOTYPE shared frame only — deliberately foreign to every variant so it is never confused with the design. */
+.dpsk-bar {
+  position: fixed; left: 50%; bottom: 14px; z-index: 9999; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+  border: 1px solid #e5e7eb; border-radius: 999px; background: #111827; color: #f9fafb;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .28); font: 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: nowrap;
+}
+.dpsk-bar a { color: #67e8f9; text-decoration: none; padding: 6px 10px; border-radius: 999px; background: #1f2937; }
+.dpsk-bar a:hover { background: #374151; color: #a5f3fc; }
+.dpsk-bar b { font-weight: 700; color: #fff; }
+.dpsk-bar small { color: #9ca3af; }
+.dpsk-bar .dpsk-home { color: #fbbf24; }
+.dpsk-bar .dpsk-off { color: #4b5563; padding: 6px 10px; }
+.dpsk-state { position: relative; }
+.dpsk-state summary { cursor: pointer; color: #9ca3af; padding: 6px 10px; border-radius: 999px; list-style: none; }
+.dpsk-state summary:hover { color: #e5e7eb; }
+.dpsk-state pre {
+  position: absolute; bottom: 44px; right: 0; width: 420px; max-height: 46vh; overflow: auto; margin: 0;
+  padding: 12px 14px; border: 1px solid #374151; border-radius: 12px; background: #0b1220; color: #d1fae5;
+  text-align: left; font: 11px/1.5 ui-monospace, Menlo, Consolas, monospace; box-shadow: 0 16px 44px rgba(0,0,0,.4);
+}
+@media (max-width: 760px) { .dpsk-bar { max-width: 94vw; overflow-x: auto; } .dpsk-state pre { width: 90vw; } }

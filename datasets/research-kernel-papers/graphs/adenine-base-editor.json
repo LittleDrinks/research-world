@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "adenine-base-editor",
+    "title": "Programmable base editing of A•T to G•C in genomic DNA without DNA cleavage",
+    "shortTitle": "Programmable base editing of A•T to G•C in genomic DNA without",
+    "authors": "GaudelliNicole M., KomorAlexis C., ReesHolly A. et al.",
+    "year": 2017,
+    "domain": "Experimental biology",
+    "modality": "Wet lab",
+    "category": "wet-lab",
+    "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5726555/",
+    "localPath": "raw/adenine-base-editor/fulltext.xml"
+  },
+  "thesis": "Together with our previous base editors, ABEs advance genome editing by enabling the direct, programmable introduction of all four transition mutations without double-stranded DNA cleavage.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "adenine-base-editor-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "Which intervention or mechanism produces the reported experimental effect?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "adenine-base-editor-d",
+      "kind": "decision",
+      "title": "Choose construct and controls",
+      "body": "The spontaneous deamination of cytosine is a major source of C•G to T•A transitions, which account for half of known human pathogenic point mutations.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "adenine-base-editor-i",
+      "kind": "investigation",
+      "title": "Run assays against controls",
+      "body": "The ability to efficiently convert target A•T base pairs to G•C therefore could advance the study and treatment of genetic diseases.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "adenine-base-editor-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Extensive directed evolution and protein engineering resulted in seventh-generation ABEs (e.g., ABE7.10), that convert target A•T to G•C base pairs efficiently (~50% in human cells) with very high product purity (typically ≥ 99.9%) and very low rates of indels (typically ≤ 0.1%).",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "adenine-base-editor-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "Together with our previous base editors, ABEs advance genome editing by enabling the direct, programmable introduction of all four transition mutations without double-stranded DNA cleavage.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "adenine-base-editor-q",
+      "to": "adenine-base-editor-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "adenine-base-editor-d",
+      "to": "adenine-base-editor-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "adenine-base-editor-i",
+      "to": "adenine-base-editor-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "adenine-base-editor-e",
+      "to": "adenine-base-editor-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

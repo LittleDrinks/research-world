@@ -1,170 +1,331 @@
 from __future__ import annotations
 
-from asyncio import to_thread
-from pathlib import Path
-import threading
+import json
+from base64 import b64decode
+from binascii import Error as Base64Error
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
-from .config import ROOT, load_settings
-from .orchestrator import WorkflowManager
-from .world import World
-from .workflows import default_engine
+from .config import ROOT
+from .kernel import KernelCommand, KernelQuery, ResearchKernel, default_kernel
+from .library import list_packages
 
 
-def create_app(world: World) -> FastAPI:
+def create_app(kernel: ResearchKernel) -> FastAPI:
     app = FastAPI(title="Research World", version="2")
-    project_routes(app, world)
-    graph_routes(app, world)
-    conversation_routes(app, world)
-    workflow_routes(app, world)
-    frontend_routes(app)
+    register_routes(app, kernel)
     return app
 
 
-def project_routes(app: FastAPI, world: World) -> None:
+def register_routes(app, kernel) -> None:
+    error_handlers(app)
+    health_routes(app)
+    project_routes(app, kernel)
+    project_state_routes(app, kernel)
+    graph_node_routes(app, kernel)
+    graph_evidence_routes(app, kernel)
+    thread_routes(app, kernel)
+    thread_prompt_routes(app, kernel)
+    thread_pin_routes(app, kernel)
+    runtime_routes(app, kernel)
+    agent_routes(app, kernel)
+    pipeline_definition_routes(app, kernel)
+    pipeline_run_routes(app, kernel)
+    pipeline_control_routes(app, kernel)
+    library_routes(app)
+    graph_tool_routes(app, kernel)
+    report_routes(app, kernel)
+    frontend_routes(app)
+
+
+def error_handlers(app: FastAPI) -> None:
+    @app.exception_handler(KeyError)
+    async def missing(_request, _error):
+        return JSONResponse({"detail": "not found"}, status_code=404)
+
+    app.add_exception_handler(PermissionError, missing)
+
+    @app.exception_handler(ValueError)
+    async def invalid(_request, error):
+        return JSONResponse({"detail": str(error)}, status_code=400)
+
+    app.add_exception_handler(TypeError, invalid)
+
+
+def health_routes(app) -> None:
     @app.get("/api/v1/health")
     async def health():
         return {"ok": True}
 
+
+def project_routes(app, kernel) -> None:
     @app.get("/api/v1/projects")
     async def projects():
-        return project_cards(world)
+        return await kernel.query(KernelQuery("projects"))
 
     @app.post("/api/v1/projects", status_code=201)
     async def create_project(request: Request):
-        value = await request.json()
-        return world.create_project(value["name"], Path(value["root"]), value["question"])
+        return await kernel.command(
+            KernelCommand("create_project", values=await request.json())
+        )
 
-    @app.get("/api/v1/bootstrap")
-    async def bootstrap(project_id: str | None = None):
-        return bootstrap_data(world, project_id)
 
+def project_state_routes(app, kernel) -> None:
     @app.patch("/api/v1/projects/{project_id}")
     async def update_project(project_id: str, request: Request):
         value = await request.json()
-        return world.set_auto(project_id, bool(value["auto"]))
+        return await kernel.command(
+            KernelCommand("set_auto", project_id, {"enabled": value["auto"]})
+        )
+
+    @app.get("/api/v1/bootstrap")
+    async def bootstrap(project_id: str | None = None):
+        return await kernel.query(KernelQuery("bootstrap", project_id))
 
 
-def graph_routes(app: FastAPI, world: World) -> None:
+def graph_node_routes(app, kernel) -> None:
     @app.get("/api/v1/nodes/{node_id}")
-    async def node(node_id: str):
-        return get_or_404(world.node, node_id)
+    async def node(node_id: str, project_id: str | None = None):
+        return await kernel.query(KernelQuery("node", project_id, {"node_id": node_id}))
 
     @app.post("/api/v1/projects/{project_id}/nodes", status_code=201)
     async def create_node(project_id: str, request: Request):
-        value = await request.json()
-        state = {key: value[key] for key in NODE_STATE_KEYS if key in value}
-        return world.create_node(project_id, value["kind"], value["payload"], **state)
+        return await kernel.command(
+            KernelCommand("submit_node", project_id, await request.json())
+        )
 
-    @app.patch("/api/v1/nodes/{node_id}")
-    async def update_node(node_id: str, request: Request):
-        value = await request.json()
-        state = {key: value[key] for key in UPDATE_KEYS if key in value}
-        return world.update_node(node_id, value.get("payload"), **state)
+    @app.post("/api/v1/projects/{project_id}/nodes/{node_id}/admission")
+    async def resolve_admission(project_id: str, node_id: str, request: Request):
+        values = {**(await request.json()), "node_id": node_id}
+        return await kernel.command(
+            KernelCommand("resolve_admission", project_id, values)
+        )
 
+
+def graph_evidence_routes(app, kernel) -> None:
     @app.post("/api/v1/projects/{project_id}/edges", status_code=201)
     async def create_edge(project_id: str, request: Request):
-        value = await request.json()
-        ensure_project_node(world, project_id, value["source"])
-        return world.add_edge(value["source"], value["target"], value["polarity"])
+        return await kernel.command(
+            KernelCommand("add_edge", project_id, await request.json())
+        )
+
+    @app.post("/api/v1/projects/{project_id}/observations", status_code=201)
+    async def observation(project_id: str, request: Request):
+        return await kernel.command(
+            KernelCommand("observation", project_id, await request.json())
+        )
+
+    @app.post("/api/v1/projects/{project_id}/artifacts", status_code=201)
+    async def artifact(project_id: str, request: Request):
+        values = _artifact_values(await request.json())
+        return await kernel.command(
+            KernelCommand("capture_artifact", project_id, values)
+        )
 
 
-def conversation_routes(app: FastAPI, world: World) -> None:
-    manager = WorkflowManager(world)
+def thread_routes(app, kernel) -> None:
+    @app.get("/api/v1/projects/{project_id}/threads")
+    async def threads(project_id: str):
+        return await kernel.query(KernelQuery("threads", project_id))
 
-    @app.get("/api/v1/projects/{project_id}/messages")
-    async def messages(project_id: str, node_id: str):
-        return world.messages(project_id, node_id)
+    @app.post("/api/v1/projects/{project_id}/threads", status_code=201)
+    async def create_thread(project_id: str, request: Request):
+        return await kernel.command(
+            KernelCommand("create_thread", project_id, await request.json())
+        )
 
-    @app.post("/api/v1/projects/{project_id}/messages", status_code=201)
-    async def send_message(project_id: str, request: Request):
-        value = await request.json()
-        return await to_thread(manager.assist, project_id, value["node_id"], value["message"])
-
-    @app.delete("/api/v1/projects/{project_id}/messages", status_code=204)
-    async def clear_messages(project_id: str, node_id: str):
-        manager.reset(project_id, node_id)
-
-    @app.post("/api/v1/projects/{project_id}/drafts/materialize", status_code=201)
-    async def materialize(project_id: str, request: Request):
-        value = await request.json()
-        return manager.materialize(project_id, value["node_id"], value["kind"], value["payload"])
+    @app.get("/api/v1/threads/{thread_id}")
+    async def thread(thread_id: str):
+        return await kernel.query(
+            KernelQuery("thread", values={"thread_id": thread_id})
+        )
 
 
-def workflow_routes(app: FastAPI, world: World) -> None:
-    @app.get("/api/v1/projects/{project_id}/workflows")
-    async def workflows(project_id: str):
-        return [workflow_view(world, item) for item in world.workflows(project_id)]
+def thread_prompt_routes(app, kernel) -> None:
+    @app.post("/api/v1/threads/{thread_id}/prompts")
+    async def prompt(thread_id: str, request: Request):
+        values = {"thread_id": thread_id, "message": (await request.json())["message"]}
+        events = await kernel.command(KernelCommand("thread_prompt", values=values))
+        return StreamingResponse(relay(events), media_type="text/event-stream")
 
-    @app.post("/api/v1/projects/{project_id}/workflows", status_code=201)
-    async def start_workflow(project_id: str, request: Request):
-        value = await request.json()
-        return world.create_workflow(project_id, value["node_id"], value["kind"], value.get("payload"))
-
-    @app.post("/api/v1/workflows/{workflow_id}/confirm", status_code=202)
-    async def confirm(workflow_id: str):
-        run_async(default_engine(world).confirm, workflow_id)
-        return world.workflow(workflow_id)
-
-    @app.post("/api/v1/workflows/{workflow_id}/resolve", status_code=202)
-    async def resolve(workflow_id: str, request: Request):
-        value = await request.json()
-        run_async(default_engine(world).resolve, workflow_id, value["decision"], value["reason"])
-        return world.workflow(workflow_id)
+    @app.post("/api/v1/threads/{thread_id}/restart")
+    async def restart(thread_id: str):
+        return await kernel.command(
+            KernelCommand("restart_thread", values={"thread_id": thread_id})
+        )
 
 
-NODE_STATE_KEYS = {"parent_id", "lineage_id", "life_state", "direction_status", "working"}
-UPDATE_KEYS = {"life_state", "direction_status", "working", "rejection_reason", "rebuttal"}
+def thread_pin_routes(app, kernel) -> None:
+    @app.post("/api/v1/threads/{thread_id}/nodes")
+    async def pin_node(thread_id: str, request: Request):
+        values = {"thread_id": thread_id, "node_id": (await request.json())["node_id"]}
+        return await kernel.command(KernelCommand("pin_thread", values=values))
+
+    @app.delete("/api/v1/threads/{thread_id}/nodes/{node_id}")
+    async def unpin_node(thread_id: str, node_id: str):
+        return await kernel.command(
+            KernelCommand(
+                "unpin_thread", values={"thread_id": thread_id, "node_id": node_id}
+            )
+        )
 
 
-def bootstrap_data(world: World, project_id: str | None) -> dict:
-    projects = project_cards(world)
-    selected = project_id or (projects[0]["id"] if projects else None)
-    if not selected:
-        return {"projects": [], "active_project_id": None, "nodes": [], "edges": [], "workflows": [], "slots": []}
-    get_or_404(world.project, selected)
-    workflows = [workflow_view(world, item) for item in world.workflows(selected)]
-    return {"projects": projects, "active_project_id": selected,
-            "nodes": world.nodes(selected), "edges": world.edges(selected), "workflows": workflows,
-            "slots": slot_view(workflows)}
+def runtime_routes(app, kernel) -> None:
+    @app.get("/api/v1/runtime/catalog")
+    async def catalog(project_id: str):
+        return await kernel.query(KernelQuery("catalog", project_id))
+
+    @app.get("/api/v1/runtime/sessions/{session_id}")
+    async def session(session_id: str):
+        return await kernel.query(
+            KernelQuery("session", values={"session_id": session_id})
+        )
 
 
-def project_cards(world: World) -> list[dict]:
-    cards = []
-    for project in world.projects():
-        nodes = world.nodes(project["id"])
-        cards.append({**project, "title": project["name"], "node_count": len(nodes),
-                      "workflow_count": len(world.workflows(project["id"]))})
-    return cards
+def agent_routes(app, kernel) -> None:
+    @app.get("/api/v1/agents")
+    async def all_agents():
+        return await kernel.query(KernelQuery("agents"))
+
+    @app.get("/api/v1/agents/{agent_id}")
+    async def agent(agent_id: str):
+        return await kernel.query(KernelQuery("agent", values={"agent_id": agent_id}))
+
+    agent_command_routes(app, kernel)
 
 
-def ensure_project_node(world: World, project_id: str, node_id: str) -> None:
-    if get_or_404(world.node, node_id)["project_id"] != project_id:
-        raise HTTPException(400, "node belongs to another project")
+def agent_command_routes(app, kernel) -> None:
+    @app.post("/api/v1/agents", status_code=201)
+    async def create_agent(request: Request, project_id: str):
+        values = {"value": await request.json()}
+        command = KernelCommand("create_agent", project_id=project_id, values=values)
+        return await kernel.command(command)
+
+    @app.post("/api/v1/projects/{project_id}/agent-drafts", status_code=201)
+    async def draft_agent(project_id: str, request: Request):
+        return await kernel.command(
+            KernelCommand("draft_agent", project_id, await request.json())
+        )
+
+    @app.put("/api/v1/agents/{agent_id}")
+    async def save_agent(agent_id: str, request: Request, project_id: str):
+        values = {"agent_id": agent_id, "value": await request.json()}
+        return await kernel.command(
+            KernelCommand("save_agent", project_id=project_id, values=values)
+        )
 
 
-def get_or_404(getter, value: str):
+def pipeline_definition_routes(app, kernel) -> None:
+    @app.get("/api/v1/pipelines")
+    async def pipelines():
+        return await kernel.query(KernelQuery("pipelines"))
+
+    @app.put("/api/v1/pipelines/{pipeline_id}")
+    async def save_pipeline(pipeline_id: str, request: Request):
+        values = {"pipeline_id": pipeline_id, "value": await request.json()}
+        return await kernel.command(KernelCommand("save_pipeline", values=values))
+
+
+def pipeline_run_routes(app, kernel) -> None:
+    @app.get("/api/v1/projects/{project_id}/runs")
+    async def runs(project_id: str):
+        return await kernel.query(KernelQuery("runs", project_id))
+
+    @app.post("/api/v1/projects/{project_id}/runs", status_code=201)
+    async def start_run(project_id: str, request: Request):
+        return await kernel.command(
+            KernelCommand("start_run", project_id, await request.json())
+        )
+
+
+def pipeline_control_routes(app, kernel) -> None:
+    @app.post("/api/v1/runs/{run_id}/confirm", status_code=202)
+    async def confirm(run_id: str):
+        return await kernel.command(
+            KernelCommand("confirm_run", values={"run_id": run_id})
+        )
+
+    @app.post("/api/v1/runs/{run_id}/resolve", status_code=202)
+    async def resolve(run_id: str, request: Request):
+        decision = await request.json()
+        values = {"run_id": run_id, **decision}
+        return await kernel.command(KernelCommand("resolve_run", values=values))
+
+
+def library_routes(app) -> None:
+    @app.get("/api/v1/library")
+    async def library():
+        return list_packages()
+
+
+def graph_tool_routes(app, kernel) -> None:
+    @app.post("/api/v1/tools/graph-query")
+    async def graph_query(request: Request):
+        args = (await request.json())["arguments"]
+        if args["action"] == "get":
+            node = await kernel.query(
+                KernelQuery(
+                    "admitted_node",
+                    args["project_id"],
+                    {"node_id": args["node_id"]},
+                )
+            )
+            return node["payload"]
+        if args["action"] == "search":
+            return await kernel.query(
+                KernelQuery("graph_search", args["project_id"], {"text": args["query"]})
+            )
+        raise HTTPException(400, "unknown action")
+
+
+def report_routes(app, kernel) -> None:
+    @app.get("/api/v1/projects/{project_id}/report/projection")
+    async def report_projection(project_id: str):
+        return await kernel.query(KernelQuery("report_projection", project_id))
+
+    @app.post("/api/v1/projects/{project_id}/report/validate")
+    async def validate_report(project_id: str, request: Request):
+        values = await request.json()
+        return await kernel.query(KernelQuery("report_validate", project_id, values))
+
+    @app.get("/api/v1/projects/{project_id}/report/bibtex")
+    async def export_bibtex(project_id: str, artifact_id: str):
+        values = {"artifact_id": artifact_id}
+        return await kernel.query(KernelQuery("report_bibtex", project_id, values))
+
+
+def _artifact_values(value: dict) -> dict:
+    if not isinstance(value, dict) or set(value) != {"content_base64", "media_type"}:
+        raise ValueError("artifact requires only content_base64 and media_type")
     try:
-        return getter(value)
-    except KeyError as error:
-        raise HTTPException(404, "not found") from error
+        content = b64decode(value["content_base64"], validate=True)
+    except (Base64Error, TypeError) as error:
+        raise ValueError("artifact content_base64 must be valid base64") from error
+    return {"content": content, "media_type": value["media_type"]}
 
 
-def workflow_view(world: World, workflow: dict) -> dict:
-    return {**workflow, "steps": world.steps(workflow["id"]),
-            "events": world.workflow_events(workflow["id"])}
+_ERROR_TEXT = {"session_spec_invalid": "此对话的 Agent 配置已变更，需要重启会话"}
 
 
-def slot_view(workflows: list[dict], count: int = 2) -> list[dict]:
-    active = [item for item in workflows if item["status"] in {"queued", "running", "waiting_human"}]
-    return [{"index": index + 1, "workflow": active[index] if index < len(active) else None}
-            for index in range(count)]
+async def relay(events):
+    try:
+        async for event in events:
+            event_type = event.pop("type")
+            yield sse_frame(event_type, event)
+    except Exception as error:  # noqa: BLE001
+        yield sse_frame("error", _error_payload(error))
 
 
-def run_async(function, *args) -> None:
-    threading.Thread(target=function, args=args, daemon=True).start()
+def _error_payload(error: Exception) -> dict:
+    code = getattr(error, "code", None)
+    detail = _ERROR_TEXT.get(code) if code else None
+    payload = {"detail": detail or str(error)}
+    return {**payload, "code": code} if code else payload
+
+
+def sse_frame(event: str, data) -> str:
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
 def frontend_routes(app: FastAPI) -> None:
@@ -179,5 +340,5 @@ def frontend_routes(app: FastAPI) -> None:
         raise HTTPException(404, "frontend not built")
 
 
-settings = load_settings()
-app = create_app(World(settings.database, settings.artifacts))
+kernel = default_kernel()
+app = create_app(kernel)

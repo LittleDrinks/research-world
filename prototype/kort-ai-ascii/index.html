@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kort AI - ASCII motion replica</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div class="shell">
+  <header class="site-header">
+    <a class="brand" href="#top"><span class="brand-mark">*</span><span>Kort<small>AI</small></span></a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="#features">See All Features</a>
+      <a href="#why">Launch Now</a>
+      <a class="login" href="#why">Login</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-art"><canvas data-ascii="hero" aria-hidden="true"></canvas></div>
+      <div class="hero-copy">
+        <h1 id="hero-title">Real Insights<br>Financial Reports</h1>
+        <p>Get ready to take off! The moment has arrived to kickstart your adventure.</p>
+      </div>
+      <nav class="hero-links" aria-label="Financial features">
+        <a href="#markets">Explore All Financial Features</a><a href="#world">Countries</a><a href="#world">Hot News</a><a href="#features">Graphs</a><a href="#features">Company Overview</a><a class="active" href="#markets">Manage Investments</a>
+      </nav>
+    </section>
+
+    <section class="market" id="markets" aria-label="Market analysis gallery">
+      <div class="market-controls">
+        <button class="icon-button" data-scroll="-1" title="Previous markets" aria-label="Previous markets">&#8592;</button>
+        <button class="icon-button" data-scroll="1" title="Next markets" aria-label="Next markets">&#8594;</button>
+      </div>
+      <div class="market-track">
+        <article class="market-card">
+          <div class="market-meta"><span>Nov 10</span><span>5:00 PM</span></div>
+          <div class="market-art"><canvas data-ascii="marketWave" aria-hidden="true"></canvas></div>
+          <div class="task-row"><div class="task-list"><span><i></i>3/7 - Task A</span><span><i></i>5/7 - Task B</span><span><i class="red"></i>2/7 - Task C</span></div><button class="copy">Copy link</button></div>
+          <span class="change">Today +6.6%</span><h3>London Stock Exchange</h3>
+          <p>A historic market known for its global reach and diverse range of listed companies.</p>
+          <div class="card-foot"><span>London, United Kingdom</span><button class="expand">Expand</button></div>
+        </article>
+        <article class="market-card">
+          <div class="market-meta"><span>Nov 15</span><span>3:30 PM</span></div>
+          <div class="market-art"><canvas data-ascii="marketMeteor" aria-hidden="true"></canvas></div>
+          <div class="task-row"><div class="task-list"><span><i></i>3/7 - Task A</span><span><i></i>5/7 - Task B</span><span><i class="red"></i>2/7 - Task C</span></div><button class="copy">Copy link</button></div>
+          <span class="change down">Today -16.6%</span><h3>Tokyo Stock Exchange</h3>
+          <p>Asia's largest stock market and a major influence on international finance.</p>
+          <div class="card-foot"><span>Tokyo, Japan</span><button class="expand">Expand</button></div>
+        </article>
+        <article class="market-card">
+          <div class="market-meta"><span>Nov 20</span><span>9:00 AM</span></div>
+          <div class="market-art"><canvas data-ascii="marketFold" aria-hidden="true"></canvas></div>
+          <div class="task-row"><div class="task-list"><span><i></i>4/7 - Task A</span><span><i></i>6/7 - Task B</span><span><i class="red"></i>1/7 - Task C</span></div><button class="copy">Copy link</button></div>
+          <span class="change">Today +2.1%</span><h3>New York Stock Exchange</h3>
+          <p>The world's largest equities market, serving institutions across every sector.</p>
+          <div class="card-foot"><span>New York, United States</span><button class="expand">Expand</button></div>
+        </article>
+        <article class="market-card">
+          <div class="market-meta"><span>Nov 22</span><span>11:15 AM</span></div>
+          <div class="market-art"><canvas data-ascii="spiral" aria-hidden="true"></canvas></div>
+          <div class="task-row"><div class="task-list"><span><i></i>5/7 - Task A</span><span><i></i>4/7 - Task B</span><span><i class="red"></i>1/7 - Task C</span></div><button class="copy">Copy link</button></div>
+          <span class="change">Today +4.8%</span><h3>Nasdaq Market</h3>
+          <p>Technology and growth-company signals distilled into a single live view.</p>
+          <div class="card-foot"><span>New York, United States</span><button class="expand">Expand</button></div>
+        </article>
+        <article class="market-card">
+          <div class="market-meta"><span>Nov 24</span><span>1:10 PM</span></div>
+          <div class="market-art"><canvas data-ascii="bust" aria-hidden="true"></canvas></div>
+          <div class="task-row"><div class="task-list"><span><i></i>2/7 - Task A</span><span><i></i>6/7 - Task B</span><span><i class="red"></i>3/7 - Task C</span></div><button class="copy">Copy link</button></div>
+          <span class="change down">Today -3.2%</span><h3>Euronext Exchange</h3>
+          <p>European market context shaped around institutional allocation and risk.</p>
+          <div class="card-foot"><span>Amsterdam, Netherlands</span><button class="expand">Expand</button></div>
+        </article>
+        <article class="market-card">
+          <div class="market-meta"><span>Nov 27</span><span>4:40 PM</span></div>
+          <div class="market-art"><canvas data-ascii="planet" aria-hidden="true"></canvas></div>
+          <div class="task-row"><div class="task-list"><span><i></i>6/7 - Task A</span><span><i></i>3/7 - Task B</span><span><i class="red"></i>2/7 - Task C</span></div><button class="copy">Copy link</button></div>
+          <span class="change">Today +8.4%</span><h3>Hong Kong Exchange</h3>
+          <p>Cross-border signals spanning capital flows throughout the Asia-Pacific region.</p>
+          <div class="card-foot"><span>Hong Kong</span><button class="expand">Expand</button></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="world" id="world" aria-labelledby="world-title">
+      <h2 class="section-title" id="world-title">Custom Market Predictions across the globe</h2>
+      <div class="world-panel">
+        <div class="globe-visual">
+          <div class="globe-art"><canvas data-ascii="globe" aria-hidden="true"></canvas></div>
+          <div class="official">OFFICIAL<small>453 market analysis, wall street Quant finance with pin point accuracy</small></div>
+          <div class="task-list globe-tasks"><span><i></i>3/7 - Task A</span><span><i></i>5/7 - Task B</span><span><i class="red"></i>2/7 - Task C</span></div>
+        </div>
+        <div class="prediction">
+          <h3>Unlock Global Market Insights with Tailored Predictions</h3>
+          <p>Navigate financial markets with strategic forecasts, in-depth analysis, and a comprehensive view of the investment landscape.</p>
+          <label class="reminder"><input type="checkbox">Reminder</label>
+          <div class="matrix-box" aria-hidden="true"></div>
+        </div>
+        <nav class="world-tabs" aria-label="Market categories"><a class="active">Diversification</a><a>Options</a><a>Equities</a><a>Cryptocurrency</a><a>Hedgefunds</a></nav>
+      </div>
+
+      <div class="feature-grid" id="features">
+        <article class="feature-card"><h3>Self-Evolving Market<br>Understanding</h3><div class="feature-art"><canvas data-ascii="spiral" aria-hidden="true"></canvas></div><div class="feature-actions"><button class="expand">Expand</button><button class="copy">Copy link</button><span class="segments"><b>1D</b><b>7D</b><b class="active">1M</b></span></div></article>
+        <article class="feature-card"><h3>Strategic Adaptation<br>&amp; Self-Defense</h3><div class="feature-art"><canvas data-ascii="planet" aria-hidden="true"></canvas></div><div class="feature-actions"><button class="copy">Copy link</button><span class="segments"><b>1D</b><b class="active">7D</b><b>1M</b></span><button class="expand">Expand</button></div></article>
+        <article class="feature-card"><h3>Agent-Based Market<br>Simulation</h3><div class="feature-art"><canvas data-ascii="helmet" aria-hidden="true"></canvas></div><div class="feature-actions"><button class="copy">Copy link</button><span class="segments"><b>1D</b><b>7D</b><b class="active">1M</b></span></div></article>
+        <article class="feature-card"><h3>Execution &amp;<br>Optimization Layer</h3><div class="feature-art"><canvas data-ascii="helmet" aria-hidden="true"></canvas></div><div class="feature-actions"><span class="segments"><b>1D</b><b class="active">7D</b><b>1M</b></span><button class="expand">Expand</button></div></article>
+        <article class="feature-card"><h3>Explainability &amp; Decision<br>Transparency</h3><div class="feature-art"><canvas data-ascii="bust" aria-hidden="true"></canvas></div><div class="feature-actions"><button class="copy">Copy link</button><span class="segments"><b>1D</b><b>7D</b><b class="active">1M</b></span><button class="expand">Expand</button></div></article>
+        <article class="feature-card"><h3>Deep, Multi-Layered<br>Data Integration</h3><div class="feature-art"><canvas data-ascii="dna" aria-hidden="true"></canvas></div><div class="feature-actions"><button class="copy">Copy link</button><span class="segments"><b>1D</b><b class="active">7D</b><b>1M</b></span></div></article>
+      </div>
+    </section>
+
+    <section class="why" id="why" aria-labelledby="why-title">
+      <h2 id="why-title">Why This Platform Exists</h2>
+      <div class="why-copy"><p>The market moves fast. Your information shouldn't be slow.</p><p>Never miss a shift, an opportunity, or a warning sign. If it impacts your money, it hits your screen first.</p><label class="reminder"><input type="checkbox">Reminder</label></div>
+      <div class="why-stage"><canvas class="why-art" id="why-art" data-ascii="why" aria-hidden="true"></canvas></div>
+      <div class="why-matrix" aria-hidden="true"></div>
+      <div class="why-label" id="why-label">Real-Time Market Intelligence</div>
+      <div class="task-list why-tasks"><span><i></i>3/7 - Task A</span><span><i></i>5/7 - Task B</span><span><i class="red"></i>2/7 - Task C</span></div>
+      <div class="stats" data-phase="0"><div class="stat"><strong>88%</strong><p>Users say they make faster decisions with our real-time feeds.</p></div><div class="stat"><strong>34%</strong><p>Average increase in market awareness after 7 days of usage.</p></div><div class="stat"><strong>78%</strong><p>Rely on our alerts for time-sensitive market moves.</p></div></div>
+    </section>
+  </main>
+</div>
+<script src="./frame-data.js"></script>
+<script src="./fx.js"></script>
+</body>
+</html>

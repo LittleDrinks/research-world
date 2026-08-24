@@ -1,0 +1,47 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v19 · 高光报错台：局部组件。挑战 a.md 的“高光报错、人工介入”：失败升级为信号，不埋进日志。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v19 · 高光报错台 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:dark;--bg:#0a0808;--panel:#160f0e;--ink:#f0e5e2;--muted:#9c8982;--line:#30201d;--red:#e05a49;--amber:#dfa143;--cyan:#4fb6cf}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{display:grid;grid-template-rows:120px 1fr;height:100vh}
+  header{padding:14px 18px;border-bottom:1px solid var(--line);background:var(--panel)}
+  h1{margin:0;font-size:18px}.sub{color:var(--muted);font-size:11px}
+  .lamps{display:flex;gap:8px;margin-top:10px}.lamp{flex:1;padding:8px 12px;border:1px solid var(--line);border-radius:8px;text-align:center;cursor:pointer;font:10px ui-monospace,monospace}
+  .lamp b{display:block;font-size:20px}.lamp.on{border-color:var(--red);background:#2a1310}
+  main{display:grid;grid-template-columns:1fr 330px;min-height:0}
+  .list{overflow:auto;padding:14px 18px 80px}
+  .alarm{display:grid;grid-template-columns:110px 1fr auto;gap:12px;padding:11px 13px;border:1px solid var(--line);border-left:4px solid var(--sev);border-radius:9px;background:var(--panel);margin-bottom:8px;cursor:pointer}
+  .alarm.silent{opacity:.35}.alarm b{font:10px ui-monospace,monospace}.alarm h4{margin:2px 0;font-size:13px}.alarm p{margin:0;color:var(--muted);font-size:11px}
+  .act{padding:6px 10px;border-radius:7px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+  aside{border-left:1px solid var(--line);background:var(--panel);padding:14px;overflow:auto}
+  h2{font-size:13px;margin:0 0 8px}.rule{padding:10px;border:1px solid var(--line);border-radius:9px;background:#110c0b;font-size:11px;color:var(--muted);margin-bottom:10px}
+  .tick{padding:8px 10px;border-bottom:1px dashed var(--line);font-size:11px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1>高光报错台</h1><div class="sub">异常从日志升级为信号：谁、哪个节点、影响什么、现在该谁处理。静默不是消失。</div><div class="lamps" id="lamps"></div></header>
+  <main><div class="list" id="list"></div>
+    <aside><h2>介入队列</h2><div id="queue"></div><h2>升级规则</h2><div class="rule">exit_code≠0 → 高危告警 + 冻结该节点下游派生<br>连续 2 次同类失败 → critical，同谱系 auto 暂停<br>环境类失败（OOM/网络/镜像）→ 人工与环境所有者<br>人工介入必须回填处理记录，否则告警不关闭</div></aside>
+  </main>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const SEV={critical:["CRITICAL","#e05a49"],high:["HIGH","#df6b3a"],medium:["MEDIUM","#dfa143"],low:["LOW","#4fb6cf"]};
+let alarms=Array.from({length:18},(_,i)=>{const sev=["critical","high","medium","low"][i%4];const p=RW.PROJECTS[(i*9+2)%125];return{id:"A"+String(i+1).padStart(3,"0"),sev,title:["runner OOM：容器超 4g 内存被杀","产物哈希缺失：实验节点 E-0xx","镜像拉取失败：Dockerfile hash 不匹配","查询超时：tavily 返回空但 exit 0","依赖库版本漂移：numpy 2.x 不兼容","worker 心跳超时：harness 断线"][i%6],project:p.id,status:"open",owner:i%3? "orchestrator":"human",notes:[]}});let filter="all";
+function render(){const vis=alarms.filter(a=>filter==="all"||a.sev===filter);
+ const count=s=>alarms.filter(a=>a.sev===s&&a.status==="open").length;
+ $("lamps").innerHTML=Object.entries(SEV).map(([k,[l,c]])=>`<div class="lamp ${filter===k?"on":""}" data-k="${k}" style="--sev:${c}"><b>${count(k)}</b>${l}</div>`);
+ $("list").innerHTML=vis.map(a=>`<div class="alarm ${a.status==="silent"?"silent":""}" style="--sev:${SEV[a.sev][1]}"><b>${a.id} · ${SEV[a.sev][0]}</b><div><h4>${a.title}</h4><p>${a.project} · 负责人：${a.owner} · ${a.status==="open"?"待处理":"已静默（记录保留）"}</p>${a.notes.map(x=>`<p style="color:#7dd6a4">↳ ${x}</p>`).join("")}</div><button class="act" data-act="fix" data-id="${a.id}">${a.status==="open"?"人工介入":"重开"}</button></div>`).join("");
+ $("queue").innerHTML=alarms.filter(a=>a.status==="open").slice(0,10).map(a=>`<div class="tick"><b style="color:${SEV[a.sev][1]}">${a.sev.toUpperCase()}</b> · ${a.title}<br><span style="color:var(--muted)">${a.project}</span></div>`).join("")||"<p style='color:var(--muted)'>队列为空</p>";
+ if(RWUI)RWUI.setState({筛选:filter,待处理:alarms.filter(a=>a.status==="open").length,已静默:alarms.filter(a=>a.status==="silent").length});}
+document.addEventListener("click",e=>{const l=e.target.closest(".lamp");if(l){filter=filter===l.dataset.k?"all":l.dataset.k;render()}const b=e.target.closest("[data-act]");if(b){const a=alarms.find(x=>x.id===b.dataset.id);if(a.status==="open"){a.status="silent";a.notes.push("人工已介入：处理记录已回填，节点解冻。")}else{a.status="open";a.notes=[]}render()}});
+document.addEventListener("DOMContentLoaded",()=>{render();RWUI&&RWUI.setState({设计命题:"失败如何从日志变成有人负责的信号",挑战对象:"a.md『高光报错，人工介入』",交互:"严重度筛选 + 人工介入/重开 + 介入队列",数据:"18 条确定性告警，绑定真实项目"});});
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+id: research
+name: 规划与验证
+stages:
+  - id: plan
+    type: prompt
+    prompt: plan-experiment
+    agent: research-assistant
+  - id: execute
+    type: tool
+    tool: execute-experiment
+    policy: mechanical-audit
+  - id: review
+    type: prompt
+    prompt: review-experiment
+    agent: independent-reviewer
+    repeat: 2
+    policy: unanimous-review
+    'on':
+      approve: {action: admit}
+      reject: {action: ghost}
+      conflict: {action: wait_human}
+  - id: reflect
+    type: prompt
+    prompt: reflect-direction
+    agent: research-assistant
+  - id: review-reflection
+    type: prompt
+    prompt: review-directions
+    agent: independent-reviewer
+    repeat: 2
+    policy: unanimous-review
+    'on':
+      approve: {action: admit}
+      reject: {action: ghost}
+      conflict: {action: wait_human}

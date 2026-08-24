@@ -1,0 +1,172 @@
+{
+  "paper": {
+    "id": "solar-chaos",
+    "title": "Chaotic diffusion in the Solar System",
+    "shortTitle": "Solar chaos",
+    "authors": "Jacques Laskar",
+    "year": 2008,
+    "domain": "Celestial mechanics",
+    "modality": "Numerical simulation",
+    "sourceUrl": "https://arxiv.org/abs/0802.3371",
+    "localPath": "raw/solar-chaos/paper.pdf",
+    "category": "numerical-simulation",
+    "providerId": "0802.3371"
+  },
+  "thesis": "Long ensembles of secular and direct integrations estimate a small but non-zero probability of Mercury reaching destabilizing eccentricities, with general relativity materially changing the risk.",
+  "nodes": [
+    {
+      "id": "s-q",
+      "kind": "question",
+      "title": "How stable is the Solar System over 5 Gyr?",
+      "body": "Quantify the probability and mechanism of large planetary-orbit excursions over the remaining lifetime of the Sun.",
+      "provenance": "explicit",
+      "locator": "Abstract and introduction"
+    },
+    {
+      "id": "s-i1",
+      "kind": "investigation",
+      "title": "Integrate a secular ensemble",
+      "body": "Propagate more than one thousand nearby initial conditions with averaged secular equations for five billion years.",
+      "provenance": "explicit",
+      "locator": "§2, numerical integrations",
+      "state": "completed",
+      "metric": ">1,001 runs × 5 Gyr"
+    },
+    {
+      "id": "s-e1",
+      "kind": "evidence",
+      "title": "Mercury has a low-probability unstable tail",
+      "body": "The ensemble assigns roughly one to two percent probability to Mercury's eccentricity exceeding 0.6 within five billion years.",
+      "provenance": "explicit",
+      "locator": "Abstract and results",
+      "state": "supporting",
+      "metric": "1–2%"
+    },
+    {
+      "id": "s-d",
+      "kind": "decision",
+      "title": "Compare relativistic and Newtonian dynamics",
+      "body": "Repeat the analysis without general-relativistic precession to isolate its stabilizing effect.",
+      "provenance": "explicit",
+      "locator": "Results, GR comparison",
+      "state": "accepted"
+    },
+    {
+      "id": "s-e2",
+      "kind": "evidence",
+      "title": "Removing GR increases excursions",
+      "body": "Large Mercury eccentricities occur more frequently when relativistic precession is omitted.",
+      "provenance": "explicit",
+      "locator": "Results, GR comparison",
+      "state": "supporting"
+    },
+    {
+      "id": "s-c1",
+      "kind": "claim",
+      "title": "A secular resonance drives the risk",
+      "body": "A resonance involving Mercury and Jupiter provides the dynamical route to high eccentricity; relativistic precession shifts the system away from it.",
+      "provenance": "explicit",
+      "locator": "Discussion",
+      "state": "supported"
+    },
+    {
+      "id": "s-i2",
+      "kind": "investigation",
+      "title": "Confirm with direct integrations",
+      "body": "Integrate the full planetary equations from ten nearby initial conditions for three billion years.",
+      "provenance": "explicit",
+      "locator": "Abstract and direct integrations",
+      "state": "completed",
+      "metric": "10 runs × 3 Gyr"
+    },
+    {
+      "id": "s-e3",
+      "kind": "evidence",
+      "title": "Two direct runs exceed 0.8",
+      "body": "Two trajectories reached Mercury eccentricity above 0.8 in less than 1.3 and 2.8 billion years respectively.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting",
+      "metric": "2 / 10 runs"
+    },
+    {
+      "id": "s-c2",
+      "kind": "claim",
+      "title": "Present architecture is not certainly stable",
+      "body": "The current planetary configuration admits rare chaotic trajectories capable of producing very large Mercury eccentricity.",
+      "provenance": "inferred",
+      "locator": "Synthesis of secular and direct integrations",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "s-q",
+      "to": "s-i1",
+      "relation": "tested-by",
+      "provenance": "explicit"
+    },
+    {
+      "from": "s-i1",
+      "to": "s-e1",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "s-i1",
+      "to": "s-d",
+      "relation": "prompts",
+      "provenance": "inferred"
+    },
+    {
+      "from": "s-d",
+      "to": "s-e2",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "s-e2",
+      "to": "s-c1",
+      "relation": "supports",
+      "provenance": "explicit"
+    },
+    {
+      "from": "s-e1",
+      "to": "s-i2",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "s-i2",
+      "to": "s-e3",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "s-e1",
+      "to": "s-c2",
+      "relation": "supports",
+      "provenance": "inferred"
+    },
+    {
+      "from": "s-e3",
+      "to": "s-c2",
+      "relation": "supports",
+      "provenance": "inferred"
+    },
+    {
+      "from": "s-c1",
+      "to": "s-c2",
+      "relation": "explains",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The ensemble quantifies sensitivity under the selected dynamical model; it is not a deterministic forecast of a specific future trajectory."
+  ],
+  "reconstruction": {
+    "scope": "section-level manual graph",
+    "method": "manual source review",
+    "review": "manually curated"
+  }
+}

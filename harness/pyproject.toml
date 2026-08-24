@@ -1,0 +1,13 @@
+[project]
+name = "harness"
+version = "0.1.0"
+description = "Standalone agent harness service"
+requires-python = ">=3.12,<3.13"
+dependencies = ["fastapi", "uvicorn", "httpx"]
+
+[dependency-groups]
+dev = ["pytest", "respx"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "matiyasevic-formal",
+    "title": "A Lean formalization of Matiyasevič's Theorem",
+    "shortTitle": "A Lean formalization of Matiyasevič's Theorem",
+    "authors": "Mario Carneiro",
+    "year": 2018,
+    "domain": "Formal verification",
+    "modality": "Formal proof",
+    "category": "formal-proof",
+    "sourceUrl": "https://arxiv.org/abs/1802.01795",
+    "localPath": "raw/matiyasevic-formal/paper.pdf"
+  },
+  "thesis": "In this paper, we present a formalization of Matiyasevič's theorem, which states that the power function is Diophantine, forming the last and hardest piece of the MRDP theorem of the unsolvability of Hilbert's 10th problem.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "matiyasevic-formal-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "How is the reported theorem converted into a machine-checkable proof?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "matiyasevic-formal-d",
+      "kind": "decision",
+      "title": "Fix the formal system",
+      "body": "The graph treats the paper's declared formal proof scope as a reconstructed design decision.",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "matiyasevic-formal-i",
+      "kind": "investigation",
+      "title": "Machine-check the proof",
+      "body": "The graph treats the study's reported formal proof procedure as the investigation that tests its central claim.",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "matiyasevic-formal-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "The formalization is performed within the Lean theorem prover, and necessitated the development of a small number theory library, including in particular the solution to Pell's equation and properties of the Pell $x,y$ sequences.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "matiyasevic-formal-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "In this paper, we present a formalization of Matiyasevič's theorem, which states that the power function is Diophantine, forming the last and hardest piece of the MRDP theorem of the unsolvability of Hilbert's 10th problem.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "matiyasevic-formal-q",
+      "to": "matiyasevic-formal-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "matiyasevic-formal-d",
+      "to": "matiyasevic-formal-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "matiyasevic-formal-i",
+      "to": "matiyasevic-formal-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "matiyasevic-formal-e",
+      "to": "matiyasevic-formal-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

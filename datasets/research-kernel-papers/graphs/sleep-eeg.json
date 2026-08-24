@@ -1,0 +1,171 @@
+{
+  "paper": {
+    "id": "sleep-eeg",
+    "title": "Self-supervised Contrastive Learning for EEG-based Sleep Staging",
+    "shortTitle": "Sleep EEG SSL",
+    "authors": "Huy Phan et al.",
+    "year": 2021,
+    "domain": "Biomedical machine learning",
+    "modality": "Human data",
+    "sourceUrl": "https://arxiv.org/abs/2109.07839",
+    "localPath": "raw/sleep-eeg/paper.pdf",
+    "category": "human-clinical",
+    "providerId": "2109.07839"
+  },
+  "thesis": "Contrastive pretraining on transformed unlabeled EEG improves sleep-stage classification, especially when labels are scarce, but does not remove the persistent difficulty of N1 staging.",
+  "nodes": [
+    {
+      "id": "e-q",
+      "kind": "question",
+      "title": "Can unlabeled EEG improve sleep staging?",
+      "body": "Test whether contrastive self-supervision learns representations that reduce dependence on costly expert sleep-stage labels.",
+      "provenance": "explicit",
+      "locator": "Abstract and §1"
+    },
+    {
+      "id": "e-d",
+      "kind": "decision",
+      "title": "Contrast transformed views",
+      "body": "Construct positive pairs from signal transformations and train an encoder before supervised fine-tuning.",
+      "provenance": "explicit",
+      "locator": "§3, proposed method",
+      "state": "accepted"
+    },
+    {
+      "id": "e-i1",
+      "kind": "investigation",
+      "title": "Pretrain on Sleep-EDF EEG",
+      "body": "Use 100 Hz Fpz–Cz recordings from twenty healthy adults and evaluate five-stage classification.",
+      "provenance": "explicit",
+      "locator": "§4.1, dataset",
+      "state": "completed",
+      "metric": "20 subjects; 100 Hz"
+    },
+    {
+      "id": "e-i2",
+      "kind": "investigation",
+      "title": "Compare transformation pairs",
+      "body": "Ablate combinations of permutation, crop-and-resize and other EEG transformations.",
+      "provenance": "explicit",
+      "locator": "§4.3 and Table 2",
+      "state": "completed"
+    },
+    {
+      "id": "e-e1",
+      "kind": "evidence",
+      "title": "Permutation plus crop wins",
+      "body": "Permutation with crop-and-resize produced the strongest transformation-pair result.",
+      "provenance": "explicit",
+      "locator": "Table 2",
+      "state": "supporting"
+    },
+    {
+      "id": "e-e2",
+      "kind": "evidence",
+      "title": "Full-label accuracy improves",
+      "body": "Self-supervised pretraining raises accuracy from 86.60% to 88.16% and macro F1 from 79.51% to 81.96%.",
+      "provenance": "explicit",
+      "locator": "Results table",
+      "state": "supporting",
+      "metric": "88.16% accuracy"
+    },
+    {
+      "id": "e-e3",
+      "kind": "evidence",
+      "title": "Benefit grows under label scarcity",
+      "body": "With ten labeled examples per class, SSL reaches 67.826% accuracy versus 49.176% for random initialization.",
+      "provenance": "explicit",
+      "locator": "Limited-label experiment",
+      "state": "supporting",
+      "metric": "+18.65 points"
+    },
+    {
+      "id": "e-c",
+      "kind": "claim",
+      "title": "Self-supervision reduces label dependence",
+      "body": "Unlabeled EEG supplies useful representations for downstream sleep staging across full- and limited-label settings.",
+      "provenance": "explicit",
+      "locator": "Conclusion",
+      "state": "supported"
+    },
+    {
+      "id": "e-e4",
+      "kind": "evidence",
+      "title": "N1 remains difficult",
+      "body": "The minority N1 stage remains a major source of confusion despite improved aggregate metrics.",
+      "provenance": "explicit",
+      "locator": "Confusion-matrix discussion",
+      "state": "qualifying"
+    }
+  ],
+  "edges": [
+    {
+      "from": "e-q",
+      "to": "e-d",
+      "relation": "motivates",
+      "provenance": "explicit"
+    },
+    {
+      "from": "e-d",
+      "to": "e-i1",
+      "relation": "constrains",
+      "provenance": "explicit"
+    },
+    {
+      "from": "e-d",
+      "to": "e-i2",
+      "relation": "constrains",
+      "provenance": "explicit"
+    },
+    {
+      "from": "e-i2",
+      "to": "e-e1",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "e-e1",
+      "to": "e-i1",
+      "relation": "selects",
+      "provenance": "inferred"
+    },
+    {
+      "from": "e-i1",
+      "to": "e-e2",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "e-i1",
+      "to": "e-e3",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "e-e2",
+      "to": "e-c",
+      "relation": "supports",
+      "provenance": "explicit"
+    },
+    {
+      "from": "e-e3",
+      "to": "e-c",
+      "relation": "supports",
+      "provenance": "explicit"
+    },
+    {
+      "from": "e-e4",
+      "to": "e-c",
+      "relation": "qualifies",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The fixture does not contain subject-level predictions, so demographic and per-subject error patterns cannot be inspected in the prototype."
+  ],
+  "reconstruction": {
+    "scope": "section-level manual graph",
+    "method": "manual source review",
+    "review": "manually curated"
+  }
+}

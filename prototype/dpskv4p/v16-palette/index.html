@@ -1,0 +1,55 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v16 · 命令面板：局部组件。挑战渐进披露：能力与图谱内容默认不进上下文，按语义按需展开。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v16 · 命令面板 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:dark;--bg:#07090d;--ink:#e8edf4;--muted:#7e8a9c;--line:#1e2733}
+  *{box-sizing:border-box}body{margin:0;background:radial-gradient(700px 420px at 50% 18%,#0d1726,var(--bg));color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif;min-height:100vh;display:grid;place-items:center}
+  .stage{text-align:center;width:100%}
+  h1{font-size:22px}.hint{color:var(--muted);font-size:12px}
+  kbd{border:1px solid var(--line);border-radius:5px;padding:2px 7px;font:11px ui-monospace,monospace;background:#111822}
+  .palette{position:fixed;inset:0;display:none;place-items:start center;background:#05070bb0;padding-top:12vh;z-index:50}
+  .palette.open{display:grid}
+  .panel{width:min(680px,94vw);border:1px solid #2a3748;border-radius:14px;background:#0d121a;box-shadow:0 30px 80px #000;overflow:hidden}
+  input{width:100%;padding:16px 18px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);font-size:16px;outline:none}
+  .results{max-height:52vh;overflow:auto;padding:8px}
+  .group{padding:9px 12px 5px;color:var(--muted);font:600 10px ui-monospace,monospace;letter-spacing:.12em}
+  .row{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:9px 12px;border-radius:9px;cursor:pointer}
+  .row:hover,.row.sel{background:#162130}.row b{font:11px ui-monospace,monospace;color:#69c7d8}
+  .row h4{margin:0;font-size:13px}.row p{margin:0;color:var(--muted);font-size:11px}
+  .expanded{margin:0 12px 10px;padding:11px;border-radius:9px;background:#0a1018;border:1px solid var(--line);font:11px/1.6 ui-monospace,monospace;color:#b8d8c4;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<div class="stage"><h1>命令面板 · 渐进披露</h1><p class="hint">按 <kbd>/</kbd> 或 <kbd>Ctrl K</kbd> 打开。搜索按语义分组：题目 / 节点 / 能力包 / 裁决动作。默认上下文中没有任何一行，展开才披露。</p></div>
+<div class="palette" id="palette"><div class="panel"><input id="cmd" placeholder="搜索 125 题、图谱节点、能力包或动作…（例：q049 / 星历 / 装配 / 驳回）" /><div class="results" id="results"></div></div></div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const TOOLS=[["anysearch","工具 · 多引擎检索"],["jpl-ephemeris","工具 · JPL 星历"],["lean4-proof","skill · 形式化证明"],["wetlab-intake","skill · 湿实验登记"],["repro-hash","skill · 产物寻址"]];
+let query="",open=false,sel=null;
+function groups(){const q=query.trim().toLowerCase();const out=[];
+ const projects=RW.PROJECTS.filter(p=>!q||p.title.toLowerCase().includes(q)||p.id.includes(q)||p.topicZh.includes(q)).slice(0,8);
+ const nodes=!q?[]:RW.graph(64,1,1).nodes.filter(n=>n.title.toLowerCase().includes(q)||n.id.toLowerCase().includes(q)).slice(0,6);
+ const tools=TOOLS.filter(t=>!q||t[0].toLowerCase().includes(q)||t[1].includes(q));
+ const acts=[["approve","裁决 · 通过并沉淀 rebuttal"],["reject","裁决 · 驳回进幽灵"],["fuse-list","查看 · 熔断谱系"],["assembly","动作 · 打开能力装配"]].filter(a=>!q||a[0].includes(q)||a[1].includes(q));
+ if(projects.length)out.push(["题目 · 125 题",projects.map(p=>({id:p.id,title:p.title,sub:`${p.topicZh} · ${p.nodes} 节点 · ${RW.minutesAgo(p.minutes_ago)}`}))]);
+ if(nodes.length)out.push(["图谱节点",nodes.map(n=>({id:n.id,title:n.title,sub:`${n.kind} · depth ${n.depth}`}))]);
+ if(tools.length)out.push(["能力包（默认不在上下文）",tools.map(t=>({id:t[0],title:t[0],sub:t[1]}))]);
+ if(acts.length)out.push(["动作",acts.map(a=>({id:a[0],title:a[0],sub:a[1]}))]);return out;}
+function render(){const g=groups();const html=[];let flat=[];
+ g.forEach(([label,rows])=>{html.push(`<div class="group">${label}</div>`);rows.forEach((r,i)=>{flat.push(r);html.push(`<div class="row ${sel&&sel.id===r.id?"sel":""}" data-id="${r.id}"><b>${r.id}</b><h4>${r.title}</h4><span style="color:var(--muted);font:10px ui-monospace,monospace">↩</span><p>${r.sub}</p></div>`)})});
+ $("results").innerHTML=html.join("")||`<div class="row"><h4>无结果</h4></div>`;
+ if(sel)$("results").innerHTML+=`<div class="expanded">已披露 ${sel.id}：${sel.sub}\n查询语义完成，内容注入当前装配上下文（钉入），会话结束后不再驻留。</div>`;
+ if(RWUI)RWUI.setState({查询:query||"（空）",结果组:g.length,选中:sel?sel.id:null});}
+function openPanel(v){open=v;$("palette").classList.toggle("open",open);if(open){$("cmd").value="";query="";sel=null;render();setTimeout(()=>$("cmd").focus(),30)}}
+document.addEventListener("keydown",e=>{if((e.key==="/"||(e.ctrlKey&&e.key.toLowerCase()==="k"))&&!open){e.preventDefault();openPanel(true)}if(e.key==="Escape")openPanel(false)});
+$("cmd").addEventListener("input",e=>{query=e.target.value;sel=null;render()});
+document.addEventListener("click",e=>{if(e.target.closest("#palette")&&!e.target.closest(".panel"))return openPanel(false);const r=e.target.closest(".row");if(r){sel=groups().flatMap(([,x])=>x).find(x=>x.id===r.dataset.id);render()}});
+document.addEventListener("DOMContentLoaded",()=>{render();RWUI&&RWUI.setState({设计命题:"渐进披露如何用手感表达：按需展开、用完即走",挑战对象:"ADR-0022 渐进披露未做 UI",交互:"/ 或 Ctrl K 打开 + 语义分组 + 选中披露详情",数据:"125 题 + 64 节点 + 能力包检索"});});
+function $(id){return document.getElementById(id)}
+</script>
+</body>
+</html>

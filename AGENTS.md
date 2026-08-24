@@ -8,7 +8,11 @@
 6. 先翻已有依赖能做什么，再考虑加新包。
 7. 架构决策往长了做。不接受"先这样以后再换"。
 8. 先看成熟产品怎么解决同一问题，别从零发明。
-9. Git 工作流固定为 `GitHub issue → feat/<issue>-<slug> → PR → 全新独立 Codex 验收 → 合并 PR → 关闭 issue 与 Herdr worker`：开工前 issue 须包含明确验收标准；每个 issue 独占一个分支，一个分支只服务一个 issue；提交原子化并只推送 feat 分支，禁止直接 push `main` 与 force push；PR 正文须关联对应 issue；实现者自验后交由全新独立 Codex 按 issue 验收，失败不合并、不关闭；通过后合并 PR，远端回读成功后关闭 issue 与 Herdr worker。
+9. 原子化 git commit，利用回滚和分支明确当前进度
+10. 服务一律 `docker compose up --build -d`（research-world/）启动，不裸跑本地实例；API 凭证在仓库根 .env（小写键 apikey/baseurl，compose 已映射）。
+11. 讨论结论先落 ADR/术语，再动代码；文档没更新的实现当作不存在。
+12. 计划实现的每一个模块，都去检索一轮已有代码，作为参考
+13. Git 工作流固定为 `GitHub issue → feat/<issue>-<slug> → PR → 全新独立 Codex 验收 → 合并 PR → 关闭 issue 与 Herdr worker`：开工前 issue 须包含明确验收标准；每个 issue 独占一个分支，一个分支只服务一个 issue；提交原子化并只推送 feat 分支，禁止直接 push `main` 与 force push；PR 正文须关联对应 issue；实现者自验后交由全新独立 Codex 按 issue 验收，失败不合并、不关闭；通过后合并 PR，远端回读成功后关闭 issue 与 Herdr worker。
 
 # 文档
 
@@ -18,3 +22,5 @@
 4. 长度=信息密度：一句话能说清的不写一段。每多一词都问"删掉会丢信息吗"。
 5. 行为规范进AGENTS.md，项目记忆进MEMORY.md，MEMORY.md永远只保留最新信息，旧内容直接删，不允许为了安全而保留。
 6. 紧凑排版：段落间不留空行，不写垫话，潜台词不写明，写完读一遍"这句删掉有损失吗"。
+7. 同一信息只维护一处：术语 CONTEXT.md、项目记忆 MEMORY.md、决策 docs/adr/、评测证据 benchmarks/README.md、赛题 readme.md。
+8. 陌生或未定义名词先查 CONTEXT.md、ADR、现有代码与成熟产品语义，映射已有概念；区分口语、示例、验收代理与领域不变量。已有概念无法表达时，Agent 先调研事实，再向用户确认产品决策；确认后才新增术语、schema 或 ADR。

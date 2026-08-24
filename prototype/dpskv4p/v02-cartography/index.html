@@ -1,0 +1,85 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v02 · 证据制图台：挑战 /map 图谱主屏，把研究图谱做成可读的工程地图册。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v02 · 证据制图台 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:light;--paper:#fbf9f2;--ink:#28251c;--muted:#8a826b;--line:#ddd5c0;--grid:#e7e0cc;--accent:#8c3f2a;--blue:#2f6f8f;--green:#5a7d46;--amber:#b07d22}
+  *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{display:grid;grid-template-rows:52px 1fr;height:100vh}
+  header{display:flex;align-items:center;gap:14px;padding:0 16px;border-bottom:1px solid var(--line);background:#fffef8}
+  header b{font-family:Georgia,"Songti SC",serif;font-size:17px}.crumb{color:var(--muted);font:11px ui-monospace,monospace}
+  .scale{margin-left:auto;font:11px ui-monospace,monospace;color:var(--muted)}
+  .body{display:grid;grid-template-columns:220px 1fr 270px;min-height:0}
+  aside{overflow:auto;border-right:1px solid var(--line);padding:12px}
+  h3{font-size:11px;letter-spacing:.12em;color:var(--muted);margin:14px 0 8px}
+  .layer{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:7px;cursor:pointer}
+  .layer:hover{background:#f3eee0}.layer input{accent-color:var(--accent)}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .toc div{padding:5px 8px;border-radius:7px;cursor:pointer;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .toc div:hover,.toc div.on{background:#f3eee0}.toc b{color:var(--muted);font:10px ui-monospace,monospace}
+  main{position:relative;overflow:hidden;background-color:var(--paper);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:26px 26px}
+  svg{position:absolute;inset:0;width:100%;height:100%}
+  .edge{stroke:#b6ab8d;stroke-width:1.4;fill:none}.edge.refutes{stroke-dasharray:7 5;stroke:var(--accent)}
+  .node{stroke:#fffef8;stroke-width:2;cursor:pointer}.node.sel{stroke:var(--accent);stroke-width:3}
+  text.nlabel{font:9px ui-monospace,monospace;fill:var(--muted);pointer-events:none}
+  .titleblock{position:absolute;left:16px;top:14px;padding:10px 12px;border:1px solid var(--line);background:#fffef8cc;font-family:Georgia,serif}
+  .titleblock small{display:block;color:var(--muted);font:9px ui-monospace,monospace}
+  .scalebar{position:absolute;right:16px;bottom:14px;border-top:1px solid var(--ink);width:140px;font:9px ui-monospace,monospace;color:var(--muted);text-align:center}
+  aside.right{border-left:1px solid var(--line);border-right:0;background:#fffef8;padding:16px}
+  .field{margin:0 0 10px;padding-bottom:9px;border-bottom:1px dashed var(--line)}
+  .field small{color:var(--muted);font:10px ui-monospace,monospace}.field b{display:block;font-size:14px}
+  .pill{padding:2px 8px;border-radius:999px;font:10px ui-monospace,monospace}
+  .p-admitted{background:#e3ebd8;color:var(--green)}.p-pending{background:#f5e9c9;color:var(--amber)}.p-running{background:#dcebf3;color:var(--blue)}
+  .btn{border:1px solid var(--line);background:var(--ink);color:#fff;border-radius:8px;padding:8px 12px;width:100%;cursor:pointer;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><b>证据制图台</b><span class="crumb">PROJECT q049 / 行星轨道长期稳定性 / 图幅 1:1</span><span class="scale" id="scale"></span></header>
+  <div class="body">
+    <aside>
+      <h3>图例</h3>
+      <div class="legend"><i style="background:var(--accent)"></i>question<br><i style="background:var(--blue)"></i>direction<br><i style="background:var(--green)"></i>experiment<br><i style="background:#c9b98a"></i>ghost<br><i style="background:var(--amber)"></i>pending</div>
+      <h3>图层</h3>
+      <div id="layers"></div>
+      <h3>目录（按谱系）</h3>
+      <div class="toc" id="toc"></div>
+    </aside>
+    <main id="map">
+      <div class="titleblock"><small>图幅 49 · 行星轨道长期稳定性</small>证据制图台 · 上北下南</div>
+      <svg id="svg"></svg>
+      <div class="scalebar">0 —— 1 研究周期</div>
+    </main>
+    <aside class="right" id="inspector"><p style="color:var(--muted)">点选节点查看。</p></aside>
+  </div>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const G=RW.graph(64,1000,620);const layers={question:true,direction:true,experiment:true};
+const KIND_ZH={question:"命题",direction:"方向",experiment:"实验"};
+let sel=G.nodes[0];
+function draw(){const svg=$("svg");const W=svg.clientWidth||1000,H=svg.clientHeight||620;
+ const visible=G.nodes.filter(n=>layers[n.kind]);const ids=new Set(visible.map(n=>n.id));
+ const edges=G.edges.filter(e=>ids.has(e.source)&&ids.has(e.target)).map(e=>`<line class="edge ${e.polarity}" x1="${G.nodes.find(n=>n.id===e.source).x/1000*W}" y1="${G.nodes.find(n=>n.id===e.source).y/620*H}" x2="${G.nodes.find(n=>n.id===e.target).x/1000*W}" y2="${G.nodes.find(n=>n.id===e.target).y/620*H}"/>`).join("");
+ const nodes=visible.map(n=>{const x=n.x/1000*W,y=n.y/620*H;const r=n.kind==="question"?16:n.kind==="experiment"?7:10;
+   const c=n.status==="ghost"?"#c9b98a":n.status==="pending"?"#b07d22":n.status==="running"?"#2f6f8f":n.kind==="question"?"#8c3f2a":n.kind==="experiment"?"#5a7d46":"#2f6f8f";
+   return `<rect x="${x-r/2}" y="${y-r/2}" width="${r}" height="${r}" rx="${n.kind==='question'?3:1}" class="node ${sel.id===n.id?'sel':''}" data-id="${n.id}" style="fill:${c}"/><text class="nlabel" x="${x}" y="${y+r+10}" text-anchor="middle">${n.kind==='direction'&&n.depth%4===0?n.id:''}</text>`;}).join("");
+ svg.innerHTML=`<g>${edges}</g><g>${nodes}</g>`;
+ $("toc").innerHTML=G.nodes.slice(0,40).map(n=>`<div class="${sel.id===n.id?'on':''}" data-id="${n.id}"><b>${n.id}</b> ${n.title}</div>`).join("");
+}
+function show(n){sel=n;$("inspector").innerHTML=`<div class="field"><small>节点身份 · ${n.id}</small><b>${n.title}</b><span class="pill p-${n.status}">${n.status}</span></div>
+<div class="field"><small>类型</small><b>${KIND_ZH[n.kind]}</b></div>
+<div class="field"><small>深度</small><b>谱系第 ${n.depth} 代</b></div>
+<div class="field"><small>直接依赖</small><b>${G.edges.filter(e=>e.target===n.id).length} 项</b></div>
+<div class="field"><small>派生关系</small><b>${G.edges.filter(e=>e.source===n.id).length} 项</b></div>
+<button class="btn" onclick="alert('原型演示：对 ${n.id} 发起对应 workflow（真实入口在 /map）')">发起 workflow</button>
+<button class="btn" style="background:transparent;color:var(--ink);margin-top:4px" onclick="computeImpact(this)">计算影响半径</button><div id="impact"></div>`;draw();}
+function computeImpact(btn){const seen=new Set([sel.id]);let changed=true;while(changed){changed=false;G.edges.forEach(e=>{if(seen.has(e.source)&&!seen.has(e.target)){seen.add(e.target);changed=true}})}btn.nextElementSibling.textContent=`若该节点被否定，按依赖边撤销 ${seen.size-1} 个后代，不重写无关分支。`;}
+document.addEventListener("click",e=>{const n=e.target.closest(".node");if(n){const node=G.nodes.find(x=>x.id===n.dataset.id);if(node)show(node)}const t=e.target.closest(".toc div");if(t){const node=G.nodes.find(x=>x.id===t.dataset.id);if(node)show(node)}const c=e.target.closest(".layer");if(c){const k=c.dataset.k;layers[k]=!layers[k];c.querySelector("input").checked=layers[k];draw()}});
+document.addEventListener("DOMContentLoaded",()=>{$("layers").innerHTML=Object.keys(layers).map(k=>`<label class="layer"><input type="checkbox" data-k="${k}" checked>${KIND_ZH[k]}层</label>`).join("");$("layers").addEventListener("change",e=>{layers[e.target.dataset.k]=e.target.checked;draw()});show(G.nodes[0]);$("scale").textContent=`${RW.TOTAL.nodes} 节点全库 · 本图幅 ${G.nodes.length} 节点 / ${G.edges.length} 边 · 生成 ${RW.genMs} ms`;if(RWUI)RWUI.setState({设计命题:"图谱如何像地图一样可读：图例/图层/目录/比例尺",挑战对象:"/map 的全局-上下文二元切换",交互:"图层过滤 + 目录导航 + 节点选择 + 影响半径计算"});});
+</script>
+</body>
+</html>

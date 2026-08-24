@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "graphcast",
+    "title": "GraphCast: Learning skillful medium-range global weather forecasting",
+    "shortTitle": "GraphCast",
+    "authors": "Remi Lam, Alvaro Sanchez-Gonzalez, Matthew Willson et al.",
+    "year": 2022,
+    "domain": "Computational science",
+    "modality": "Numerical simulation",
+    "category": "numerical-simulation",
+    "sourceUrl": "https://arxiv.org/abs/2212.12794",
+    "localPath": "raw/graphcast/paper.pdf"
+  },
+  "thesis": "GraphCast is a key advance in accurate and efficient weather forecasting, and helps realize the promise of machine learning for modeling complex dynamical systems.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "graphcast-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What does the reported model reveal when the target system is simulated?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "graphcast-d",
+      "kind": "decision",
+      "title": "Choose model and boundary conditions",
+      "body": "Traditional numerical weather prediction uses increased compute resources to improve forecast accuracy, but cannot directly use historical weather data to improve the underlying model.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "graphcast-i",
+      "kind": "investigation",
+      "title": "Run the numerical experiment",
+      "body": "It predicts hundreds of weather variables, over 10 days at 0.25 degree resolution globally, in under one minute.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "graphcast-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "We show that GraphCast significantly outperforms the most accurate operational deterministic systems on 90% of 1380 verification targets, and its forecasts support better severe event prediction, including tropical cyclones, atmospheric rivers, and extreme temperatures.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "graphcast-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "GraphCast is a key advance in accurate and efficient weather forecasting, and helps realize the promise of machine learning for modeling complex dynamical systems.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "graphcast-q",
+      "to": "graphcast-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "graphcast-d",
+      "to": "graphcast-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "graphcast-i",
+      "to": "graphcast-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "graphcast-e",
+      "to": "graphcast-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

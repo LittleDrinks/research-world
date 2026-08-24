@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "flt-regular-primes",
+    "title": "A complete formalization of Fermat's Last Theorem for regular primes in Lean",
+    "shortTitle": "A complete formalization of Fermat's Last Theorem for regular ",
+    "authors": "Alex Best, Christopher Birkbeck, Riccardo Brasca et al.",
+    "year": 2024,
+    "domain": "Formal verification",
+    "modality": "Formal proof",
+    "category": "formal-proof",
+    "sourceUrl": "https://arxiv.org/abs/2410.01466",
+    "localPath": "raw/flt-regular-primes/paper.pdf"
+  },
+  "thesis": "We formalize a complete proof of the regular case of Fermat's Last Theorem in the Lean4 theorem prover.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "flt-regular-primes-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "How is the reported theorem converted into a machine-checkable proof?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "flt-regular-primes-d",
+      "kind": "decision",
+      "title": "Fix the formal system",
+      "body": "Our formalization includes a proof of Kummer's lemma, that is the main obstruction to Fermat's Last Theorem for regular primes.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "flt-regular-primes-i",
+      "kind": "investigation",
+      "title": "Machine-check the proof",
+      "body": "The graph treats the study's reported formal proof procedure as the investigation that tests its central claim.",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "flt-regular-primes-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Rather than following the modern proof of Kummer's lemma via class field theory, we prove it by using Hilbert's Theorems 90-94 in a way that is more amenable to formalization.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "flt-regular-primes-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "We formalize a complete proof of the regular case of Fermat's Last Theorem in the Lean4 theorem prover.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "flt-regular-primes-q",
+      "to": "flt-regular-primes-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "flt-regular-primes-d",
+      "to": "flt-regular-primes-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "flt-regular-primes-i",
+      "to": "flt-regular-primes-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "flt-regular-primes-e",
+      "to": "flt-regular-primes-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

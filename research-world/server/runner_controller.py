@@ -1,17 +1,33 @@
 from __future__ import annotations
 
-import subprocess
-import time
 import base64
+import binascii
 import hashlib
+import json
+import os
+import re
 import secrets
+import subprocess
 import tempfile
+import time
+from collections import defaultdict
 from pathlib import Path
+from threading import Lock
 
 from fastapi import FastAPI
 
+from .execution_evidence import (
+    build_evidence,
+    canonical_json,
+    content_hash,
+    failure,
+    normalize_input,
+    verify_evidence,
+)
 
 app = FastAPI(title="Research World Runner Controller")
+EXECUTION_LOCKS: defaultdict[str, Lock] = defaultdict(Lock)
+IMAGE_REF = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/:@-]{0,254}$")
 
 
 @app.get("/health")
@@ -21,42 +37,187 @@ def health() -> dict:
 
 @app.post("/doctor")
 def doctor() -> dict:
-    checks = "! wget -T 2 -q -O- https://example.com && ! touch /blocked && touch /tmp/ok"
-    spec = {"image": "busybox:1.36", "command": ["sh", "-c", checks],
-            "network": "none", "read_only": True, "limits": {"cpus": 1, "memory_mb": 64, "pids": 32}}
+    checks = (
+        "! wget -T 2 -q -O- https://example.com && ! touch /blocked && touch /tmp/ok"
+    )
+    spec = {
+        "image": "busybox:1.36",
+        "command": ["sh", "-c", checks],
+        "network": "none",
+        "read_only": True,
+        "limits": {"cpus": 1, "memory_mb": 64, "pids": 32, "wall_seconds": 30},
+    }
     result = run_container(spec)
-    return {"ok": result["exit_code"] == 0, "network": "none", "read_only": True, "result": result}
+    return {
+        "ok": result["exit_code"] == 0,
+        "network": "none",
+        "read_only": True,
+        "result": result,
+    }
 
 
 @app.post("/run")
 def run(spec: dict) -> dict:
-    return run_container(spec)
+    execution_id = spec.pop("execution_id", None)
+    return run_once(execution_id, spec)
+
+
+@app.post("/probe")
+def probe(spec: dict) -> dict:
+    try:
+        value = normalize_input(spec)
+    except (KeyError, TypeError, ValueError) as error:
+        return failed_result("", failure("invalid_input", detail=str(error)))
+    return execution_result(value)
+
+
+@app.post("/images/inspect")
+def inspect_image(body: dict) -> dict:
+    image = body.get("image")
+    if not isinstance(image, str) or not IMAGE_REF.fullmatch(image):
+        return {"available": False}
+    try:
+        process = subprocess.run(
+            ["docker", "image", "inspect", image],
+            capture_output=True,
+            check=False,
+            timeout=5,
+        )
+    except subprocess.TimeoutExpired:
+        return {"available": False}
+    return {"available": process.returncode == 0}
+
+
+def run_once(execution_id: str | None, spec: dict) -> dict:
+    if not isinstance(execution_id, str) or not execution_id:
+        problem = failure("invalid_execution_id", detail="expected non-empty string")
+        return failed_result("", problem)
+    try:
+        execution_input = normalize_input(spec)
+    except (KeyError, TypeError, ValueError) as error:
+        return failed_result(execution_id, failure("invalid_input", detail=str(error)))
+    target = execution_path(execution_id)
+    with EXECUTION_LOCKS[execution_id]:
+        if target.exists():
+            return reuse_result(execution_id, execution_input, target)
+        evidence = build_evidence(execution_input, execution_result(execution_input))
+        result = {**evidence, "execution_id": execution_id}
+        persist_result(target, result)
+    return result
+
+
+def reuse_result(execution_id: str, spec: dict, target: Path) -> dict:
+    try:
+        result = json.loads(target.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as error:
+        return failed_result(
+            execution_id, failure("stored_evidence_invalid", detail=str(error))
+        )
+    check = verify_evidence(result)
+    if not check["ok"]:
+        return failed_result(execution_id, {**check, "code": f"stored_{check['code']}"})
+    return reuse_matching_input(execution_id, spec, result)
+
+
+def reuse_matching_input(execution_id: str, spec: dict, result: dict) -> dict:
+    actual = content_hash(spec)
+    if result["input_hash"] == actual:
+        return result
+    problem = failure(
+        "input_mismatch",
+        expected_hash=result["input_hash"],
+        actual_hash=actual,
+    )
+    return failed_result(execution_id, problem)
+
+
+def persist_result(target: Path, result: dict) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_suffix(".tmp")
+    temporary.write_bytes(canonical_json(result))
+    temporary.replace(target)
+
+
+def failed_result(execution_id: str, problem: dict) -> dict:
+    return {
+        "execution_id": execution_id,
+        "exit_code": 2,
+        "stdout": "",
+        "stderr": problem["code"],
+        "failure": problem,
+    }
+
+
+def execution_result(spec: dict) -> dict:
+    try:
+        return run_container(spec)
+    except ValueError as error:
+        return {
+            "exit_code": 2,
+            "stdout": "",
+            "stderr": f"invalid execution input: {error}",
+            "usage": {"wall_ms": 0},
+        }
+
+
+def execution_path(execution_id: str) -> Path:
+    digest = hashlib.sha256(execution_id.encode()).hexdigest()
+    root = Path(os.getenv("RW_DATA_ROOT", "/app/data"))
+    return root / "executions" / f"{digest}.json"
 
 
 @app.post("/build")
 def build(spec: dict) -> dict:
     with tempfile.TemporaryDirectory(prefix="rw-build-") as value:
-        root = Path(value)
-        write_files(root, spec["files"])
-        dockerfile = "FROM python:3.12-slim\nWORKDIR /workspace\nCOPY . .\n" + "\n".join(f"RUN {command}" for command in spec["setup"])
-        (root / "Dockerfile").write_text(dockerfile, encoding="utf-8")
-        tag = "rw-env-" + hashlib.sha256(dockerfile.encode()).hexdigest()[:16]
-        subprocess.run(["docker", "build", "--network", "default", "-t", tag, str(root)], check=True, timeout=900)
-        digest = subprocess.run(["docker", "image", "inspect", "--format", "{{.Id}}", tag], capture_output=True, text=True, check=True).stdout.strip()
+        tag, digest = build_image(Path(value), spec)
         lock = lock_image(tag)
     return {"image_digest": digest, "lock": lock}
 
 
+def build_image(root: Path, spec: dict) -> tuple[str, str]:
+    write_files(root, spec["files"])
+    header = "FROM python:3.12-slim\nWORKDIR /workspace\nCOPY . .\n"
+    dockerfile = header + "\n".join(f"RUN {item}" for item in spec["setup"])
+    (root / "Dockerfile").write_text(dockerfile, encoding="utf-8")
+    tag = "rw-env-" + hashlib.sha256(dockerfile.encode()).hexdigest()[:16]
+    command = ["docker", "build", "--network", "default", "-t", tag, str(root)]
+    subprocess.run(command, check=True, timeout=900)
+    inspect = ["docker", "image", "inspect", "--format", "{{.Id}}", tag]
+    result = subprocess.run(inspect, capture_output=True, text=True, check=True)
+    return tag, result.stdout.strip()
+
+
 def lock_image(tag: str) -> str:
-    command = ["docker", "run", "--rm", "--network", "none", tag, "python", "-m", "pip", "freeze", "--all"]
-    return subprocess.run(command, capture_output=True, text=True, check=True, timeout=120).stdout
+    command = [
+        "docker",
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        tag,
+        "python",
+        "-m",
+        "pip",
+        "freeze",
+        "--all",
+    ]
+    return subprocess.run(
+        command, capture_output=True, text=True, check=True, timeout=120
+    ).stdout
 
 
 def write_files(root: Path, files: dict[str, str]) -> None:
+    root = root.resolve()
     for name, content in files.items():
-        target = root / name
+        target = (root / name).resolve()
+        if not target.is_relative_to(root) or target == root:
+            raise ValueError(f"file path escapes workspace: {name}")
+        try:
+            value = base64.b64decode(content, validate=True)
+        except (binascii.Error, UnicodeError, ValueError) as error:
+            raise ValueError(f"file is not valid base64: {name}") from error
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(base64.b64decode(content))
+        target.write_bytes(value)
 
 
 def run_container(spec: dict) -> dict:
@@ -69,16 +230,29 @@ def run_container(spec: dict) -> dict:
         try:
             return invoke_container(spec, volume)
         finally:
-            subprocess.run(["docker", "volume", "rm", "-f", volume], check=False, capture_output=True)
+            subprocess.run(
+                ["docker", "volume", "rm", "-f", volume],
+                check=False,
+                capture_output=True,
+            )
 
 
 def create_input_volume(root: Path) -> str:
     volume = "rw-input-" + secrets.token_hex(8)
-    subprocess.run(["docker", "volume", "create", volume], check=True, capture_output=True)
+    subprocess.run(
+        ["docker", "volume", "create", volume], check=True, capture_output=True
+    )
     mount = f"type=volume,src={volume},dst=/workspace"
-    helper = subprocess.run(["docker", "create", "--mount", mount, "busybox:1.36", "true"], capture_output=True, text=True, check=True).stdout.strip()
+    helper = subprocess.run(
+        ["docker", "create", "--mount", mount, "busybox:1.36", "true"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
     try:
-        subprocess.run(["docker", "cp", f"{root}/.", f"{helper}:/workspace"], check=True)
+        subprocess.run(
+            ["docker", "cp", f"{root}/.", f"{helper}:/workspace"], check=True
+        )
     finally:
         subprocess.run(["docker", "rm", "-f", helper], check=False, capture_output=True)
     return volume
@@ -86,17 +260,74 @@ def create_input_volume(root: Path) -> str:
 
 def invoke_container(spec: dict, volume: str | None) -> dict:
     started = time.monotonic()
-    command = docker_command(spec, volume)
-    process = subprocess.run(command, capture_output=True, text=True, timeout=300)
-    return {"exit_code": process.returncode, "stdout": process.stdout, "stderr": process.stderr,
-            "usage": {"wall_ms": round((time.monotonic() - started) * 1000)}}
+    name = "rw-run-" + secrets.token_hex(8)
+    command = docker_command(spec, volume, name)
+    try:
+        process = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=spec["limits"]["wall_seconds"],
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        remove_container(name)
+        return container_result(124, "", "timeout", started)
+    return container_result(process.returncode, process.stdout, process.stderr, started)
 
 
-def docker_command(spec: dict, volume: str | None = None) -> list[str]:
-    limits = spec["limits"]
-    command = ["docker", "run", "--rm", "--network", "none", "--read-only", "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
-            "--cpus", str(limits["cpus"]), "--memory", f"{limits['memory_mb']}m", "--pids-limit", str(limits["pids"]),
-            "--env", f"RW_RANDOM_SEED={spec.get('seed', 0)}"]
-    if volume:
-        command.extend(["--mount", f"type=volume,src={volume},dst=/workspace,readonly", "--workdir", "/workspace"])
+def container_result(exit_code: int, stdout: str, stderr: str, started: float) -> dict:
+    return {
+        "exit_code": exit_code,
+        "stdout": stdout,
+        "stderr": stderr,
+        "usage": {"wall_ms": round((time.monotonic() - started) * 1000)},
+    }
+
+
+def remove_container(name: str) -> None:
+    command = ["docker", "rm", "-f", name]
+    try:
+        subprocess.run(command, check=False, capture_output=True, timeout=30)
+    except subprocess.TimeoutExpired:
+        pass
+
+
+def docker_command(spec: dict, volume: str | None, name: str) -> list[str]:
+    command = [
+        "docker",
+        "run",
+        "--rm",
+        "--name",
+        name,
+        "--pull",
+        "never",
+        "--network",
+        "none",
+        "--read-only",
+        "--tmpfs",
+        "/tmp:rw,noexec,nosuid,size=64m",
+        "--env",
+        f"RW_RANDOM_SEED={spec.get('seed', 0)}",
+        *docker_limits(spec["limits"]),
+        *docker_mount(volume),
+    ]
     return [*command, spec["image"], *spec["command"]]
+
+
+def docker_limits(limits: dict) -> list[str]:
+    return [
+        "--cpus",
+        str(limits["cpus"]),
+        "--memory",
+        f"{limits['memory_mb']}m",
+        "--pids-limit",
+        str(limits["pids"]),
+    ]
+
+
+def docker_mount(volume: str | None) -> list[str]:
+    if not volume:
+        return []
+    mount = f"type=volume,src={volume},dst=/workspace,readonly"
+    return ["--mount", mount, "--workdir", "/workspace"]

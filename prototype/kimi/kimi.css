@@ -1,0 +1,14 @@
+/* THROWAWAY PROTOTYPE: host + switcher chrome for /prototype/kimi. Variants style themselves. */
+.kimi-host { position: fixed; inset: 0; overflow: hidden; background: #000; }
+.kimi-host > section { position: absolute; inset: 0; }
+.kimi-loading { height: 100%; display: grid; place-items: center; color: #8b949e; font: 14px "Geist Mono", ui-monospace, monospace; }
+
+.kimi-switcher { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 999px; background: #111418; border: 1px solid #30363d; box-shadow: 0 12px 40px rgb(0 0 0 / .55); color: #e6edf3; font-family: "Geist Variable", ui-sans-serif, system-ui, sans-serif; }
+.kimi-switcher > button { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid #30363d; border-radius: 50%; background: #1c2128; color: #e6edf3; cursor: pointer; }
+.kimi-switcher > button:hover { background: #2d333b; }
+.kimi-switcher-label { display: flex; flex-direction: column; align-items: center; min-width: 220px; line-height: 1.25; }
+.kimi-switcher-label b { font-size: 13px; }
+.kimi-switcher-label > span { font-size: 11px; color: #8b949e; }
+.kimi-switcher-dots { display: flex; gap: 3px; margin-top: 5px; }
+.kimi-switcher-dots button { width: 22px; height: 16px; padding: 0; border: 0; border-radius: 3px; background: #2d333b; color: #8b949e; font: 600 9px "Geist Mono", ui-monospace, monospace; cursor: pointer; }
+.kimi-switcher-dots button.on { background: #1f6feb; color: #fff; }

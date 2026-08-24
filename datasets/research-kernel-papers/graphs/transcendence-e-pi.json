@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "transcendence-e-pi",
+    "title": "Formal Proofs of Transcendence for e and $π$ as an Application of Multivariate and Symmetric Polynomials",
+    "shortTitle": "Formal Proofs of Transcendence for e and $π$ as an Application",
+    "authors": "Sophie Bernard, Yves Bertot, Laurence Rideau et al.",
+    "year": 2015,
+    "domain": "Formal verification",
+    "modality": "Formal proof",
+    "category": "formal-proof",
+    "sourceUrl": "https://arxiv.org/abs/1512.02791",
+    "localPath": "raw/transcendence-e-pi/paper.pdf"
+  },
+  "thesis": "Moreover, some of the elements of our formalized proof originate in the more ancient library for real numbers included in the Coq distribution.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "transcendence-e-pi-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "How is the reported theorem converted into a machine-checkable proof?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "transcendence-e-pi-d",
+      "kind": "decision",
+      "title": "Fix the formal system",
+      "body": "We describe the formalisation in Coq of a proof that the numbers e and $π$ are transcendental.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "transcendence-e-pi-i",
+      "kind": "investigation",
+      "title": "Machine-check the proof",
+      "body": "This proof lies at the interface of two domains of mathematics that are often considered separately: calculus (real and elementary complex analysis) and algebra.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "transcendence-e-pi-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "The case of $π$ relies extensively on properties of multivariate polynomials and this experiment was also an occasion to put to test a newly developed library for these multivariate polynomials.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "transcendence-e-pi-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "Moreover, some of the elements of our formalized proof originate in the more ancient library for real numbers included in the Coq distribution.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "transcendence-e-pi-q",
+      "to": "transcendence-e-pi-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "transcendence-e-pi-d",
+      "to": "transcendence-e-pi-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "transcendence-e-pi-i",
+      "to": "transcendence-e-pi-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "transcendence-e-pi-e",
+      "to": "transcendence-e-pi-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

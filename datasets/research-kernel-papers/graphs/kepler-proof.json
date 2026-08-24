@@ -1,0 +1,201 @@
+{
+  "paper": {
+    "id": "kepler-proof",
+    "title": "A formal proof of the Kepler conjecture",
+    "shortTitle": "Kepler conjecture",
+    "authors": "Thomas Hales et al.",
+    "year": 2015,
+    "domain": "Mathematics",
+    "modality": "Formal proof",
+    "sourceUrl": "https://arxiv.org/abs/1501.02155",
+    "localPath": "raw/kepler-proof/paper.pdf",
+    "category": "formal-proof",
+    "providerId": "1501.02155"
+  },
+  "thesis": "The Kepler conjecture is certified by reducing the proof to formal logic plus three computational subclaims checked in HOL Light and Isabelle.",
+  "nodes": [
+    {
+      "id": "k-q",
+      "kind": "question",
+      "title": "Can any congruent sphere packing beat FCC density?",
+      "body": "Determine whether a packing of congruent balls in Euclidean three-space can exceed the density of the face-centered cubic packing.",
+      "provenance": "explicit",
+      "locator": "Abstract"
+    },
+    {
+      "id": "k-c",
+      "kind": "claim",
+      "title": "No packing is denser than FCC",
+      "body": "The face-centered cubic packing reaches the maximal possible density.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    },
+    {
+      "id": "k-d",
+      "kind": "decision",
+      "title": "Use Marchal cells",
+      "body": "The formalization replaced decomposition stars from the original proof with Marchal cells, whose geometry was better suited to formal proof.",
+      "provenance": "explicit",
+      "locator": "§2, Formal proof sketch",
+      "state": "accepted"
+    },
+    {
+      "id": "k-i1",
+      "kind": "investigation",
+      "title": "Formalize the mathematical argument",
+      "body": "Encode the proof in HOL Light and Isabelle, including the geometric and measure-theoretic foundations.",
+      "provenance": "explicit",
+      "locator": "§1–§2",
+      "state": "completed"
+    },
+    {
+      "id": "k-i2",
+      "kind": "investigation",
+      "title": "Verify nonlinear inequalities",
+      "body": "Formally verify the nonlinear inequalities used by the local geometric estimates.",
+      "provenance": "explicit",
+      "locator": "§3, Nonlinear inequalities",
+      "state": "completed"
+    },
+    {
+      "id": "k-e2",
+      "kind": "evidence",
+      "title": "Inequality certificates checked",
+      "body": "The nonlinear inequality verification completed in less than one day of computation.",
+      "provenance": "explicit",
+      "locator": "§3 and conclusion",
+      "state": "supporting",
+      "metric": "< 1 day"
+    },
+    {
+      "id": "k-i3",
+      "kind": "investigation",
+      "title": "Enumerate tame plane graphs",
+      "body": "Exhaustively classify the combinatorial plane graphs that remain possible counterexample configurations.",
+      "provenance": "explicit",
+      "locator": "§4, Tame graphs",
+      "state": "completed"
+    },
+    {
+      "id": "k-e3",
+      "kind": "evidence",
+      "title": "Graph classification exhausted",
+      "body": "The formal enumeration eliminated graph types outside the tame classification.",
+      "provenance": "explicit",
+      "locator": "§4",
+      "state": "supporting",
+      "metric": "< 1 day"
+    },
+    {
+      "id": "k-i4",
+      "kind": "investigation",
+      "title": "Check linear programs",
+      "body": "Solve and formally certify thousands of linear programs associated with the remaining tame graphs.",
+      "provenance": "explicit",
+      "locator": "§5, Linear programs",
+      "state": "completed"
+    },
+    {
+      "id": "k-e4",
+      "kind": "evidence",
+      "title": "Hardest computation certified",
+      "body": "The linear-program verification was the most expensive computational subclaim.",
+      "provenance": "explicit",
+      "locator": "Conclusion",
+      "state": "supporting",
+      "metric": "~5,000 CPU hours"
+    },
+    {
+      "id": "k-e5",
+      "kind": "evidence",
+      "title": "End-to-end theorem checked",
+      "body": "All parts of the proof were formalized and checked by proof assistants; formalization also corrected hundreds of small errors in the original presentation.",
+      "provenance": "explicit",
+      "locator": "Abstract and conclusion",
+      "state": "supporting"
+    }
+  ],
+  "edges": [
+    {
+      "from": "k-q",
+      "to": "k-c",
+      "relation": "frames",
+      "provenance": "explicit"
+    },
+    {
+      "from": "k-d",
+      "to": "k-i1",
+      "relation": "changes",
+      "provenance": "explicit"
+    },
+    {
+      "from": "k-i1",
+      "to": "k-i2",
+      "relation": "decomposes",
+      "provenance": "inferred"
+    },
+    {
+      "from": "k-i1",
+      "to": "k-i3",
+      "relation": "decomposes",
+      "provenance": "inferred"
+    },
+    {
+      "from": "k-i1",
+      "to": "k-i4",
+      "relation": "decomposes",
+      "provenance": "inferred"
+    },
+    {
+      "from": "k-i2",
+      "to": "k-e2",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "k-i3",
+      "to": "k-e3",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "k-i4",
+      "to": "k-e4",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "k-e2",
+      "to": "k-e5",
+      "relation": "supports",
+      "provenance": "inferred"
+    },
+    {
+      "from": "k-e3",
+      "to": "k-e5",
+      "relation": "supports",
+      "provenance": "inferred"
+    },
+    {
+      "from": "k-e4",
+      "to": "k-e5",
+      "relation": "supports",
+      "provenance": "inferred"
+    },
+    {
+      "from": "k-e5",
+      "to": "k-c",
+      "relation": "supports",
+      "provenance": "explicit"
+    }
+  ],
+  "openQuestions": [
+    "The paper certifies the theorem, but this reconstruction does not include machine-checkable proof objects beyond the downloaded article."
+  ],
+  "reconstruction": {
+    "scope": "section-level manual graph",
+    "method": "manual source review",
+    "review": "manually curated"
+  }
+}

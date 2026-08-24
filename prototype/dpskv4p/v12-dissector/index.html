@@ -1,0 +1,66 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v12 · 节点解剖台：局部组件。挑战 G7：节点上下文面板平铺无分组、ghost 混入。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v12 · 节点解剖台 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:light;--bg:#f5f6f7;--panel:#fff;--ink:#191e24;--muted:#707a86;--line:#dde3e8;--accent:#2456a6;--ghost:#8a6a4f}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{display:grid;grid-template-columns:250px 1fr 340px;height:100vh;gap:10px;padding:10px}
+  .rail{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:auto}
+  h2{font-size:12px;padding:10px 12px 4px;margin:0;color:var(--muted);letter-spacing:.06em}
+  .group{font:600 10px ui-monospace,monospace;color:var(--muted);padding:10px 12px 4px}
+  .item{padding:6px 12px;cursor:pointer;font-size:12px;display:flex;justify-content:space-between;gap:6px}
+  .item:hover{background:#f0f4f9}.item.on{background:#e3ecf8;border-right:3px solid var(--accent)}
+  .item.ghost{opacity:.55}.item small{color:var(--muted);font:10px ui-monospace,monospace}
+  .stage{display:flex;flex-direction:column;gap:10px;min-width:0}
+  .tabs{display:flex;gap:6px}.tab{padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:var(--panel);cursor:pointer}.tab.on{background:var(--ink);color:#fff}
+  .layers{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:auto;padding:6px}
+  details{border-bottom:1px solid var(--line);padding:10px 12px}details:last-child{border-bottom:0}
+  summary{cursor:pointer;font-weight:700;font-size:13px}.layer-body{padding-top:8px;font-size:12px}
+  .kv{display:grid;grid-template-columns:110px 1fr;gap:4px 10px}.kv b{font-weight:600;color:var(--muted);font-size:11px}
+  pre{margin:0;background:#f4f6f8;border-radius:8px;padding:10px;font:11px/1.5 ui-monospace,monospace;overflow:auto}
+  .slice{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;min-height:220px}
+  svg{width:100%;height:260px}.edge{stroke:#b7c2ce;stroke-width:1.4;fill:none}.edge.sel{stroke:var(--accent);stroke-width:3}
+  .n{stroke:#fff;stroke-width:2;cursor:pointer}
+  .pill{font:10px ui-monospace,monospace;padding:2px 7px;border-radius:999px;background:#e7edf3;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail"><h2>节点目录 · 按类型分组</h2><div id="rail"></div></aside>
+  <main class="stage"><div class="tabs" id="tabs"></div><div class="layers" id="layers"></div></main>
+  <aside class="slice"><h2>依赖切片 · 上下游各一跳</h2><svg id="slice"></svg><div id="sliceMeta" style="color:var(--muted);font-size:11px"></div></aside>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const G=RW.graph(32,600,420);let sel=G.nodes[1];const tabs=["全字段","身份","内容","依赖","审核","凭据"];
+function nodeKind(n){return {question:"question",direction:"direction",experiment:"experiment"}[n.kind]}
+function render(){const kinds=[["question","命题"],["direction","方向"],["experiment","实验"]];const ghost=G.nodes.filter(n=>n.status==="ghost");
+ $("rail").innerHTML=kinds.map(([k,l])=>`<div class="group">${l} · ${G.nodes.filter(n=>n.kind===k).length}</div>${G.nodes.filter(n=>n.kind===k).slice(0,12).map(n=>`<div class="item ${n.id===sel.id?"on":""} ${n.status==="ghost"?"ghost":""}" data-id="${n.id}"><span>${n.id} ${n.title}</span><small>${n.status}</small></div>`).join("")}`).join("")+`<div class="group">ghost · ${ghost.length}</div>${ghost.slice(0,4).map(n=>`<div class="item ghost ${n.id===sel.id?"on":""}" data-id="${n.id}"><span>${n.id} ${n.title}</span><small>已隔离</small></div>`).join("")}`;
+ $("tabs").innerHTML=tabs.map(t=>`<div class="tab ${t==="全字段"?"on":""}" data-t="${t}">${t}</div>`).join("");
+ showLayers("全字段");}
+function showLayers(tab){const n=sel;const deps=G.edges.filter(e=>e.source===n.id).length,rev=G.edges.filter(e=>e.target===n.id).length;
+ const all=`<details open><summary>身份 · 系统拥有 UID</summary><div class="layer-body"><div class="kv"><b>UID</b><span>sha256:${n.id.toLowerCase().padStart(8,"0")}…c4f</span><b>类型</b><span>${nodeKind(n)}</span><b>生命状态</b><span>${n.status}</span><b>谱系</b><span>L-${n.depth} · 第 ${n.depth} 代</span></div></div></details>
+ <details open><summary>内容 · 已入图字段</summary><div class="layer-body"><div class="kv"><b>标题</b><span>${n.title}</span><b>主张</b><span>${n.status==="ghost"?"（隔离，不进入默认检索）":"见审核层的原子断言"}</span></div></div></details>
+ <details><summary>依赖 · 上下游</summary><div class="layer-body"><div class="kv"><b>下游派生</b><span>${deps} 项</span><b>上游依赖</b><span>${rev} 项</span></div></div></details>
+ <details><summary>审核 · 双审 + 抗辩</summary><div class="layer-body"><div class="kv"><b>reviewer#1</b><span>approve · 统计阈值通过</span><b>reviewer#2</b><span>approve · 随机种子完整</span><b>rebuttal</b><span>无</span></div></div></details>
+ <details><summary>凭据 · 可复现</summary><div class="layer-body"><pre>{ "image":"qwen-science:v12", "command":"python run.py", "seed":20260905, "limits":{"cpu":2,"mem":"4g"}, "exit_code":0, "artifact":"sha256:8f3a…" }</pre></div></details>`;
+ const map={"身份":all.split("<details").slice(0,2).join("<details").replace('<details open>','<details open>'),
+ "内容":all.split("<details")[2]?("<details"+all.split("<details")[2]):"", "依赖":"<details"+all.split("<details")[3],
+ "审核":"<details"+all.split("<details")[4], "凭据":"<details"+all.split("<details")[5]};
+ $("layers").innerHTML=tab==="全字段"?all:(map[tab]||all);
+ const ups=G.edges.filter(e=>e.target===n.id).map(e=>G.nodes.find(x=>x.id===e.source));const downs=G.edges.filter(e=>e.source===n.id).map(e=>G.nodes.find(x=>x.id===e.target));
+ const nodes=[n,...ups.slice(0,3),...downs.slice(0,4)].slice(0,8);
+ const pos=nodes.map((x,i)=>({x:150+(i%2?140:-130)*(i||1),y:40+i*62}));
+ const svg=$("slice");const scale=1.4;svg.innerHTML=pos.map((p,i)=>`${nodes[i].id!==n.id?`<line class="edge" x1="${p.x}" y1="${p.y}" x2="${pos[0].x}" y2="${pos[0].y}"/>`:""}<circle class="n" data-id="${nodes[i].id}" cx="${p.x}" cy="${p.y}" r="${nodes[i].id===n.id?12:8}" fill="${nodes[i].id===n.id?"#2456a6":nodes[i].status==="ghost"?"#b9a98f":"#7f96ad"}"/><text x="${p.x}" y="${p.y-13}" text-anchor="middle" style="font:9px ui-monospace,monospace;fill:var(--muted)">${nodes[i].id}</text>`).join("");
+ $("sliceMeta").textContent=`选中 ${n.id}：下游 ${deps} / 上游 ${rev}；切边后灰显不可达分支（原型只画一跳）。`;
+ if(RWUI)RWUI.setState({选中:n.id,当前层:tab,下游:deps,上游:rev});}
+function $(id){return document.getElementById(id)}
+document.addEventListener("click",e=>{const it=e.target.closest(".item");if(it){sel=G.nodes.find(x=>x.id===it.dataset.id);render()}const tb=e.target.closest(".tab");if(tb){document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===tb));showLayers(tb.dataset.t)}const c=e.target.closest("circle.n");if(c){sel=G.nodes.find(x=>x.id===c.dataset.id);render()}});
+document.addEventListener("DOMContentLoaded",()=>{render();RWUI&&RWUI.setState({设计命题:"节点上下文如何分层：目录分组 + 五层解剖 + 依赖切片",挑战对象:"G7：NodeRail 平铺 48 条、ghost 混入",交互:"分组目录 + 五层 tab/accordion + SVG 切片",数据:"32 节点 / 43 边 mock"});});
+</script>
+</body>
+</html>

@@ -1,5 +1,7 @@
 ---
 sources:
+  - title: "Danus: Orchestrating Mathematical Reasoning Agents with Fact-Graph Memory"
+    url: https://arxiv.org/abs/2607.06447
   - title: "LongMemEval-V2: Evaluating Long-Term Agent Memory Toward Experienced Colleagues"
     url: https://arxiv.org/abs/2605.12493
   - title: "AMA-Bench: Evaluating Long-Horizon Memory for Agentic Applications"
@@ -9,7 +11,7 @@ sources:
 ---
 # E5 图谱状态 vs 完整对话（C5）
 ## 假设
-沉淀后的审核通过图谱状态支撑任务继续不弱于强全历史访问，且 token/成本显著更低。注意增量定位：AMA-Agent 已用 causality graph memory，贡献是"review-gated epistemic graph 作为唯一持久状态，对话销毁后仍足够"，不是"graph 比 flat 好"。
+沉淀后的审核通过图谱状态支撑任务继续不弱于强全历史访问，且 token/成本显著更低。注意增量定位：AMA-Agent 已用 causality graph memory，Danus 已用 verifier-gated fact graph 累积多 agent 数学证明；贡献是"review-gated epistemic graph 作为唯一持久状态，对话销毁后仍足够"，不是"graph 比 flat 好"。Danus 只提供案例研究与接近受控的 Rethlas 对照，没有去 fact-graph 消融，不作因果 benchmark 证据。
 
 ## 载体
 LongMemEval-V2 全量 451 题（5 类 memory ability，历史最大约 115M tokens，官方有 no-retrieval/RAG/AgentRunbook baseline）。第二 model 对分层 100 题做 robustness 复跑。

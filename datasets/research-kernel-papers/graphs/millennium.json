@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "millennium",
+    "title": "Simulating the joint evolution of quasars, galaxies and their large-scale distribution",
+    "shortTitle": "Simulating the joint evolution of quasars, galaxies and their ",
+    "authors": "Volker Springel, Simon D. M. White, Adrian Jenkins et al.",
+    "year": 2005,
+    "domain": "Computational science",
+    "modality": "Numerical simulation",
+    "category": "numerical-simulation",
+    "sourceUrl": "https://arxiv.org/abs/astro-ph/0504097",
+    "localPath": "raw/millennium/paper.pdf"
+  },
+  "thesis": "We show that baryon-induced features in the initial conditions of the Universe are reflected in distorted form in the low-redshift galaxy distribution, an effect that can be used to constrain the nature of dark energy with next generation surveys.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "millennium-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What does the reported model reveal when the target system is simulated?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "millennium-d",
+      "kind": "decision",
+      "title": "Choose model and boundary conditions",
+      "body": "Testing this model requires that the precise measurements delivered by galaxy surveys can be compared to robust and equally precise theoretical calculations.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "millennium-i",
+      "kind": "investigation",
+      "title": "Run the numerical experiment",
+      "body": "The cold dark matter model has become the leading theoretical paradigm for the formation of structure in the Universe.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "millennium-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "This combines the largest simulation of the growth of dark matter structure ever carried out with new techniques for following the formation and evolution of the visible components.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "millennium-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "We show that baryon-induced features in the initial conditions of the Universe are reflected in distorted form in the low-redshift galaxy distribution, an effect that can be used to constrain the nature of dark energy with next generation surveys.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "millennium-q",
+      "to": "millennium-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "millennium-d",
+      "to": "millennium-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "millennium-i",
+      "to": "millennium-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "millennium-e",
+      "to": "millennium-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

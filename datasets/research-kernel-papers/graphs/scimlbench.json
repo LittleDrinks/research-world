@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "scimlbench",
+    "title": "Scientific Machine Learning Benchmarks",
+    "shortTitle": "Scientific Machine Learning Benchmarks",
+    "authors": "Jeyan Thiyagalingam, Mallikarjun Shankar, Geoffrey Fox et al.",
+    "year": 2021,
+    "domain": "Scientific machine learning",
+    "modality": "Benchmark",
+    "category": "benchmark",
+    "sourceUrl": "https://arxiv.org/abs/2110.12773",
+    "localPath": "raw/scimlbench/paper.pdf"
+  },
+  "thesis": "In this paper, we describe our approach to the development of scientific machine learning benchmarks and review other approaches to benchmarking scientific machine learning.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "scimlbench-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "How can the target scientific task be compared under fixed data and evaluation rules?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "scimlbench-d",
+      "kind": "decision",
+      "title": "Freeze tasks and metrics",
+      "body": "Historically, for modelling and simulation on HPC systems such problems have been addressed through benchmarking computer applications, algorithms, and architectures.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "scimlbench-i",
+      "kind": "investigation",
+      "title": "Evaluate reference systems",
+      "body": "The breakthrough in Deep Learning neural networks has transformed the use of AI and machine learning technologies for the analysis of very large experimental datasets.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "scimlbench-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Extending such a benchmarking approach and identifying metrics for the application of machine learning methods to scientific datasets is a new challenge for both scientists and computer scientists.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "scimlbench-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "In this paper, we describe our approach to the development of scientific machine learning benchmarks and review other approaches to benchmarking scientific machine learning.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "scimlbench-q",
+      "to": "scimlbench-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "scimlbench-d",
+      "to": "scimlbench-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "scimlbench-i",
+      "to": "scimlbench-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "scimlbench-e",
+      "to": "scimlbench-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "empagliflozin-ckd",
+    "title": "Empagliflozin in Patients with Chronic Kidney Disease",
+    "shortTitle": "Empagliflozin in Patients with Chronic Kidney Disease",
+    "authors": "HerringtonWilliam G., StaplinNatalie, WannerChristoph et al.",
+    "year": 2023,
+    "domain": "Human and clinical research",
+    "modality": "Human / clinical",
+    "category": "human-clinical",
+    "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7614055/",
+    "localPath": "raw/empagliflozin-ckd/fulltext.xml"
+  },
+  "thesis": "Empagliflozin reduced the risk of the composite outcome of kidney disease progression or cardiovascular death in a wide range of patients at risk of CKD progression.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "empagliflozin-ckd-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What effect or association is supported in the studied human population?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "empagliflozin-ckd-d",
+      "kind": "decision",
+      "title": "Choose cohort and endpoint",
+      "body": "We randomly assigned 6609 participants to empagliflozin (10mg once daily) versus matching placebo.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "empagliflozin-ckd-i",
+      "kind": "investigation",
+      "title": "Measure human outcomes",
+      "body": "This study, the EMPA-KIDNEY trial, was designed to assess the effects of empagliflozin in a broad range of patients with chronic kidney disease (CKD) at risk of progression.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "empagliflozin-ckd-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "There were fewer hospitalizations from any cause in the empagliflozin group (0.86; 0.78 to 0.95, P=0.003), but no statistically significant effect on hospitalization for heart failure or cardiovascular death (4.0% vs 4.6%), or death from any cause (4.5% vs 5.1%).",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "empagliflozin-ckd-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "Empagliflozin reduced the risk of the composite outcome of kidney disease progression or cardiovascular death in a wide range of patients at risk of CKD progression.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "empagliflozin-ckd-q",
+      "to": "empagliflozin-ckd-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "empagliflozin-ckd-d",
+      "to": "empagliflozin-ckd-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "empagliflozin-ckd-i",
+      "to": "empagliflozin-ckd-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "empagliflozin-ckd-e",
+      "to": "empagliflozin-ckd-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

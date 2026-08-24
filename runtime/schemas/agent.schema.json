@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://research.world/schemas/agent.schema.json",
+  "title": "AgentSpec",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "endpoint", "model", "instructions"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+    "name": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "endpoint": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "model": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "instructions": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "skills": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1, "pattern": "\\S"},
+      "uniqueItems": true,
+      "default": []
+    },
+    "tools": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1, "pattern": "\\S"},
+      "uniqueItems": true,
+      "default": []
+    },
+    "options": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reasoning_effort": {"enum": ["low", "medium", "high", "xhigh"]},
+        "sandbox": {"enum": ["read-only", "workspace-write"]},
+        "max_rounds": {"type": "integer", "minimum": 1, "maximum": 64},
+        "token_budget": {"type": "integer", "minimum": 1}
+      }
+    }
+  }
+}

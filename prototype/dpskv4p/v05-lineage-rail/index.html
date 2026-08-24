@@ -1,0 +1,67 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v05 · 谱系铁路：挑战 lineage 不可见问题。同一血脉成一条线路，连续 2 次驳回=红色熔断。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v05 · 谱系铁路 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:light;--bg:#f6f8f6;--ink:#1c2120;--muted:#78827f;--line:#dfe5e1}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{display:grid;grid-template-rows:56px 1fr;height:100vh}
+  header{display:flex;align-items:center;padding:0 18px;border-bottom:1px solid var(--line);background:#fff}
+  header b{font-size:16px}header span{margin-left:10px;color:var(--muted);font-size:11px}
+  .legend{margin-left:auto;display:flex;gap:12px;font:11px ui-monospace,monospace;color:var(--muted)}
+  .legend i{width:11px;height:11px;border-radius:50%;display:inline-block;margin-right:5px}
+  .body{display:grid;grid-template-columns:1fr 300px;min-height:0}
+  main{position:relative;overflow:hidden;background:var(--bg)}
+  svg{width:100%;height:100%}
+  .line{fill:none;stroke-width:9;stroke-linecap:round;opacity:.9}
+  .station{cursor:pointer}.station circle{stroke:#fff;stroke-width:2.5}
+  .station text{font:10px ui-monospace,monospace;fill:var(--muted)}
+  .fuse-mark{font:700 10px ui-monospace,monospace;fill:#b3271e}
+  aside{border-left:1px solid var(--line);background:#fff;padding:16px;overflow:auto}
+  h2{margin:4px 0 10px;font-size:15px}.field{margin-bottom:9px;padding-bottom:8px;border-bottom:1px dashed var(--line)}
+  .field small{color:var(--muted);font:10px ui-monospace,monospace}.field b{display:block}
+  button{padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--ink);color:#fff;cursor:pointer;width:100%;margin-top:6px}
+  button.ghost{background:#fff;color:var(--ink)}
+  .status{display:inline-block;padding:2px 8px;border-radius:999px;font:10px ui-monospace,monospace}
+  .s-admitted{background:#e3f1e6;color:#2e7040}.s-running{background:#e1edf8;color:#2b6da3}.s-ghost{background:#f1e9e7;color:#8a4a3f}.s-fused{background:#f6e2de;color:#a3271e}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><b>谱系铁路</b><span>同一血脉（lineage_id）的节点连成一条线路；方向被否定只锁这条线，不锁别的线</span>
+    <div class="legend"><span><i style="background:#2b6da3"></i>supported</span><span><i style="background:#6b7780"></i>proposed</span><span><i style="background:#8a4a3f"></i>ghost</span><span><i style="background:#b3271e"></i>熔断</span></div></header>
+  <div class="body">
+    <main><svg id="svg"></svg></main>
+    <aside id="side"><h2>谱系调度</h2><div id="info"></div></aside>
+  </div>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const COLORS=["#2b6da3","#2e7040","#8a5aa0","#c07a20"];
+const lines=COLORS.map((color,li)=>{const stations=[];const dir=li%2?1:-1;const baseX=li<2?80:220;const baseY=li%2?140:400;
+ for(let s=0;s<6;s++)stations.push({id:`L${li+1}-S${s+1}`,x:baseX+s*170,y:baseY+(li%2?dir*s*36:0),color,
+  title:li===0?["核心问题","素数间隔结构","短区间密度","统计显著性","跨尺度复现","候选派生"][s]:["核心问题","材料界面损失","热电转换效率","基线对照","复现实验","下一候选"][s]||`第 ${s+1} 代候选`,
+  status:s===0?"admitted":s===4&&li===2?"ghost":s===5&&li===3?"running":"admitted",gen:s});
+ return {id:"L"+(li+1),color,stations,rejects:li===3?1:0,fused:false,project:RW.PROJECTS[(li*13)%125].id};});
+let sel=lines[0].stations[2];
+function pt(p){return `${p.x},${p.y}`}
+function draw(){const svg=$("svg");svg.innerHTML=lines.map(l=>`<g><polyline class="line" points="${l.stations.map(pt).join(" ")}" style="stroke:${l.color}"/>
+ ${l.stations.map((s,i)=>{const col=s.status==="ghost"?"#8a4a3f":s.status==="running"?"#2b6da3":l.color;return `<g class="station" data-l="${l.id}" data-s="${s.id}"><circle cx="${s.x}" cy="${s.y}" r="${i===0?11:8}" fill="${col}"/>${i===0?`<text x="${s.x}" y="${s.y+4}" text-anchor="middle" fill="#fff" font-weight="700">Q</text>`:""}<text x="${s.x}" y="${s.y-12}" text-anchor="middle">${s.id}</text>${s.status==="running"?`<text x="${s.x}" y="${s.y-24}" text-anchor="middle" fill="#2b6da3">▶ 运行中</text>`:""}</g>`}).join("")}
+ ${l.fused?`<text class="fuse-mark" x="${l.stations[l.stations.length-1].x+28}" y="${l.stations[l.stations.length-1].y+30}">FUSE · 升级人工</text>`:""}
+ <text x="${l.stations[0].x-52}" y="${l.stations[0].y-14}" style="font:10px ui-monospace,monospace;fill:var(--muted)">${l.id} · ${l.project}</text></g>`).join("");}
+function show(station,line){sel=station;$("info").innerHTML=`<div class="field"><small>谱系 ${line.id} · 第 ${station.gen} 代</small><b>${station.title}</b><span class="status s-${line.fused?"fused":station.status}">${line.fused?"已熔断":station.status}</span></div>
+ <div class="field"><small>血脉</small><b>${line.stations.map(s=>s.id).join(" → ")}</b></div>
+ <div class="field"><small>连续驳回计数</small><b>${line.rejects} / 2</b></div>
+ <div class="field"><small>auto 行为</small><b>${line.fused?"暂停该谱系，升级人工；其他线路不受影响":"推进中"}</b></div>
+ <button onclick="rejectLine('${line.id}')">模拟一次双审驳回</button><button class="ghost" onclick="resetLine('${line.id}')">重置该线路</button>
+ <p style="color:var(--muted);font-size:11px;line-height:1.6;margin-top:10px">规则（ADR-0017）：同一谱系连续 2 次 review 驳回 → auto 暂停该谱系并升级人工。方向终态不可逆，但新证据可从幽灵车道重新获得匹配依据。</p>`;draw();}
+window.rejectLine=id=>{const l=lines.find(x=>x.id===id);if(l.fused)return;l.rejects++;if(l.rejects>=2){l.fused=true;l.stations[l.stations.length-1].status="fused"}show(sel,l)};
+window.resetLine=id=>{const l=lines.find(x=>x.id===id);l.rejects=l.id==="L4"?1:0;l.fused=false;l.stations.forEach(s=>{if(s.status==="fused")s.status="running"});show(l.stations[1],l)};
+document.addEventListener("click",e=>{const g=e.target.closest(".station");if(!g)return;const l=lines.find(x=>x.id===g.dataset.l);const s=l.stations.find(x=>x.id===g.dataset.s);show(s,l)});
+document.addEventListener("DOMContentLoaded",()=>{draw();show(sel,lines[0]);RWUI&&RWUI.setState({设计命题:"谱系熔断如何从状态字段变成空间信号",挑战对象:"现有 UI 只显示 lineage_id 文本",交互:"线路图选择 + 驳回/重置 + 熔断升级人工",数据:"4 条谱系 × 6 代站点"});});
+</script>
+</body>
+</html>

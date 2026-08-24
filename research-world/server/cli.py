@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
+import os
 import sys
 from pathlib import Path
 
-import httpx
-
 from .app import app
-from .clients import EmbeddingClient
-from .config import load_settings
-from .world import World
+from .kernel import KernelCommand, KernelQuery, ResearchKernel, default_kernel
 
 
 def parser() -> argparse.ArgumentParser:
@@ -43,58 +41,55 @@ def doctor_parser(groups) -> None:
     doctor.add_argument("--embedding", action="store_true")
 
 
-def main(argv=None, world: World | None = None, output=None, error=None) -> int:
+def main(
+    argv=None, kernel: ResearchKernel | None = None, output=None, error=None
+) -> int:
     args = parser().parse_args(argv)
     output, error = output or sys.stdout, error or sys.stderr
     try:
-        value = dispatch(args, world or default_world())
+        value = asyncio.run(dispatch(args, kernel or default_kernel()))
         print(json.dumps({"ok": True, "data": value}), file=output)
         return 0
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - CLI renders failures as JSON.
         print(json.dumps({"ok": False, "error": str(exc)}), file=error)
         return 2
 
 
-def dispatch(args, world: World):
+async def dispatch(args, kernel: ResearchKernel):
     if args.group == "serve":
-        return serve(args)
+        return await serve(args)
     if args.group == "doctor":
-        return doctor_embedding() if args.embedding else {"ok": True}
+        return await doctor_embedding(kernel) if args.embedding else {"ok": True}
     if args.group == "project":
-        return project_command(args, world)
-    project = world.project_by_name(args.project)
-    return {"nodes": world.nodes(project["id"]), "edges": world.edges(project["id"])}
+        return await project_command(args, kernel)
+    project = await kernel.query(
+        KernelQuery("project_by_name", values={"name": args.project})
+    )
+    return await kernel.query(KernelQuery("graph", project["id"]))
 
 
-def project_command(args, world: World):
+async def project_command(args, kernel: ResearchKernel):
     if args.action == "list":
-        return world.projects()
+        return await kernel.query(KernelQuery("projects"))
     value = json.loads(args.file.read_text()) if args.file else json.load(sys.stdin)
-    return world.create_project(value["name"], project_root(value["root"]), value["question"])
+    values = {"name": value["name"], "question": value["question"]}
+    return await kernel.command(KernelCommand("create_project", values=values))
 
 
-def doctor_embedding() -> dict:
-    settings = load_settings()
-    if not settings.model_api_base or not settings.model_api_key:
-        raise RuntimeError("MODEL_API_BASE and MODEL_API_KEY are required")
-    vector = EmbeddingClient(settings.model_api_base, settings.model_api_key)("orbit")
-    return {"ok": True, "dimensions": len(vector)}
+async def doctor_embedding(kernel: ResearchKernel) -> dict:
+    endpoint = os.environ["RW_EMBEDDING_ENDPOINT"]
+    model = os.getenv("RW_EMBEDDING_MODEL", "qwen3.7-text-embedding")
+    values = {"endpoint": endpoint, "model": model}
+    dimensions = await kernel.query(KernelQuery("embedding_dimensions", values=values))
+    return {"ok": True, "dimensions": dimensions}
 
 
-def project_root(value: str) -> Path:
-    path = Path(value)
-    return path if path.is_absolute() else load_settings().projects_root / path
-
-
-def serve(args):
+async def serve(args):
     import uvicorn
-    uvicorn.run(app, host=args.host, port=args.port)
+
+    config = uvicorn.Config(app, host=args.host, port=args.port)
+    await uvicorn.Server(config).serve()
     return {"stopped": True}
-
-
-def default_world() -> World:
-    settings = load_settings()
-    return World(settings.database, settings.artifacts)
 
 
 def entrypoint() -> None:

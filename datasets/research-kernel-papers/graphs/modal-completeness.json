@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "modal-completeness",
+    "title": "A formal proof of modal completeness for provability logic",
+    "shortTitle": "A formal proof of modal completeness for provability logic",
+    "authors": "Marco Maggesi, Cosimo Perini Brogi",
+    "year": 2021,
+    "domain": "Formal verification",
+    "modality": "Formal proof",
+    "category": "formal-proof",
+    "sourceUrl": "https://arxiv.org/abs/2102.05945",
+    "localPath": "raw/modal-completeness/paper.pdf"
+  },
+  "thesis": "This work presents a formalized proof of modal completeness for Gödel-Löb provability logic (GL) in the HOL Light theorem prover.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "modal-completeness-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "How is the reported theorem converted into a machine-checkable proof?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "modal-completeness-d",
+      "kind": "decision",
+      "title": "Fix the formal system",
+      "body": "We describe the code we developed, and discuss some details of our implementation, focusing on our choices in structuring proofs which make essential use of the tools of HOL Light and which differ in part from the standard strategies found in main textbooks covering the topic in an informal setting.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "modal-completeness-i",
+      "kind": "investigation",
+      "title": "Machine-check the proof",
+      "body": "The graph treats the study's reported formal proof procedure as the investigation that tests its central claim.",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "modal-completeness-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Moreover, we propose a reflection on our own experience in using this specific theorem prover for this formalization task, with an analysis of pros and cons of reasoning within and about the formal system for GL we implemented in our code.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "modal-completeness-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "This work presents a formalized proof of modal completeness for Gödel-Löb provability logic (GL) in the HOL Light theorem prover.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "modal-completeness-q",
+      "to": "modal-completeness-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "modal-completeness-d",
+      "to": "modal-completeness-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "modal-completeness-i",
+      "to": "modal-completeness-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "modal-completeness-e",
+      "to": "modal-completeness-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

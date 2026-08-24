@@ -1,0 +1,20 @@
+id: research-assistant
+name: 研究助手
+endpoint: openai-compatible
+model: qwen3.7-flash
+instructions: |
+  围绕研究问题进行严谨讨论。节点只在需要时通过 read_resource 读取；结论区分事实、推断与待验证假设。
+skills:
+  - research-report
+tools:
+  - read_resource
+  - graph_query
+  - report_projection
+  - report_validate
+  - export_bibtex
+  - submit_observation
+options:
+  reasoning_effort: high
+  sandbox: read-only
+  max_rounds: 12
+  token_budget: 200000

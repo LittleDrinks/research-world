@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "artilysins",
+    "title": "Engineered Endolysin-Based “Artilysins” To Combat Multidrug-Resistant Gram-Negative Pathogens",
+    "shortTitle": "Engineered Endolysin-Based “Artilysins” To Combat Multidrug-Re",
+    "authors": "BriersYves, WalmaghMaarten, Van PuyenbroeckVictor et al.",
+    "year": 2014,
+    "domain": "Experimental biology",
+    "modality": "Wet lab",
+    "category": "wet-lab",
+    "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4161244/",
+    "localPath": "raw/artilysins/fulltext.xml"
+  },
+  "thesis": "We modified endolysins by protein engineering to create Artilysins that are able to pass the outer membrane and become active against Pseudomonas aeruginosa and Acinetobacter baumannii, two of the most hazardous drug-resistant Gram-negative pathogens.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "artilysins-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "Which intervention or mechanism produces the reported experimental effect?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "artilysins-d",
+      "kind": "decision",
+      "title": "Choose construct and controls",
+      "body": "Therefore, we developed and optimized an approach to engineer these enzymes as outer membrane-penetrating endolysins (Artilysins), rendering them highly bactericidal against Gram-negative pathogens, including Pseudomonas aeruginosa and Acinetobacter baumannii.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "artilysins-i",
+      "kind": "investigation",
+      "title": "Run assays against controls",
+      "body": "The global threat to public health posed by emerging multidrug-resistant bacteria in the past few years necessitates the development of novel approaches to combat bacterial infections.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "artilysins-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "We show that the activity of Artilysins can be further enhanced by the presence of a linker of increasing length between the peptide and endolysin or by a combination of both polycationic and hydrophobic/amphipathic peptides.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "artilysins-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "We modified endolysins by protein engineering to create Artilysins that are able to pass the outer membrane and become active against Pseudomonas aeruginosa and Acinetobacter baumannii, two of the most hazardous drug-resistant Gram-negative pathogens.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "artilysins-q",
+      "to": "artilysins-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "artilysins-d",
+      "to": "artilysins-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "artilysins-i",
+      "to": "artilysins-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "artilysins-e",
+      "to": "artilysins-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

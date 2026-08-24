@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-08-24",
+  "remote_host": "smYuHangLab2",
+  "references": [
+    {
+      "q": "Q021",
+      "title": "Global antimicrobial resistance and use surveillance system (GLASS) report: 2022",
+      "authority": "World Health Organization",
+      "authors": [
+        "World Health Organization"
+      ],
+      "publication_year": 2022,
+      "isbn": "978-92-4-006270-2",
+      "url": "https://iris.who.int/server/api/core/bitstreams/e5cc3da6-f46e-4355-a352-8d16820e0dd1/content",
+      "authority_url": "https://www.who.int/publications/i/item/9789240062702",
+      "license": "CC BY-NC-SA 3.0 IGO",
+      "license_url": "https://creativecommons.org/licenses/by-nc-sa/3.0/igo/",
+      "media_type": "application/pdf",
+      "pdf_version": "1.7",
+      "pages": 82,
+      "bytes": 5265152,
+      "sha256": "dda0c28e3ff2b67ea9f1b8c4f552c7bc6eda323c6b1e25470d135a2ba08d55f5",
+      "remote_path": "/data/zsm/ai4s/references/issue-53/q021-who-glass-2022.pdf"
+    },
+    {
+      "q": "Q049",
+      "title": "Timescales of Chaos in the Inner Solar System: Lyapunov Spectrum and Quasi-integrals of Motion",
+      "authority": "arXiv",
+      "authors": [
+        "Federico Mogavero",
+        "Nam H. Hoang",
+        "Jacques Laskar"
+      ],
+      "publication_year": 2023,
+      "doi": "10.1103/PhysRevX.13.021018",
+      "arxiv_id": "2305.01683",
+      "arxiv_version": "v1",
+      "url": "https://arxiv.org/pdf/2305.01683v1",
+      "authority_url": "https://arxiv.org/abs/2305.01683v1",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "media_type": "application/pdf",
+      "pdf_version": "1.5",
+      "pages": 24,
+      "bytes": 3956861,
+      "sha256": "c44419c0dfefba8492af1f648753d0ddd90313b64acffd31e56f8549a460d1c7",
+      "remote_path": "/data/zsm/ai4s/references/issue-53/q049-mogavero-hoang-laskar-2023-arxiv-2305.01683v1.pdf"
+    },
+    {
+      "q": "Q112",
+      "title": "Production, optimization, scale up and characterization of polyhydoxyalkanoates copolymers utilizing dairy processing waste",
+      "authority": "Scientific Reports",
+      "authors": [
+        "Tejaswini Dhanaji Patil",
+        "Saptaneel Ghosh",
+        "Aparna Agarwal",
+        "Sanjay Kumar Singh Patel",
+        "Abhishek Dutt Tripathi",
+        "Dipendra Kumar Mahato",
+        "Pradeep Kumar",
+        "Petr Slama",
+        "Ales Pavlik",
+        "Shafiul Haque"
+      ],
+      "publication_year": 2024,
+      "doi": "10.1038/s41598-024-52098-0",
+      "url": "https://www.nature.com/articles/s41598-024-52098-0.pdf",
+      "authority_url": "https://www.nature.com/articles/s41598-024-52098-0",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "media_type": "application/pdf",
+      "pdf_version": "1.4",
+      "pages": 11,
+      "bytes": 2328030,
+      "sha256": "709c8690107d4bf37fdf28ed358266308b6c94658ef74055ca7cd4ad94a0732b",
+      "remote_path": "/data/zsm/ai4s/references/issue-53/q112-patil-et-al-2024-s41598-024-52098-0.pdf"
+    }
+  ]
+}

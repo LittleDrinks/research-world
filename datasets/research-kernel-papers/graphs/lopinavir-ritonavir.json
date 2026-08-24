@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "lopinavir-ritonavir",
+    "title": "A Trial of Lopinavir–Ritonavir in Adults Hospitalized with Severe Covid-19",
+    "shortTitle": "A Trial of Lopinavir–Ritonavir in Adults Hospitalized with Sev",
+    "authors": "CaoBin, WangYeming, WenDanning et al.",
+    "year": 2020,
+    "domain": "Human and clinical research",
+    "modality": "Human / clinical",
+    "category": "human-clinical",
+    "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7121492/",
+    "localPath": "raw/lopinavir-ritonavir/fulltext.xml"
+  },
+  "thesis": "In hospitalized adult patients with severe Covid-19, no benefit was observed with lopinavir–ritonavir treatment beyond standard care.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "lopinavir-ritonavir-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What effect or association is supported in the studied human population?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "lopinavir-ritonavir-d",
+      "kind": "decision",
+      "title": "Choose cohort and endpoint",
+      "body": "We conducted a randomized, controlled, open-label trial involving hospitalized adult patients with confirmed SARS-CoV-2 infection, which causes the respiratory illness Covid-19, and an oxygen saturation (Sao2) of 94% or less while they were breathing ambient air or a ratio of the partial pressure of oxygen (Pao2) to the fraction of inspired oxygen (Fio2) of less than 300 mm Hg.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "lopinavir-ritonavir-i",
+      "kind": "investigation",
+      "title": "Measure human outcomes",
+      "body": "Patients were randomly assigned in a 1:1 ratio to receive either lopinavir–ritonavir (400 mg and 100 mg, respectively) twice a day for 14 days, in addition to standard care, or standard care alone.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "lopinavir-ritonavir-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Treatment with lopinavir–ritonavir was not associated with a difference from standard care in the time to clinical improvement (hazard ratio for clinical improvement, 1.24; 95% confidence interval [CI], 0.90 to 1.72).",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "lopinavir-ritonavir-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "In hospitalized adult patients with severe Covid-19, no benefit was observed with lopinavir–ritonavir treatment beyond standard care.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "lopinavir-ritonavir-q",
+      "to": "lopinavir-ritonavir-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "lopinavir-ritonavir-d",
+      "to": "lopinavir-ritonavir-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "lopinavir-ritonavir-i",
+      "to": "lopinavir-ritonavir-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "lopinavir-ritonavir-e",
+      "to": "lopinavir-ritonavir-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

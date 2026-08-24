@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "trappist1",
+    "title": "Seven temperate terrestrial planets around the nearby ultracool dwarf star TRAPPIST-1",
+    "shortTitle": "Seven temperate terrestrial planets around the nearby ultracoo",
+    "authors": "Michael Gillon, Amaury H. M. J. Triaud, Brice-Olivier Demory et al.",
+    "year": 2017,
+    "domain": "Observational science",
+    "modality": "Observation",
+    "category": "observation",
+    "sourceUrl": "https://arxiv.org/abs/1703.01424",
+    "localPath": "raw/trappist1/paper.pdf"
+  },
+  "thesis": "The seven planets have equilibrium temperatures low enough to make possible liquid water on their surfaces.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "trappist1-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What phenomenon is supported by the reported observations?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "trappist1-d",
+      "kind": "decision",
+      "title": "Choose instrument and selection",
+      "body": "One focus of modern astronomy is to detect temperate terrestrial exoplanets well-suited for atmospheric characterisation.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "trappist1-i",
+      "kind": "investigation",
+      "title": "Acquire and analyze observations",
+      "body": "Our observations reveal that at least seven planets with sizes and masses similar to the Earth revolve around TRAPPIST-1.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "trappist1-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "A milestone was recently achieved with the detection of three Earth-sized planets transiting (i.e. passing in front of) a star just 8% the mass of the Sun 12 parsecs away.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "trappist1-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "The seven planets have equilibrium temperatures low enough to make possible liquid water on their surfaces.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "trappist1-q",
+      "to": "trappist1-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "trappist1-d",
+      "to": "trappist1-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "trappist1-i",
+      "to": "trappist1-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "trappist1-e",
+      "to": "trappist1-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}
