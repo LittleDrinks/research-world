@@ -64,7 +64,7 @@ async def test_catalog_contains_only_detected_workspace_assets(tmp_path, monkeyp
         "submit_observation",
     ):
         assert tool_id in tools
-    assert all(item["status"] == "ready" for item in tools.values())
+    assert all(item["status"] == "ready" for key, item in tools.items() if key != "lean4")
     assert all(
         set(item) == {"id", "name", "description", "source", "status"}
         for item in tools.values()
@@ -88,21 +88,14 @@ async def test_catalog_lists_unavailable_lean4_in_math_preset(tmp_path, monkeypa
 
 
 async def test_preset_tool_status_follows_adapter_readiness(tmp_path, monkeypatch):
-    import sys
-
-    from runtime.adapters import parse_definition
-
     monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
     monkeypatch.setenv("RUNTIME_API_KEY", "secret")
     monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
-    definition = parse_definition(
-        {"id": "lean4", "transport": "stdio", "command": sys.executable},
-        "runtime",
-    )
-    runtime = Runtime(tmp_path / "data", tool_definitions=[definition])
+    monkeypatch.setattr("runtime.lean4._doctor", lambda _url: True)
+    runtime = Runtime(tmp_path / "data")
 
     value = await runtime.recognize(str(tmp_path))
 
     preset = {item["id"]: item for item in value["presets"]}["math-proof"]
     assert preset["tools"] == [{"id": "lean4", "status": "ready"}]
-    assert sys.executable not in json.dumps(preset)
+    assert "command" not in json.dumps(preset)

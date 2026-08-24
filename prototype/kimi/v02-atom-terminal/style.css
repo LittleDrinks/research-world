@@ -1,0 +1,157 @@
+/* THROWAWAY PROTOTYPE: V02 ASCII 原子终端 —— 黑底磷光绿 CRT。 */
+.v02-root {
+  --g: #33ff66;
+  --dim: #1f9d4b;
+  --faint: #155c2e;
+  --hot: #c4ffd9;
+  --warn: #ffe066;
+  --err: #ff5f5f;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #040804;
+  color: var(--g);
+  color-scheme: dark;
+  font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  text-shadow: 0 0 7px rgba(51, 255, 102, 0.28);
+}
+.v02-root button { font-family: inherit; text-shadow: inherit; }
+.v02-scan {
+  position: absolute; inset: 0; z-index: 40; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.28) 0 1px, transparent 1px 3px);
+}
+.v02-beam {
+  position: absolute; left: 0; right: 0; height: 140px; z-index: 41; pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(51, 255, 102, 0.07), transparent);
+  animation: v02beam 8s linear infinite;
+}
+@keyframes v02beam { from { top: -25%; } to { top: 110%; } }
+.v02-dim { color: var(--dim); }
+.v02-faint { color: var(--faint); }
+.v02-hot { color: var(--hot); text-shadow: 0 0 10px rgba(196, 255, 217, 0.55); }
+.v02-warn { color: var(--warn); text-shadow: 0 0 8px rgba(255, 224, 102, 0.4); }
+.v02-err { color: var(--err); text-shadow: 0 0 8px rgba(255, 95, 95, 0.4); }
+.v02-ok { color: var(--g); }
+.v02-info { color: #7dffab; }
+.v02-lock { color: #57d98a; }
+.v02-pend { color: var(--warn); }
+.v02-edge { color: var(--faint); text-shadow: none; }
+.v02-sel { background: var(--g); color: #021207 !important; text-shadow: none !important; }
+
+/* ── 顶栏 ── */
+.v02-top {
+  display: flex; align-items: center; gap: 20px;
+  padding: 6px 14px; border-bottom: 1px solid var(--faint);
+  background: rgba(4, 12, 6, 0.9); flex: none;
+}
+.v02-brand { display: flex; align-items: center; gap: 12px; }
+.v02-atom { margin: 0; font-size: 10px; line-height: 1.1; color: var(--g); text-shadow: 0 0 10px rgba(51, 255, 102, 0.7); }
+.v02-brandtx { display: flex; flex-direction: column; line-height: 1.3; }
+.v02-brandtx b { letter-spacing: 3px; font-size: 14px; }
+.v02-brandtx span { font-size: 11px; }
+.v02-metrics { display: flex; align-items: baseline; gap: 16px; margin: 0 auto; font-size: 12px; }
+.v02-metrics b { font-size: 17px; margin-left: 2px; }
+.v02-selchip { border: 1px solid var(--dim); padding: 1px 8px; color: var(--g); }
+.v02-selchip em { font-style: normal; color: var(--dim); }
+.v02-keys { border: 1px dashed var(--faint); padding: 4px 10px; font-size: 10.5px; line-height: 1.45; color: var(--dim); flex: none; }
+.v02-keys b { color: var(--g); font-weight: 600; }
+.v02-keysh { display: flex; align-items: center; gap: 4px; color: var(--g); letter-spacing: 2px; }
+
+/* ── 主区 ── */
+.v02-main { flex: 1; display: flex; min-height: 0; }
+.v02-view { flex: 1; min-width: 0; overflow: auto; padding: 10px 16px; }
+.v02-view::-webkit-scrollbar, .v02-pbody::-webkit-scrollbar { width: 8px; height: 8px; }
+.v02-view::-webkit-scrollbar-thumb, .v02-pbody::-webkit-scrollbar-thumb { background: var(--faint); }
+.v02-view::-webkit-scrollbar-track, .v02-pbody::-webkit-scrollbar-track { background: transparent; }
+
+/* log 流 */
+.v02-log { max-width: 980px; }
+.v02-banner { margin: 0 0 10px; color: var(--g); font-size: 12.5px; line-height: 1.35; text-shadow: 0 0 12px rgba(51, 255, 102, 0.5); white-space: pre; }
+.v02-line { padding: 1px 0; overflow-wrap: anywhere; }
+.v02-time { color: var(--faint); margin-right: 8px; text-shadow: none; }
+.v02-echo { color: var(--dim); }
+.v02-user { color: var(--hot); font-weight: 600; }
+.v02-orch { color: var(--g); }
+.v02-note { color: var(--dim); }
+.v02-ref {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: #7dffab; text-decoration: underline dotted; font-size: inherit;
+}
+.v02-ref:hover { background: var(--g); color: #021207; text-shadow: none; }
+
+/* ASCII 图谱 */
+.v02-map { display: inline-block; min-width: 100%; }
+.v02-maptitle { padding: 6px 0; letter-spacing: 1px; }
+.v02-mapline { white-space: pre; font-size: 12.5px; line-height: 1.4; }
+.v02-mapnode {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: inherit; font-size: inherit; line-height: inherit;
+}
+.v02-mapnode:hover { background: rgba(51, 255, 102, 0.16); outline: 1px solid var(--dim); }
+.v02-mapnode.v02-sel:hover { background: var(--g); color: #021207; }
+
+/* ── 侧舱 ── */
+.v02-side {
+  width: 400px; flex: none; border-left: 1px solid var(--faint);
+  background: rgba(3, 10, 5, 0.96); display: flex; min-height: 0;
+}
+.v02-panel { display: flex; flex-direction: column; width: 100%; min-height: 0; }
+.v02-phead {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 12px; border-bottom: 1px solid var(--faint); font-weight: 600; flex: none;
+}
+.v02-phead span { display: flex; align-items: center; gap: 6px; }
+.v02-x { background: none; border: 0; color: var(--dim); cursor: pointer; padding: 0 4px; }
+.v02-x:hover { color: var(--err); }
+.v02-pbody { flex: 1; overflow: auto; padding: 10px 14px; }
+.v02-pprompt { margin: 0 0 10px; color: var(--hot); }
+.v02-kv { display: flex; gap: 10px; padding: 1px 0; overflow-wrap: anywhere; }
+.v02-kv > span:first-child { flex: none; }
+.v02-sec { color: var(--faint); margin: 12px 0 4px; text-shadow: none; }
+.v02-acc { color: var(--g); }
+.v02-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.v02-tool { border: 1px solid var(--faint); padding: 0 6px; color: var(--dim); }
+.v02-kid {
+  display: block; width: 100%; text-align: left; background: none; border: 0;
+  padding: 2px 4px; color: var(--g); cursor: pointer; font-size: inherit;
+}
+.v02-kid:hover { background: rgba(51, 255, 102, 0.12); }
+.v02-cline { padding: 2px 0; color: var(--dim); overflow-wrap: anywhere; }
+.v02-cline.user { color: var(--hot); }
+.v02-approve {
+  margin-top: 14px; width: 100%; padding: 8px; cursor: pointer;
+  background: transparent; border: 1px dashed var(--g); color: var(--g); font-size: inherit;
+}
+.v02-approve:hover { background: var(--g); color: #021207; text-shadow: none; }
+.v02-act { padding: 6px 0; border-bottom: 1px dotted var(--faint); }
+.v02-actt { padding-left: 24px; }
+.v02-act .v02-dim { padding-left: 24px; }
+.v02-prj {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  background: transparent; border: 1px solid var(--faint); color: var(--g);
+  padding: 8px 10px; margin: 6px 0; font-size: inherit; line-height: 1.5;
+}
+.v02-prj:hover { border-color: var(--dim); }
+.v02-prj.on { border-color: var(--g); background: rgba(51, 255, 102, 0.08); }
+.v02-prjid { color: var(--dim); font-size: 11px; }
+.v02-pfoot { margin-top: 10px; }
+
+/* ── 命令行 ── */
+.v02-cli {
+  flex: none; display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px; border-top: 1px solid var(--faint);
+  background: rgba(4, 12, 6, 0.95);
+}
+.v02-ps1 { color: var(--dim); flex: none; }
+.v02-cli input {
+  flex: 1; background: transparent; border: 0; outline: 0;
+  color: var(--g); font: inherit; text-shadow: inherit; caret-color: var(--g);
+}
+.v02-cli input::placeholder { color: var(--faint); }
+.v02-cursor { animation: v02blink 1.1s steps(1) infinite; color: var(--g); flex: none; }
+@keyframes v02blink { 50% { opacity: 0; } }

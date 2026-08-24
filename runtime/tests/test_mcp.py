@@ -29,7 +29,7 @@ async def test_selected_tool_exposes_and_executes_operations(tmp_path, monkeypat
     call = {
         "id": "m1",
         "type": "function",
-        "function": {"name": "tool__lean4__echo", "arguments": '{"text":"hello"}'},
+        "function": {"name": "tool__proof_mcp__echo", "arguments": '{"text":"hello"}'},
     }
     provider = FakeProvider(
         [
@@ -39,8 +39,8 @@ async def test_selected_tool_exposes_and_executes_operations(tmp_path, monkeypat
     )
     definition = parse_definition(
         {
-            "id": "lean4",
-            "name": "Lean 4",
+            "id": "proof_mcp",
+            "name": "Proof MCP",
             "description": "Formal proof tools",
             "transport": "stdio",
             "command": sys.executable,
@@ -57,7 +57,7 @@ async def test_selected_tool_exposes_and_executes_operations(tmp_path, monkeypat
         "endpoint": "openai-compatible",
         "model": "qwen-test",
         "instructions": "Use tools.",
-        "tools": ["lean4"],
+        "tools": ["proof_mcp"],
     }
     launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": agent})
     artifacts = ArtifactClient()
@@ -66,14 +66,14 @@ async def test_selected_tool_exposes_and_executes_operations(tmp_path, monkeypat
         launched["session_id"], [{"type": "text", "text": "echo"}], artifacts
     )
 
-    assert "tool__lean4__echo" in str(provider.requests[0]["tools"])
+    assert "tool__proof_mcp__echo" in str(provider.requests[0]["tools"])
     assert "mcp:hello" in str(provider.requests[1]["messages"])
     assert "artifact:" + "a" * 64 in str(provider.requests[1]["messages"])
     method, capture = artifacts.calls[0]
     assert method == "research/capture_artifact"
     assert set(capture) == {"content", "media_type", "tool"}
     assert capture["media_type"] == "application/json"
-    assert capture["tool"] == "tool__lean4__echo"
+    assert capture["tool"] == "tool__proof_mcp__echo"
     assert "mcp:hello" in str(json.loads(capture["content"]))
 
 
@@ -156,7 +156,7 @@ async def test_tool_plan_snapshot_carries_no_location_or_command(tmp_path, monke
     script.write_text(SERVER)
     definition = parse_definition(
         {
-            "id": "lean4",
+            "id": "proof_mcp",
             "transport": "stdio",
             "command": sys.executable,
             "args": [str(script)],
@@ -174,15 +174,15 @@ async def test_tool_plan_snapshot_carries_no_location_or_command(tmp_path, monke
         "endpoint": "openai-compatible",
         "model": "qwen-test",
         "instructions": "Use tools.",
-        "tools": ["lean4"],
+        "tools": ["proof_mcp"],
     }
 
     launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": agent})
 
     meta = runtime.inspect(launched["session_id"])["session"]
     [entry] = meta["tool_plan"]
-    assert entry["id"] == "lean4"
-    assert [op["name"] for op in entry["operations"]] == ["tool__lean4__echo"]
+    assert entry["id"] == "proof_mcp"
+    assert [op["name"] for op in entry["operations"]] == ["tool__proof_mcp__echo"]
     frozen = json.dumps(meta)
     assert str(script) not in frozen
     assert sys.executable not in frozen

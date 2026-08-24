@@ -19,6 +19,7 @@ from mcp.client.stdio import stdio_client
 from mcp.client.streamable_http import streamable_http_client
 
 from .config import codex_config_path
+from .lean4 import Lean4Adapter
 from .tools import BUILTINS
 
 TOOL_ID = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]*$")
@@ -142,15 +143,16 @@ class BoundMcp:
 
 def discover_adapters(
     workspace: Path, extra: Iterable[ToolDefinition] = ()
-) -> dict[str, McpAdapter]:
+) -> dict[str, object]:
     found: dict[str, ToolDefinition] = {}
     sources = [_from_codex(), _from_workspace(workspace), {item.id: item for item in extra}]
     for source in sources:
         for key, value in source.items():
-            if key in found or key in BUILTINS:
+            if key in found or key in BUILTINS or key == "lean4":
                 raise ValueError(f"duplicate tool id: {key}")
             found[key] = value
-    return {key: McpAdapter(value) for key, value in found.items()}
+    external = {key: McpAdapter(value) for key, value in found.items()}
+    return {"lean4": Lean4Adapter(), **external}
 
 
 def parse_definition(value: dict[str, Any], source: str) -> ToolDefinition:

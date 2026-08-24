@@ -106,7 +106,10 @@ class FakeRunner:
             "command": step["command"],
             "files": step.get("files", {}),
             "seed": step.get("seed", 0),
-            "limits": step.get("limits", {"cpus": 1, "memory_mb": 512, "pids": 128}),
+            "limits": step.get(
+                "limits",
+                {"cpus": 1, "memory_mb": 512, "pids": 128, "wall_seconds": 300},
+            ),
         }
         return build_evidence(
             spec,
