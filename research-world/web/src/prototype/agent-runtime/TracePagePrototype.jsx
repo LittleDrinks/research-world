@@ -1,25 +1,25 @@
 import {
-  Activity, AlertTriangle, Archive, ArrowLeft, Box, Braces, CheckCircle2, ChevronDown, ChevronRight,
+  Activity, AlertTriangle, ArrowLeft, Box, Braces, CheckCircle2, ChevronDown, ChevronRight,
   CircleDot, Clock3, Copy, Filter, GitBranch, Menu, MessageSquareText,
-  PanelRightOpen, Pause, Search, ShieldAlert, TerminalSquare, X, Zap,
+  PanelRightOpen, Search, TerminalSquare, X, Zap,
 } from "lucide-react";
-import { useMemo, useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { useEffect, useMemo, useState } from "react";
 import {
-  FALLBACK_CONTENT, STATUS_LABEL, TRACE_CONTENT, TRACE_RELATIONS, TRACE_ROWS, TRACE_RUNS, TRACE_SUMMARY,
+  FALLBACK_CONTENT, SOURCE_LABEL, STATUS_LABEL, TRACE_CONTENT, TRACE_RELATIONS, TRACE_ROWS, TRACE_RUNS, TRACE_SUMMARY,
 } from "./trace-seed";
 import "./trace-page-prototype.css";
 
 const TYPE_ICON = { stage: GitBranch, step: Zap, session: Activity, turn: MessageSquareText, response: Braces, tool: TerminalSquare };
-const SCENES = ["running", "completed", "failed", "paused", "cancelled", "empty", "loading"];
+const SCENES = ["running", "completed", "failed", "cancelled", "empty", "loading"];
 const TABS = ["overview", "input", "output", "diff", "artifact", "raw"];
 const TAB_LABEL = { overview: "概览", input: "输入", output: "输出", diff: "Diff", artifact: "Artifact", raw: "原始" };
+const MAX_LINES = 200;
+const MAX_CONTENT = 256 * 1024;
 
 function sceneRows(scene) {
   if (scene === "completed") return TRACE_ROWS.map((row) => ({ ...row, status: "completed", duration: row.duration === "--" ? "18s" : row.duration }));
-  if (scene === "failed") return TRACE_ROWS.map((row) => row.id === "tool-search" || row.id === "session-b" || row.id === "stage-execute" ? { ...row, status: "failed", duration: "2m 11s" } : row);
-  if (scene === "paused") return TRACE_ROWS.map((row) => row.status === "running" ? { ...row, status: "paused", duration: "已暂停" } : row);
-  if (scene === "cancelled") return TRACE_ROWS.map((row) => row.id === "session-b" || row.id === "tool-search" ? { ...row, status: "cancelled", duration: "2m 04s" } : row.id === "stage-execute" ? { ...row, status: "paused" } : row);
+  if (scene === "failed") return TRACE_ROWS.map((row) => ["tool-search", "session-b", "stage-execute"].includes(row.id) ? { ...row, status: "failed", duration: "2m 11s" } : row);
+  if (scene === "cancelled") return TRACE_ROWS.map((row) => ["session-b", "tool-search"].includes(row.id) ? { ...row, status: "cancelled", duration: "2m 04s" } : row);
   return TRACE_ROWS;
 }
 
@@ -49,11 +49,12 @@ function useTraceModel() {
   const [query, setQuery] = useState("");
   const [type, setType] = useState("all");
   const [errorsOnly, setErrorsOnly] = useState(false);
-  const [selected, setSelected] = useState("tool-write");
+  const [selected, setSelected] = useState("tool-long-json");
   const [expanded, setExpanded] = useState(new Set(TRACE_ROWS.map((row) => row.id)));
   const [railOpen, setRailOpen] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const rows = useMemo(() => filteredRows(sceneRows(scene), query, type, errorsOnly), [scene, query, type, errorsOnly]);
+  useEffect(() => { if (["empty", "loading"].includes(scene)) setInspectorOpen(false); }, [scene]);
   return { scene, setScene, query, setQuery, type, setType, errorsOnly, setErrorsOnly, selected, setSelected, expanded, setExpanded, railOpen, setRailOpen, inspectorOpen, setInspectorOpen, rows };
 }
 
@@ -62,32 +63,62 @@ export function TracePagePrototype() {
   const [activeRun, setActiveRun] = useState(TRACE_RUNS[1]);
   const context = traceContext();
   const chooseRun = (run) => { setActiveRun(run); model.setScene(run.status); model.setRailOpen(false); };
-  return <div className={`tp-shell ${model.railOpen ? "tp-rail-open" : ""}`}>
+  const stateOnly = ["empty", "loading"].includes(model.scene);
+  return <div className={`tp-shell ${model.railOpen ? "tp-rail-open" : ""} ${stateOnly ? "tp-state-only" : ""}`}>
     <RunRail active={activeRun} choose={chooseRun} close={() => model.setRailOpen(false)} context={context} />
     <main className="tp-main"><MobileBar open={() => model.setRailOpen(true)} run={activeRun} />
       <TraceWorkspace model={model} run={activeRun} context={context} /></main>
-    <TraceInspector model={model} />
+    {!stateOnly && <TraceInspector model={model} />}
   </div>;
+}
+
+function validId(value, prefix) {
+  return new RegExp(`^${prefix}:[A-Za-z0-9_-]{1,64}$`).test(value || "") ? value : "";
+}
+
+function safeReturn(raw, project, thread) {
+  const fallback = thread ? `/chat/${encodeURIComponent(thread)}` : project ? "/map" : "/projects";
+  if (!raw || !project) return fallback;
+  let url;
+  try { url = new URL(raw, window.location.origin); } catch { return fallback; }
+  if (url.origin !== window.location.origin || url.hash) return fallback;
+  if (url.pathname === "/projects" && !url.search) return "/projects";
+  if (validMapReturn(url)) return `${url.pathname}${url.search}`;
+  return validChatReturn(url, thread) ? `/chat/${encodeURIComponent(thread)}` : fallback;
+}
+
+function validMapReturn(url) {
+  const keys = [...url.searchParams.keys()];
+  return url.pathname === "/map" && (!keys.length || keys.length === 1 && validId(url.searchParams.get("node"), "node"));
+}
+
+function validChatReturn(url, thread) {
+  if (!thread || url.search || !url.pathname.startsWith("/chat/")) return false;
+  try { return decodeURIComponent(url.pathname.slice(6)) === thread; } catch { return false; }
 }
 
 function traceContext() {
   const params = new URLSearchParams(window.location.search);
-  return { project: params.get("project_id") || "project:q49", thread: params.get("thread_id") || "thread:orbital", from: params.get("from") || "/chat/thread:orbital" };
+  const project = validId(params.get("project_id"), "project");
+  const thread = project ? validId(params.get("thread_id"), "thread") : "";
+  const from = safeReturn(params.get("from"), project, thread);
+  const origin = from === "/projects" ? "Project" : from.startsWith("/map") ? "Graph" : "Chat";
+  return { project, thread, from, origin };
 }
 
 function RunRail({ active, choose, close, context }) {
   const [status, setStatus] = useState("all");
   const rows = TRACE_RUNS.filter((run) => status === "all" || run.status === status);
-  return <aside className="tp-run-rail"><header><div><small>{context.project} · {TRACE_RUNS.length} RUNS</small><b>{context.thread}</b></div><button onClick={close} aria-label="关闭运行列表"><X size={18} /></button></header>
+  return <aside className="tp-run-rail"><header><div><small>{context.project || "Project 无效"} · {TRACE_RUNS.length} FIXTURES</small><b>{context.thread || "Project scope"}</b></div><button onClick={close} aria-label="关闭运行列表"><X size={18} /></button></header>
     <label className="tp-rail-search"><Search size={14} /><span className="sr-only">筛选状态</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">全部状态</option><option value="running">运行中</option><option value="failed">失败</option><option value="completed">已完成</option></select></label>
     <div className="tp-run-list">{rows.map((run) => <RunItem key={run.id} run={run} active={active.id === run.id} choose={choose} />)}</div>
-    <footer><span><CircleDot size={12} />5 秒前更新</span><button title="暂停列表更新"><Pause size={14} /></button></footer>
+    <footer><SourceTag source="existing" /><span>静态 fixture</span></footer>
   </aside>;
 }
 
 function RunItem({ run, active, choose }) {
   return <button className={`tp-run-item ${active ? "active" : ""}`} onClick={() => choose(run)}>
-    <StatusMark status={run.status} /><span><b>{run.name}</b><code>{run.id} · node {run.node}</code></span>
+    <StatusMark status={run.status} /><span><b>{run.name}</b><code>{run.id} · {run.node}</code><SourceTag source={run.source} /></span>
     <small>{STATUS_LABEL[run.status]}<time>{run.time}</time></small>
   </button>;
 }
@@ -97,59 +128,74 @@ function MobileBar({ open, run }) {
 }
 
 function TraceWorkspace({ model, run, context }) {
-  if (model.scene === "empty" || model.scene === "loading") return <TraceState scene={model.scene} model={model} />;
+  if (["empty", "loading"].includes(model.scene)) return <TraceState scene={model.scene} model={model} context={context} />;
   const rows = visibleByFold(model.rows, model.expanded);
   return <section className="tp-workspace"><RunHeader model={model} run={run} context={context} />
-    <SummaryBand scene={model.scene} /><RelationStrip run={run} /><TraceOverview rows={model.rows} scene={model.scene} />
+    <SourceLegend /><SummaryBand scene={model.scene} /><RelationStrip run={run} /><TraceOverview rows={model.rows} scene={model.scene} />
     <TraceToolbar model={model} /><div className="tp-tree" role="tree">{rows.map((row) => <TraceRow key={row.id} row={row} model={model} />)}</div>
     {!rows.length && <div className="tp-filter-empty"><Search size={24} /><b>无匹配事件</b><button onClick={() => { model.setQuery(""); model.setType("all"); model.setErrorsOnly(false); }}>清除筛选</button></div>}
   </section>;
 }
 
-function TraceState({ scene, model }) {
+function TraceState({ scene, model, context }) {
   const loading = scene === "loading";
   return <section className={`tp-state-screen ${loading ? "loading" : ""}`}><Activity size={28} /><h1>{loading ? "正在载入 Trace" : "暂无运行"}</h1>
-    <p>{loading ? "" : "Pipeline run 创建后显示在此处"}</p><button onClick={() => model.setScene("running")}>{loading ? "返回运行态" : "查看运行态"}</button></section>;
+    <p>{loading ? "旧 inspector 已隔离" : "Pipeline run 创建后显示在此处"}</p><a href={context.from}><ArrowLeft size={14} />返回 {context.origin}</a>
+    <button onClick={() => model.setScene("running")}>查看 running fixture</button></section>;
 }
 
 function RunHeader({ model, run, context }) {
   const status = model.scene === "cancelled" ? "paused" : model.scene;
-  return <><header className="tp-run-header"><div className="tp-heading"><span>{context.project} / {context.thread} / Trace</span><h1>{run.name} <code>run:{run.id}</code></h1><p>node:{run.node} · lineage:8f3d · 当前 execute</p></div>
-    <div className="tp-header-actions"><a className="tp-back-chat" href={context.from}><ArrowLeft size={15} />返回对话</a><SceneSelect model={model} /><CopyButton value={`run:${run.id}`} /><StatusBadge status={status} /></div></header>
+  return <><header className="tp-run-header"><div className="tp-heading"><span>{context.project || "无有效 Project"} / {context.thread || "Project scope"} / Trace</span><h1>{run.name} <code>{run.id}</code> <SourceTag source="existing" /></h1><p><a href={`/map?node=${encodeURIComponent(run.node)}`}>{run.node}</a> · <SourceTag source="existing" /> · 当前 execute <SourceTag source="derived" /></p></div>
+    <div className="tp-header-actions"><a className="tp-back-chat" href={context.from}><ArrowLeft size={15} />返回 {context.origin}</a><SceneSelect model={model} /><CopyButton value={run.id} title="复制完整 fixture ID" /><StatusBadge status={status} /></div></header>
     {model.scene === "failed" && <ErrorBanner />}{model.scene === "cancelled" && <CancelBanner />}</>;
+}
+
+function SourceLegend() {
+  return <div className="tp-source-legend"><span>字段来源</span>{Object.keys(SOURCE_LABEL).map((source) => <SourceTag key={source} source={source} />)}</div>;
+}
+
+function SourceTag({ source }) {
+  return <small className={`tp-source ${source}`} data-source={source}>{SOURCE_LABEL[source]}</small>;
 }
 
 function SceneSelect({ model }) {
   return <label className="tp-scene"><span className="sr-only">Prototype 状态</span><select value={model.scene} onChange={(event) => model.setScene(event.target.value)}>
-    {SCENES.map((scene) => <option key={scene} value={scene}>{scene === "cancelled" ? "Turn cancelled" : scene}</option>)}</select></label>;
+    {SCENES.map((scene) => <option key={scene} value={scene}>{scene === "completed" ? "complete" : scene}</option>)}</select></label>;
 }
 
-function CopyButton({ value }) {
+function CopyButton({ value, title = "复制可见内容" }) {
   const [copied, setCopied] = useState(false);
   const copy = () => navigator.clipboard?.writeText(value).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1200); });
-  return <button className="tp-icon-button" onClick={copy} title="复制完整 Run ID">{copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}</button>;
+  return <button className="tp-icon-button" onClick={copy} title={title} aria-label={title}>{copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}</button>;
 }
 
 function ErrorBanner() {
-  return <button className="tp-error-banner" onClick={() => document.getElementById("tool-search")?.scrollIntoView({ block: "center" })}><AlertTriangle size={16} /><b>graph_query 失败</b><span>Connection closed</span><ChevronRight size={16} /></button>;
+  return <button className="tp-error-banner" onClick={() => document.getElementById("tool-search")?.scrollIntoView({ block: "center" })}><AlertTriangle size={16} /><b>graph_query 失败</b><SourceTag source="existing" /><ChevronRight size={16} /></button>;
 }
 
 function CancelBanner() {
-  return <div className="tp-cancel-banner"><Pause size={15} /><b>Turn 已取消</b><span>Run cancelled 状态未记录 · 待 Kernel API</span></div>;
+  return <div className="tp-cancel-banner"><b>Turn 已取消</b><SourceTag source="existing" /><span>Run cancelled：待 API/不可用</span><SourceTag source="missing" /></div>;
 }
 
 function SummaryBand({ scene }) {
-  const summary = scene === "cancelled" ? TRACE_SUMMARY.map((item) => item.label === "进度" ? { ...item, value: "Turn cancelled", note: "Run 待 API" } : item) : TRACE_SUMMARY;
-  return <section className="tp-summary" aria-label="运行摘要">{summary.map((item) => <div key={item.label}><span>{item.label}</span><b>{item.value}</b><small>{item.note}</small></div>)}</section>;
+  const summary = scene === "cancelled" ? TRACE_SUMMARY.map((item) => item.label === "进度" ? { ...item, value: "Turn cancelled", note: "Run 状态不可用" } : item) : TRACE_SUMMARY;
+  return <section className="tp-summary" aria-label="运行摘要">{summary.map((item) => <div key={item.label}><span>{item.label}</span><b>{item.value}</b><small>{item.note}</small><SourceTag source={item.source} /></div>)}</section>;
 }
 
 function RelationStrip({ run }) {
   const relations = TRACE_RELATIONS.map((item) => item.label === "Node" ? { ...item, value: run.node } : item);
-  return <nav className="tp-relations" aria-label="关联记录">{relations.map((item) => <button key={item.label}><span>{item.label}</span><b className={item.tone}>{item.value}</b><ChevronRight size={13} /></button>)}</nav>;
+  return <nav className="tp-relations" aria-label="关联记录">{relations.map((item) => item.action === "node"
+    ? <a key={item.label} href={`/map?node=${encodeURIComponent(item.value)}`}><Relation item={item} /></a>
+    : <button key={item.label} disabled title={item.source === "missing" ? "待 API/不可用" : "无独立路由"}><Relation item={item} /></button>)}</nav>;
+}
+
+function Relation({ item }) {
+  return <><span>{item.label}</span><b>{item.value}</b><SourceTag source={item.source} />{item.action && <ChevronRight size={13} />}</>;
 }
 
 function TraceOverview({ rows, scene }) {
-  return <section className="tp-overview"><header><span><Clock3 size={14} />OVERVIEW</span><b>{scene === "running" ? "LIVE · 06:42" : "06:42"}</b></header>
+  return <section className="tp-overview"><header><span><Clock3 size={14} />OVERVIEW <SourceTag source="derived" /></span><b>{scene === "running" ? "LIVE · 06:42" : "06:42"}</b></header>
     <div className="tp-overview-scale"><span>00:00</span><span>02:00</span><span>04:00</span><span>06:00</span></div>
     <div className="tp-lanes">{rows.filter((row) => ["stage", "session"].includes(row.type)).slice(0, 6).map((row) => <OverviewLane key={row.id} row={row} />)}<i className="tp-now" /></div>
   </section>;
@@ -161,7 +207,7 @@ function OverviewLane({ row }) {
 
 function TraceToolbar({ model }) {
   const expandAll = () => model.setExpanded(new Set(TRACE_ROWS.map((row) => row.id)));
-  return <div className="tp-toolbar"><label className="tp-search"><Search size={15} /><input value={model.query} onChange={(event) => model.setQuery(event.target.value)} placeholder="搜索事件、Tool、ID" /></label>
+  return <div className="tp-toolbar"><label className="tp-search"><Search size={15} /><input value={model.query} onChange={(event) => model.setQuery(event.target.value)} placeholder="搜索已加载 fixture" /></label>
     <label className="tp-select"><Filter size={14} /><select value={model.type} onChange={(event) => model.setType(event.target.value)}><option value="all">全部类型</option><option value="session">Session</option><option value="tool">Tool</option><option value="response">Response</option></select></label>
     <label className="tp-errors"><input type="checkbox" checked={model.errorsOnly} onChange={(event) => model.setErrorsOnly(event.target.checked)} />仅异常</label>
     <div className="tp-fold"><button onClick={() => model.setExpanded(new Set())}>折叠</button><button onClick={expandAll}>展开</button></div>
@@ -176,7 +222,7 @@ function TraceRow({ row, model }) {
   const toggle = (event) => { event.stopPropagation(); model.setExpanded((value) => { const next = new Set(value); next.has(row.id) ? next.delete(row.id) : next.add(row.id); return next; }); };
   return <button id={row.id} role="treeitem" aria-selected={model.selected === row.id} className={`tp-row ${model.selected === row.id ? "selected" : ""}`} style={{ "--depth": row.depth }} onClick={select}>
     <span className="tp-branch">{expandable ? <span onClick={toggle}>{open ? <ChevronDown size={15} /> : <ChevronRight size={15} />}</span> : <i />}</span><Icon className="tp-type-icon" size={15} />
-    <span className="tp-row-copy"><b>{row.label}</b><small>{row.type.toUpperCase()} · {row.meta}</small></span><StatusBadge status={row.status} compact />
+    <span className="tp-row-copy"><b>{row.label}</b><small>{row.type.toUpperCase()} · {row.meta}</small><SourceTag source={row.source} /></span><StatusBadge status={row.status} compact />
     <time>{row.duration}</time><code>{row.tokens}</code><PanelRightOpen className="tp-open-inspector" size={15} />
   </button>;
 }
@@ -185,7 +231,7 @@ function TraceInspector({ model }) {
   const [tab, setTab] = useState("output");
   const content = TRACE_CONTENT[model.selected] || FALLBACK_CONTENT;
   return <aside className={`tp-inspector ${model.inspectorOpen ? "open" : ""}`}><header><div><span>INSPECTOR</span><b>{content.title}</b><small>{content.subtitle}</small></div><button onClick={() => model.setInspectorOpen(false)} aria-label="关闭检查器"><X size={18} /></button></header>
-    <div className="tp-inspector-meta"><span><ShieldAlert size={13} />脱敏标记：未记录</span><CopyButton value={JSON.stringify(content, null, 2)} /></div>
+    <div className="tp-inspector-meta"><SourceTag source={content.source} /><span>脱敏 provenance</span><SourceTag source="missing" /></div>
     <nav>{TABS.map((item) => <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{TAB_LABEL[item]}</button>)}</nav>
     <div className="tp-inspector-body"><InspectorContent tab={tab} content={content} /></div>
   </aside>;
@@ -193,31 +239,42 @@ function TraceInspector({ model }) {
 
 function InspectorContent({ tab, content }) {
   if (tab === "overview") return <OverviewContent content={content} />;
-  if (tab === "input") return <JsonBlock value={content.input} />;
-  if (tab === "output") return <OutputContent content={content} />;
-  if (tab === "diff") return <DiffContent lines={content.diff} />;
-  if (tab === "artifact") return <ArtifactContent artifact={content.artifact} />;
-  return <JsonBlock value={content} />;
+  if (tab === "input") return <JsonBlock field={content.input} />;
+  if (tab === "output") return <OutputContent field={content.output} />;
+  if (tab === "diff") return <MissingContent label="normalized diff" />;
+  if (tab === "artifact") return <ArtifactContent />;
+  return <JsonBlock field={{ source: "existing", value: content }} />;
 }
 
 function OverviewContent({ content }) {
-  return <dl className="tp-inspector-grid"><div><dt>Status</dt><dd>completed</dd></div><div><dt>Duration</dt><dd>52s</dd></div><div><dt>Token</dt><dd>--</dd></div><div><dt>Cost</dt><dd>未记录</dd></div><div><dt>Parent</dt><dd>session-b</dd></div><div><dt>Event</dt><dd>{content.title}</dd></div></dl>;
+  return <dl className="tp-inspector-grid"><InspectorField label="Status" value="completed" source="existing" /><InspectorField label="Duration" value="52s" source="derived" /><InspectorField label="Token" value="待 API/不可用" source="missing" /><InspectorField label="Cost" value="待 API/不可用" source="missing" /><InspectorField label="Parent" value="session-b" source="existing" /><InspectorField label="Event" value={content.title} source="existing" /></dl>;
 }
 
-function JsonBlock({ value }) {
-  return <pre className="tp-code"><code>{JSON.stringify(value, null, 2)}</code></pre>;
+function InspectorField({ label, value, source }) {
+  return <div><dt>{label}</dt><dd>{value}</dd><SourceTag source={source} /></div>;
 }
 
-function OutputContent({ content }) {
-  return <><section className="tp-terminal"><header><TerminalSquare size={13} />stdout</header><pre>{content.output}</pre></section><article className="tp-markdown"><ReactMarkdown>{content.markdown}</ReactMarkdown></article></>;
+function JsonBlock({ field }) {
+  const [expanded, setExpanded] = useState(false);
+  const lines = JSON.stringify(field.value, null, 2).split("\n");
+  const visible = expanded ? lines : lines.slice(0, MAX_LINES);
+  return <section className="tp-bounded"><header><SourceTag source={field.source} /><span>{lines.length} 行</span><CopyButton value={visible.join("\n")} /></header><pre className="tp-code"><code>{visible.join("\n")}</code></pre>
+    {lines.length > MAX_LINES && <button className="tp-content-toggle" onClick={() => setExpanded(!expanded)}>{expanded ? "折叠到 200 行" : `展开全部 ${lines.length} 行`}</button>}</section>;
 }
 
-function DiffContent({ lines }) {
-  return <pre className="tp-diff">{lines.map((line, index) => <span key={`${line}-${index}`} className={line.startsWith("+") ? "add" : line.startsWith("-") ? "remove" : "hunk"}><i>{index + 1}</i>{line}</span>)}</pre>;
+function OutputContent({ field }) {
+  const bytes = new TextEncoder().encode(field.value).length;
+  const visible = field.value.slice(0, MAX_CONTENT);
+  return <section className="tp-bounded"><header><SourceTag source={field.source} /><span>{bytes} bytes</span><CopyButton value={visible} /></header><section className="tp-terminal"><header><TerminalSquare size={13} />stdout</header><pre>{visible}</pre></section>
+    {bytes > MAX_CONTENT && <div className="tp-truncated" role="status">已显示 256 KiB；其余 {bytes - MAX_CONTENT} bytes 已截断。Artifact：待 API/不可用 <SourceTag source="missing" /></div>}</section>;
 }
 
-function ArtifactContent({ artifact }) {
-  return <section className="tp-artifact"><Box size={22} /><span><b>Immutable Artifact</b><code>{artifact.id}</code></span><dl><dt>Media type</dt><dd>{artifact.media_type}</dd><dt>Size</dt><dd>{artifact.size}</dd><dt>Admission</dt><dd>{artifact.admission}</dd></dl><button><Archive size={15} />打开 Artifact</button></section>;
+function MissingContent({ label }) {
+  return <section className="tp-unavailable"><AlertTriangle size={20} /><b>{label}</b><span>待 API/不可用</span><SourceTag source="missing" /></section>;
+}
+
+function ArtifactContent() {
+  return <section className="tp-artifact"><Box size={22} /><span><b>Artifact metadata/read</b><code>待 API/不可用</code><SourceTag source="missing" /></span><button disabled title="待 API/不可用">打开 Artifact</button></section>;
 }
 
 function StatusMark({ status }) {
