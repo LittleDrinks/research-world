@@ -121,7 +121,7 @@ function capabilityIssue(form, catalog) {
   const presetSkills = catalog.presets.flatMap((preset) => preset.skills || []);
   const tools = blockedTools(form.tools, presetTools, catalog.tools);
   const skills = blockedSkills(form.skills, presetSkills, catalog.skills);
-  const blocked = [...tools, ...skills];
+  const blocked = [...skills, ...tools];
   const unknown = blocked.filter((item) => item.status === "missing").map((item) => item.id);
   const unavailable = blocked.filter((item) => item.status !== "missing");
   const issues = unknown.length ? [`能力未被 Runtime 识别：${unknown.join("、")}`] : [];

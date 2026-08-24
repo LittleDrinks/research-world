@@ -320,7 +320,7 @@ test("blocks applying a Preset whose Tool is unavailable", async ({ page }) => {
     .toContainText("unavailable / not_installed");
   await page.getByRole("button", { name: "应用为草稿" }).click();
   const dialog = page.getByRole("dialog", { name: "应用 Preset：数学证明" });
-  await expect(dialog.getByRole("alert")).toContainText("Tool lean4：unavailable / not_installed");
+  await expect(dialog.getByRole("alert")).toContainText("Tool 不可用：lean4（unavailable / not_installed）");
   await expect(dialog.getByRole("link", { name: "Tool Catalog" })).toBeVisible();
   const submit = dialog.getByRole("button", { name: "创建 Agent", exact: true });
   await expect(submit).toHaveText("创建 Agent");

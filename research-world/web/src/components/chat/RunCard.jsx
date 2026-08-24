@@ -42,20 +42,30 @@ function SourceProjection({ run }) {
 
 
 function SourceCandidate({ candidate, source }) {
+  const navigate = useNavigate();
   const relation = candidate.relationship;
   const artifact = candidate.artifact;
-  return <li><header><b>{candidate.title}</b><span data-status={source?.life_state || "candidate"}>
+  const open = (id) => navigate(`/map?node=${encodeURIComponent(id)}`);
+  return <li><header>{source ? <button className="text-link" onClick={() => open(source.id)}>{candidate.title}</button>
+    : <b>{candidate.title}</b>}<span data-status={source?.life_state || "candidate"}>
     {sourceState(source)}</span></header><dl>
     <Row label="书目" value={`${candidate.authors.join("、")} · ${candidate.year} · ${candidate.venue}`} />
     <Row label="用途" value={`${relation.use} · ${relation.relevance}`} />
+    <NodeRow label="Direction" id={relation.direction_id} onOpen={open} />
     <Row label="核验" value={`${candidate.retrieval.database} · ${candidate.retrieval.verified_at}`} />
     <Row label="Artifact" value={artifact ? `${artifact.id} · ${artifact.media_type} · ${artifact.sha256}` : "全文不可得"} />
+    {source?.rejection_reason && <Row label="驳回理由" value={source.rejection_reason} />}
   </dl></li>;
 }
 
 
 function Row({ label, value }) {
   return <div><dt>{label}</dt><dd>{value}</dd></div>;
+}
+
+
+function NodeRow({ label, id, onOpen }) {
+  return <div><dt>{label}</dt><dd><button className="text-link" onClick={() => onOpen(id)}>{id}</button></dd></div>;
 }
 
 

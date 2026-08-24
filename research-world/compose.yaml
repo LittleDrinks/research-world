@@ -16,7 +16,7 @@ services:
       - "8095:8095"
     volumes:
       - rw-kernel-data:/app/data
-      - ${RW_PROJECTS_ROOT:-./projects}:/projects
+      - ${RW_PROJECTS_ROOT:-rw-projects}:/projects
       - ./agents:/app/agents
       - ./pipelines:/app/pipelines
     networks: [control, worker-egress]
@@ -45,7 +45,7 @@ services:
       RUNNER_CONTROLLER_URL: http://runner-controller:8096
     volumes:
       - rw-kernel-data:/app/data
-      - ${RW_PROJECTS_ROOT:-./projects}:/projects:ro
+      - ${RW_PROJECTS_ROOT:-rw-projects}:/projects:ro
       - ./agents:/app/agents:ro
       - ./pipelines:/app/pipelines:ro
     networks: [control, worker-egress]
@@ -75,7 +75,7 @@ services:
       - "8098:8098"
     volumes:
       - rw-runtime-data:/runtime-data
-      - ${RW_PROJECTS_ROOT:-./projects}:/projects
+      - ${RW_PROJECTS_ROOT:-rw-projects}:/projects
       - ${HOME}/.codex:/codex-source:ro
       - ${HOME}/.agents/skills:/user-agent-skills:ro
     networks: [control, worker-egress]
@@ -101,6 +101,7 @@ services:
 
 volumes:
   rw-kernel-data:
+  rw-projects:
   rw-runtime-data:
 
 networks:

@@ -6,8 +6,8 @@ export function PresetCapabilities({ preset }) {
   const items = recommendations(preset);
   if (!items.length) return null;
   return <ul className="preset-capabilities">{items.map((item) =>
-    <li key={`${item.kind}:${item.id}`}><span><b>{item.id}</b><small>{item.kind}</small></span>
-      <p>{item.recommendation || item.description}</p><em data-status={item.status}>{state(item)}</em></li>)}</ul>;
+    <li key={`${item.kind}:${item.id}`}><span><b>{item.id}</b><em data-status={item.status}>（{state(item)}）</em>
+      <small>{item.kind}</small></span><p>{item.recommendation || item.description}</p></li>)}</ul>;
 }
 
 
@@ -16,7 +16,7 @@ export function CapabilityAlert({ tools = [], skills = [] }) {
     ...skills.map((item) => ({ ...item, kind: "Skill" }))];
   if (!items.length) return null;
   return <div className="capability-alert" role="alert"><AlertTriangle size={16} />
-    <p>{items.map((item) => `${item.kind} ${item.id}：${state(item)}`).join("；")}</p>
+    <p>{items.map((item) => `${item.kind} 不可用：${item.id}（${state(item)}）`).join("；")}</p>
     <Link className="button secondary" to="/agents#tool-catalog">Tool Catalog</Link></div>;
 }
 

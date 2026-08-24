@@ -33,6 +33,7 @@
 .source-projection ol { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .source-projection li { min-width: 0; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .source-projection header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 12px; }
+.source-projection header .text-link { min-width: 0; overflow-wrap: anywhere; font-weight: 700; text-align: left; }
 .source-projection header span { flex: 0 0 auto; color: var(--text-muted); font-size: 11px; }
 .source-projection header span[data-status="admitted"] { color: var(--state-success); }
 .source-projection header span[data-status="ghost"] { color: var(--state-failed); }
@@ -40,6 +41,7 @@
 .source-projection dl > div { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 8px; padding: 2px 0; }
 .source-projection dt { color: var(--text-faint); font-size: 11px; }
 .source-projection dd { min-width: 0; margin: 0; color: var(--text-muted); font-size: 11px; overflow-wrap: anywhere; }
+.source-projection dd .text-link { max-width: 100%; overflow-wrap: anywhere; text-align: left; }
 .run-steps { display: grid; gap: 4px; margin: 8px 0; padding: 0; list-style: none; }
 .run-steps li { display: flex; align-items: center; gap: 9px; font-size: 12px; color: var(--text-muted); }
 .run-steps li > span:nth-child(2) { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

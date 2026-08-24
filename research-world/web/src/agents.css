@@ -48,8 +48,8 @@
 .preset-info small { color: var(--text-faint); font-size: 11px; overflow-wrap: anywhere; }
 .preset-row .button { flex: 0 0 auto; min-height: 32px; font-size: 12px; }
 .preset-capabilities { display: grid; gap: 5px; margin: 8px 0 0; padding: 0; list-style: none; }
-.preset-capabilities li { min-width: 0; display: grid; grid-template-columns: minmax(110px, .7fr) minmax(160px, 1fr) auto; align-items: baseline; gap: 8px; font-size: 11px; }
-.preset-capabilities li > span { min-width: 0; display: flex; gap: 5px; overflow-wrap: anywhere; }
+.preset-capabilities li { min-width: 0; display: grid; grid-template-columns: minmax(200px, .8fr) minmax(160px, 1fr); align-items: baseline; gap: 8px; font-size: 11px; }
+.preset-capabilities li > span { min-width: 0; display: flex; flex-wrap: wrap; gap: 5px; overflow-wrap: anywhere; }
 .preset-capabilities b { font-family: "Geist Mono", ui-monospace, monospace; font-size: 11px; }
 .preset-capabilities p { min-width: 0; margin: 0; color: var(--text-muted); overflow-wrap: anywhere; }
 .preset-capabilities em { color: var(--state-success); font-style: normal; white-space: nowrap; }

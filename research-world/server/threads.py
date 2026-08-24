@@ -7,11 +7,12 @@ from .world import World
 
 class ThreadManager:
     def __init__(
-        self, world: World, runtime: RuntimeClient, agents: AgentRegistry
+        self, world: World, runtime: RuntimeClient, agents: AgentRegistry, workspace
     ) -> None:
         self.world = world
         self.runtime = runtime
         self.agents = agents
+        self.workspace = workspace
 
     async def create(
         self,
@@ -20,11 +21,11 @@ class ThreadManager:
         agent_id: str = "research-assistant",
         node_ids: list[str] | None = None,
     ) -> dict:
-        project = self.world.project(project_id)
+        self.world.project(project_id)
         nodes = self._nodes(project_id, node_ids or [])
         session_id = await self.runtime.launch(
             self.agents.get(agent_id),
-            project["root"],
+            str(self.workspace(project_id)),
             invoker={"kind": "human", "id": project_id},
             mode="resume",
         )
@@ -52,10 +53,9 @@ class ThreadManager:
 
     async def restart(self, thread_id: str) -> dict:
         thread = self.world.thread(thread_id)
-        project = self.world.project(thread["project_id"])
         session_id = await self.runtime.launch(
             self.agents.get(thread["agent_id"]),
-            project["root"],
+            str(self.workspace(thread["project_id"])),
             invoker={"kind": "human", "id": thread_id},
             mode="resume",
         )

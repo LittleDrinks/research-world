@@ -69,8 +69,8 @@ def retrieval():
     }
 
 
-def full_text(world, project, content=b"Complete article text"):
-    path = project_path(project, "sources/evidence.txt")
+def full_text(world, project, content=b"Complete article text", workspace=None):
+    path = project_path(workspace or project["root"], "sources/evidence.txt")
     path.parent.mkdir(parents=True)
     path.write_bytes(content)
     record = ArtifactStore(world.artifacts_root, project["id"]).add(content, "text/plain")
@@ -78,10 +78,10 @@ def full_text(world, project, content=b"Complete article text"):
             "media_type": record["media_type"], "sha256": record["sha256"]}
 
 
-def project_path(project, relative):
+def project_path(workspace, relative):
     from pathlib import Path
 
-    return Path(project["root"]) / relative
+    return Path(workspace) / relative
 
 
 def admitted_direction(world, project):
@@ -115,8 +115,8 @@ def test_pipeline_submits_pending_sources_and_admission_creates_edges(
     world, project, tmp_path
 ):
     direction = admitted_direction(world, project)
-    artifact = full_text(world, project)
     kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
+    artifact = full_text(world, project, workspace=kernel._workspace(project["id"]))
     run = world.create_run(project["id"], direction["id"], PIPELINE, {})
     submit = partial(kernel._submit_source_candidate, project["id"])
     engine = PipelineEngine(world, SourceAgents([candidate(direction["id"], artifact)]), None, None, None, submit)

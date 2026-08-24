@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import secrets
 from dataclasses import dataclass, field
 from inspect import isawaitable
 from pathlib import Path
@@ -19,6 +18,7 @@ from .admission import (
 from .artifacts import ArtifactStore
 from .observations import observation_submission
 from .presets import agent_draft, require_capabilities_ready
+from .project_storage import ProjectStorage
 from .reporting import assess_delivery
 from .source_candidates import validate_candidate_artifact, validate_source_candidate
 from .world import World, node_text
@@ -56,12 +56,13 @@ class ResearchKernel:
         admission=None,
     ):
         self._world = world
-        self._projects_root = Path(projects_root)
+        self._projects = ProjectStorage(projects_root)
+        self._projects.materialize(world.projects())
         self._runtime = runtime
         self._agents = agents
         self._pipelines = pipelines
         self._admission: AdmissionPolicy = admission or PendingAdmissionPolicy()
-        self._threads = _thread_manager(world, runtime, agents)
+        self._threads = _thread_manager(world, runtime, agents, self._workspace)
         if runtime is not None:
             runtime.bind_kernel(self)
 
@@ -87,7 +88,7 @@ class ResearchKernel:
 
     def _command_create_project(self, command: KernelCommand) -> dict:
         _validate_project(command.values)
-        workspace = _allocate_workspace(self._projects_root)
+        workspace = self._projects.allocate()
         return self._create_project(command.values, workspace)
 
     def _command_set_auto(self, command: KernelCommand) -> dict:
@@ -177,7 +178,7 @@ class ResearchKernel:
         if candidate["relationship"]["direction_id"] != direction_id:
             raise ValueError("SourceCandidate relationship must target the Pipeline Direction")
         store = ArtifactStore(self._world.artifacts_root, project_id)
-        workspace = Path(self._world.project(project_id)["root"])
+        workspace = self._workspace(project_id)
         validate_candidate_artifact(candidate, store, workspace)
         return self._source_submission(run_id, index, direction_id, candidate)
 
@@ -253,8 +254,7 @@ class ResearchKernel:
         return agent_draft(command.values["preset_id"], catalog)
 
     async def _runtime_catalog(self, project_id: str) -> dict:
-        workspace = self._world.project(project_id)["root"]
-        return await self._require_runtime().recognize(workspace)
+        return await self._require_runtime().recognize(str(self._workspace(project_id)))
 
     async def _command_save_agent(self, command: KernelCommand) -> dict:
         _validate_fields(command.values, {"agent_id", "value"}, {"agent_id", "value"})
@@ -286,13 +286,13 @@ class ResearchKernel:
         ]
 
     def _query_projects(self, _query: KernelQuery) -> list[dict]:
-        return self._world.projects()
+        return [self._projects.project(project) for project in self._world.projects()]
 
     def _query_project_by_name(self, query: KernelQuery) -> dict:
-        return self._world.project_by_name(query.values["name"])
+        return self._projects.project(self._world.project_by_name(query.values["name"]))
 
     def _query_workspace(self, query: KernelQuery) -> str:
-        return self._world.project(_project_id(query))["root"]
+        return str(self._workspace(_project_id(query)))
 
     def _query_graph(self, query: KernelQuery) -> dict:
         project_id = _project_id(query)
@@ -422,8 +422,7 @@ class ResearchKernel:
     async def _endpoint_ready(self, project_id: str) -> bool:
         if self._runtime is None:
             return False
-        workspace = self._world.project(project_id)["root"]
-        catalog = await self._runtime.recognize(workspace)
+        catalog = await self._runtime.recognize(str(self._workspace(project_id)))
         return any(
             item.get("available") is True for item in catalog.get("endpoints", [])
         )
@@ -442,7 +441,7 @@ class ResearchKernel:
         runs = self._world.runs(project["id"])
         active = {"queued", "running", "waiting_human"}
         return {
-            **project,
+            **self._projects.project(project),
             "title": project["name"],
             "node_count": len(self._world.nodes(project["id"])),
             "run_count": len(runs),
@@ -504,6 +503,9 @@ class ResearchKernel:
             workspace.rmdir()
             raise
 
+    def _workspace(self, project_id: str) -> Path:
+        return self._projects.workspace(self._world.project(project_id))
+
     def _require_runtime(self):
         if self._runtime is None:
             raise RuntimeError("kernel runtime is unavailable")
@@ -539,12 +541,12 @@ def _bootstrap_value(kernel, project_id, projects, runs) -> dict:
     }
 
 
-def _thread_manager(world, runtime, agents):
+def _thread_manager(world, runtime, agents, workspace):
     if runtime is None or agents is None:
         return None
     from .threads import ThreadManager
 
-    return ThreadManager(world, runtime, agents)
+    return ThreadManager(world, runtime, agents, workspace)
 
 
 def _project_id(value) -> str:
@@ -557,14 +559,6 @@ def _validate_project(value: dict) -> None:
     _validate_fields(value, {"name", "question"}, {"name", "question"})
     if not all(isinstance(value[key], str) and value[key].strip() for key in value):
         raise ValueError("project name and question cannot be empty")
-
-
-def _allocate_workspace(projects_root: Path) -> Path:
-    root = projects_root.resolve()
-    root.mkdir(parents=True, exist_ok=True)
-    workspace = root / secrets.token_hex(12)
-    workspace.mkdir(mode=0o700)
-    return workspace
 
 
 def _resolution_signal(gate: dict, value: dict) -> dict:

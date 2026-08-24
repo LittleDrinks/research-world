@@ -180,7 +180,7 @@ def test_create_blocks_unavailable_tool_without_writing(world, project, tmp_path
     assert response.status_code == 400
     assert "tool unavailable: lean4 (unavailable / not_installed)" in response.json()["detail"]
     assert runtime.validated == [value]
-    assert runtime.recognized == [project["root"]]
+    assert runtime.recognized == [str(tmp_path / "projects" / "project")]
     with pytest.raises(KeyError):
         AgentRegistry(tmp_path / "agents").get("math-proof")
 
@@ -242,7 +242,7 @@ def test_update_blocks_unavailable_tool_without_writing(world, project, tmp_path
 
     assert response.status_code == 400
     assert "tool unavailable: lean4 (unavailable / not_installed)" in response.json()["detail"]
-    assert runtime.recognized == [project["root"]]
+    assert runtime.recognized == [str(tmp_path / "projects" / "project")]
     assert registry.get("math-proof")["tools"] == []
 
 

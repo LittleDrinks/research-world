@@ -23,5 +23,5 @@ test("PresetCapabilities renders purpose, status and reason", async (context) =>
 
   assert.match(html, /project_files/);
   assert.match(html, /保存完整正文/);
-  assert.match(html, /setup_required \/ not_configured/);
+  assert.match(html, /（setup_required \/ not_configured）/);
 });
