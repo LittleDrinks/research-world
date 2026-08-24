@@ -279,7 +279,7 @@ function VariantF({ selected, setSelected }) {
 function VariantG({ selected, setSelected }) {
   return <div className="ds-g">
     <div className="ds-g-stars" />
-    <header className="ds-g-top"><div className="ds-g-brand"><Atom size={17} /> NEURAL FIELD</div><div className="ds-g-coord">X 0.42 · Y 0.78 · Z 12</div><button className="ds-g-btn">聚焦 D-002</button></div>
+    <header className="ds-g-top"><div className="ds-g-brand"><Atom size={17} /> NEURAL FIELD</div><div className="ds-g-coord">X 0.42 · Y 0.78 · Z 12</div><button className="ds-g-btn">聚焦 D-002</button></header>
     <main className="ds-g-main">
       {NODES.map((item) => <button key={item.id} className={`ds-g-node ${item.id === selected ? "selected" : ""}`} style={{ left: `${item.x}%`, top: `${item.y}%` }} onClick={() => setSelected(item.id)}><span className={`ds-g-core tone-${item.tone}`} /><b>{item.id}</b><small>{item.title}</small></button>)}
       <div className="ds-g-connector g1" /><div className="ds-g-connector g2" /><div className="ds-g-connector g3" />
