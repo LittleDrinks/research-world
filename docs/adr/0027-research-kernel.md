@@ -18,6 +18,7 @@ sources:
 ## 准入
 节点提交统一经过 `submit -> pending -> admitted | ghost`。Submission 后的 AdmissionPolicy 是纯、只读、可替换的内部 seam；策略返回结构化结论时 Kernel 立即落状态，默认策略返回 pending，不把未审核内容自动准入。
 `resolve_admission` 是 pending 节点的唯一显式完成命令，只接收 node id、decision、reason 与 rebuttal；Kernel 构造 Verdict 并一次提交 Life state、驳回理由与 rebuttal。HTTP PATCH、CLI、Pipeline 和调用方构造的 Verdict 均不能改 Life state。Pipeline 的机制审核、证据审核与双审升级是 Kernel 内部策略，不扩大外部接口。
+WebUI 的 Admission 操作只适配 `resolve_admission`；reject 要求非空理由，操作结果从 Kernel 投影刷新，界面不自行构造 Life state、驳回理由或证据边。
 ## 运行
 Pipeline run 生命周期、行动审核、执行凭据、Artifact 与 Research event 由 Kernel 维护。模型执行只经 ACP 调用 Agent Runtime；计算执行只经 Runner Adapter。Runtime Trace、模型凭证和 Tool 凭证不进入 Kernel。
 Artifact 在 Project 内按 SHA-256 寻址，读取、关联与复跑校验都携带 project id。Tool Runtime 只能通过 Artifact 与 observation port 提交结果；observation 继续经过 Admission，Tool 调用成功不等于研究事实准入。
