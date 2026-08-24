@@ -67,6 +67,7 @@ services:
       RUNTIME_ENDPOINTS: ${RUNTIME_ENDPOINTS:-}
       RUNTIME_MODEL: ${RW_MODEL_NAME:-qwen3.7-flash}
       RUNTIME_EMBEDDING_MODEL: ${RW_EMBEDDING_MODEL:-qwen3.7-text-embedding}
+      RUNNER_CONTROLLER_URL: http://runner-controller:8096
       RUNTIME_DATA: /runtime-data
       RUNTIME_SKILLS_PATHS: /user-agent-skills:/codex-source/skills:/app/skills
       CODEX_SOURCE: /codex-source
@@ -79,6 +80,9 @@ services:
       - ${HOME}/.codex:/codex-source:ro
       - ${HOME}/.agents/skills:/user-agent-skills:ro
     networks: [control, worker-egress]
+    depends_on:
+      runner-controller:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8098/health')"]
       interval: 5s

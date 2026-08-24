@@ -70,6 +70,20 @@ def test_runner_client_rejects_tampered_evidence(monkeypatch):
     assert result["failure"]["code"] == "content_hash_mismatch"
 
 
+def test_runner_client_waits_for_wall_limit(monkeypatch):
+    calls = []
+    execution = spec(limits={**spec()["limits"], "wall_seconds": 600})
+    response = Response(build_evidence(execution, output()))
+    monkeypatch.setattr(
+        "server.clients.httpx.post",
+        lambda *args, **kwargs: calls.append(kwargs) or response,
+    )
+
+    RunnerClient("http://runner").run({"execution_id": "step:long", **execution})
+
+    assert calls == [{"json": {"execution_id": "step:long", **execution}, "timeout": 660}]
+
+
 def test_command_must_be_an_array():
     with pytest.raises(ValueError, match="array"):
         build_evidence(spec(command="python main.py"), output())
@@ -80,13 +94,25 @@ def test_unrecorded_execution_input_is_rejected():
         build_evidence({**spec(), "network": "host"}, output())
 
 
+def test_wall_limit_is_required():
+    limits = {"cpus": 1, "memory_mb": 128, "pids": 32}
+
+    with pytest.raises(ValueError, match="wall_seconds.*required"):
+        build_evidence(spec(limits=limits), output())
+
+
 def spec(files=None, **changes):
     value = {
         "image": "python:3.12-slim",
         "command": ["python", "main.py"],
         "files": files or {},
         "seed": 7,
-        "limits": {"cpus": 1, "memory_mb": 128, "pids": 32},
+        "limits": {
+            "cpus": 1,
+            "memory_mb": 128,
+            "pids": 32,
+            "wall_seconds": 300,
+        },
     }
     return {**value, **changes}
 

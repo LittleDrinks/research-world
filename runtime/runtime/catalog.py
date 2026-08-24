@@ -60,7 +60,10 @@ def _preset_tool(tool_id: str, adapters: dict[str, McpAdapter]) -> dict:
         return {"id": tool_id, "status": "ready"}
     if tool_id not in adapters:
         return {"id": tool_id, "status": "unavailable", "reason": "not_installed"}
-    return {"id": tool_id, "status": adapters[tool_id].inspect()["status"]}
+    status = adapters[tool_id].inspect()["status"]
+    if status == "unavailable":
+        return {"id": tool_id, "status": status, "reason": "not_installed"}
+    return {"id": tool_id, "status": status}
 
 
 def _tools(adapters: dict[str, McpAdapter]) -> list[dict]:

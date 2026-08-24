@@ -26,12 +26,13 @@ INPUT_SCHEMA = {
         "seed": {"type": "integer"},
         "limits": {
             "type": "object",
-            "required": ["cpus", "memory_mb", "pids"],
+            "required": ["cpus", "memory_mb", "pids", "wall_seconds"],
             "additionalProperties": False,
             "properties": {
                 "cpus": {"type": "number", "exclusiveMinimum": 0},
                 "memory_mb": {"type": "integer", "minimum": 1},
                 "pids": {"type": "integer", "minimum": 1},
+                "wall_seconds": {"type": "integer", "minimum": 1},
             },
         },
     },
