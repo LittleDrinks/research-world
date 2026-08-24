@@ -31,6 +31,7 @@ Tool Runtime 是 Agent Runtime 内部深模块。AgentSpec、Preset、设置页�
 `open(tool_ids, context)` 解析全部 Tool、冻结 Adapter revision 与模型可见 operation schema，再返回 Session 级调用句柄；缺失、冲突、未就绪或定义漂移均硬失败，不部分启动、不 fallback。一个 Tool 可展开多个 operation，模型函数名由 Runtime 编码，AgentSpec 与 Trace 使用稳定 Tool id。
 内部 `ToolAdapter.inspect/open` 与 `BoundAdapter.invoke/close` seam 复用内置函数、MCP、Lean4、浏览器、数据库、GPU 与环境实现。Adapter 返回规范化内容块、错误和 Artifact/observation 草稿，不持有 Kernel client；Tool Runtime 负责参数校验、超时、取消、错误分类、脱敏与结果大小限制，再通过 Kernel port 登记 Artifact/observation。
 官方 Preset 的轻量依赖固定进 Runtime 镜像；浏览器、数据库与 GPU 等重依赖使用 Compose 中受控服务或 profile；不在运行时执行任意 `pip`、`npm` 或 shell 安装。MCP SDK、`httpx`、JSON Schema 与各设施官方客户端继续负责协议实现。
+官方 `lean4` Tool 固定 Lean 与 mathlib `v4.33.1` 到无凭证 sandbox image。Catalog 只检查本地 image readiness；安装由 Provisioner 在用户确认后执行，Compose 启动、Preset 与 Session 不安装或启动 Lean。Runtime Adapter 只向 Runner port 提交固定 image、固定 command、源码与资源限制；Runner 禁止隐式 pull，以无网络、只读根、只读输入、临时目录及 CPU、内存、进程和 wall-time 限制执行。`verify(source)` 返回结构化诊断，`sorry` 和 warning 均视为未通过；源码由统一 Artifact capture seam 入库，模型只看结果摘要与 Artifact id。
 ## Session 与 Trace
 Trace 是 Session 的唯一事实源，不建消息数据库。凡进入模型的内容都写入 Trace；凭证、授权头与私有环境变量永不写入。事件为 `session_meta`、`turn_start`、`model_request`、`model_response`、`tool_call`、`tool_result`、`child_session`、`turn_end`、`error`。
 每条事件编码成单行 JSON 后一次写入；读取时丢弃断裂尾行并截断到最后一条完整记录。Session 恢复与 UI 投影只重放 Trace。

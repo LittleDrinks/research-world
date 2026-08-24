@@ -1140,7 +1140,8 @@ PLAN_PROMPT = (
     "measurements 与 decision 的 JSON 对象；合成数据只能支持程序或模型内部结论。退出码 0 表示执行成功。"
     "title 是本实验的简洁标题，硬性不超过 12 token。严格返回 "
     '{"title":"...","action":{"image":"busybox:1.36","command":["sh","-lc","..."],'
-    '"files":{},"seed":0,"limits":{"cpus":1,"memory_mb":512,"pids":128}}}。'
+    '"files":{},"seed":0,"limits":{"cpus":1,"memory_mb":512,"pids":128,'
+    '"wall_seconds":300}}}。'
 )
 ACTION_REVIEW_PROMPT = (
     "独立检查单个 action 的输入边界、可证伪性、资源限制与结果契约；不得执行。严格返回 "

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ascii-glass-light · 玻璃像素实验室</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<nav class="nav glass" aria-label="版本导航">
+  <span class="brand">玻璃像素实验室</span>
+  <a href="#v01">v01</a><a href="#v02">v02</a><a href="#v03">v03</a><a href="#v04">v04</a><a href="#v05">v05</a>
+  <a href="#v06">v06</a><a href="#v07">v07</a><a href="#v08">v08</a><a href="#v09">v09</a><a href="#v10">v10</a>
+</nav>
+
+<main>
+
+  <!-- v01 Hero：大人像 + 玻璃文案面板 -->
+  <section class="v01" id="v01">
+    <div class="bust-stage"><canvas data-ascii="bust" data-fit="square" data-cols="36" aria-hidden="true"></canvas></div>
+    <div class="panel glass">
+      <span class="tag">v01 · 人像档案馆</span>
+      <h1>把古典半身像<br>存进像素的库房</h1>
+      <p>每一尊雕像被拆解为字形与密度，呼吸般的明暗在玻璃之后缓慢流动。档案不追求还原大理石，只保留光的走向。</p>
+      <div class="meta-row"><span>藏品 1,204</span><span>字形 10 级</span><span>持续呼吸中</span></div>
+    </div>
+  </section>
+
+  <!-- v02 行星主视觉 + 悬浮玻璃数据 chips -->
+  <section class="v02" id="v02">
+    <div class="sec-head">
+      <span class="tag">v02 · 轨道观测所</span>
+      <h2>一颗行星的实时读数</h2>
+    </div>
+    <div class="orbit-stage">
+      <div class="planet-hero"><canvas data-ascii="planet" data-fit="square" data-cols="44" aria-hidden="true"></canvas></div>
+      <div class="chip glass c1"><b>6.5 条</b><small>纬度环流带</small></div>
+      <div class="chip glass c2"><b>0.35 rad/s</b><small>卫星角速度</small></div>
+      <div class="chip glass c3"><b>1.52 R</b><small>光环半径</small></div>
+      <div class="chip glass c4"><b>日照 62%</b><small>晨昏线位置</small></div>
+    </div>
+    <p class="caption">光照由法线与光源方向的点乘分级，条带随纬度缓慢漂移。</p>
+  </section>
+
+  <!-- v03 均衡器横幅 + 玻璃播放器卡 -->
+  <section class="v03" id="v03">
+    <div class="sec-head">
+      <span class="tag">v03 · 星尘电台</span>
+      <h2>正在播放：频段漫游</h2>
+    </div>
+    <div class="banner glass"><canvas data-ascii="bars" data-cols="72" aria-hidden="true"></canvas></div>
+    <div class="player glass">
+      <div class="cover"><canvas data-ascii="bars" data-cols="12" aria-hidden="true"></canvas></div>
+      <div class="track"><b>北纬六十五度的底噪</b><small>星尘电台 · 第三辑 · 04:12</small></div>
+      <div class="ctrls"><span>⏮</span><span class="play">▶</span><span>⏭</span></div>
+    </div>
+  </section>
+
+  <!-- v04 三素材玻璃卡片 -->
+  <section class="v04" id="v04">
+    <div class="sec-head">
+      <span class="tag">v04 · 素材架</span>
+      <h2>三类程序化素材，同一把渲染尺</h2>
+      <p>遮罩、光照、振荡——不同来源，共用同一条字形密度 ramp。</p>
+    </div>
+    <div class="cards">
+      <article class="card glass">
+        <div class="art"><canvas data-ascii="bust" data-fit="square" data-cols="28" aria-hidden="true"></canvas></div>
+        <h3>人像 · bust</h3><p>手写行遮罩勾出轮廓，方向光与呼吸波负责体积感。</p>
+      </article>
+      <article class="card glass">
+        <div class="art"><canvas data-ascii="planet" data-fit="square" data-cols="32" aria-hidden="true"></canvas></div>
+        <h3>行星 · planet</h3><p>球面法线点乘光源，纬度条带随时间漂移。</p>
+      </article>
+      <article class="card glass">
+        <div class="art"><canvas data-ascii="bars" data-cols="30" aria-hidden="true"></canvas></div>
+        <h3>音乐 · bars</h3><p>三组正弦叠加驱动柱高，节拍无需音频文件。</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- v05 杂志编辑风 -->
+  <section class="v05" id="v05">
+    <div>
+      <span class="tag">v05 · 特辑</span>
+      <h2 class="headline">雕像记得<br>光的<em>方向</em></h2>
+      <p class="lede">编辑部本期探访人像档案馆：当半身像被压缩进三十六列字符，眉弓与锁骨反而比大理石上更清晰。旁边那颗小行星，是库房夜里唯一的光源。</p>
+      <div class="folio">ISSUE 07 · 像素文博季刊 · 2026</div>
+    </div>
+    <div class="side">
+      <div class="bust-crop"><canvas data-ascii="bust" data-fit="square" data-cols="32" aria-hidden="true"></canvas></div>
+      <div class="mini-planet glass"><canvas data-ascii="planet" data-fit="square" data-cols="24" data-ring="false" aria-hidden="true"></canvas></div>
+    </div>
+  </section>
+
+  <!-- v06 玻璃仪表盘 -->
+  <section class="v06" id="v06">
+    <div class="sec-head">
+      <span class="tag">v06 · 值班台</span>
+      <h2>库房环境总览</h2>
+    </div>
+    <div class="dash">
+      <div class="tile glass"><div class="art"><canvas data-ascii="planet" data-fit="square" data-cols="24" data-ring="false" aria-hidden="true"></canvas></div><b>23.4°C</b><small>展厅温度 <span class="delta">+0.2</span></small></div>
+      <div class="tile glass"><div class="art"><canvas data-ascii="bust" data-fit="square" data-cols="22" aria-hidden="true"></canvas></div><b>1,204</b><small>在册藏品 <span class="delta">+6</span></small></div>
+      <div class="tile glass"><div class="art"><canvas data-ascii="bars" data-cols="20" aria-hidden="true"></canvas></div><b>-42 dB</b><small>环境底噪 <span class="delta">稳</span></small></div>
+      <div class="tile glass"><div class="art"><canvas data-ascii="wave" data-cols="24" aria-hidden="true"></canvas></div><b>99.2%</b><small>渲染在线率 <span class="delta">正常</span></small></div>
+    </div>
+  </section>
+
+  <!-- v07 波形整版背景 + 玻璃长面板 -->
+  <section class="v07" id="v07">
+    <div class="wave-bg"><canvas data-ascii="wave" data-cols="110" aria-hidden="true"></canvas></div>
+    <div class="sheet glass">
+      <span class="tag">v07 · 星尘电台年报</span>
+      <h2>一年里，电波没有停过</h2>
+      <p>背景这条波形由三组正弦叠加而成，和电台里真实流过的声音无关——但节拍是对的，这就够了。</p>
+      <div class="row">
+        <div><b>8,760 h</b><small>全年播出时长</small></div>
+        <div><b>312 期</b><small>节目总数</small></div>
+        <div><b>0 次</b><small>信号中断</small></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- v08 极简 -->
+  <section class="v08" id="v08">
+    <span class="tag">v08 · 留白练习</span>
+    <div class="dot-planet"><canvas data-ascii="planet" data-fit="square" data-cols="26" data-ring="false" aria-hidden="true"></canvas></div>
+    <h2>一颗行星就够了</h2>
+      <p>删掉光环、删掉卫星、删掉标题党。</p>
+    <div class="hairline glass">planet · 26 cols · no ring · 留白的成本最低</div>
+  </section>
+
+  <!-- v09 人像背景纹理 + 排版块 -->
+  <section class="v09" id="v09">
+    <div class="bust-bg"><canvas data-ascii="bust" data-fit="square" data-cols="56" aria-hidden="true"></canvas></div>
+    <div class="type-block glass">
+      <span class="tag">v09 · 策展人手记</span>
+      <h2>背景里站着一位不说话的藏品</h2>
+      <p>把人像放大到版面之外，透明度压到两成，它就退成一种纹理。你不一定意识到它在那儿，但版面因此有了重量。</p>
+      <p>玻璃面板负责把正文托住，字形负责让背景继续呼吸。</p>
+      <div class="sig">—— 策展人 · 档案编号 A-0117</div>
+    </div>
+  </section>
+
+  <!-- v10 玻璃控制台 -->
+  <section class="v10" id="v10">
+    <div class="sec-head">
+      <span class="tag">v10 · 播控台</span>
+      <h2>星尘电台 · 直播控制</h2>
+    </div>
+    <div class="console glass">
+      <div>
+        <div class="eq"><canvas data-ascii="bars" data-cols="40" aria-hidden="true"></canvas></div>
+        <div class="knobs">
+          <div class="knob"><i style="--rot:-40deg"></i><small>增益</small></div>
+          <div class="knob"><i style="--rot:15deg"></i><small>混响</small></div>
+          <div class="knob"><i style="--rot:60deg"></i><small>延迟</small></div>
+        </div>
+      </div>
+      <div>
+        <div class="status">
+          <div class="lamp"><canvas data-ascii="planet" data-fit="square" data-cols="18" data-ring="false" aria-hidden="true"></canvas></div>
+          <div><b>中继卫星 · 在线</b><small>轨道稳定，信号余量 12 dB</small></div>
+        </div>
+        <div class="slider" style="--fill:64%"><label><span>主输出</span><span>-6 dB</span></label><div class="rail"></div></div>
+        <div class="slider" style="--fill:38%"><label><span>监听</span><span>-14 dB</span></label><div class="rail"></div></div>
+        <div class="slider" style="--fill:82%"><label><span>发射功率</span><span>82%</span></label><div class="rail"></div></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script src="./assets.js"></script>
+<script src="./fx.js"></script>
+</body>
+</html>

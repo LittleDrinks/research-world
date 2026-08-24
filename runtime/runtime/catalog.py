@@ -86,7 +86,10 @@ def _preset_tool(tool_id: str, adapters: dict[str, McpAdapter], preset: dict) ->
         return {**BuiltinAdapter(tool_id).inspect(), "recommendation": reason}
     if tool_id not in adapters:
         return _unavailable(tool_id, reason, "not_installed")
-    return {**adapters[tool_id].inspect(), "recommendation": reason}
+    value = {**adapters[tool_id].inspect(), "recommendation": reason}
+    if value["status"] == "unavailable":
+        value["reason"] = "not_installed"
+    return value
 
 
 def _preset_spec(preset: dict, adapters: dict[str, McpAdapter]) -> dict:

@@ -11,9 +11,9 @@ docker compose exec control rw doctor --embedding
 ```
 ## CLI
 ```bash
-docker compose exec control rw project create --file /projects/orbits-49/project.json
+docker compose exec control rw project create --file /projects/q049/project.json
 docker compose exec control rw project list
-docker compose exec control rw graph show --project orbits-49
+docker compose exec control rw graph show --project q049
 ```
 ## Verify
 ```bash

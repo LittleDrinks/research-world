@@ -12,7 +12,7 @@ Remote root: `/data/zsm/ai4sci-design-bench-20260809`.
 | 图谱沉淀能否保留机器轨迹中的目标、因果与状态 | AMA-Bench | 官方代码已固定，数据下载尚未完成 | 复用官方 memory 接口和 QA/judge；不复用 AMA-Agent 图 schema |
 | 哪些历史应向后续 Agent 披露 | STATE-Bench Agent Learning Track | 代码与 300 条训练轨迹已固定远端；上游测试 148/148 | 需 Qwen Chat Completions adapter 与锁定 Judge 凭据；只裁决披露策略，不裁决科学创新 |
 | 图谱中的候选假设能否迁移到未见样本 | HypoBench | MIT 代码与 197 个数据配置已固定远端；代码编译通过，预检发现 18 条上游失效文件引用 | 用 accuracy/F1 和 OOD 退化裁决候选效用；只运行预检通过的配置，不裁决因果、实验真实性或创新性 |
-| 文献进入图谱前应提取多少证据 | EvidenceBench | 426 个实例与官方 evaluator 已固定远端；1688 组非空 gold 索引合法，293 条 test oracle coverage=1.0 | 比较整篇、图谱证据和按需抽取；只裁决证据覆盖，不裁决 hypothesis 真伪 |
+| 文献进入图谱前应提取多少证据 | EvidenceBench | commit `bf1d9633` 的 Original 96/37/293、18,462,271 bytes、1688 组 gold、16 个 null Results 全通过；`e5-large-v2@f169b11e` 20/20 文件完整，oracle=1.0；官方 with-instruction E5 全量 293 条 ER@optimal=0.2179172535、ER@10=0.4063205754，均 exit 0、零预算违规，147/147 checksum 通过 | 只裁决句级 Aspect Recall，不裁决 hypothesis 真伪；上游 preprocessor 的 dict 迭代缺陷在运行副本修正，官方 pipeline、模型、512 token 截断、scorer 与 evaluator 不变 |
 | 图谱证据能否替代整篇文献输入 | SciFact | 官方摘要 top-3 Hit one 0.8467；历史 claim-evidence 图为 0.74，有证据样本 0.5851/理论上限 0.5957 | 图谱替代旧对话，不替代新文献检索；摘要不代表多模态全文 |
 | 事实纠正应全局共享还是按需披露 | SciFact | Mini scoped/global 为 15/20、14/20；Luna 均 16/20；全局输入多用约 10.7–12.1 倍 Token | 使用 oracle evidence，只测作用域，不测自动检索 |
 | 图谱缺证据时能否自动升级检索 | SciFact | train calibration 阈值 0.38294 原样迁移 dev：Hit one 0.8830、回退 43.1% | 单数据集 TF-IDF；返回证据仍需审核 |
@@ -22,7 +22,7 @@ Remote root: `/data/zsm/ai4sci-design-bench-20260809`.
 | 端到端科研创新能力如何对标 | InnovatorBench + ResearchGym | commit `934ead34` 固定本地，编译通过；20 任务/6 领域清单与资源需求已盘点；HF 数据集 2026-08-10 已转公开（69.7 GB 未下载） | 任务 1–17 需 8×80GB GPU；agent/judge 均收费 API；只有任务 18/19 零 GPU 可先行；task_20.yaml task_name 为上游缺陷 |
 | 假设→实验→反馈子集能否复用 | AstaBench E2E-Bench / CORE-Bench / LitQA2 / PaperFindingBench | 本地 venv 任务发现与 `--config-only` 全通过；官方 baseline 数字取自公开 `allenai/asta-bench-results` | 除 CORE-Bench 外数据在 gated `allenai/asta-bench`（需人工接受许可）；E2E/PaperFinder 还要 judge API 预算；CORE-Bench 需 Docker |
 | 候选实验工程能力如何对标 | MLE-bench Lite | commit `507f92e1` 固定本地，322 个 LFS 对象完整；从官方 grading reports 复算 famou-agent 9 组 Lite any_medal 59.09–81.82% | prepare 被 Kaggle 竞赛规则 403 阻塞（22 个竞赛逐个接受，需人工操作账号）；5 个 Lite 竞赛有已知上游问题；`run_group_experiments.csv` 指针含冲突标记 |
-| Matbench 官方任务链能否复用 | matbench_expt_gap | 4604 样本、5 folds，官方 record/validate/score/to_file 跑通；训练均值 smoke MAE 1.1435 | smoke 规模，未提交官方评测 |
+| Matbench 官方任务链能否复用 | Matbench v0.1 官方 Dummy | v0.6 `5bcd4b1` 下 13/13 tasks、65/65 folds、408062 条预测全部 `exit=0`；submission 经 `from_file`、`validate`、官方 `score_array` 重载计分，规范化预测 SHA-256 `e19de28b` 一致；10 个回归任务与官方 artifact 精确一致，3 个分类任务在预注册容差内；回归 MAE/MAD macro 1.0004219，分类 ROC-AUC macro 0.5026659 | Dummy 只验证官方全链路；上游分类 `random_state=None`，本次预注册 NumPy seed 0；独立 QA 待关闭 workspace 后执行 |
 | 规划-准入闭环能否推进真实任务 | Matbench + research-world | v2：9 case 20 次规划，15 通过/4 待人工/1 格式拒绝，30 对局部判断 22 同 4 异 4 分歧、3 传递冲突；v3：3 case 6 次规划 200657 token，5 通过 1 待人工，无自然拒绝 | blind/reflect 坍缩到 composition token/attention/graph message passing 附近；不能比较失败后策略 |
 | 模型先验是否改变搜索空间 | Mini/Luna 跨模型对照 | 9 对候选 8 对明确不同、1 对分歧；3 case 6 次规划 3 通过 3 待人工 | 每格样本小；机制广度与执行有效性分开报告 |
 | harness 仪表链路能否支撑评测 | ResearchClawBench + ResearchHarness | 36 runs / 54 sessions / 255472 tokens 结构化落库 | 原任务规定目标方法，不能比较方法空间创新 |

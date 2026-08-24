@@ -3,10 +3,14 @@
 ## Language
 **Project**：一个科学问题及其研究状态；id 是稳定、不承载业务语义的标识符。
 _Avoid_: 课题、任务
+**Q001–Q125 Project corpus**：用于展示系统研究状态的固定科学问题集合。
+_Avoid_: Benchmark
 **Research Kernel**：项目研究状态的唯一写入门；解释 commands、queries 与 Pipeline，内部拥有图谱、准入、运行和投影。
 _Avoid_: World 服务、CRUD 层
-**节点**：图谱内容单元，固定四类：question / source / direction / experiment；实验结果并入 experiment 负载，claim 是审计单位不是节点。
+**节点**：图谱内容单元，固定四类：question / source / direction / experiment；实验结果并入 experiment 负载。
 _Avoid_: brief、result、setup 节点类型
+**Claim**：节点负载中的可审核陈述；结论为 supported / refuted / uncertain，不是节点。
+_Avoid_: claim 节点
 **节点标题**：Pipeline 创建节点时 Agent 生成的简洁标题，与完整正文分开存于 payload；硬上限 12 token，Kernel 拒绝缺失、空白、非字符串或超限标题，不截断、不合成、不回退正文。
 _Avoid_: 占位标题、正文截取
 **准入**：提交节点时强制执行的审核过程；先形成 pending 候选，纯策略可立即给出结论，默认策略不裁决，由 Research Kernel 显式裁决为 admitted 或 ghost。
@@ -15,11 +19,13 @@ _Avoid_: 数据库 before-save hook、可绕过校验
 _Avoid_: 保存、发布、删除
 **幽灵节点**：ghost 态节点，带驳回理由与抗辩，隔离留存，只在后续审核时做相似性匹配。
 _Avoid_: 删除、隐藏
-**Direction 状态机**：direction 的论证状态：proposed → supported | refuted，终态不可逆。
+**Direction 状态机**：direction 的论证状态：proposed → supported | refuted，终态不可逆；证据不足时保持 proposed。
 **谱系**：同一血脉（lineage_id）的节点链；同一谱系连续 2 次审核驳回触发 auto 暂停并升级人工。
 _Avoid_: 分支、会话树
 **Pipeline**：Research Kernel 解释的 stage 序列；stage 只执行 prompt / tool / spawn，policy 修饰算法，on 处理出口。
 _Avoid_: 固定 workflow kind、任务、job
+**Pipeline run**：Pipeline 的一次执行实例；按发生次序区分多次 run，不形成独立研究轮次。
+_Avoid_: Research Round、轮次实体
 **Stage**：Pipeline 的最小执行单元；每个 prompt stage 启动干净 Session，只接收结构化上游引用。
 _Avoid_: 长对话续跑
 **双审**：两个独立 reviewer 一致 approve 才准入；分歧时 Pipeline run 转 waiting_human 由人裁决。
@@ -29,6 +35,8 @@ _Avoid_: 打分、多数投票
 _Avoid_: 模型消息、工具细节
 **Thread**：Project 下的人机对话入口，只保存 Runtime session 指针；只有 admitted 节点可通过 `@node_id` 引用和钉入，节点不拥有对话。
 _Avoid_: 节点消息表、草稿区
+**证据链**：admitted source / experiment、关联 Artifact 与指向 Direction 的 supports / refutes 关系，共同构成对 Direction 的支持或反驳。
+_Avoid_: Evidence 节点、Evidence 实体
 **Artifact**：Project 内按 SHA-256 寻址的不可变产物；相同哈希不产生跨 Project 可见性。
 _Avoid_: 裸路径、覆盖写
 **Project File**：Project canonical storage 中由 opaque workspace key 隔离的文件；Project 记录不提供可执行宿主路径。

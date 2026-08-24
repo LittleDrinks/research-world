@@ -4,6 +4,8 @@ import httpx
 
 from .execution_evidence import verify_evidence
 
+DEFAULT_LIMITS = {"cpus": 1, "memory_mb": 512, "pids": 128, "wall_seconds": 300}
+
 
 class RunnerClient:
     def __init__(self, url: str):
@@ -16,9 +18,10 @@ class RunnerClient:
             "command": step["command"],
             "files": step.get("files", {}),
             "seed": step.get("seed", 0),
-            "limits": step.get("limits", {"cpus": 1, "memory_mb": 512, "pids": 128}),
+            "limits": step.get("limits", DEFAULT_LIMITS),
         }
-        response = httpx.post(f"{self.url}/run", json=spec, timeout=360)
+        timeout = spec["limits"]["wall_seconds"] + 60
+        response = httpx.post(f"{self.url}/run", json=spec, timeout=timeout)
         response.raise_for_status()
         result = response.json()
         if "failure" in result:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Self
 
@@ -8,6 +9,19 @@ from acp.interfaces import Client
 
 from . import literature
 from .skills import Skill
+
+
+@dataclass(frozen=True)
+class ArtifactDraft:
+    content: str
+    media_type: str
+
+
+@dataclass(frozen=True)
+class ToolOutcome:
+    content: str
+    failed: bool = False
+    artifacts: tuple[ArtifactDraft, ...] = ()
 
 READ_SKILL = {
     "type": "function",
@@ -388,18 +402,26 @@ class ToolBox:
         if name not in self._routes:
             raise KeyError(f"unknown tool operation: {name}")
         if name in self._external:
-            return await self._invoke_external(name, values)
+            return await self._invoke_external(session_id, name, values)
         return await self._routes[name].invoke(name, values, session_id)
 
-    async def _invoke_external(self, name: str, values: dict) -> str:
+    async def _invoke_external(self, session_id: str, name: str, values: dict) -> str:
         if self.client is None:
             raise RuntimeError("client does not provide artifact capture")
-        content, failed = await self._routes[name].invoke(name, values)
-        if failed:
-            raise RuntimeError(content)
-        capture = {"content": content, "media_type": _media_type(content), "tool": name}
+        raw = await self._routes[name].invoke(name, values, session_id)
+        outcome = _tool_outcome(raw)
+        if outcome.failed:
+            raise RuntimeError(outcome.content)
+        drafts = outcome.artifacts or (
+            ArtifactDraft(outcome.content, _media_type(outcome.content)),
+        )
+        artifact_ids = [await self._capture(name, draft) for draft in drafts]
+        return _captured_result(artifact_ids, outcome.content)
+
+    async def _capture(self, name: str, draft: ArtifactDraft) -> str:
+        capture = {"content": draft.content, "media_type": draft.media_type, "tool": name}
         artifact = await self.client.ext_method("research/capture_artifact", capture)
-        return _captured_result(artifact["id"], content, capture["media_type"])
+        return artifact["id"]
 
 
 async def _read_skill(bound, session_id, values):
@@ -525,7 +547,16 @@ def _media_type(content: str) -> str:
     return "application/json"
 
 
-def _captured_result(artifact_id: str, content: str, media_type: str) -> str:
-    original = json.loads(content) if media_type == "application/json" else content
-    value = {"artifact_id": artifact_id, "content": original}
+def _tool_outcome(value) -> ToolOutcome:
+    if isinstance(value, ToolOutcome):
+        return value
+    content, failed = value
+    return ToolOutcome(content, failed)
+
+
+def _captured_result(artifact_ids: list[str], content: str) -> str:
+    original = json.loads(content) if _media_type(content) == "application/json" else content
+    value = {"artifact_ids": artifact_ids, "content": original}
+    if len(artifact_ids) == 1:
+        value["artifact_id"] = artifact_ids[0]
     return json.dumps(value, ensure_ascii=False)
