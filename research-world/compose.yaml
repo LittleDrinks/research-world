@@ -4,17 +4,25 @@ services:
       context: .
       target: runtime
     environment:
-      MODEL_API_BASE: ${MODEL_API_BASE:-}
-      MODEL_API_KEY: ${MODEL_API_KEY:-}
       RW_PROJECTS_ROOT: /projects
       RW_DATA_ROOT: /app/data
+      RW_AGENTS_ROOT: /app/agents
+      RW_PIPELINES_ROOT: /app/pipelines
+      RUNTIME_URL: http://runtime:8098
+      RW_EMBEDDING_ENDPOINT: ${RW_EMBEDDING_ENDPOINT:-openai-compatible}
+      RW_EMBEDDING_MODEL: ${RW_EMBEDDING_MODEL:-qwen3.7-text-embedding}
       RUNNER_CONTROLLER_URL: http://runner-controller:8096
     ports:
       - "8095:8095"
     volumes:
-      - rw-data:/app/data
+      - rw-kernel-data:/app/data
       - ${RW_PROJECTS_ROOT:-./projects}:/projects
+      - ./agents:/app/agents
+      - ./pipelines:/app/pipelines
     networks: [control, worker-egress]
+    depends_on:
+      runtime:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8095/api/v1/health')"]
       interval: 5s
@@ -27,18 +35,59 @@ services:
       target: runtime
     command: ["python", "-m", "worker"]
     environment:
-      MODEL_API_BASE: ${MODEL_API_BASE:-}
-      MODEL_API_KEY: ${MODEL_API_KEY:-}
       RW_PROJECTS_ROOT: /projects
       RW_DATA_ROOT: /app/data
+      RW_AGENTS_ROOT: /app/agents
+      RW_PIPELINES_ROOT: /app/pipelines
+      RUNTIME_URL: http://runtime:8098
+      RW_EMBEDDING_ENDPOINT: ${RW_EMBEDDING_ENDPOINT:-openai-compatible}
+      RW_EMBEDDING_MODEL: ${RW_EMBEDDING_MODEL:-qwen3.7-text-embedding}
       RUNNER_CONTROLLER_URL: http://runner-controller:8096
     volumes:
-      - rw-data:/app/data
+      - rw-kernel-data:/app/data
       - ${RW_PROJECTS_ROOT:-./projects}:/projects:ro
+      - ./agents:/app/agents:ro
+      - ./pipelines:/app/pipelines:ro
     networks: [control, worker-egress]
     depends_on:
       control:
         condition: service_healthy
+      runtime:
+        condition: service_healthy
+
+  runtime:
+    build:
+      context: ..
+      dockerfile: runtime/Dockerfile
+    env_file:
+      - ../.env
+    environment:
+      RUNTIME_API_BASE: ${baseurl:-}
+      RUNTIME_API_KEY: ${apikey:-}
+      RUNTIME_ENDPOINTS: ${RUNTIME_ENDPOINTS:-}
+      RUNTIME_MODEL: ${RW_MODEL_NAME:-qwen3.7-flash}
+      RUNTIME_EMBEDDING_MODEL: ${RW_EMBEDDING_MODEL:-qwen3.7-text-embedding}
+      RUNNER_CONTROLLER_URL: http://runner-controller:8096
+      RUNTIME_DATA: /runtime-data
+      RUNTIME_SKILLS_PATHS: /user-agent-skills:/codex-source/skills:/app/skills
+      CODEX_SOURCE: /codex-source
+      CODEX_HOME: /runtime-data/codex
+    ports:
+      - "8098:8098"
+    volumes:
+      - rw-runtime-data:/runtime-data
+      - ${RW_PROJECTS_ROOT:-./projects}:/projects
+      - ${HOME}/.codex:/codex-source:ro
+      - ${HOME}/.agents/skills:/user-agent-skills:ro
+    networks: [control, worker-egress]
+    depends_on:
+      runner-controller:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8098/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   runner-controller:
     build:
@@ -46,7 +95,7 @@ services:
       target: runner
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - rw-data:/app/data
+      - rw-kernel-data:/app/data
     networks: [control]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8096/health')"]
@@ -55,7 +104,8 @@ services:
       retries: 20
 
 volumes:
-  rw-data:
+  rw-kernel-data:
+  rw-runtime-data:
 
 networks:
   control:

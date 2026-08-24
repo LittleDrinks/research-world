@@ -1,0 +1,61 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v09 · 证据矩阵：挑战 ADR-0017 claim 是审计单位而非节点（G1 未实现）。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v09 · 证据矩阵 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:light;--bg:#f7f8f7;--ink:#17211c;--muted:#77827a;--line:#e0e5e0;--sup:#2e6e4e;--con:#a33b2e;--amb:#a06f1a}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{display:grid;grid-template-rows:56px 1fr;height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--line);background:#fff}
+  header b{font-size:15px}.scale{margin-left:auto;font:11px ui-monospace,monospace;color:var(--muted)}
+  main{display:grid;grid-template-columns:1fr 340px;min-height:0}
+  .table-wrap{overflow:auto;padding:14px 16px 70px}
+  table{border-collapse:separate;border-spacing:3px;min-width:900px}
+  th{padding:6px 8px;font:600 10px ui-monospace,monospace;color:var(--muted);text-align:left;vertical-align:bottom}
+  th.src{writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);height:150px;width:26px;padding:8px 4px;text-align:left;border-bottom:3px solid var(--line)}
+  th.cred small{display:block;color:var(--muted)}
+  td.claim{background:#fff;border:1px solid var(--line);border-radius:7px;padding:8px;font-size:11.5px;min-width:220px;cursor:pointer}
+  td.cell{border-radius:6px;text-align:center;font:10px ui-monospace,monospace;min-width:52px;height:44px;cursor:pointer;background:#fff;border:1px solid var(--line)}
+  td.sup{background:color-mix(in srgb,var(--sup) 22%,white);color:var(--sup);font-weight:700}
+  td.con{background:color-mix(in srgb,var(--con) 16%,white);color:var(--con);font-weight:700}
+  td.amb{background:color-mix(in srgb,var(--amb) 14%,white);color:var(--amb)}
+  td.none{color:#c2c9c3}
+  aside{border-left:1px solid var(--line);background:#fff;padding:16px;overflow:auto}
+  h2{font-size:13px;margin:0 0 10px}.ev{border-left:3px solid var(--sup);background:#f3f7f3;padding:10px;border-radius:0 8px 8px 0;margin-bottom:8px;font-size:12px}
+  .ev.con{border-color:var(--con);background:#faf3f1}
+  .verdict{margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><b>证据矩阵</b><span style="color:var(--muted);font-size:11px">把 direction 主张拆成原子断言，逐条绑定证据句；审计结果回写状态机与极性边</span><span class="scale" id="scale"></span></header>
+  <main>
+    <div class="table-wrap"><table id="matrix"></table></div>
+    <aside id="side"><h2>点击矩阵格查看绑定证据</h2><p style="color:var(--muted);font-size:11px">support（绿）= 支持主张；contradict（红）= 反驳；ambiguous（黄）= 仅相关不充分。空白 = 未覆盖，完整性审计会标记。</p><div id="evidence"></div><div class="verdict" id="verdict"></div></aside>
+  </main>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const CLAIMS=["热-电转换效率受界面声子散射主导","材料 A 在 300K 下 ZT=1.4","退火降低晶界热导率","载流子迁移率随掺杂浓度单调下降","界面粗糙度与热阻正相关","样品制备未引入污染相"];
+const SOURCES=[["S01","论文 A · Nature Mat 2025",0.92],["S02","论文 B · PRL 2026",0.84],["S03","会议摘要 C",0.55],["S04","arXiv 预印本 D",0.42],["S05","自家实验 E-014",0.90],["S06","数据库 Matbench",0.88],["S07","论文 F · 撤稿后更正",0.36],["S08","湿实验记录 G",0.71]];
+const SENT=["声子界面透射率测量显示 38% 散射贡献","独立复现 ZT=1.38 ± 0.06","退火 4h 后晶界热导下降 0.42 W/mK","迁移率测量与掺杂幂律拟合吻合","AFM 粗糙度与热阻相关性 R²=0.81","XRD 未检测到杂相，EDS 与配比一致"];
+let sel=null;
+function cell(i,j){const x=Math.sin((i+1)*(j+2)*3.7);if(x>0.55)return["sup","S"];if(x<-0.35)return["con","C"];if(x>0.1)return["amb","A"];return["none","·"]}
+function render(){const th=SOURCES.map(([id,label,cred])=>`<th class="src cred"><small>${id}</small>${label}</th>`).join("");
+ const rows=CLAIMS.map((c,i)=>`<tr><td class="claim" data-i="${i}">${i+1}. ${c}</td>${SOURCES.map((_,j)=>{const [k,v]=cell(i,j);return `<td class="cell ${k}" data-i="${i}" data-j="${j}">${v}</td>`}).join("")}</tr>`).join("");
+ $("matrix").innerHTML=`<thead><tr><th>原子主张 / 来源</th>${th}</tr></thead><tbody>${rows}</tbody>`;
+ const sup=CLAIMS.reduce((n,_,i)=>n+Array.from({length:SOURCES.length},(_,j)=>cell(i,j)[0]==="sup").filter(Boolean).length,0),con=CLAIMS.reduce((n,_,i)=>n+Array.from({length:SOURCES.length},(_,j)=>cell(i,j)[0]==="con").filter(Boolean).length,0);
+ $("scale").textContent=`${CLAIMS.length} 条原子主张 × ${SOURCES.length} 个来源 · ${sup} 支持 / ${con} 反驳 · 全库 ${RW.TOTAL.nodes} 节点背景`;
+ if(RWUI)RWUI.setState({支持:sup,反驳:con,主张:CLAIMS.length,来源:SOURCES.length});}
+function show(i,j){sel=[i,j];const [k]=cell(i,j);const s=SOURCES[j],c=CLAIMS[i];
+ $("evidence").innerHTML=`<div class="ev ${k==="con"?"con":""}"><b>${s[0]} · ${s[1]}</b><br>${k==="sup"?"支持":"反驳"}证据句：${SENT[(i+j)%SENT.length]}<br><small style="color:var(--muted)">来源可信度 ${s[2]} · 会议 > arXiv 优先级（a.md）</small></div>`;
+ $("verdict").innerHTML=`<b>对主张 ${i+1} 的裁定</b><br>${k==="sup"?"≥2 个高可信来源支持，建议 supported":k==="con"?"存在反驳证据，审计应回写 refutes 边":"证据不充分，不得从该主张派生依赖"}`;}
+function $(id){return document.getElementById(id)}
+document.addEventListener("click",e=>{const c=e.target.closest("td.cell");if(c){show(+c.dataset.i,+c.dataset.j)}const cl=e.target.closest("td.claim");if(cl){$("evidence").innerHTML=`<b>原子主张 ${+cl.dataset.i+1}</b><br>${CLAIMS[+cl.dataset.i]}<br><small style="color:var(--muted)">review 启动时由 direction/experiment 文本拆出；claim 不是节点（ADR-0017）</small>`}});
+document.addEventListener("DOMContentLoaded",()=>{render();RWUI&&RWUI.setState({设计命题:"原子断言审计如何可视化：claim × source 矩阵",挑战对象:"G1：review 无原子断言拆分",交互:"矩阵热力 + 证据句绑定 + 来源可信度",数据:"6 主张 × 8 来源，全库 125 题背景"});});
+</script>
+</body>
+</html>

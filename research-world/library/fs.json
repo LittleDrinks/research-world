@@ -1,0 +1,5 @@
+{
+  "name": "fs",
+  "summary": "harness 内建文件工具：在会话工作区内 read_file / grep / glob。",
+  "prompt_segment": "会话工作区内可用文件工具 read_file、grep、glob 读取与检索文本文件。"
+}

@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "bnt162b2",
+    "title": "Safety and Efficacy of the BNT162b2 mRNA Covid-19 Vaccine",
+    "shortTitle": "Safety and Efficacy of the BNT162b2 mRNA Covid-19 Vaccine",
+    "authors": "PolackFernando P., ThomasStephen J., KitchinNicholas et al.",
+    "year": 2020,
+    "domain": "Human and clinical research",
+    "modality": "Human / clinical",
+    "category": "human-clinical",
+    "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7745181/",
+    "localPath": "raw/bnt162b2/fulltext.xml"
+  },
+  "thesis": "A two-dose regimen of BNT162b2 conferred 95% protection against Covid-19 in persons 16 years of age or older.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "bnt162b2-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What effect or association is supported in the studied human population?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "bnt162b2-d",
+      "kind": "decision",
+      "title": "Choose cohort and endpoint",
+      "body": "In an ongoing multinational, placebo-controlled, observer-blinded, pivotal efficacy trial, we randomly assigned persons 16 years of age or older in a 1:1 ratio to receive two doses, 21 days apart, of either placebo or the BNT162b2 vaccine candidate (30 μg per dose).",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "bnt162b2-i",
+      "kind": "investigation",
+      "title": "Measure human outcomes",
+      "body": "A total of 43,548 participants underwent randomization, of whom 43,448 received injections: 21,720 with BNT162b2 and 21,728 with placebo.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "bnt162b2-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "There were 8 cases of Covid-19 with onset at least 7 days after the second dose among participants assigned to receive BNT162b2 and 162 cases among those assigned to placebo; BNT162b2 was 95% effective in preventing Covid-19 (95% credible interval, 90.3 to 97.6).",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "bnt162b2-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "A two-dose regimen of BNT162b2 conferred 95% protection against Covid-19 in persons 16 years of age or older.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "bnt162b2-q",
+      "to": "bnt162b2-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "bnt162b2-d",
+      "to": "bnt162b2-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "bnt162b2-i",
+      "to": "bnt162b2-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "bnt162b2-e",
+      "to": "bnt162b2-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

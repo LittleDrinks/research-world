@@ -1,0 +1,5 @@
+{
+  "name": "q003",
+  "root": "q003",
+  "question": "Will the Navier–Stokes problem ever be solved?\nDespite the fact that they are practically useful, proof of the Navier–Stokes equations, used to model fluid flow, remains elusive. We still don’t know whether these equations are applicable at all times and particularly if global classical solutions exist for all points in a 3D space."
+}

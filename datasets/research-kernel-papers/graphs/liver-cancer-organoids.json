@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "liver-cancer-organoids",
+    "title": "Human Primary Liver Cancer -derived Organoid Cultures for disease modelling and drug screening",
+    "shortTitle": "Human Primary Liver Cancer -derived Organoid Cultures for dise",
+    "authors": "BroutierLaura, MastrogiovanniGianmarco, VerstegenMonique MA et al.",
+    "year": 2017,
+    "domain": "Experimental biology",
+    "modality": "Wet lab",
+    "category": "wet-lab",
+    "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5722201/",
+    "localPath": "raw/liver-cancer-organoids/fulltext.xml"
+  },
+  "thesis": "We thus demonstrate the wide-ranging biomedical utilities of PLC-derived organoid models in furthering the understanding of liver cancer biology and in developing personalized medicine approaches for the disease.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "liver-cancer-organoids-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "Which intervention or mechanism produces the reported experimental effect?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "liver-cancer-organoids-d",
+      "kind": "decision",
+      "title": "Choose construct and controls",
+      "body": "Human liver cancer research currently lacks in vitro models that faithfully recapitulate the pathophysiology of the original tumour.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "liver-cancer-organoids-i",
+      "kind": "investigation",
+      "title": "Run assays against controls",
+      "body": "We recently described a novel, near-physiological organoid culture system, where primary human healthy liver cells form long-term expanding organoids that retain liver tissue function and genetic stability.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "liver-cancer-organoids-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "PLC-derived organoids are amenable for biomarker identification and drug screening testing and lead to the identification of the ERK inhibitor SCH772984 as a potential therapeutic agent for primary liver cancer.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "liver-cancer-organoids-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "We thus demonstrate the wide-ranging biomedical utilities of PLC-derived organoid models in furthering the understanding of liver cancer biology and in developing personalized medicine approaches for the disease.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "liver-cancer-organoids-q",
+      "to": "liver-cancer-organoids-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "liver-cancer-organoids-d",
+      "to": "liver-cancer-organoids-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "liver-cancer-organoids-i",
+      "to": "liver-cancer-organoids-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "liver-cancer-organoids-e",
+      "to": "liver-cancer-organoids-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

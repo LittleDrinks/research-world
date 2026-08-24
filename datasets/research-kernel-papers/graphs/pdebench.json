@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "pdebench",
+    "title": "PDEBENCH: An Extensive Benchmark for Scientific Machine Learning",
+    "shortTitle": "PDEBENCH",
+    "authors": "Makoto Takamoto, Timothy Praditia, Raphael Leiteritz et al.",
+    "year": 2022,
+    "domain": "Scientific machine learning",
+    "modality": "Benchmark",
+    "category": "benchmark",
+    "sourceUrl": "https://arxiv.org/abs/2210.07182",
+    "localPath": "raw/pdebench/paper.pdf"
+  },
+  "thesis": "With those metrics we identify tasks which are challenging for recent ML methods and propose these tasks as future challenges for the community.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "pdebench-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "How can the target scientific task be compared under fixed data and evaluation rules?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "pdebench-d",
+      "kind": "decision",
+      "title": "Freeze tasks and metrics",
+      "body": "Our proposed set of benchmark problems contribute the following unique features: (1) A much wider range of PDEs compared to existing benchmarks, ranging from relatively common examples to more realistic and difficult problems; (2) much larger ready-to-use datasets compared to prior work, comprising multiple simulation runs across a larger number of initial and boundary conditions and PDE parameters; (3) more extensible source codes with user-friendly APIs for data generation and baseline results with popular machine learning models (FNO, U-Net, PINN, Gradient-Based Inverse Method).",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "pdebench-i",
+      "kind": "investigation",
+      "title": "Evaluate reference systems",
+      "body": "PDEBench comprises both code and data to benchmark the performance of novel machine learning models against both classical numerical simulations and machine learning baselines.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "pdebench-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "PDEBench allows researchers to extend the benchmark freely for their own purposes using a standardized API and to compare the performance of new models to existing baseline methods.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "pdebench-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "With those metrics we identify tasks which are challenging for recent ML methods and propose these tasks as future challenges for the community.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "pdebench-q",
+      "to": "pdebench-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "pdebench-d",
+      "to": "pdebench-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "pdebench-i",
+      "to": "pdebench-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "pdebench-e",
+      "to": "pdebench-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

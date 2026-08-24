@@ -1,0 +1,101 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v01 · 研究舰队总览：挑战 /projects 列表页，125 题一个屏 + 人工分诊。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v01 · 研究舰队总览 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:light;--bg:#f4f6f2;--paper:#fff;--ink:#17211a;--muted:#66736a;--line:#dce3dc;--accent:#1f6b4c;--run:#2d7dd2;--human:#b06a0f;--pause:#8a6aa8;--att:#a33c36;--running:#2d7dd2;--human:#b06a0f;--attention:#a33c36;--paused:#8a6aa8;--healthy:#1f6b4c}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC","Microsoft YaHei",sans-serif}
+  .app{display:grid;grid-template-rows:56px 1fr;height:100vh}
+  .top{display:flex;align-items:center;gap:14px;padding:0 18px;background:var(--paper);border-bottom:1px solid var(--line)}
+  .brand b{font-size:14px}.brand small{display:block;color:var(--muted);font:10px ui-monospace,monospace}
+  .kpi{display:flex;gap:0;margin-left:auto}.kpi div{padding:0 14px;border-left:1px solid var(--line);text-align:right}
+  .kpi b{font:700 17px ui-monospace,monospace}.kpi span{display:block;color:var(--muted);font-size:10px}
+  input.search{width:230px;padding:8px 11px;border:1px solid var(--line);border-radius:8px;font:inherit}
+  .body{display:grid;grid-template-columns:210px 1fr;min-height:0}
+  aside{border-right:1px solid var(--line);background:var(--paper);overflow:auto;padding:14px}
+  aside h3{margin:4px 0 8px;font-size:11px;color:var(--muted);letter-spacing:.08em}
+  .topic{display:flex;justify-content:space-between;padding:7px 9px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+  .topic:hover{background:#eef3ee}.topic.on{background:var(--ink);color:#fff}.topic span{font-size:11px;color:var(--muted)}.topic.on span{color:#c8d8cc}
+  .legend{padding:8px 0;color:var(--muted);font-size:11px}.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
+  main{display:flex;flex-direction:column;min-width:0;padding:14px 18px 60px;overflow:auto}
+  .toolbar{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+  .toolbar button{padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:var(--paper);cursor:pointer;font:inherit}
+  .toolbar button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .meta{margin-left:auto;color:var(--muted);font:11px ui-monospace,monospace}
+  .matrix{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:8px}
+  .tile{padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:var(--paper);cursor:pointer;min-height:96px;display:flex;flex-direction:column;gap:5px}
+  .tile:hover{border-color:var(--ink);transform:translateY(-1px)}
+  .tile h4{margin:0;font-size:12.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .tile .chips{display:flex;gap:5px;margin-top:auto;flex-wrap:wrap}
+  .chip{padding:2px 7px;border-radius:999px;font-size:10px;font:10px ui-monospace,monospace}
+  .st-running{border-left:4px solid var(--run)} .st-human{border-left:4px solid var(--human)} .st-attention{border-left:4px solid var(--att)} .st-paused{border-left:4px solid var(--pause)} .st-healthy{border-left:4px solid var(--accent)}
+  .chip.running{background:#e3f0fb;color:var(--run)} .chip.human{background:#fbebd3;color:var(--human)} .chip.attention{background:#fae6e2;color:var(--att)} .chip.paused{background:#efe7f6;color:var(--pause)} .chip.healthy{background:#e2f1e8;color:var(--accent)}
+  table{width:100%;border-collapse:collapse;background:var(--paper)}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:12px}
+  th{color:var(--muted);font-weight:600;font-size:11px;position:sticky;top:0;background:var(--paper)}
+  tr.row{cursor:pointer} tr.row:hover{background:#f1f6f2}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:7px}
+  .drawer{position:fixed;top:56px;right:-430px;bottom:0;width:410px;background:var(--paper);border-left:1px solid var(--line);box-shadow:-16px 0 40px rgba(0,0,0,.12);transition:right .22s ease;z-index:30;padding:20px;overflow:auto}
+  .drawer.open{right:0}
+  .close{float:right;border:1px solid var(--line);background:none;border-radius:8px;padding:4px 9px;cursor:pointer}
+  .bar{height:8px;border-radius:4px;background:#edf1ec;display:flex;overflow:hidden;margin:8px 0}
+  .bar i{display:block}.bar .dir{background:var(--run)}.bar .exp{background:var(--accent)}.bar .ghost{background:#c9cfc9}
+  .events{margin-top:12px}.events div{padding:7px 0;border-bottom:1px dashed var(--line);font-size:12px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top"><div class="brand"><b>研究世界 · 舰队总览</b><small>RESEARCH WORLD / 125 MISSIONS</small></div>
+    <input class="search" id="q" placeholder="搜索题目、编号、主题…" />
+    <div class="kpi"><div><b id="k-running">0</b><span>运行中</span></div><div><b id="k-human">0</b><span>待人工</span></div><div><b id="k-attn">0</b><span>需关注</span></div><div><b id="k-nodes">0</b><span>总节点</span></div></div>
+  </header>
+  <div class="body">
+    <aside>
+      <h3>学科</h3><div id="topics"></div>
+      <h3>状态图例</h3><div class="legend"><i style="background:var(--run)"></i>运行中<br><i style="background:var(--human)"></i>等待人工<br><i style="background:var(--att)"></i>需关注<br><i style="background:var(--pause)"></i>暂停 / 熔断<br><i style="background:var(--accent)"></i>健康</div>
+    </aside>
+    <main>
+      <div class="toolbar">
+        <button id="viewMatrix" class="on">矩阵视图</button><button id="viewList">列表视图</button>
+        <button id="sortNodes">按节点数</button><button id="sortFresh">按最近活跃</button>
+        <span class="meta" id="meta"></span>
+      </div>
+      <div id="stage" class="matrix"></div>
+    </main>
+  </div>
+</div>
+<aside class="drawer" id="drawer"></aside>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const state={topic:"all",view:"matrix",q:"",sort:"fresh",selected:null};
+const $=id=>document.getElementById(id);
+const STATUS_ZH={running:"运行中",human:"待人工",attention:"需关注",paused:"暂停",healthy:"健康"};
+function renderTopics(){const counts={all:RW.PROJECTS.length};RW.PROJECTS.forEach(p=>counts[p.topicZh]=(counts[p.topicZh]||0)+1);
+ $("topics").innerHTML=[["all","全部学科"],...Object.keys(RW.TOPIC_ZH).map(k=>[k,RW.TOPIC_ZH[k]])].map(([k,zh])=>`<div class="topic ${state.topic===k?"on":""}" data-k="${k}"><b>${zh}</b><span>${counts[k]||counts[zh]||0}</span></div>`).join("");}
+function visible(){let a=RW.PROJECTS.filter(p=>(state.topic==="all"||p.topicZh===state.topic)&&(state.q===""||(p.title+" "+p.id+" "+p.topicZh).toLowerCase().includes(state.q.toLowerCase())));
+ a.sort((x,y)=>state.sort==="nodes"?y.nodes-x.nodes:y.minutes_ago-x.minutes_ago);return a;}
+function chip(p){return `<span class="chip ${p.status}">${STATUS_ZH[p.status]}</span>${p.tag?`<span class="chip human">${p.tag}</span>`:""}`}
+function render(){const list=visible();$("meta").textContent=`显示 ${list.length} / 125 · 渲染 ${RW.genMs} ms（同步 DOM）`;
+ if(state.view==="matrix"){$("stage").className="matrix";$("stage").innerHTML=list.map(p=>`<div class="tile st-${p.status}" data-id="${p.id}"><h4>${p.n}. ${p.title}</h4><div class="chips">${chip(p)}</div><span style="color:var(--muted);font-size:10px">${p.topicZh} · ${p.nodes} 节点 · ${RW.minutesAgo(p.minutes_ago)}</span></div>`).join("");}
+ else{$("stage").className="";$("stage").innerHTML=`<table><thead><tr><th>#</th><th>命题</th><th>学科</th><th>状态</th><th>节点</th><th>方向</th><th>幽灵</th><th>工作流</th><th>预算</th><th>最近活跃</th></tr></thead><tbody>${list.map(p=>`<tr class="row" data-id="${p.id}"><td>${p.n}</td><td><b>${p.title}</b>${p.tag?`<br><small style="color:var(--human)">${p.tag}</small>`:""}</td><td>${p.topicZh}</td><td><span class="dot" style="background:var(--${p.status})"></span>${STATUS_ZH[p.status]}</td><td>${p.nodes}</td><td>${p.directions}</td><td>${p.ghosts}</td><td>${p.workflows}</td><td>¥${p.budget_yuan.toFixed(2)}</td><td>${RW.minutesAgo(p.minutes_ago)}</td></tr>`).join("")}</tbody></table>`;}
+ $("k-running").textContent=RW.TOTAL.running;$("k-human").textContent=RW.TOTAL.human;$("k-attn").textContent=RW.PROJECTS.filter(p=>p.status==="attention").length;$("k-nodes").textContent=RW.fmt(RW.TOTAL.nodes);
+ if(RWUI)RWUI.setState({视图:state.view,学科:state.topic,排序:state.sort,选中:state.selected?.id||null});}
+function open(id){const p=RW.PROJECT_BY_ID[id];if(!p)return;state.selected=p;
+ $("drawer").innerHTML=`<button class="close" onclick="document.getElementById('drawer').classList.remove('open')">×</button>
+ <span style="color:var(--muted);font:11px ui-monospace,monospace">${p.id} · ${p.topicZh} · ${STATUS_ZH[p.status]}</span>
+ <h2 style="margin:8px 0;font-size:20px;line-height:1.3">${p.title}</h2>
+ <p style="color:var(--muted);font-size:13px">${RW.QUESTIONS.find(q=>q.id===p.n).full.slice(0,320)}${RW.QUESTIONS.find(q=>q.id===p.n).full.length>320?"…":""}</p>
+ <div class="bar"><i class="dir" style="width:${p.directions/p.nodes*100}%"></i><i class="exp" style="width:${p.experiments/p.nodes*100}%"></i><i class="ghost" style="width:${p.ghosts/p.nodes*100}%"></i></div>
+ <div style="display:flex;gap:16px;color:var(--muted);font:11px ui-monospace,monospace"><span>方向 ${p.directions}</span><span>实验 ${p.experiments}</span><span>幽灵 ${p.ghosts}</span><span>熔断 ${p.lineage_fuses}</span></div>
+ <p style="margin-top:14px"><b>审查看板</b></p>
+ <div class="events"><div>🟢 本周期新增 ${Math.max(1,Math.floor(p.cycles/3))} 条候选方向，${p.auto?"auto 自动推进":"手动确认模式"}</div><div>🔴 失败沉淀 ${p.ghosts} 条，全部保留驳回理由与抗辩</div><div>🟡 等待人工：${p.status==="human"?`1 项（${p.tag||"双审分歧"}）`:"0 项"}</div><div>📎 下一行动：<button onclick="alert('原型演示：进入该题研究图谱（见 v02 制图台）')" style="border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--ink);color:#fff;cursor:pointer">进入研究图 →</button></div></div>`;
+ $("drawer").classList.add("open");if(RWUI)RWUI.setState({选中:p.id,题目:p.title.slice(0,40)});}
+document.addEventListener("click",e=>{const t=e.target.closest(".topic");if(t){state.topic=t.dataset.k;renderTopics();render();}const c=e.target.closest(".tile,.row");if(c)open(c.dataset.id);const vb=e.target.closest("#viewMatrix");if(vb){state.view="matrix";$("viewMatrix").classList.add("on");$("viewList").classList.remove("on");render();}const vl=e.target.closest("#viewList");if(vl){state.view="list";$("viewList").classList.add("on");$("viewMatrix").classList.remove("on");render();}const sn=e.target.closest("#sortNodes");if(sn){state.sort="nodes";render();}const sf=e.target.closest("#sortFresh");if(sf){state.sort="fresh";render();}});
+$("q").addEventListener("input",e=>{state.q=e.target.value;render()});
+document.addEventListener("DOMContentLoaded",()=>{renderTopics();render();if(RWUI)RWUI.setState({设计命题:"125 题如何在单屏被总览、分诊、下钻",挑战对象:"/projects 线性项目列表",交互:"矩阵/列表切换 + 学科/状态过滤 + 搜索排序 + 抽屉下钻"});});
+</script>
+</body>
+</html>

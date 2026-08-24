@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "cerebral-organoids",
+    "title": "Cerebral organoids model human brain development and microcephaly",
+    "shortTitle": "Cerebral organoids model human brain development and microceph",
+    "authors": "LancasterMadeline A., RennerMagdalena, MartinCarol-Anne et al.",
+    "year": 2013,
+    "domain": "Experimental biology",
+    "modality": "Wet lab",
+    "category": "wet-lab",
+    "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3817409/",
+    "localPath": "raw/cerebral-organoids/fulltext.xml"
+  },
+  "thesis": "Our data demonstrate that 3D organoids can recapitulate development and disease of even this most complex human tissue.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "cerebral-organoids-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "Which intervention or mechanism produces the reported experimental effect?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "cerebral-organoids-d",
+      "kind": "decision",
+      "title": "Choose construct and controls",
+      "body": "Finally, we use RNAi and patient-specific iPS cells to model microcephaly, a disorder that has been difficult to recapitulate in mice.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "cerebral-organoids-i",
+      "kind": "investigation",
+      "title": "Run assays against controls",
+      "body": "The complexity of the human brain has made it difficult to study many brain disorders in model organisms, and highlights the need for an in vitro model of human brain development.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "cerebral-organoids-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "We demonstrate premature neuronal differentiation in patient organoids, a defect that could explain the disease phenotype.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "cerebral-organoids-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "Our data demonstrate that 3D organoids can recapitulate development and disease of even this most complex human tissue.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "cerebral-organoids-q",
+      "to": "cerebral-organoids-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "cerebral-organoids-d",
+      "to": "cerebral-organoids-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "cerebral-organoids-i",
+      "to": "cerebral-organoids-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "cerebral-organoids-e",
+      "to": "cerebral-organoids-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

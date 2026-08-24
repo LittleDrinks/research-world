@@ -1,0 +1,162 @@
+{
+  "paper": {
+    "id": "matbench",
+    "title": "Benchmarking Materials Property Prediction Methods: The Matbench Test Set and Automatminer Reference Algorithm",
+    "shortTitle": "Matbench",
+    "authors": "Alexander Dunn et al.",
+    "year": 2020,
+    "domain": "Materials science",
+    "modality": "Benchmark",
+    "sourceUrl": "https://arxiv.org/abs/2005.00707",
+    "localPath": "raw/matbench/paper.pdf",
+    "category": "benchmark",
+    "providerId": "2005.00707"
+  },
+  "thesis": "A fixed set of tasks and nested cross-validation makes materials-property models comparable, revealing that no single model family dominates every data regime.",
+  "nodes": [
+    {
+      "id": "m-q",
+      "kind": "question",
+      "title": "How should materials predictors be compared?",
+      "body": "Create a reproducible comparison across diverse materials properties without leakage or task-specific split advantages.",
+      "provenance": "explicit",
+      "locator": "Abstract and §1"
+    },
+    {
+      "id": "m-d",
+      "kind": "decision",
+      "title": "Freeze tasks and nested splits",
+      "body": "Use source datasets as-is and prescribe consistent nested cross-validation with five outer folds.",
+      "provenance": "explicit",
+      "locator": "§2, Benchmark construction",
+      "state": "accepted"
+    },
+    {
+      "id": "m-i1",
+      "kind": "investigation",
+      "title": "Build 13 benchmark tasks",
+      "body": "Assemble regression and classification tasks spanning electronic, thermodynamic, mechanical and other materials properties.",
+      "provenance": "explicit",
+      "locator": "Table 1",
+      "state": "completed",
+      "metric": "312–132,000 samples"
+    },
+    {
+      "id": "m-i2",
+      "kind": "investigation",
+      "title": "Run reference algorithms",
+      "body": "Evaluate Automatminer, CGCNN, MEGNet, random forests and dummy baselines under the same split protocol.",
+      "provenance": "explicit",
+      "locator": "§3–§4",
+      "state": "completed"
+    },
+    {
+      "id": "m-e1",
+      "kind": "evidence",
+      "title": "Automatminer leads most tasks",
+      "body": "The automated classical pipeline achieved the best reported score on eight of thirteen tasks.",
+      "provenance": "explicit",
+      "locator": "Table 4 and discussion",
+      "state": "supporting",
+      "metric": "8 / 13 tasks"
+    },
+    {
+      "id": "m-e2",
+      "kind": "evidence",
+      "title": "Graph networks benefit from scale",
+      "body": "Graph neural networks become more consistently competitive on larger datasets, around ten thousand samples and above.",
+      "provenance": "explicit",
+      "locator": "§5, Dataset size analysis",
+      "state": "supporting",
+      "metric": "~10⁴ samples"
+    },
+    {
+      "id": "m-e3",
+      "kind": "evidence",
+      "title": "Property type still matters",
+      "body": "Formation-energy and phonon-density tasks show task-specific graph-network advantages that sample count alone does not explain.",
+      "provenance": "explicit",
+      "locator": "§5, task-level discussion",
+      "state": "qualifying"
+    },
+    {
+      "id": "m-c",
+      "kind": "claim",
+      "title": "Standardization exposes conditional winners",
+      "body": "A shared benchmark supports fair comparison while showing that model choice depends on dataset size and target property.",
+      "provenance": "inferred",
+      "locator": "Synthesis of §4–§5",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "m-q",
+      "to": "m-d",
+      "relation": "motivates",
+      "provenance": "explicit"
+    },
+    {
+      "from": "m-d",
+      "to": "m-i1",
+      "relation": "constrains",
+      "provenance": "explicit"
+    },
+    {
+      "from": "m-d",
+      "to": "m-i2",
+      "relation": "constrains",
+      "provenance": "explicit"
+    },
+    {
+      "from": "m-i1",
+      "to": "m-i2",
+      "relation": "feeds",
+      "provenance": "explicit"
+    },
+    {
+      "from": "m-i2",
+      "to": "m-e1",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "m-i2",
+      "to": "m-e2",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "m-i2",
+      "to": "m-e3",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "m-e1",
+      "to": "m-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    },
+    {
+      "from": "m-e2",
+      "to": "m-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    },
+    {
+      "from": "m-e3",
+      "to": "m-c",
+      "relation": "qualifies",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The fixture records published aggregate results, not every fold-level prediction or executable environment."
+  ],
+  "reconstruction": {
+    "scope": "section-level manual graph",
+    "method": "manual source review",
+    "review": "manually curated"
+  }
+}

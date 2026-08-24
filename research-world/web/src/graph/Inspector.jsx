@@ -1,33 +1,43 @@
-import { Activity, GitBranch, MessageSquare, Play, Send } from "lucide-react";
-import { useEffect, useState } from "react";
-import { getMessages, sendMessage } from "../api";
+import { Activity, Check, Copy, GitBranch, Play } from "lucide-react";
+import { useState } from "react";
 import { useWorld } from "../context/WorldContext";
+import { nodeText, RUN_STATUS } from "../utils/labels";
 
 
 const LABELS = { question: "问题", source: "来源", direction: "方向", experiment: "实验",
-  pending: "待审查", admitted: "已入图", ghost: "已驳回", proposed: "待验证", supported: "已支持", refuted: "已反驳" };
+  pending: "待审查", admitted: "已入图", ghost: "已驳回", proposed: "待验证", supported: "已支持", refuted: "已反驳",
+  uncertain: "不确定", approve: "通过", reject: "驳回", support: "支持方", challenge: "质疑方", mechanical: "机械校验" };
 
 
-export function Inspector({ node, nodes, edges, workflow, onSelect, onStart, onOpen }) {
+export function Inspector({ node, nodes, edges, run, onSelect, onStart, onOpen }) {
   if (!node) return <aside className="inspector inspector-empty">选择节点查看上下文。</aside>;
-  return <aside className="inspector"><div className="inspector-scroll"><NodeHeader node={node} workflow={workflow} onStart={onStart} onOpen={onOpen} />
+  return <aside className="inspector"><div className="inspector-scroll"><NodeHeader node={node} run={run} onStart={onStart} onOpen={onOpen} />
     <NodeRecord node={node} /><Relations node={node} nodes={nodes} edges={edges} onSelect={onSelect} />
-    <Rebuttal node={node} /></div><NodeChat node={node} /></aside>;
+    <Claims node={node} /><Reviews node={node} />{node.life_state === "admitted" && <NodeIdEntry node={node} />}</div></aside>;
 }
 
 
-function NodeHeader({ node, workflow, onStart, onOpen }) {
-  const title = node.payload?.title || node.payload?.text || "未命名节点";
-  const label = workflow?.status === "waiting_human" ? "继续工作流" : "查看工作流";
+function NodeHeader({ node, run, onStart, onOpen }) {
+  const title = nodeText(node);
   return <header className="inspector-header"><div className="eyebrow"><span>{LABELS[node.kind]}</span><span>{LABELS[node.life_state]}</span>{node.direction_status && <span>{LABELS[node.direction_status]}</span>}</div>
     <h1>{title}</h1>{node.rejection_reason && <p className="rejection-reason">{node.rejection_reason}</p>}
-    {workflow && <button className="button primary workflow-start" onClick={() => onOpen(workflow)}><Activity size={16} />{label}</button>}
-    {!workflow && <button className="button primary workflow-start" onClick={() => onStart(node)}><Play size={16} />{startLabel(node)}</button>}</header>;
+    {run && <button className="button primary workflow-start" onClick={() => onOpen(run)}><Activity size={16} />{RUN_STATUS[run.status] || run.status} · 查看轨迹</button>}
+    {!run && node.life_state === "admitted" && <PipelineLauncher node={node} onStart={onStart} />}</header>;
 }
 
 
-function startLabel(node) {
-  return node.kind === "experiment" ? "反思实验" : "发起工作流";
+function PipelineLauncher({ node, onStart }) {
+  const { data } = useWorld();
+  const pipelines = data.pipelines;
+  const [pipelineId, setPipelineId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const effective = pipelines.some((item) => item.id === pipelineId) ? pipelineId : pipelines[0]?.id || "";
+  if (!pipelines.length) return null;
+  const launch = () => { setBusy(true); Promise.resolve(onStart(node, effective)).finally(() => setBusy(false)); };
+  return <div className="pipeline-launcher">
+    <select aria-label="选择流程" value={effective} onChange={(event) => setPipelineId(event.target.value)}>
+      {pipelines.map((pipeline) => <option key={pipeline.id} value={pipeline.id}>{pipeline.name || pipeline.id}</option>)}</select>
+    <button className="button primary" disabled={busy || !effective} onClick={launch}><Play size={15} />发起运行</button></div>;
 }
 
 
@@ -40,37 +50,68 @@ function NodeRecord({ node }) {
 function Relations({ node, nodes, edges, onSelect }) {
   const byId = new Map(nodes.map((item) => [item.id, item]));
   const related = edges.filter((edge) => edge.source === node.id || edge.target === node.id).map((edge) => ({ edge, node: byId.get(edge.source === node.id ? edge.target : edge.source) })).filter((item) => item.node);
-  return <section className="inspector-section"><h2><GitBranch size={15} />证据关系</h2>{related.length ? <ul className="relation-list">{related.map(({ edge, node: item }) => <li key={`${edge.source}:${edge.target}:${edge.polarity}`}><button onClick={() => onSelect(item.id)}><span className={`polarity ${edge.polarity}`}>{edge.polarity === "supports" ? "支持" : "反驳"}</span><b>{item.payload?.title || item.payload?.text}</b></button></li>)}</ul> : <p className="muted">暂无关系</p>}</section>;
+  return <section className="inspector-section"><h2><GitBranch size={15} />证据关系</h2>{related.length ? <ul className="relation-list">{related.map(({ edge, node: item }) => <li key={`${edge.source}:${edge.target}:${edge.polarity}`}><button onClick={() => onSelect(item.id)}><span className={`polarity ${edge.polarity}`}>{edge.polarity === "supports" ? "支持" : "反驳"}</span><b>{nodeText(item)}</b></button></li>)}</ul> : <p className="muted">暂无关系</p>}</section>;
 }
 
 
-function Rebuttal({ node }) {
-  if (!node.rebuttal) return null;
-  return <section className="inspector-section"><h2>双审意见</h2><div className="rebuttal-grid">{Object.entries(node.rebuttal).map(([reviewer, value]) => <div key={reviewer}><b>{reviewer === "reviewer_a" ? "审查 A" : "审查 B"}</b><p>{value.rebuttal || value.feedback || value.decision}</p><span>{value.quality ?? "-"} / {value.diversity ?? "-"}</span></div>)}</div></section>;
+function Claims({ node }) {
+  const values = node.payload?.claims;
+  const claims = Array.isArray(values) ? values.filter(isClaim) : [];
+  if (!claims.length) return null;
+  return <section className="inspector-section"><h2>原子主张</h2><ol className="claim-list">
+    {claims.map((claim, index) => <li key={text(claim.id) || index}><header><b>{claim.text}</b><span>{label(claim.verdict)}</span></header>
+      <Evidence values={claim.evidence} /></li>)}</ol></section>;
 }
 
 
-function NodeChat({ node }) {
-  const { projectId, refresh, setError } = useWorld();
-  const [messages, setMessages] = useState([]);
-  const [value, setValue] = useState("");
-  const [sending, setSending] = useState(false);
-  useEffect(() => { getMessages(projectId, node.id).then(setMessages).catch((error) => setError(error.message)); }, [projectId, node.id]);
-  const submit = async () => {
-    if (!value.trim() || sending) return;
-    setSending(true);
-    try {
-      const reply = await sendMessage(projectId, { node_id: node.id, message: value });
-      setMessages(await getMessages(projectId, node.id)); setValue("");
-      if (reply.workflow) await refresh(projectId);
-    }
-    catch (error) { setError(error.message); }
-    finally { setSending(false); }
-  };
-  const keyDown = (event) => {
-    const composing = event.isComposing || event.nativeEvent?.isComposing || event.keyCode === 229;
-    if (event.key === "Enter" && !event.shiftKey && !composing) { event.preventDefault(); submit(); }
-  };
-  return <section className="node-chat"><header><MessageSquare size={16} /><b>节点对话</b></header><div className="node-chat-log">{messages.map((message) => <p key={message.id} className={message.role}>{message.content}</p>)}</div>
-    <div className="node-composer"><textarea aria-label="节点消息" value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={keyDown} rows="2" placeholder="围绕当前节点讨论..." /><button className="icon-button" onClick={submit} disabled={sending || !value.trim()} aria-label="发送消息"><Send size={17} /></button></div></section>;
+function Reviews({ node }) {
+  if (!isRecord(node.rebuttal)) return null;
+  return <section className="inspector-section"><h2>审计意见</h2><div className="review-grid">
+    {Object.entries(node.rebuttal).map(([name, value]) => <Review key={name} name={name} value={value} />)}
+  </div></section>;
+}
+
+
+function Review({ name, value }) {
+  const review = isRecord(value) ? value : { argument: String(value ?? "") };
+  const title = label(review.stance) || name;
+  return <article><header><b>{title}</b><span>{label(review.decision || review.stance)}</span></header>
+    <p>{text(review.argument) || text(review.reason)}</p><Evidence values={review.evidence} /></article>;
+}
+
+
+function Evidence({ values = [] }) {
+  const items = Array.isArray(values) ? values.filter(text) : [];
+  if (!items.length) return null;
+  return <ul className="audit-evidence">{items.map((value, index) => <li key={`${value}:${index}`} className="mono">{String(value)}</li>)}</ul>;
+}
+
+
+function isRecord(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+
+function isClaim(value) {
+  return isRecord(value) && Boolean(text(value.text));
+}
+
+
+function text(value) {
+  return typeof value === "string" ? value : "";
+}
+
+
+function label(value) {
+  return text(value) ? LABELS[value] || value : "";
+}
+
+
+function NodeIdEntry({ node }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => { await navigator.clipboard.writeText(node.id); setCopied(true); };
+  return <section className="inspector-section"><h2>节点 ID</h2><div className="node-id">
+    <code className="mono">{node.id}</code>
+    <button className="icon-button" aria-label={copied ? "已复制节点 ID" : "复制节点 ID"} title={copied ? "已复制" : "复制节点 ID"} onClick={copy}>
+      {copied ? <Check size={15} /> : <Copy size={15} />}</button></div></section>;
 }

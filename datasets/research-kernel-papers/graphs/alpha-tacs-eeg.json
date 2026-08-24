@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "alpha-tacs-eeg",
+    "title": "Transcranial Alternating Current Stimulation Enhances Individual Alpha Activity in Human EEG",
+    "shortTitle": "Transcranial Alternating Current Stimulation Enhances Individu",
+    "authors": "ZaehleTino, RachStefan, HerrmannChristoph S. et al.",
+    "year": 2010,
+    "domain": "Human and clinical research",
+    "modality": "Human / clinical",
+    "category": "human-clinical",
+    "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2967471/",
+    "localPath": "raw/alpha-tacs-eeg/fulltext.xml"
+  },
+  "thesis": "The data demonstrate the ability of tACS to specifically modulate oscillatory brain activity and show its potential both at fostering knowledge on the functional significance of brain oscillations and for therapeutic application.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "alpha-tacs-eeg-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What effect or association is supported in the studied human population?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "alpha-tacs-eeg-d",
+      "kind": "decision",
+      "title": "Choose cohort and endpoint",
+      "body": "Non-invasive electrical stimulation of the human cortex by means of transcranial direct current stimulation (tDCS) has been instrumental in a number of important discoveries in the field of human cortical function and has become a well-established method for evaluating brain function in healthy human participants.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "alpha-tacs-eeg-i",
+      "kind": "investigation",
+      "title": "Measure human outcomes",
+      "body": "Recently, transcranial alternating current stimulation (tACS) has been introduced to directly modulate the ongoing rhythmic brain activity by the application of oscillatory currents on the human scalp.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "alpha-tacs-eeg-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "We delivered tACS over the occipital cortex of 10 healthy participants to entrain the neuronal oscillatory activity in their individual alpha frequency range and compared results with those from a separate group of participants receiving sham stimulation.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "alpha-tacs-eeg-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "The data demonstrate the ability of tACS to specifically modulate oscillatory brain activity and show its potential both at fostering knowledge on the functional significance of brain oscillations and for therapeutic application.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "alpha-tacs-eeg-q",
+      "to": "alpha-tacs-eeg-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "alpha-tacs-eeg-d",
+      "to": "alpha-tacs-eeg-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "alpha-tacs-eeg-i",
+      "to": "alpha-tacs-eeg-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "alpha-tacs-eeg-e",
+      "to": "alpha-tacs-eeg-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

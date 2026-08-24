@@ -1,0 +1,53 @@
+.agents-page { height: 100%; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; background: var(--app-canvas); }
+.agent-form { min-height: 0; overflow-y: auto; padding: 20px max(18px, calc((100% - 760px) / 2)) 30px; }
+.agent-form-header { margin-bottom: 18px; }
+.agent-form-header span { color: var(--text-muted); font-size: 12px; }
+.agent-form .field { margin-bottom: 14px; }
+.agent-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+.agent-form-footer { display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 10px max(18px, calc((100% - 760px) / 2)); border-top: 1px solid var(--line); background: var(--app-topbar); }
+.agent-form-footer span { color: var(--state-success); font-size: 12px; }
+.agent-advanced { margin: 16px 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-raised); }
+.agent-advanced summary { padding: 10px 12px; color: var(--text-muted); font-size: 13px; font-weight: 600; cursor: pointer; }
+.agent-advanced .agent-grid { padding: 0 12px 4px; }
+.catalog-failure { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid color-mix(in oklab, var(--state-failed) 40%, var(--line)); border-radius: 8px; color: var(--state-failed); background: var(--state-failed-surface); }
+.catalog-failure b, .catalog-failure span { display: block; }
+.catalog-failure span { margin-top: 3px; font-size: 12px; }
+.capability-picker { margin-bottom: 16px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-raised); }
+.capability-picker h2 { margin-bottom: 10px; font-size: 13px; }
+.capability-picker > input { width: 100%; padding: 8px 10px; font-size: 13px; }
+.capability-chips { min-width: 0; display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.capability-chip { max-width: 100%; min-width: 0; display: inline-flex; align-items: center; gap: 6px; padding: 4px 5px 4px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--paper); font-size: 12px; }
+.capability-chip b, .capability-chip small { min-width: 0; overflow-wrap: anywhere; }
+.capability-chip small { color: var(--text-faint); }
+.capability-chip.missing { border-color: color-mix(in oklab, var(--state-failed) 45%, var(--line)); color: var(--state-failed); background: var(--state-failed-surface); }
+.capability-chip button { display: inline-grid; place-items: center; width: 20px; height: 20px; border: 0; border-radius: 5px; color: var(--text-faint); background: transparent; cursor: pointer; }
+.capability-chip button:hover { color: var(--state-failed); background: var(--state-failed-surface); }
+.capability-options { max-height: 220px; overflow-y: auto; margin-top: 8px; display: grid; gap: 5px; }
+.capability-options > button { min-width: 0; display: grid; gap: 2px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px; color: var(--text); background: var(--paper); font-size: 13px; text-align: left; cursor: pointer; }
+.capability-options > button:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--line)); }
+.capability-options b, .capability-options span, .capability-options small { min-width: 0; overflow-wrap: anywhere; }
+.capability-options span { color: var(--text-muted); font-size: 12px; }
+.capability-options small { color: var(--text-faint); font-size: 11px; }
+
+@media (max-width: 720px) {
+  .agent-grid { grid-template-columns: minmax(0, 1fr); }
+  .agent-form, .capability-picker { min-width: 0; }
+  .agent-form-footer span { min-width: 0; overflow-wrap: anywhere; }
+  .agent-form-footer .button { flex: 0 0 auto; }
+  .catalog-failure { align-items: flex-start; flex-direction: column; }
+}
+
+/* —— Profile Presets —— */
+.preset-panel { margin-bottom: 18px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--app-panel); }
+.preset-panel h2 { margin-bottom: 8px; font-size: 13px; }
+.preset-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
+.preset-info { min-width: 0; }
+.preset-info b { margin-right: 8px; font-size: 13px; }
+.preset-info .mono { color: var(--text-muted); font-size: 12px; overflow-wrap: anywhere; }
+.preset-info p { margin: 4px 0; color: var(--text-muted); font-size: 12px; overflow-wrap: anywhere; }
+.preset-info small { color: var(--text-faint); font-size: 11px; overflow-wrap: anywhere; }
+.preset-row .button { flex: 0 0 auto; min-height: 32px; font-size: 12px; }
+
+@media (max-width: 640px) {
+  .preset-row { flex-wrap: wrap; }
+}

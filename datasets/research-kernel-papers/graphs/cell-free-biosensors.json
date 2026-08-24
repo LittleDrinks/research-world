@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "cell-free-biosensors",
+    "title": "Cell-free biosensors for rapid detection of water contaminants",
+    "shortTitle": "Cell-free biosensors for rapid detection of water contaminants",
+    "authors": "JungJaeyoung K, AlamKhalid K, VerosloffMatthew S et al.",
+    "year": 2020,
+    "domain": "Experimental biology",
+    "modality": "Wet lab",
+    "category": "wet-lab",
+    "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7718425/",
+    "localPath": "raw/cell-free-biosensors/fulltext.xml"
+  },
+  "thesis": "The ROSALIND system can be freeze-dried for easy storage and distribution, and we apply it in the field to test municipal water supplies, demonstrating its potential utility for monitoring water quality.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "cell-free-biosensors-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "Which intervention or mechanism produces the reported experimental effect?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "cell-free-biosensors-d",
+      "kind": "decision",
+      "title": "Choose construct and controls",
+      "body": "Access to safe drinking water is a global problem, and methods to reliably and easily detect contaminants could be transformative.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "cell-free-biosensors-i",
+      "kind": "investigation",
+      "title": "Run assays against controls",
+      "body": "We report the development of a cell-free in vitro transcription system that uses RNA output sensors activated by ligand induction (ROSALIND) to detect contaminants in water.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "cell-free-biosensors-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "We also show that adding RNA circuitry can invert responses, reduce crosstalk and improve sensitivity without protein engineering.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "cell-free-biosensors-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "The ROSALIND system can be freeze-dried for easy storage and distribution, and we apply it in the field to test municipal water supplies, demonstrating its potential utility for monitoring water quality.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "cell-free-biosensors-q",
+      "to": "cell-free-biosensors-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "cell-free-biosensors-d",
+      "to": "cell-free-biosensors-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "cell-free-biosensors-i",
+      "to": "cell-free-biosensors-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "cell-free-biosensors-e",
+      "to": "cell-free-biosensors-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

@@ -1,0 +1,46 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v24 · 设计选型矩阵：把本目录 24 套方案按场景打分，作为评审与折叠进生产的决策工具。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v24 · 设计选型矩阵 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:light;--bg:#f5f7f9;--ink:#18212a;--muted:#6c7885;--line:#dde4ea;--blue:#2e6db5;--green:#3b7a4e;--amber:#ae6c14}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{max-width:1240px;margin:0 auto;padding:20px 18px 90px}
+  h1{font-size:21px;margin:0}.sub{color:var(--muted);font-size:12px;max-width:820px}
+  .toolbar{display:flex;gap:8px;margin:16px 0;align-items:center}.sort{padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer}.sort.on{background:var(--ink);color:#fff}
+  .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+  table{border-collapse:collapse;min-width:1050px;width:100%}
+  th{position:sticky;top:0;background:#f0f4f8;font:600 10px ui-monospace,monospace;color:var(--muted);padding:8px;border-bottom:1px solid var(--line);text-align:left}
+  td{padding:8px;border-bottom:1px solid #edf1f5;font-size:12px}
+  tr.row{cursor:pointer}tr.row:hover{background:#f3f7fb}
+  .score{width:30px;height:18px;border-radius:5px;display:inline-grid;place-items:center;font:700 10px ui-monospace,monospace}
+  .s5{background:#1f6b4c;color:#fff}.s4{background:#8fc2a4;color:#0d2819}.s3{background:#f2d18a;color:#4d3507}.s2{background:#f0b3a6;color:#52190f}.s1{background:#d9dee4;color:#55606c}
+  .total{font:700 14px ui-monospace,monospace}
+  .picks{margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:12px}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>设计选型矩阵</h1><p class="sub">对 24 套方案按六个场景打分（1–5）：① 本周期五问 ② 审查带宽 ③ 大规模数据 ④ 审美挑战 ⑤ 交互挑战 ⑥ 实施成本（分越高越便宜）。总分不是答案，是评审入口——真正决定来自“我想要 A 的头部 + B 的图谱 + C 的收件箱”。</p>
+  <div class="toolbar"><button class="sort on" data-k="total">按总分</button><button class="sort" data-k="five">按五问</button><button class="sort" data-k="scale">按大规模</button><button class="sort" data-k="cost">按实施便宜</button></div>
+  <div class="table-wrap"><table><thead><tr><th>#</th><th>方案</th><th>类型</th><th>① 五问</th><th>② 带宽</th><th>③ 大规模</th><th>④ 审美</th><th>⑤ 交互</th><th>⑥ 成本</th><th>总分</th></tr></thead><tbody id="body"></tbody></table></div>
+  <div class="picks" id="picks"></div>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const S={five:[5,4,5,5,4,3,2,2,5,4,5,4,3,5,5,4,3,4,3,3,3,3,2,5],band:[4,4,5,5,4,3,2,2,5,4,5,4,3,5,5,4,3,3,4,2,3,3,2,5],scale:[5,4,3,3,3,2,1,1,4,5,4,3,2,4,3,4,5,5,3,2,1,2,1,4],look:[4,5,3,4,4,5,3,5,4,4,3,3,4,4,3,4,4,4,5,4,3,4,4,3],ix:[4,4,3,4,4,5,3,4,4,5,4,4,3,5,4,5,3,5,4,4,4,4,3,3],cost:[4,3,3,3,4,2,3,3,2,4,5,5,4,4,5,4,3,4,4,3,3,3,3,4]};
+let sort="total";
+function rows(){return RW.MANIFEST.map((m,i)=>{const s={five:S.five[i],band:S.band[i],scale:S.scale[i],look:S.look[i],ix:S.ix[i],cost:S.cost[i]};return{...m,s,idx:i,total:s.five+s.band+s.scale+s.look+s.ix+s.cost}})}
+function cell(v){return `<span class="score s${v}">${v}</span>`}
+function render(){const r=rows();const key={total:x=>-x.total,five:x=>-x.s.five,scale:x=>-x.s.scale,cost:x=>-x.s.cost};r.sort(key[sort]);
+ $("body").innerHTML=r.map(x=>`<tr class="row" data-href="${x.href}"><td>${x.n}</td><td><b>${x.title}</b><br><span style="color:var(--muted)">${x.brief}</span></td><td>${x.kind}</td><td>${cell(x.s.five)}</td><td>${cell(x.s.band)}</td><td>${cell(x.s.scale)}</td><td>${cell(x.s.look)}</td><td>${cell(x.s.ix)}</td><td>${cell(x.s.cost)}</td><td class="total">${x.total}</td></tr>`).join("");
+ const top=r.slice(0,5);$("picks").innerHTML=`<b>建议先评审的前 5：</b>${top.map((x,i)=>`${i+1}. <a href="${x.href}">${x.n} ${x.title}</a>（总分 ${x.total}）`).join(" · ")}<br><span style="color:var(--muted)">注：分数为本原型预设的评审占位值，不代替真人逐套翻阅。点击任意行直接打开方案。</span>`;
+ if(RWUI)RWUI.setState({排序:sort,候选:r.length,前五:top.map(x=>x.n)});}
+document.addEventListener("click",e=>{const s=e.target.closest(".sort");if(s){sort=s.dataset.k;document.querySelectorAll(".sort").forEach(x=>x.classList.toggle("on",x===s));render()}const tr=e.target.closest("tr.row");if(tr){location.href=tr.dataset.href}});
+document.addEventListener("DOMContentLoaded",()=>{render();RWUI&&RWUI.setState({设计命题:"24 套候选如何变成可排序、可链接的决策矩阵",挑战对象:"原型评审流程本身",交互:"六维评分 + 四种排序 + 点击直达",数据:"24 套方案全量索引"});});
+</script>
+</body>
+</html>

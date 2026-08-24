@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "medmnist-v2",
+    "title": "MedMNIST v2 -- A large-scale lightweight benchmark for 2D and 3D biomedical image classification",
+    "shortTitle": "MedMNIST v2 -- A large-scale lightweight benchmark for 2D and ",
+    "authors": "Jiancheng Yang, Rui Shi, Donglai Wei et al.",
+    "year": 2021,
+    "domain": "Scientific machine learning",
+    "modality": "Benchmark",
+    "category": "benchmark",
+    "sourceUrl": "https://arxiv.org/abs/2110.14795",
+    "localPath": "raw/medmnist-v2/paper.pdf"
+  },
+  "thesis": "We benchmark several baseline methods on MedMNIST v2, including 2D / 3D neural networks and open-source / commercial AutoML tools.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "medmnist-v2-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "How can the target scientific task be compared under fixed data and evaluation rules?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "medmnist-v2-d",
+      "kind": "decision",
+      "title": "Freeze tasks and metrics",
+      "body": "We introduce MedMNIST v2, a large-scale MNIST-like dataset collection of standardized biomedical images, including 12 datasets for 2D and 6 datasets for 3D.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "medmnist-v2-i",
+      "kind": "investigation",
+      "title": "Evaluate reference systems",
+      "body": "The resulting dataset, consisting of 708,069 2D images and 10,214 3D images in total, could support numerous research / educational purposes in biomedical image analysis, computer vision, and machine learning.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "medmnist-v2-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Covering primary data modalities in biomedical images, MedMNIST v2 is designed to perform classification on lightweight 2D and 3D images with various dataset scales (from 100 to 100,000) and diverse tasks (binary/multi-class, ordinal regression, and multi-label).",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "medmnist-v2-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "We benchmark several baseline methods on MedMNIST v2, including 2D / 3D neural networks and open-source / commercial AutoML tools.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "medmnist-v2-q",
+      "to": "medmnist-v2-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "medmnist-v2-d",
+      "to": "medmnist-v2-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "medmnist-v2-i",
+      "to": "medmnist-v2-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "medmnist-v2-e",
+      "to": "medmnist-v2-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

@@ -1,0 +1,196 @@
+{
+  "paper": {
+    "id": "petase",
+    "title": "Characterization and engineering of a plastic-degrading aromatic polyesterase",
+    "shortTitle": "PETase engineering",
+    "authors": "Harry P. Austin et al.",
+    "year": 2018,
+    "domain": "Structural biology",
+    "modality": "Wet lab",
+    "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5948967/",
+    "localPath": "raw/petase/fulltext.xml",
+    "category": "wet-lab",
+    "providerId": "PMC5948967"
+  },
+  "thesis": "Structure-guided mutation unexpectedly improves PET degradation and broad substrate assays recast PETase as an aromatic polyesterase rather than an enzyme already optimized for PET.",
+  "nodes": [
+    {
+      "id": "p-q",
+      "kind": "question",
+      "title": "What controls PETase substrate specificity?",
+      "body": "Relate PETase structure to polymer degradation and test whether structure-guided engineering can improve activity.",
+      "provenance": "explicit",
+      "locator": "Introduction, study aim"
+    },
+    {
+      "id": "p-i1",
+      "kind": "investigation",
+      "title": "Resolve the enzyme structure",
+      "body": "Use long-wavelength X-ray crystallography and comparisons with homologous cutinases.",
+      "provenance": "explicit",
+      "locator": "Results, PETase structure",
+      "state": "completed"
+    },
+    {
+      "id": "p-e1",
+      "kind": "evidence",
+      "title": "Atomic-resolution structure",
+      "body": "The PETase structure resolves to 0.92 Å and shows an α/β-hydrolase fold with a broader active-site cleft than the closest cutinase homolog.",
+      "provenance": "explicit",
+      "locator": "Results and Fig. 2",
+      "state": "supporting",
+      "metric": "0.92 Å"
+    },
+    {
+      "id": "p-c0",
+      "kind": "claim",
+      "title": "A broad cleft may explain PET adaptation",
+      "body": "The authors initially hypothesized that the unusually broad active site enabled more efficient PET depolymerization.",
+      "provenance": "explicit",
+      "locator": "Results, mutagenesis rationale",
+      "state": "refuted"
+    },
+    {
+      "id": "p-d",
+      "kind": "decision",
+      "title": "Make the cleft cutinase-like",
+      "body": "Engineer S238F/W159H to narrow the cleft and W185A to test a conserved dynamic residue.",
+      "provenance": "explicit",
+      "locator": "Results, mutagenesis rationale",
+      "state": "accepted"
+    },
+    {
+      "id": "p-i2",
+      "kind": "investigation",
+      "title": "Digest realistic crystalline PET",
+      "body": "Compare buffer, wild type and mutants on PET coupons near bottle crystallinity using DSC, SEM, HPLC and NMR.",
+      "provenance": "explicit",
+      "locator": "Results and Fig. 3",
+      "state": "completed",
+      "metric": "96 h; 50 nM"
+    },
+    {
+      "id": "p-e2",
+      "kind": "evidence",
+      "title": "Double mutant unexpectedly wins",
+      "body": "S238F/W159H outperforms wild-type PETase, with 4.13 percentage points more absolute crystallinity loss; W185A performs poorly.",
+      "provenance": "explicit",
+      "locator": "Results, Fig. 3 and Table S2",
+      "state": "contradicting",
+      "metric": "+4.13% loss"
+    },
+    {
+      "id": "p-c1",
+      "kind": "claim",
+      "title": "PETase is not fully optimized for PET",
+      "body": "The unexpected mutant result contradicts the initial adaptation hypothesis and leaves room for further protein engineering.",
+      "provenance": "explicit",
+      "locator": "Abstract and discussion",
+      "state": "supported"
+    },
+    {
+      "id": "p-i3",
+      "kind": "investigation",
+      "title": "Test polymer scope",
+      "body": "Incubate wild-type and mutant enzymes with semiaromatic PEF and aliphatic PBS and PLA.",
+      "provenance": "explicit",
+      "locator": "Results, Fig. 4 and Fig. S8",
+      "state": "completed"
+    },
+    {
+      "id": "p-e3",
+      "kind": "evidence",
+      "title": "Activity follows aromaticity",
+      "body": "PETase degrades PEF, with 15.7% relative crystallinity reduction, but shows no detectable degradation of the tested aliphatic polyesters.",
+      "provenance": "explicit",
+      "locator": "Results, Fig. 4 and Fig. S8",
+      "state": "supporting",
+      "metric": "PEF −15.7% relative"
+    },
+    {
+      "id": "p-c2",
+      "kind": "claim",
+      "title": "PETase is an aromatic polyesterase",
+      "body": "The enzyme's demonstrated scope is better characterized by semiaromatic substrates than by PET alone.",
+      "provenance": "explicit",
+      "locator": "Abstract and discussion",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "p-q",
+      "to": "p-i1",
+      "relation": "tested-by",
+      "provenance": "explicit"
+    },
+    {
+      "from": "p-i1",
+      "to": "p-e1",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "p-e1",
+      "to": "p-c0",
+      "relation": "supports",
+      "provenance": "explicit"
+    },
+    {
+      "from": "p-c0",
+      "to": "p-d",
+      "relation": "motivates",
+      "provenance": "explicit"
+    },
+    {
+      "from": "p-d",
+      "to": "p-i2",
+      "relation": "changes",
+      "provenance": "explicit"
+    },
+    {
+      "from": "p-i2",
+      "to": "p-e2",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "p-e2",
+      "to": "p-c0",
+      "relation": "refutes",
+      "provenance": "explicit"
+    },
+    {
+      "from": "p-e2",
+      "to": "p-c1",
+      "relation": "supports",
+      "provenance": "explicit"
+    },
+    {
+      "from": "p-c1",
+      "to": "p-i3",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "p-i3",
+      "to": "p-e3",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "p-e3",
+      "to": "p-c2",
+      "relation": "supports",
+      "provenance": "explicit"
+    }
+  ],
+  "openQuestions": [
+    "The paper reports failed ligand-bound crystallization attempts, but no run-level lab trace is available to reconstruct."
+  ],
+  "reconstruction": {
+    "scope": "section-level manual graph",
+    "method": "manual source review",
+    "review": "manually curated"
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "gaia-dr2",
+    "title": "Gaia Data Release 2. Summary of the contents and survey properties",
+    "shortTitle": "Gaia Data Release 2. Summary of the contents and survey proper",
+    "authors": "Gaia Collaboration, A. G. A. Brown, A. Vallenari et al.",
+    "year": 2018,
+    "domain": "Observational science",
+    "modality": "Observation",
+    "category": "observation",
+    "sourceUrl": "https://arxiv.org/abs/1804.09365",
+    "localPath": "raw/gaia-dr2/paper.pdf"
+  },
+  "thesis": "There are notable changes in the photometric system and the catalogue source list with respect to Gaia DR1, and we stress the need to consider the two data releases as independent.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "gaia-dr2-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What phenomenon is supported by the reported observations?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "gaia-dr2-d",
+      "kind": "decision",
+      "title": "Choose instrument and selection",
+      "body": "The sample of sources for which variability information is provided is expanded to 0.5 million stars.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "gaia-dr2-i",
+      "kind": "investigation",
+      "title": "Acquire and analyze observations",
+      "body": "In addition epoch astrometry and photometry are provided for a modest sample of minor planets in the solar system.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "gaia-dr2-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "This data release contains four new elements: broad-band colour information in the form of the apparent brightness in the $G_\\mathrm{BP}$ (330--680 nm) and $G_\\mathrm{RP}$ (630--1050 nm) bands is available for 1.4 billion sources; median radial velocities for some 7 million sources are presented; for between 77 and 161 million sources estimates are provided of the stellar effective temperature, extinction, reddening, and radius and luminosity; and for a pre-selected list of 14000 minor planets in the solar system epoch astrometry and photometry are presented.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "gaia-dr2-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "There are notable changes in the photometric system and the catalogue source list with respect to Gaia DR1, and we stress the need to consider the two data releases as independent.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "gaia-dr2-q",
+      "to": "gaia-dr2-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "gaia-dr2-d",
+      "to": "gaia-dr2-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "gaia-dr2-i",
+      "to": "gaia-dr2-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "gaia-dr2-e",
+      "to": "gaia-dr2-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

@@ -1,0 +1,62 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v10 · 预算闸门：挑战 125 题跑批无预算闸门（MEMORY 下一步）。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v10 · 预算闸门 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:dark;--bg:#0a1016;--panel:#0f1924;--ink:#e7eef4;--muted:#8497a8;--line:#203144;--gold:#d4a43c;--green:#54bd82;--red:#d1665b}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{display:grid;grid-template-rows:60px 1fr;height:100vh}
+  header{display:flex;align-items:center;gap:14px;padding:0 18px;border-bottom:1px solid var(--line);background:var(--panel)}
+  header b{font-size:15px}.big{margin-left:auto;text-align:right}.big b{font:700 22px ui-monospace,monospace;color:var(--gold)}.big small{display:block;color:var(--muted);font-size:10px}
+  .body{display:grid;grid-template-columns:300px 1fr;min-height:0}
+  aside{border-right:1px solid var(--line);background:var(--panel);padding:16px;overflow:auto}
+  h3{font-size:11px;color:var(--muted);letter-spacing:.08em;margin:16px 0 8px}
+  .gate{padding:12px;border:1px solid var(--line);border-radius:10px;background:#0c141e}
+  .gate b{display:flex;justify-content:space-between;font:12px ui-monospace,monospace}
+  input[type=range]{width:100%;accent-color:var(--gold)}
+  .priority{padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:7px;cursor:pointer;display:flex;gap:8px;align-items:center}
+  .priority.on{border-color:var(--gold);background:#182536}
+  main{padding:16px 18px 70px;overflow:auto}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .kpi{padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+  .kpi small{color:var(--muted);font:10px ui-monospace,monospace}.kpi b{display:block;font:700 20px ui-monospace,monospace;margin-top:2px}
+  .list{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .row{display:grid;grid-template-columns:52px 1fr 90px 70px;gap:10px;align-items:center;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+  .row h4{margin:0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.row small{color:var(--muted)}
+  .bar{height:6px;border-radius:3px;background:#1d2d3d;overflow:hidden}.bar i{display:block;height:100%;background:var(--gold)}
+  .row.locked{opacity:.45}.row.deep{border-color:var(--gold)}
+  .tag{font:9px ui-monospace,monospace;padding:2px 6px;border-radius:5px;background:#2a3b4d;color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><b>预算闸门</b><span style="color:var(--muted);font-size:11px">125 题批量推进前，先把预算与人工带宽画成物理闸门</span><div class="big"><b id="spent">¥0.00</b><small>已承诺 / 学生券 ¥300</small></div></header>
+  <div class="body">
+    <aside><h3>闸门参数（演示可调）</h3><div class="gate" id="gates"></div>
+      <h3>深度演示题（优先放行）</h3><div id="priority"></div>
+      <p style="color:var(--muted);font-size:11px;line-height:1.6">规则：闸门=预算上限 × 在途工作流槽位 × 人工等待数。任何一维超限即暂停新工作流，只允许深度题或人工裁决通过（对应 MEMORY 的跑批预算闸门）。</p></aside>
+    <main><div class="kpis" id="kpis"></div><div class="list" id="list"></div></main>
+  </div>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const state={daily:18,slot:6,human:4,deep:[21,49,89,98,112],tick:0};
+const DEEP_ZH={21:"Q21 抗生素耐药",49:"Q49 行星轨道",89:"Q89 能量转换",98:"Q98 睡眠",112:"Q112 环保塑料"};
+function gateRow(id,label,value,max){return `<div style="margin-bottom:10px"><b><span>${label}</span><span id="${id}v">${value} / ${max}</span></b><input type="range" min="1" max="${max}" value="${value}" data-k="${id}"></div>`}
+function render(){const gates=$("gates");gates.innerHTML=gateRow("daily","单题预算 ¥",state.daily,60)+gateRow("slot","在途槽位",state.slot,12)+gateRow("human","人工等待数",state.human,10);
+ const promised=RW.PROJECTS.slice(0,80).reduce((s,p)=>s+p.budget_yuan,0);const allowed=RW.PROJECTS.filter(p=>p.budget_yuan<=state.daily&&p.active_workflows<=state.slot&&(p.status!=="human"||state.human>0)).length;
+ $("spent").textContent="¥"+(Math.min(promised,state.daily*allowed)).toFixed(2);
+ $("kpis").innerHTML=`<div class="kpi"><small>125 题总承诺</small><b>¥${promised.toFixed(0)}</b></div><div class="kpi"><small>当前闸门下可跑</small><b>${allowed} 题</b></div><div class="kpi"><small>被闸门拦截</small><b>${125-allowed} 题</b></div><div class="kpi"><small>深度题放行</small><b>${state.deep.length}</b></div>`;
+ $("list").innerHTML=RW.PROJECTS.map(p=>{const lock=!state.deep.includes(p.n)&&(p.budget_yuan>state.daily||p.active_workflows>state.slot||(p.status==="human"&&state.human<=0));const deep=state.deep.includes(p.n);
+  return `<div class="row ${lock?"locked":""} ${deep?"deep":""}"><b style="font:11px ui-monospace,monospace">${p.id}</b><div><h4>${p.title}</h4><small>${p.topicZh} · 预计 ¥${p.budget_yuan.toFixed(2)} · ${p.active_workflows} 在途</small><div class="bar"><i style="width:${Math.min(100,p.budget_yuan/state.daily*100)}%"></i></div></div><span class="tag">${deep?DEEP_ZH[p.n]:(lock?"闸门拦截":"队列")}</span><span style="font:11px ui-monospace,monospace;color:var(--muted)">${RW.minutesAgo(p.minutes_ago)}</span></div>`}).join("");
+ if(RWUI)RWUI.setState({单题预算:state.daily,在途槽位:state.slot,人工等待:state.human,可跑:allowed,拦截:125-allowed});}
+document.addEventListener("input",e=>{const k=e.target.dataset.k;if(!k)return;state[k]=+e.target.value;render()});
+document.addEventListener("click",e=>{const p=e.target.closest(".priority");if(!p)return;const n=+p.dataset.n;state.deep=state.deep.includes(n)?state.deep.filter(x=>x!==n):[...state.deep,n];render()});
+document.addEventListener("DOMContentLoaded",()=>{$("priority").innerHTML=Object.entries(DEEP_ZH).map(([n,l])=>{const id=+n;return `<div class="priority on" data-n="${id}"><input type="checkbox" checked style="accent-color:var(--gold)"><span style="font:11px ui-monospace,monospace">${id}</span>${l}</div>`}).join("");
+ render();RWUI&&RWUI.setState({设计命题:"预算、槽位、人工等待如何变成可调闸门",挑战对象:"MEMORY：125 题跑批需预算闸门（未做）",交互:"三维闸门 slider + 深度题放行开关 + 队列可视化",数据:"125 题真实列表，预算为确定性 mock"});});
+</script>
+</body>
+</html>

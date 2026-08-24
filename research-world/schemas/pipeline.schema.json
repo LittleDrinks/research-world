@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://research.world/schemas/pipeline.schema.json",
+  "title": "PipelineSpec",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "stages"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+    "name": {"type": "string", "minLength": 1},
+    "stages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/stage"}
+    }
+  },
+  "$defs": {
+    "stage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "type": {"enum": ["prompt", "tool", "spawn"]},
+        "prompt": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "agent": {"type": "string", "minLength": 1},
+        "tool": {"type": "string", "minLength": 1},
+        "pipeline": {"type": "string", "minLength": 1},
+        "repeat": {"type": "integer", "minimum": 1},
+        "policy": {
+          "oneOf": [
+            {"type": "string", "minLength": 1},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name"],
+              "properties": {
+                "name": {"type": "string", "minLength": 1},
+                "params": {"type": "object"}
+              }
+            }
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/$defs/exit"}
+        }
+      },
+      "allOf": [
+        {"if": {"properties": {"type": {"const": "prompt"}}}, "then": {"required": ["agent", "prompt"]}},
+        {"if": {"properties": {"type": {"const": "tool"}}}, "then": {"required": ["tool"]}},
+        {"if": {"properties": {"type": {"const": "spawn"}}}, "then": {"required": ["pipeline"]}}
+      ]
+    },
+    "exit": {
+      "oneOf": [
+        {"type": "string", "minLength": 1},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "action": {"enum": ["admit", "ghost", "wait_human"]},
+            "next": {"type": "string", "minLength": 1}
+          },
+          "minProperties": 1
+        }
+      ]
+    }
+  }
+}

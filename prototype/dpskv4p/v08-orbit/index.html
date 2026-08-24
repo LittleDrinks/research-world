@@ -1,0 +1,58 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v08 · 行星轨道星历桌：125 题 Q49 完整命题展示。JPL 星历人工返回（MEMORY 下一步）。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v08 · 行星轨道星历桌 · Q49 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:dark;--bg:#05070c;--panel:#0c111c;--ink:#dce6f2;--muted:#7d8ca3;--line:#1c2a42;--cyan:#4ac6d6;--amber:#d8a04a;--green:#5fbd83}
+  *{box-sizing:border-box}body{margin:0;background:radial-gradient(900px 600px at 70% 20%,#0a1428,var(--bg));color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{max-width:1220px;margin:0 auto;padding:20px 20px 90px}
+  .head{display:flex;gap:14px;align-items:baseline}.head small{color:var(--cyan);font:11px ui-monospace,monospace}
+  h1{font:700 26px Georgia,serif;margin:4px 0}.q{color:var(--muted);max-width:780px}
+  .grid{display:grid;grid-template-columns:1.35fr 1fr;gap:14px;margin-top:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+  h2{font-size:13px;margin:0 0 10px;color:var(--cyan);letter-spacing:.04em}
+  .ephem{width:100%;border-collapse:collapse;font:11px ui-monospace,monospace}.ephem th{color:var(--muted);text-align:right;padding:5px 8px;border-bottom:1px solid var(--line)}
+  .ephem td{text-align:right;padding:5px 8px;border-bottom:1px solid #132034}.ephem td:first-child{color:var(--muted)}
+  .tabs{display:flex;gap:6px;margin-bottom:10px}.tabs button{padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+  .tabs button.on{background:var(--cyan);color:#041216;border-color:var(--cyan)}
+  .stamp{margin-left:auto;border:1.5px solid var(--amber);color:var(--amber);padding:4px 10px;font:700 10px ui-monospace,monospace;transform:rotate(-2deg)}
+  svg{width:100%;height:250px}.axis{stroke:#253650}.curve{fill:none;stroke:var(--cyan);stroke-width:1.6}.obs{fill:var(--amber)}
+  .chain{display:flex;gap:8px;margin-top:14px}.ch{flex:1;padding:9px;border:1px solid var(--line);border-radius:9px;font-size:11px}.ch b{display:block;font:10px ui-monospace,monospace;color:var(--muted)}.ch.done{border-color:var(--green)}
+  .btn{padding:8px 12px;border-radius:8px;background:var(--cyan);color:#041216;border:0;font-weight:700;cursor:pointer;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="head"><div><small>125 题 · 完整命题展示 · q049 / MEMORY 深度演示题</small><h1>Q49 · 行星轨道为什么不会衰变并相互撞击？</h1>
+  <p class="q" id="qtext"></p></div><div class="stamp">JPL 星历 · 人工返回</div></div>
+  <div class="chain" id="chain"></div>
+  <div class="grid">
+    <section class="card"><h2>JPL 星历表 · 人工返回后落库（mock 数据，确定性生成）</h2>
+      <div class="tabs" id="tabs"></div><table class="ephem"><thead><tr><th>JD</th><th>a (AU)</th><th>e</th><th>i (°)</th><th>M (°)</th><th>残差 arcsec</th></tr></thead><tbody id="rows"></tbody></table></section>
+    <section class="card"><h2>长期稳定性检查</h2><svg id="resid"></svg>
+      <p style="color:var(--muted);font-size:11px;margin-top:8px">上图：历元推进 0→10⁶ 年，半长径残差（数值模拟 vs JPL 星历）。琥珀点为人工返回的星历观测。</p>
+      <button class="btn" id="returnData">模拟一次 JPL 星历人工返回</button>
+      <div class="chain"><div class="ch done"><b>① 命题入图</b>q049 project</div><div class="ch done"><b>② 规划</b>摄动模型</div><div class="ch"><b>③ 人工返回</b>本操作台</div><div class="ch"><b>④ 复现审查</b>等待</div></div></section>
+  </div>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const BODIES={Earth:{a:1.00000261,e:0.01671123,i:0.00005},Mars:{a:1.523679,e:0.093394,i:1.84969},Jupiter:{a:5.202887,e:0.048775,i:1.304}};let body="Earth";let returns=3;
+function rows(){const b=BODIES[body];const out=[];for(let k=0;k<10;k++){const jd=2460000+Math.floor(k*365.25);out.push([jd,(b.a+Math.sin(k*1.7+body.length)*0.0004).toFixed(7),(b.e+Math.cos(k*2.3)*0.00005).toFixed(7),b.i.toFixed(5),(Math.floor(k*87.9)%360).toFixed(2),(0.04+Math.abs(Math.sin(k*2.1))*0.33).toFixed(2)])}return out}
+function render(){document.getElementById("tabs").innerHTML=Object.keys(BODIES).map(x=>`<button class="${x===body?"on":""}" data-b="${x}">${x}</button>`).join("");
+ document.getElementById("rows").innerHTML=rows().map(r=>`<tr>${r.map((v,i)=>`<td${i===0?' style="color:var(--muted)"':''}>${v}</td>`).join("")}</tr>`).join("");
+ const svg=$("resid");const pts=Array.from({length:40},(_,i)=>({x:30+i*19,y:130-Math.sin(i*0.5)*50+Math.sin(i*0.13)*14})).map(p=>`${p.x},${p.y}`).join(" ");
+ const obs=Array.from({length:returns},(_,i)=>`${80+i*55},${100-Math.cos(i*1.3)*30}`).join(" ");
+ svg.innerHTML=`<line class="axis" x1="20" y1="150" x2="780" y2="150"/><line class="axis" x1="20" y1="30" x2="20" y2="150"/><polyline class="curve" points="${pts}"/>${Array.from({length:returns},(_,i)=>{const [x,y]=[80+i*55,100-Math.cos(i*1.3)*30];return `<circle class="obs" cx="${x}" cy="${y}" r="4"/>`}).join("")}`;
+ if(RWUI)RWUI.setState({天体:body,人工返回次数:returns,命题:"Q49",规模:`真实 125 题 · q049 图谱 ${RW.deep(49).nodes} 节点`});}
+function $(id){return document.getElementById(id)}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-b]");if(b){body=b.dataset.b;render()}if(e.target.closest("#returnData")){returns++;render()}});
+document.addEventListener("DOMContentLoaded",()=>{document.getElementById("qtext").textContent=RW.QUESTIONS.find(q=>q.id===49).full;
+ document.getElementById("chain").innerHTML=[["Q49 命题","已建 project.json"],["D-xxx 长期摄动假设","proposed"],["E-xxx 星历比对","规划"],["人工返回","本操作台"],["复现审查","等待"]].map(([t,s],i)=>`<div class="ch ${i<2?"done":""}"><b>${i+1} · ${s}</b>${t}</div>`).join("");render();
+ RWUI&&RWUI.setState({设计命题:"人工返回的外部星历如何在命题页完成闭环",挑战对象:"MEMORY 下一步 Q49 JPL 星历人工返回",交互:"天体切换 + 星历表 + 残差图 + 人工返回计数",数据:"Q49 真实命题全文 + 确定性星历 mock"});});
+</script>
+</body>
+</html>

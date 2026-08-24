@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "tarjan-formal",
+    "title": "Formal Proofs of Tarjan's Algorithm in Why3, Coq, and Isabelle",
+    "shortTitle": "Formal Proofs of Tarjan's Algorithm in Why3, Coq, and Isabelle",
+    "authors": "Ran Chen, Cyril Cohen, Jean-Jacques Levy et al.",
+    "year": 2018,
+    "domain": "Formal verification",
+    "modality": "Formal proof",
+    "category": "formal-proof",
+    "sourceUrl": "https://arxiv.org/abs/1810.11979",
+    "localPath": "raw/tarjan-formal/paper.pdf"
+  },
+  "thesis": "In this paper, we present the formal proof of correctness of a non-trivial algorithm from graph theory that was carried out in three proof assistants: Why3, Coq, and Isabelle.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "tarjan-formal-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "How is the reported theorem converted into a machine-checkable proof?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "tarjan-formal-d",
+      "kind": "decision",
+      "title": "Fix the formal system",
+      "body": "The graph treats the paper's declared formal proof scope as a reconstructed design decision.",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "tarjan-formal-i",
+      "kind": "investigation",
+      "title": "Machine-check the proof",
+      "body": "The graph treats the study's reported formal proof procedure as the investigation that tests its central claim.",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "tarjan-formal-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Comparing provers on a formalization of the same problem is always a valuable exercise.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "tarjan-formal-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "In this paper, we present the formal proof of correctness of a non-trivial algorithm from graph theory that was carried out in three proof assistants: Why3, Coq, and Isabelle.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "tarjan-formal-q",
+      "to": "tarjan-formal-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "tarjan-formal-d",
+      "to": "tarjan-formal-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "tarjan-formal-i",
+      "to": "tarjan-formal-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "tarjan-formal-e",
+      "to": "tarjan-formal-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

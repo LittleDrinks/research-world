@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Research World · ASCII Art Effects</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #02060c;
+    --panel: rgba(6, 18, 34, .72);
+    --panel-2: rgba(3, 12, 24, .82);
+    --line: rgba(103, 232, 249, .18);
+    --line-strong: rgba(103, 232, 249, .45);
+    --cyan: #67e8f9;
+    --cyan-dim: #22d3ee;
+    --blue: #60a5fa;
+    --green: #4ade80;
+    --amber: #fbbf24;
+    --red: #fb7185;
+    --text: #dbeafe;
+    --muted: #7da2c9;
+    --faint: #3b5a7a;
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    color: var(--text);
+    font-family: "Geist Variable", Inter, system-ui, sans-serif;
+    background:
+      radial-gradient(900px 600px at 15% 0%, rgba(34, 211, 238, .10), transparent 60%),
+      radial-gradient(800px 600px at 90% 100%, rgba(96, 165, 250, .10), transparent 55%),
+      linear-gradient(160deg, #010409 0%, #03101f 48%, #061a30 100%);
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: .4;
+    background-image:
+      linear-gradient(rgba(125, 190, 255, .05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(125, 190, 255, .05) 1px, transparent 1px);
+    background-size: 36px 36px;
+  }
+  .crt {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    pointer-events: none;
+    background: repeating-linear-gradient(180deg, transparent 0 2px, rgba(0, 0, 0, .14) 2px 4px);
+    mix-blend-mode: multiply;
+    animation: crt-flicker 4s infinite steps(2);
+  }
+  @keyframes crt-flicker {
+    0%, 92% { opacity: .55; }
+    93% { opacity: .72; }
+    94% { opacity: .5; }
+    95% { opacity: .68; }
+    96% { opacity: .55; }
+  }
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 48px 28px 80px;
+  }
+  header.top {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 36px;
+  }
+  .eyebrow {
+    color: var(--cyan);
+    font: 600 11px/1 var(--mono);
+    letter-spacing: .22em;
+    text-transform: uppercase;
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(30px, 5vw, 52px);
+    line-height: 1.05;
+    letter-spacing: -.02em;
+  }
+  .lede {
+    max-width: 680px;
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .pill {
+    padding: 4px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    background: rgba(3, 12, 24, .55);
+    font: 11px/1 var(--mono);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--panel);
+    box-shadow: 0 18px 60px rgba(0, 0, 0, .28);
+    backdrop-filter: blur(16px);
+    overflow: hidden;
+  }
+  .card.wide { grid-column: 1 / -1; }
+  .card-head {
+    padding: 20px 22px 0;
+  }
+  .card-head h2 {
+    margin: 0;
+    font-size: 17px;
+    letter-spacing: .01em;
+  }
+  .card-head p {
+    margin: 7px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .preview {
+    position: relative;
+    min-height: 0;
+    margin: 16px 22px 0;
+    padding: 18px;
+    border: 1px solid rgba(103, 232, 249, .12);
+    border-radius: 14px;
+    background:
+      radial-gradient(600px 260px at 50% 0%, rgba(34, 211, 238, .08), transparent 70%),
+      rgba(1, 6, 14, .72);
+    overflow: auto;
+  }
+  .preview pre {
+    margin: 0;
+    color: #c9e6ff;
+    font-family: var(--mono);
+    font-size: clamp(10px, 1.1vw, 13px);
+    line-height: 1.3;
+    white-space: pre;
+  }
+  .preview pre.logo-art { color: var(--cyan); text-shadow: 0 0 12px rgba(34, 211, 238, .35); }
+  .preview pre.ghost-art { color: #64748b; }
+  .preview pre.density-art { color: #7dd3fc; }
+  .preview pre.term-art { color: #a5f3fc; }
+  .src {
+    margin: 12px 22px 20px;
+    border: 1px solid rgba(125, 190, 255, .12);
+    border-radius: 12px;
+    background: rgba(1, 6, 14, .55);
+  }
+  .src summary {
+    padding: 9px 12px;
+    color: var(--faint);
+    cursor: pointer;
+    font: 10px/1 var(--mono);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    list-style: none;
+  }
+  .src summary::-webkit-details-marker { display: none; }
+  .src summary:hover { color: var(--cyan); }
+  .src pre {
+    margin: 0;
+    padding: 12px 14px;
+    border-top: 1px solid rgba(125, 190, 255, .08);
+    color: #93c5fd;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    line-height: 1.45;
+    white-space: pre;
+    overflow: auto;
+  }
+  .node { color: var(--cyan); font-weight: 700; }
+  .node-q { color: var(--blue); }
+  .node-d { color: var(--cyan); }
+  .node-e { color: var(--green); }
+  .node-r { color: var(--amber); }
+  .ok { color: var(--green); }
+  .run { color: var(--cyan); }
+  .wait { color: var(--amber); }
+  .ghost { color: #64748b; }
+  .dim { color: var(--faint); }
+  .bar { color: var(--cyan); }
+  .bar.g { color: var(--green); }
+  .bar.a { color: var(--amber); }
+  .cursor {
+    display: inline-block;
+    width: .6em;
+    height: 1.1em;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .pulse { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse {
+    0%, 100% { opacity: .35; }
+    50% { opacity: 1; }
+  }
+  .ghost-blink { animation: ghost-blink 2.2s steps(1) infinite; }
+  @keyframes ghost-blink {
+    0%, 88% { opacity: .55; }
+    90% { opacity: .15; }
+    92% { opacity: .7; }
+    94% { opacity: .25; }
+    96% { opacity: .65; }
+  }
+  .scanline {
+    position: relative;
+    overflow: hidden;
+  }
+  .scanline::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -20%;
+    height: 18%;
+    background: linear-gradient(180deg, transparent, rgba(103, 232, 249, .16), transparent);
+    animation: scan 3.2s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes scan {
+    0% { top: -20%; }
+    100% { top: 120%; }
+  }
+  footer {
+    margin-top: 28px;
+    color: var(--faint);
+    font: 11px/1.7 var(--mono);
+    text-align: center;
+  }
+  @media (max-width: 820px) {
+    .grid { grid-template-columns: 1fr; }
+    .wrap { padding: 32px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+<div class="crt"></div>
+<main class="wrap">
+  <header class="top">
+    <div class="eyebrow">prototype / ascii-art-effects</div>
+    <h1>Research World<br />ASCII 字符艺术效果</h1>
+    <p class="lede">一套可直接取用的 ASCII 视觉语言：品牌字标、研究图谱、节点状态、工作流管线、实时 Trace、证据密度场、幽灵车道与指标图。全部为纯文本/等宽字符，不依赖图片，可嵌入终端、日志页、启动屏或演示 PPT。</p>
+    <div class="meta">
+      <span class="pill">AUDITABLE</span>
+      <span class="pill">REPRODUCIBLE</span>
+      <span class="pill">TRACEABLE</span>
+      <span class="pill">MONO · CRT · GLOW</span>
+    </div>
+  </header>
+
+  <section class="grid">
+
+    <!-- 01 Logo -->
+    <article class="card wide" id="logo">
+      <div class="card-head">
+        <h2>01 · Research World 字标</h2>
+        <p>品牌主视觉。适合启动屏、终端横幅、PPT 封面；可保留辉光与扫描线增强识别。</p>
+      </div>
+      <div class="preview scanline">
+<pre class="logo-art">
+   ██████╗ ███████╗███████╗███████╗ █████╗ ██████╗  ██████╗██╗  ██╗
+   ██╔══██╗██╔════╝██╔════╝██╔════╝██╔══██╗██╔══██╗██╔════╝██║  ██║
+   ██████╔╝█████╗  ███████╗███████╗███████║██████╔╝██║     ███████║
+   ██╔══██╗██╔══╝  ╚════██║╚════██║██╔══██║██╔══██╗██║     ██╔══██║
+   ██║  ██║███████╗███████║███████║██║  ██║██║  ██║╚██████╗██║  ██║
+   ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
+      ██╗    ██╗ ██████╗ ██████╗ ██╗     ██████╗
+      ██║    ██║██╔═══██╗██╔══██╗██║     ██╔══██╗
+      ██║ █╗ ██║██║   ██║██████╔╝██║     ██║  ██║
+      ██║███╗██║██║   ██║██╔══██╗██║     ██║  ██║
+      ╚███╔███╔╝╚██████╔╝██║  ██║███████╗██████╔╝
+       ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═════╝
+   ─────────────────────────────────────────────
+   one question · one graph · auditable research
+</pre>
+      </div>
+      <details class="src">
+        <summary>view source</summary>
+<pre>   ██████╗ ███████╗███████╗███████╗ █████╗ ██████╗  ██████╗██╗  ██╗
+   ██╔══██╗██╔════╝██╔════╝██╔════╝██╔══██╗██╔══██╗██╔════╝██║  ██║
+   ██████╔╝█████╗  ███████╗███████╗███████║██████╔╝██║     ███████║
+   ██╔══██╗██╔══╝  ╚════██║╚════██║██╔══██║██╔══██╗██║     ██╔══██║
+   ██║  ██║███████╗███████║███████║██║  ██║██║  ██║╚██████╗██║  ██║
+   ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
+      ██╗    ██╗ ██████╗ ██████╗ ██╗     ██████╗
+      ██║    ██║██╔═══██╗██╔══██╗██║     ██╔══██╗
+      ██║ █╗ ██║██║   ██║██████╔╝██║     ██║  ██║
+      ██║███╗██║██║   ██║██╔══██╗██║     ██║  ██║
+      ╚███╔███╔╝╚██████╔╝██║  ██║███████╗██████╔╝
+       ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═════╝
+   ─────────────────────────────────────────────
+   one question · one graph · auditable research</pre>
+      </details>
+    </article>
+
+    <!-- 02 Graph -->
+    <article class="card wide" id="graph">
+      <div class="card-head">
+        <h2>02 · 研究图谱星座</h2>
+        <p>四类节点与极性的 ASCII 映射：question / direction / experiment / review，连线表示支持、反驳或谱系关系。</p>
+      </div>
+      <div class="preview scanline">
+<pre>
+              ┌──────────────┐
+   ┌──────────┤ <span class="node node-q">Q-001</span>      ├──────────┐
+   │          │ question   │          │
+   │          └──────┬───────┘          │
+   │                 │                  │
+┌──▼──────────┐ ┌────▼────────┐ ┌──────▼─────┐
+│ <span class="node node-d">D-001</span>      │ │ <span class="node node-d">D-002</span>      │ │ <span class="node node-e">E-001</span>     │
+│ gaps        │ │ density    │ │ scan      │
+└─────┬───────┘ └────┬───────┘ └─────┬───────┘
+      │             │               │
+┌─────▼───────┐ ┌───▼────────┐ ┌────▼────────┐
+│ <span class="node node-e">E-002</span>      │ │ <span class="node node-r">R-001</span>     │ │ <span class="node node-r">R-002</span>      │
+│ baseline    │ │ stats      │ │ repro      │
+└─────────────┘ └────────────┘ └─────────────┘
+
+<span class="dim">legend:</span> <span class="node node-q">Q</span> question · <span class="node node-d">D</span> direction · <span class="node node-e">E</span> experiment · <span class="node node-r">R</span> review
+<span class="dim">edges:</span> <span class="ok">──▶</span> supports · <span class="ghost">──✕</span> refutes · <span class="dim">──◆</span> lineage
+</pre>
+      </div>
+      <details class="src">
+        <summary>view source</summary>
+<pre>              ┌──────────────┐
+   ┌──────────┤ Q-001        ├──────────┐
+   │          │ question     │          │
+   │          └──────┬───────┘          │
+   │                 │                  │
+┌──▼──────────┐ ┌────▼────────┐ ┌──────▼─────┐
+│ D-001       │ │ D-002       │ │ E-001      │
+│ gaps        │ │ density     │ │ scan       │
+└─────┬───────┘ └────┬───────┘ └─────┬───────┘
+      │             │               │
+┌─────▼───────┐ ┌───▼────────┐ ┌────▼────────┐
+│ E-002       │ │ R-001      │ │ R-002       │
+│ baseline    │ │ stats      │ │ repro       │
+└─────────────┘ └────────────┘ └─────────────┘
+
+legend: Q question · D direction · E experiment · R review
+edges:  ──▶ supports · ──✕ refutes · ──◆ lineage</pre>
+      </details>
+    </article>
+
+    <!-- 03 Node icons -->
+    <article class="card" id="nodes">
+      <div class="card-head">
+        <h2>03 · 节点类型徽章</h2>
+        <p>四种节点的等宽字符徽章，以及 life state / direction 状态标记。</p>
+      </div>
+      <div class="preview">
+<pre>
+<span class="node node-q">QUESTION</span>   <span class="node node-d">DIRECTION</span>   <span class="node node-e">EXPERIMENT</span>  <span class="node node-r">REVIEW</span>
+┌─────┐     ┌─────┐       ┌─────┐       ┌─────┐
+│  ?  │     │  D  │       │  E  │       │  R  │
+└─────┘     └─────┘       └─────┘       └─────┘
+
+<span class="dim">life state</span>        <span class="wait">pending</span>  <span class="ok">admitted</span>  <span class="ghost">ghost</span>
+                 [ · ]      [ + ]      [ x ]
+
+<span class="dim">direction</span>        <span class="wait">proposed</span>  <span class="ok">supported</span> <span class="ghost">refuted</span>
+                   [?]        [✓]        [✗]
+</pre>
+      </div>
+      <details class="src">
+        <summary>view source</summary>
+<pre>QUESTION   DIRECTION   EXPERIMENT  REVIEW
+┌─────┐     ┌─────┐       ┌─────┐       ┌─────┐
+│  ?  │     │  D  │       │  E  │       │  R  │
+└─────┘     └─────┘       └─────┘       └─────┘
+
+life state        pending  admitted  ghost
+                 [ · ]      [ + ]      [ x ]
+
+direction        proposed  supported refuted
+                   [?]        [✓]        [✗]</pre>
+      </details>
+    </article>
+
+    <!-- 04 Pipeline -->
+    <article class="card" id="pipeline">
+      <div class="card-head">
+        <h2>04 · 工作流管线</h2>
+        <p>brainstorm 与 plan → execute → review → reflect 的 ASCII 流程，可做状态进度条。</p>
+      </div>
+      <div class="preview">
+<pre>
+<span class="run">PLAN</span> ──────▶ <span class="run">EXECUTE</span> ──────▶ <span class="wait">REVIEW</span> ──────▶ <span class="ok">REFLECT</span>
+  │             │              │             │
+ question     container#7    reviewer#1/2   new direction
+  │             │              │             │
+ <span class="bar">▓▓▓▓░░</span>        <span class="bar">▓▓▓░░░</span>       <span class="bar a">▓░░░░░</span>        <span class="bar g">······</span>
+
+<span class="dim">brainstorm:</span> generate → dedup → mmr pool → double review
+<span class="dim">admission:</span> pending → admitted | ghost (rebuttal kept)
+</pre>
+      </div>
+      <details class="src">
+        <summary>view source</summary>
+<pre>PLAN ──────▶ EXECUTE ──────▶ REVIEW ──────▶ REFLECT
+  │             │              │             │
+ question     container#7    reviewer#1/2   new direction
+  │             │              │             │
+ ▓▓▓▓░░        ▓▓▓░░░         ▓░░░░░        ······
+
+brainstorm: generate → dedup → mmr pool → double review
+admission:  pending → admitted | ghost (rebuttal kept)</pre>
+      </details>
+    </article>
+
+    <!-- 05 Trace -->
+    <article class="card wide" id="trace">
+      <div class="card-head">
+        <h2>05 · 实时 Trace 终端</h2>
+        <p>追加式事件流：orchestrator、worker、reviewer、human 在同一终端，突出“谁在何时做了什么”。</p>
+      </div>
+      <div class="preview scanline">
+<pre class="term-art">
+$ research trace --project q001 --tail 4
+<span class="dim">[12:11:03]</span> <span class="run">orchestrator</span>  D-002 完成第 3 步，生成区间密度对照表
+<span class="dim">[12:11:04]</span> <span class="ok">worker#7</span>       artifact sha256:9f2c… 已写入
+<span class="dim">[12:11:05]</span> <span class="node-r">reviewer#1</span>    R-001 通过统计显著性阈值检查
+<span class="dim">[12:11:07]</span> <span class="node-r">reviewer#2</span>    E-001 反例扫描未发现边界异常
+<span class="dim">[12:11:09]</span> <span class="wait">human</span>         ⚠ 人工确认跨尺度复现策略
+<span class="ok">❯</span> research node D-002 --evidence --depth 2<span class="cursor"></span>
+</pre>
+      </div>
+      <details class="src">
+        <summary>view source</summary>
+<pre>$ research trace --project q001 --tail 4
+[12:11:03] orchestrator  D-002 完成第 3 步，生成区间密度对照表
+[12:11:04] worker#7      artifact sha256:9f2c… 已写入
+[12:11:05] reviewer#1    R-001 通过统计显著性阈值检查
+[12:11:07] reviewer#2    E-001 反例扫描未发现边界异常
+[12:11:09] human         ⚠ 人工确认跨尺度复现策略
+❯ research node D-002 --evidence --depth 2</pre>
+      </details>
+    </article>
+
+    <!-- 06 Density -->
+    <article class="card wide" id="density">
+      <div class="card-head">
+        <h2>06 · 证据密度场</h2>
+        <p>动态 ASCII 噪声场，模拟证据密度 / 粒子云 / 数据纹理；可作背景或“研究中”状态。</p>
+      </div>
+      <div class="preview">
+<pre class="density-art" id="densityField">generating density field…</pre>
+      </div>
+      <details class="src">
+        <summary>view source</summary>
+<pre>// 字符梯度：从稀疏到致密
+const ramp = " .,:;i1tfLCG08";
+// 每个单元格按伪噪声取值，12fps 刷新
+// 颜色可替换为 cyan / green / purple，保持等宽字体即可</pre>
+      </details>
+    </article>
+
+    <!-- 07 Ghost -->
+    <article class="card" id="ghost">
+      <div class="card-head">
+        <h2>07 · 幽灵车道</h2>
+        <p>被驳回/隔离节点的 ASCII 留痕：带驳回理由与抗辩，闪烁强调“不可见但不可丢”。</p>
+      </div>
+      <div class="preview">
+<pre class="ghost-art">
+┌─ GHOST LANE ──────────────────────────────┐
+│ <span class="ghost-blink">[x]</span> D-009  hypothesis A                    │
+│     refuted by R-003 · isolated            │
+│     appeal: re-run with wider seed set     │
+│ <span class="ghost-blink">[x]</span> E-012  experiment missing seed         │
+│     rejected: trace incomplete             │
+│     appeal: can rerun with fixed env       │
+└────────────────────────────────────────────┘
+</pre>
+      </div>
+      <details class="src">
+        <summary>view source</summary>
+<pre>┌─ GHOST LANE ──────────────────────────────┐
+│ [x] D-009  hypothesis A                    │
+│     refuted by R-003 · isolated            │
+│     appeal: re-run with wider seed set     │
+│ [x] E-012  experiment missing seed         │
+│     rejected: trace incomplete             │
+│     appeal: can rerun with fixed env       │
+└────────────────────────────────────────────┘</pre>
+      </details>
+    </article>
+
+    <!-- 08 Metrics -->
+    <article class="card" id="metrics">
+      <div class="card-head">
+        <h2>08 · ASCII 指标图</h2>
+        <p>等宽字符条形图，适合日志、README、命令行状态栏。</p>
+      </div>
+      <div class="preview">
+<pre>
+nodes    <span class="bar">████████████████</span><span class="dim">░░░░</span>  37
+steps    <span class="bar g">███████</span><span class="dim">░░░░░░░░░░░</span>  14
+review   <span class="bar a">████████████</span><span class="dim">░░░░░░</span>  2/2
+budget   <span class="bar">█████████████</span><span class="dim">░░░░░░</span>  42%
+queue    <span class="bar">███</span><span class="dim">░░░░░░░░░░░░░░</span>  4
+
+<span class="dim">legend</span>  <span class="bar">█</span> value · <span class="dim">░</span> remaining · <span class="bar g">█</span> complete · <span class="bar a">█</span> waiting
+</pre>
+      </div>
+      <details class="src">
+        <summary>view source</summary>
+<pre>nodes    ████████████████░░░░  37
+steps    ███████░░░░░░░░░░░░  14
+review   ████████████░░░░░░░  2/2
+budget   █████████████░░░░░░  42%
+queue    ███░░░░░░░░░░░░░░░  4
+
+legend  █ value · ░ remaining · █ complete · █ waiting</pre>
+      </details>
+    </article>
+
+  </section>
+
+  <footer>
+    RESEARCH WORLD · ASCII ART EFFECTS<br />
+    throwaway prototype · no backend · open prototype/ascii-art-effects/index.html
+  </footer>
+</main>
+
+<script>
+  // 06 · Evidence density field
+  (function () {
+    var field = document.getElementById("densityField");
+    if (!field) return;
+    var ramp = " .,:;i1tfLCG08";
+    var cols = 72;
+    var rows = 16;
+    var frame = 0;
+
+    function render() {
+      var lines = [];
+      for (var y = 0; y < rows; y++) {
+        var line = "";
+        for (var x = 0; x < cols; x++) {
+          var n = Math.sin(x * 0.31 + frame * 0.7) * 0.5
+                + Math.sin(y * 0.43 + frame * 0.9) * 0.3
+                + Math.sin((x + y) * 0.17 + frame * 0.35) * 0.2;
+          var idx = Math.floor((n + 1) / 2 * (ramp.length - 1));
+          line += ramp[Math.max(0, Math.min(ramp.length - 1, idx))];
+        }
+        lines.push(line);
+      }
+      field.textContent = lines.join("\n");
+      frame++;
+    }
+
+    render();
+    setInterval(render, 90);
+  })();
+</script>
+</body>
+</html>

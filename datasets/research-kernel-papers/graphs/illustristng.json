@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "illustristng",
+    "title": "Simulating Galaxy Formation with the IllustrisTNG Model",
+    "shortTitle": "Simulating Galaxy Formation with the IllustrisTNG Model",
+    "authors": "Annalisa Pillepich, Volker Springel, Dylan Nelson et al.",
+    "year": 2017,
+    "domain": "Computational science",
+    "modality": "Numerical simulation",
+    "category": "numerical-simulation",
+    "sourceUrl": "https://arxiv.org/abs/1703.02970",
+    "localPath": "raw/illustristng/paper.pdf"
+  },
+  "thesis": "Finally, we demonstrate that the new galactic winds promise to solve key problems identified in Illustris in matching observational constraints and affecting the stellar content and sizes of the low mass end of the galaxy population.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "illustristng-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "What does the reported model reveal when the target system is simulated?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "illustristng-d",
+      "kind": "decision",
+      "title": "Choose model and boundary conditions",
+      "body": "We introduce an updated physical model to simulate the formation and evolution of galaxies in cosmological, large-scale gravity+magnetohydrodynamical simulations with the moving mesh code AREPO.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "illustristng-i",
+      "kind": "investigation",
+      "title": "Run the numerical experiment",
+      "body": "The overall framework builds upon the successes of the Illustris galaxy formation model, and includes prescriptions for star formation, stellar evolution, chemical enrichment, primordial and metal-line cooling of the gas, stellar feedback with galactic outflows, and black hole formation, growth and multi-mode feedback.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "illustristng-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "Using a suite of (25 Mpc $h^{-1}$)$^3$ cosmological boxes we assess the outcome of the new model at our fiducial resolution.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "illustristng-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "Finally, we demonstrate that the new galactic winds promise to solve key problems identified in Illustris in matching observational constraints and affecting the stellar content and sizes of the low mass end of the galaxy population.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "illustristng-q",
+      "to": "illustristng-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "illustristng-d",
+      "to": "illustristng-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "illustristng-i",
+      "to": "illustristng-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "illustristng-e",
+      "to": "illustristng-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

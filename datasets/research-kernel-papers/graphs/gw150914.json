@@ -1,0 +1,170 @@
+{
+  "paper": {
+    "id": "gw150914",
+    "title": "GW150914: First results from the search for binary black hole coalescence with Advanced LIGO",
+    "shortTitle": "GW150914",
+    "authors": "LIGO Scientific Collaboration and Virgo Collaboration",
+    "year": 2016,
+    "domain": "Gravitational-wave astronomy",
+    "modality": "Observation",
+    "sourceUrl": "https://arxiv.org/abs/1602.03839",
+    "localPath": "raw/gw150914/paper.pdf",
+    "category": "observation",
+    "providerId": "1602.03839"
+  },
+  "thesis": "A matched-filter search across both Advanced LIGO detectors identifies GW150914 as a highly significant binary-black-hole coalescence while retaining a second candidate as lower confidence.",
+  "nodes": [
+    {
+      "id": "g-q",
+      "kind": "question",
+      "title": "Does O1 contain compact-binary signals?",
+      "body": "Search Advanced LIGO observations for gravitational waves from binary black-hole coalescences and quantify background significance.",
+      "provenance": "explicit",
+      "locator": "Abstract and §I"
+    },
+    {
+      "id": "g-i1",
+      "kind": "investigation",
+      "title": "Matched-filter the detector streams",
+      "body": "Compare strain data against relativistic compact-binary waveform templates and estimate noise background with time shifts.",
+      "provenance": "explicit",
+      "locator": "§II–§III",
+      "state": "completed"
+    },
+    {
+      "id": "g-e1",
+      "kind": "evidence",
+      "title": "Both detectors see a consistent transient",
+      "body": "The Livingston and Hanford instruments recorded compatible waveforms separated by about seven milliseconds, within the inter-site light-travel time.",
+      "provenance": "explicit",
+      "locator": "§III and Fig. 2",
+      "state": "supporting",
+      "metric": "7 ms"
+    },
+    {
+      "id": "g-e2",
+      "kind": "evidence",
+      "title": "Network SNR is 24",
+      "body": "The recovered event has a combined matched-filter signal-to-noise ratio of 24.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting",
+      "metric": "SNR 24"
+    },
+    {
+      "id": "g-e3",
+      "kind": "evidence",
+      "title": "Background probability is negligible",
+      "body": "The estimated false-alarm rate is below one event per 203,000 years, corresponding to significance above 5.1 sigma.",
+      "provenance": "explicit",
+      "locator": "Abstract and §IV",
+      "state": "supporting",
+      "metric": ">5.1σ"
+    },
+    {
+      "id": "g-c1",
+      "kind": "claim",
+      "title": "GW150914 is an astrophysical merger",
+      "body": "The signal is consistent with coalescence of black holes of roughly 36 and 29 solar masses.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported",
+      "metric": "36 + 29 M☉"
+    },
+    {
+      "id": "g-e4",
+      "kind": "evidence",
+      "title": "LVT151012 remains a weak branch",
+      "body": "A second candidate has SNR 9.6, false-alarm rate about one per 2.3 years and p-value 0.02, so it is not promoted to a confident detection.",
+      "provenance": "explicit",
+      "locator": "§IV",
+      "state": "inconclusive",
+      "metric": "p = 0.02"
+    },
+    {
+      "id": "g-d",
+      "kind": "decision",
+      "title": "Separate detection from candidate",
+      "body": "Treat GW150914 as a detection and LVT151012 as a lower-significance candidate based on the same background-calibrated search.",
+      "provenance": "inferred",
+      "locator": "Reconstruction from §IV",
+      "state": "accepted"
+    }
+  ],
+  "edges": [
+    {
+      "from": "g-q",
+      "to": "g-i1",
+      "relation": "tested-by",
+      "provenance": "explicit"
+    },
+    {
+      "from": "g-i1",
+      "to": "g-e1",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "g-i1",
+      "to": "g-e2",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "g-i1",
+      "to": "g-e3",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "g-e1",
+      "to": "g-c1",
+      "relation": "supports",
+      "provenance": "explicit"
+    },
+    {
+      "from": "g-e2",
+      "to": "g-c1",
+      "relation": "supports",
+      "provenance": "explicit"
+    },
+    {
+      "from": "g-e3",
+      "to": "g-c1",
+      "relation": "supports",
+      "provenance": "explicit"
+    },
+    {
+      "from": "g-i1",
+      "to": "g-e4",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "g-e3",
+      "to": "g-d",
+      "relation": "informs",
+      "provenance": "inferred"
+    },
+    {
+      "from": "g-e4",
+      "to": "g-d",
+      "relation": "informs",
+      "provenance": "inferred"
+    },
+    {
+      "from": "g-d",
+      "to": "g-c1",
+      "relation": "accepts",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "Detector calibration and waveform artifacts are referenced by the paper but not bundled in this compact fixture."
+  ],
+  "reconstruction": {
+    "scope": "section-level manual graph",
+    "method": "manual source review",
+    "review": "manually curated"
+  }
+}

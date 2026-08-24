@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "ch-independence",
+    "title": "A Formal Proof of the Independence of the Continuum Hypothesis",
+    "shortTitle": "A Formal Proof of the Independence of the Continuum Hypothesis",
+    "authors": "Jesse Michael Han, Floris van Doorn",
+    "year": 2021,
+    "domain": "Formal verification",
+    "modality": "Formal proof",
+    "category": "formal-proof",
+    "sourceUrl": "https://arxiv.org/abs/2102.02901",
+    "localPath": "raw/ch-independence/paper.pdf"
+  },
+  "thesis": "We describe a formal proof of the independence of the continuum hypothesis ($\\mathsf{CH}$) in the Lean theorem prover.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "ch-independence-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "How is the reported theorem converted into a machine-checkable proof?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "ch-independence-d",
+      "kind": "decision",
+      "title": "Fix the formal system",
+      "body": "The graph treats the paper's declared formal proof scope as a reconstructed design decision.",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "ch-independence-i",
+      "kind": "investigation",
+      "title": "Machine-check the proof",
+      "body": "The graph treats the study's reported formal proof procedure as the investigation that tests its central claim.",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "ch-independence-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "We use Boolean-valued models to give forcing arguments for both directions, using Cohen forcing for the consistency of $\\neg \\mathsf{CH}$ and a $σ$-closed forcing for the consistency of $\\mathsf{CH}$.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "ch-independence-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "We describe a formal proof of the independence of the continuum hypothesis ($\\mathsf{CH}$) in the Lean theorem prover.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "ch-independence-q",
+      "to": "ch-independence-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "ch-independence-d",
+      "to": "ch-independence-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "ch-independence-i",
+      "to": "ch-independence-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "ch-independence-e",
+      "to": "ch-independence-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

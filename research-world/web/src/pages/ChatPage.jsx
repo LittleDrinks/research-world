@@ -1,174 +1,155 @@
-import { Beaker, BookOpen, GitBranch, Lightbulb, MessageSquare, Plus, Save, SendHorizontal } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { clearConversation, getMessages, materializeDraft, sendMessage, startWorkflow } from "../api";
+import { MessagesSquare, Plus, RotateCcw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { createThread, getThread, pinNode, restartThread, sendPrompt } from "../api";
+import { EmptyState } from "../components/bits";
+import { Composer } from "../components/chat/Composer";
+import { MessageList } from "../components/chat/MessageList";
+import { ProfileDraftButton, ProfileDraftCard } from "../components/chat/ProfileDraft";
+import { ResearchControls } from "../components/chat/ResearchControls";
 import { useWorld } from "../context/WorldContext";
 import "../chat.css";
 
 
-const KIND = { question: "问题", source: "来源", direction: "方向", experiment: "实验" };
-const ICONS = { question: Lightbulb, source: BookOpen, direction: GitBranch, experiment: Beaker };
-
-
 export function ChatPage() {
-  const { data, loading, refresh, setError } = useWorld();
+  const { threadId } = useParams();
+  const { data, loading } = useWorld();
   if (loading) return <div className="page-loading">正在载入对话...</div>;
-  return <ProjectChat key={data.active_project_id} data={data} refresh={refresh} setError={setError} />;
+  if (!threadId && data.threads.length) return <Navigate to={`/chat/${encodeURIComponent(data.threads[0].id)}`} replace />;
+  if (!threadId) return <NoThreads />;
+  return <ThreadView key={threadId} threadId={threadId} />;
 }
 
 
-function ProjectChat({ data, refresh, setError }) {
-  const [selectedId, setSelectedId] = useState(data.nodes.find((node) => node.kind === "question")?.id || data.nodes[0]?.id || "");
-  const node = data.nodes.find((item) => item.id === selectedId) || data.nodes[0];
-  const conversation = useConversation(data.active_project_id, node, refresh, setError);
-  return <section className="manager-chat"><NodeRail nodes={data.nodes} selectedId={node?.id} onSelect={setSelectedId} />
-    <main className="manager-thread"><ThreadHeader node={node} workflows={data.workflows} onNew={conversation.reset} /><MessageLog messages={conversation.messages} loading={conversation.loading} />
-      <Composer node={node} conversation={conversation} data={data} refresh={refresh} setError={setError} /></main>
-    <ContextPane node={node} edges={data.edges} workflows={data.workflows} /></section>;
-}
-
-
-function useConversation(projectId, node, refresh, setError) {
-  const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [draft, setDraft] = useState("");
-  useEffect(() => {
-    if (!node) return undefined;
-    let stale = false; setLoading(true); setDraft(""); setMessages([]);
-    getMessages(projectId, node.id).then((value) => { if (!stale) setMessages(value); })
-      .catch((error) => setError(error.message)).finally(() => { if (!stale) setLoading(false); });
-    return () => { stale = true; };
-  }, [projectId, node?.id]);
-  return { messages, setMessages, loading, draft, setDraft,
-    send: () => sendDraft(projectId, node, draft, setDraft, setMessages, refresh, setError),
-    reset: () => resetConversation(projectId, node, setDraft, setMessages, setLoading, setError),
-    materialize: () => materialize(projectId, node, draft, setDraft, setMessages, refresh, setError) };
-}
-
-
-async function sendDraft(projectId, node, draft, setDraft, setMessages, refresh, setError) {
-  const content = draft.trim();
-  if (!content) return;
-  const pendingId = `draft:${Date.now()}`;
-  setDraft("");
-  setMessages((items) => [...items, { id: pendingId, role: "user", content }]);
-  try {
-    const reply = await sendMessage(projectId, { node_id: node.id, message: content });
-    setMessages((items) => [...items, reply]);
-    if (reply.workflow) await refresh(projectId);
-  }
-  catch (error) {
-    setMessages((items) => items.filter((item) => item.id !== pendingId));
-    setDraft(content); setError(error.message);
-  }
-}
-
-
-async function resetConversation(projectId, node, setDraft, setMessages, setLoading, setError) {
-  setLoading(true);
-  try { await clearConversation(projectId, node.id); setDraft(""); setMessages([]); }
-  catch (error) { setError(error.message); }
-  finally { setLoading(false); }
-}
-
-
-async function materialize(projectId, node, draft, setDraft, setMessages, refresh, setError) {
-  const text = draft.trim();
-  if (!text) return;
-  try {
-    await materializeDraft(projectId, { node_id: node.id, kind: "direction", payload: { text } });
-    setDraft(""); setMessages([]); await refresh(projectId);
-  } catch (error) { setError(error.message); }
-}
-
-
-function NodeRail({ nodes, selectedId, onSelect }) {
-  return <aside className="node-rail"><header><MessageSquare size={16} /><b>节点上下文</b><span>{nodes.length}</span></header><div>{nodes.map((node) => {
-    const Icon = ICONS[node.kind];
-    return <button className={`${node.id === selectedId ? "selected" : ""} ${node.life_state}`} onClick={() => onSelect(node.id)} key={node.id}>
-      <Icon size={16} /><span><b>{nodeText(node)}</b><small>{KIND[node.kind]} · {lifeLabel(node.life_state)}</small></span></button>;
-  })}</div></aside>;
-}
-
-
-function ThreadHeader({ node, workflows, onNew }) {
-  const active = workflowsFor(workflows, node).filter((item) => ["queued", "running", "waiting_human"].includes(item.status)).length;
-  return <header className="thread-header"><div className="thread-title"><span>{KIND[node?.kind] || "节点"}</span><h1>{nodeText(node)}</h1></div>
-    <div className="thread-actions"><span className={active ? "active" : ""}>{active ? `${active} 个工作流进行中` : "就绪"}</span>
-      <button className="icon-button" aria-label="新建对话" title="新建对话" onClick={onNew}><Plus size={17} /></button></div></header>;
-}
-
-
-function MessageLog({ messages, loading }) {
-  const end = useRef(null);
-  useEffect(() => { end.current?.scrollIntoView({ block: "end" }); }, [messages.length]);
-  return <div className="manager-messages">{loading && <p className="message-placeholder">正在载入...</p>}
-    {!loading && !messages.length && <p className="message-placeholder">当前节点尚无对话草稿</p>}
-    {messages.map((message) => <article className={`manager-message ${message.role}`} key={message.id}><span>{message.role === "user" ? "你" : "工作流助手"}</span><p>{message.content}</p></article>)}<div ref={end} /></div>;
-}
-
-
-function Composer({ node, conversation, data, refresh, setError }) {
-  const [sending, setSending] = useState(false);
-  const submit = async () => { setSending(true); await conversation.send(); setSending(false); };
-  const keyDown = (event) => {
-    if (event.key === "Enter" && !event.shiftKey && !event.isComposing && !event.nativeEvent?.isComposing && event.keyCode !== 229) { event.preventDefault(); submit(); }
-  };
-  return <section className="manager-composer"><WorkflowCommands node={node} projectId={data.active_project_id} refresh={refresh} setError={setError} />
-    <div><textarea aria-label="消息" value={conversation.draft} onChange={(event) => conversation.setDraft(event.target.value)} onKeyDown={keyDown} placeholder="围绕当前节点讨论..." />
-      <button className="button secondary" disabled={!conversation.draft.trim()} onClick={conversation.materialize}><Save size={15} />沉淀方向</button>
-      <button className="icon-button send-button" aria-label="发送" title="发送" disabled={sending || !conversation.draft.trim()} onClick={submit}><SendHorizontal size={18} /></button></div></section>;
-}
-
-
-function WorkflowCommands({ node, projectId, refresh, setError }) {
-  const [busy, setBusy] = useState("");
-  const run = async (action) => {
-    setBusy(action.id);
-    try { await startWorkflow(projectId, workflowRequest(node, action.id)); await refresh(projectId); }
+function NoThreads() {
+  const { projectId, refresh, setError } = useWorld();
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const create = async () => {
+    setBusy(true);
+    try { const thread = await createThread(projectId, {}); await refresh(projectId); navigate(`/chat/${encodeURIComponent(thread.id)}`); }
     catch (error) { setError(error.message); }
-    finally { setBusy(""); }
+    finally { setBusy(false); }
   };
-  return <div className="workflow-commands">{actionsFor(node).map((action) => <button disabled={Boolean(busy)} onClick={() => run(action)} key={action.id}>
-    <action.icon size={14} />{action.label}</button>)}</div>;
+  return <EmptyState icon={MessagesSquare} title="项目还没有对话" hint="对话是项目级 Thread，可钉入节点作为上下文。">
+    <button className="button primary" disabled={busy} onClick={create}><Plus size={15} />新建对话</button></EmptyState>;
 }
 
 
-function ContextPane({ node, edges, workflows }) {
-  const relations = edges.filter((edge) => edge.source === node?.id || edge.target === node?.id);
-  const records = Object.entries(node?.payload || {});
-  return <aside className="chat-context"><header><b>上下文</b><span>{KIND[node?.kind]}</span></header><section><h2>节点记录</h2><dl>{records.map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{String(value)}</dd></div>)}</dl></section>
-    <section><h2>研究状态</h2><dl><div><dt>生命态</dt><dd>{lifeLabel(node?.life_state)}</dd></div>{node?.direction_status && <div><dt>方向</dt><dd>{node.direction_status}</dd></div>}
-      <div><dt>证据关系</dt><dd>{relations.length}</dd></div><div><dt>工作流</dt><dd>{workflowsFor(workflows, node).length}</dd></div></dl></section></aside>;
+function threadRuns(runs, thread) {
+  return runs.filter((run) => run.payload?.thread_id === thread.id);
 }
 
 
-function actionsFor(node) {
-  if (!node) return [];
-  if (node.kind === "question" || node.kind === "source") return [{ id: "brainstorm", label: "生成方向", icon: GitBranch }];
-  if (node.kind === "experiment") return [{ id: "reflect", label: "反思结果", icon: Lightbulb }];
-  if (node.direction_status === "proposed") return [{ id: "research", label: "规划实验", icon: Beaker }];
-  return [{ id: "reflect", label: "反思证据", icon: Lightbulb }, { id: "replan", label: "重新规划", icon: Beaker }];
+function useThreadDetail(threadId) {
+  const [state, setState] = useState({ detail: null, failed: false, epoch: 0 });
+  useEffect(() => {
+    let stale = false;
+    getThread(threadId).then((value) => !stale && setState((s) => ({ ...s, detail: value, failed: false })))
+      .catch(() => !stale && setState((s) => ({ ...s, failed: true })));
+    return () => { stale = true; };
+  }, [threadId, state.epoch]);
+  const retry = () => setState({ detail: null, failed: false, epoch: state.epoch + 1 });
+  const setDetail = (value) => setState((s) => ({ ...s, detail: typeof value === "function" ? value(s.detail) : value }));
+  return { ...state, retry, setDetail };
 }
 
 
-function workflowRequest(node, action) {
-  const kind = ["brainstorm", "reflect"].includes(action) ? "brainstorm" : "plan-execute-review-reflect";
-  const payload = { instruction: "按当前节点上下文推进", mode: action };
-  if (kind === "brainstorm") Object.assign(payload, { count: 8, select: 4 });
-  return { node_id: node.id, kind, payload };
+function promptEvent(reply, setStreaming, event, payload) {
+  if (event === "delta") { reply.text += payload.text; setStreaming(reply.text || " "); }
+  if (event !== "error") return;
+  const failure = new Error(payload.detail || "答复失败");
+  failure.code = payload.code;
+  throw failure;
 }
 
 
-function workflowsFor(workflows, node) {
-  return workflows.filter((item) => item.node_id === node?.id || item.payload?.experiment_id === node?.id);
+function showSendError(error, onSpecInvalid, setError) {
+  if (error.code === "session_spec_invalid") onSpecInvalid();
+  else setError(error.message);
 }
 
 
-function nodeText(node) {
-  return node?.payload?.title || node?.payload?.text || node?.payload?.summary || "未命名节点";
+function useSend(threadId, setDetail, onSpecInvalid) {
+  const { projectId, refresh, setError } = useWorld();
+  const [sending, setSending] = useState(false);
+  const [streaming, setStreaming] = useState("");
+  const [pending, setPending] = useState("");
+  const send = async (text) => {
+    setSending(true); setPending(text); setStreaming(" ");
+    const reply = { text: "" };
+    try {
+      await sendPrompt(threadId, text, (...event) => promptEvent(reply, setStreaming, ...event));
+      setDetail(await getThread(threadId)); await refresh(projectId); return true;
+    } catch (error) {
+      showSendError(error, onSpecInvalid, setError); return false;
+    } finally { setSending(false); setStreaming(""); setPending(""); }
+  };
+  return { sending, streaming, pending, send };
 }
 
 
-function lifeLabel(value) {
-  return { pending: "待处理", admitted: "已入图", ghost: "已驳回" }[value] || value;
+function usePin(threadId, setDetail) {
+  const { setError } = useWorld();
+  const patch = (thread) => setDetail((value) => ({ ...value, nodes: thread.nodes }));
+  const pin = async (nodeId) => {
+    try { patch(await pinNode(threadId, nodeId)); return true; }
+    catch (error) { setError(error.message); return false; }
+  };
+  return pin;
+}
+
+
+function ThreadFailed({ onRetry }) {
+  const navigate = useNavigate();
+  return <EmptyState icon={MessagesSquare} title="Thread 载入失败" hint="服务端未返回该对话，可能已被删除或暂时不可用。">
+    <div className="empty-actions"><button className="button primary" onClick={onRetry}>重试</button>
+      <button className="button secondary" onClick={() => navigate(-1)}>返回</button></div></EmptyState>;
+}
+
+
+function useRestart(threadId, setDetail) {
+  const { setError } = useWorld();
+  const [specInvalid, setSpecInvalid] = useState(false);
+  const restart = async () => {
+    try { setDetail(await restartThread(threadId)); setSpecInvalid(false); }
+    catch (error) { setError(error.message); }
+  };
+  return { specInvalid, flagSpecInvalid: () => setSpecInvalid(true), restart };
+}
+
+
+function ThreadView({ threadId }) {
+  const { data } = useWorld();
+  const { detail, failed, retry, setDetail } = useThreadDetail(threadId);
+  const { specInvalid, flagSpecInvalid, restart } = useRestart(threadId, setDetail);
+  const { sending, streaming, pending, send } = useSend(threadId, setDetail, flagSpecInvalid);
+  const pin = usePin(threadId, setDetail);
+  const [draft, setDraft] = useState(null);
+  if (failed) return <ThreadFailed onRetry={retry} />;
+  if (!detail) return <div className="page-loading">正在载入 Thread...</div>;
+  const messages = [...(detail.runtime?.messages || [])];
+  if (pending) messages.push({ role: "user", content: pending });
+  return <section className="chat-page">
+    <ThreadHeader detail={detail} sending={sending} onRestart={restart} />
+    <div className="chat-scroll"><MessageList messages={messages} streaming={sending ? streaming : ""} /></div>
+    {specInvalid && <SpecInvalidNotice onRestart={restart} />}
+    {draft && <ProfileDraftCard key={draft.nonce} draft={draft} onCancel={() => setDraft(null)} />}
+    <Composer pinnedNodes={detail.nodes} sending={sending} onSend={send} onPin={pin}
+      accessory={<><ResearchControls thread={detail} runs={threadRuns(data.runs, detail)} />
+        <ProfileDraftButton onDraft={(value) => setDraft({ ...value, nonce: Date.now() })} /></>} /></section>;
+}
+
+
+function SpecInvalidNotice({ onRestart }) {
+  return <div className="spec-notice" role="status">
+    <span>此对话的 Agent 配置已变更，需要重启会话</span>
+    <button className="button secondary" onClick={onRestart}><RotateCcw size={14} />重启会话</button></div>;
+}
+
+
+function ThreadHeader({ detail, sending, onRestart }) {
+  const agent = useWorld().data.agents.find((item) => item.id === detail.agent_id);
+  return <header className="thread-header"><div><h1>{detail.title}</h1><span>{agent?.name || detail.agent_id} · {detail.nodes.length} 个引用节点{sending ? " · 正在回复" : ""}</span></div>
+    <button className="icon-button" aria-label="重启会话" title="重启会话" onClick={onRestart}><RotateCcw size={16} /></button></header>;
 }

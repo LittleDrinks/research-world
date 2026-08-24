@@ -1,0 +1,150 @@
+.conversation-prototype { position: relative; height: 100%; min-height: 0; overflow: hidden; background: var(--app-panel); }
+.conversation-layout { height: 100%; min-height: 0; display: grid; overflow: hidden; }
+.node-conversation, .runtime-room { grid-template-columns: 248px minmax(390px, 1fr) 310px; }
+.orchestrator-console { grid-template-columns: 260px minmax(420px, 1fr) 350px; }
+.workflow-studio { grid-template-columns: 248px minmax(460px, 1fr) 320px; }
+.conversation-rail, .context-shelf, .preset-shelf { min-width: 0; min-height: 0; border-right: 1px solid var(--line); background: var(--app-sidebar); overflow: hidden; }
+.conversation-rail > header, .runtime-dock > header, .runtime-inspector > header, .context-shelf > header, .generated-workflow > header, .preset-shelf > header, .workflow-test > header { height: 48px; display: flex; align-items: center; gap: 8px; padding: 0 14px; border-bottom: 1px solid var(--line); font-size: 12px; }
+.conversation-rail > header span, .generated-workflow > header span { margin-left: auto; color: var(--text-muted); }
+.orchestrator-entry { width: 100%; height: 66px; display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: center; gap: 8px; padding: 0 14px; border: 0; border-bottom: 1px solid var(--line); color: var(--state-selected); background: transparent; text-align: left; cursor: pointer; }
+.orchestrator-entry.active { background: var(--state-selected-surface); box-shadow: inset 3px 0 var(--state-selected); }
+.orchestrator-entry b, .orchestrator-entry small { display: block; }
+.orchestrator-entry b { color: var(--text-strong); font-size: 12px; }
+.orchestrator-entry small { margin-top: 4px; color: var(--text-muted); font-size: 10px; }
+.conversation-node-list { height: calc(100% - 114px); padding-bottom: 16px; overflow-y: auto; }
+.conversation-node-list details summary { display: grid; grid-template-columns: 13px minmax(0, 1fr) auto; align-items: center; gap: 4px; padding: 9px 12px 4px; color: var(--text-faint); font-size: 9px; font-weight: 700; cursor: pointer; list-style: none; }
+.conversation-node-list details summary::-webkit-details-marker { display: none; }
+.conversation-node-list details summary span { font-weight: 500; }
+.conversation-node-list details:not([open]) summary svg { transform: rotate(-90deg); }
+.conversation-node-list button { width: 100%; min-height: 48px; display: grid; grid-template-columns: minmax(0, 1fr) 20px; align-items: center; gap: 7px; padding: 7px 12px 7px 16px; border: 0; color: var(--text); background: transparent; text-align: left; cursor: pointer; }
+.conversation-node-list button:hover, .conversation-node-list button.active { background: var(--state-selected-surface); }
+.conversation-node-list button.active { box-shadow: inset 3px 0 var(--state-selected); }
+.conversation-node-list button b, .conversation-node-list button small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conversation-node-list button b { font-size: 11px; }
+.conversation-node-list button small { margin-top: 3px; color: var(--text-muted); font: 9px "Geist Mono", monospace; }
+.conversation-node-list button i { width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; color: var(--text-muted); font-size: 9px; font-style: normal; }
+.conversation-thread, .orchestrator-thread { min-width: 0; min-height: 0; display: grid; grid-template-rows: 66px minmax(0, 1fr) auto; }
+.conversation-thread-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 18px; border-bottom: 1px solid var(--line); background: var(--app-panel); }
+.conversation-thread-header > div { min-width: 0; }
+.conversation-thread-header span { color: var(--text-muted); font-size: 9px; font-weight: 700; }
+.conversation-thread-header h1 { margin-top: 4px; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prototype-messages { min-height: 0; padding: 26px max(18px, calc((100% - 680px) / 2)); overflow-y: auto; }
+.prototype-messages article { width: fit-content; max-width: min(82%, 640px); margin-bottom: 18px; }
+.prototype-messages article.user { margin-left: auto; }
+.prototype-messages article > span { display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 10px; font-weight: 600; }
+.prototype-messages article.user > span { text-align: right; }
+.prototype-messages article p { margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; border-top-left-radius: 3px; background: var(--surface-raised); font-size: 12px; }
+.prototype-messages article.user p { border-top-left-radius: 8px; border-top-right-radius: 3px; border-color: color-mix(in oklab, var(--accent) 30%, var(--line)); background: var(--accent-soft); }
+.prototype-composer { padding: 9px max(14px, calc((100% - 720px) / 2)) 14px; border-top: 1px solid var(--line); background: var(--app-panel); }
+.composer-context { min-height: 28px; display: flex; align-items: center; gap: 6px; overflow-x: auto; }
+.composer-context span, .composer-context button { flex: 0 0 auto; padding: 3px 7px; border: 1px solid var(--line); border-radius: 5px; color: var(--text-muted); background: var(--surface-raised); font-size: 10px; }
+.composer-context button { display: flex; align-items: center; gap: 5px; color: var(--state-selected); cursor: pointer; }
+.prototype-composer > div:last-child { display: grid; grid-template-columns: minmax(0, 1fr) 38px; align-items: end; gap: 7px; }
+.prototype-composer textarea { min-height: 68px; max-height: 150px; resize: vertical; }
+.prototype-send { color: white; background: var(--accent); }
+.runtime-dock, .runtime-inspector, .generated-workflow, .workflow-test { min-width: 0; min-height: 0; border-left: 1px solid var(--line); background: var(--app-sidebar); overflow-y: auto; }
+.runtime-dock > header button, .preset-shelf > header button { margin-left: auto; }
+.runtime-dock > section { padding: 14px; }
+.runtime-dock > section > p { margin: 0 0 9px; color: var(--text-muted); font-size: 10px; }
+.runtime-card { width: 100%; margin-bottom: 7px; padding: 10px; border: 1px solid var(--line); border-radius: 7px; color: var(--text); background: var(--surface-raised); text-align: left; cursor: pointer; }
+.runtime-card.active { border-color: var(--state-selected); box-shadow: inset 3px 0 var(--state-selected); }
+.runtime-card > span { display: flex; align-items: center; gap: 6px; }
+.runtime-card em { margin-left: auto; color: var(--state-success); font-size: 9px; font-style: normal; }
+.runtime-card strong, .runtime-card small { display: block; margin-top: 6px; }
+.runtime-card strong { font-size: 11px; }
+.runtime-card small { color: var(--text-muted); font-size: 10px; }
+.workflow-preview { border-top: 1px solid var(--line); }
+.workflow-preview header { display: flex; align-items: center; gap: 7px; margin-bottom: 10px; }
+.workflow-preview header span { margin-left: auto; color: var(--text-muted); font-size: 9px; }
+.workflow-preview > p { color: var(--text-strong) !important; font-weight: 650; }
+.workflow-preview > div { display: flex; align-items: center; gap: 8px; padding: 5px 0; color: var(--text-muted); font-size: 10px; }
+.workflow-preview > div span { width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; color: var(--state-selected); background: var(--state-selected-surface); }
+.runtime-board, .workflow-canvas { min-width: 0; min-height: 0; display: grid; grid-template-rows: 66px minmax(0, 1fr); }
+.board-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 18px; border-bottom: 1px solid var(--line); }
+.board-header > div { min-width: 0; }
+.board-header span { color: var(--text-muted); font: 9px "Geist Mono", monospace; }
+.board-header h1 { margin-top: 4px; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board-header select { width: 180px; height: 34px; padding: 0 8px; font-size: 11px; }
+.runtime-lanes { padding: 18px; overflow-y: auto; }
+.runtime-lane { margin-bottom: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-raised); }
+.runtime-lane.running { border-color: var(--state-success); background: var(--state-success-surface); }
+.runtime-lane > header, .runtime-lane > header div { display: flex; align-items: center; gap: 7px; }
+.runtime-lane > header { justify-content: space-between; }
+.runtime-lane > header span { color: var(--state-success); font-size: 10px; }
+.runtime-lane > p { margin: 9px 0; font-size: 12px; }
+.lane-config { display: flex; gap: 6px; }
+.lane-config span { padding: 3px 6px; border: 1px solid var(--line); border-radius: 4px; color: var(--text-muted); background: var(--surface-raised); font-size: 9px; }
+.lane-message { margin: 11px 0; padding: 9px; border-left: 2px solid var(--line-strong); color: var(--text-muted); background: var(--surface-muted); font-size: 10px; }
+.runtime-lane > button, .primary-action { min-height: 34px; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 7px; color: var(--text); background: var(--surface-raised); font-size: 11px; font-weight: 650; cursor: pointer; }
+.runtime-inspector > div, .workflow-test > section, .workflow-test > label { padding: 16px; }
+.runtime-inspector label, .workflow-test label { display: block; margin-bottom: 14px; }
+.runtime-inspector label span, .workflow-test label span { display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 10px; font-weight: 600; }
+.runtime-inspector input, .runtime-inspector select, .runtime-inspector textarea, .workflow-test textarea { width: 100%; padding: 8px 9px; }
+.runtime-inspector .primary-action, .generated-workflow .primary-action, .workflow-test .primary-action { width: 100%; color: white; border-color: var(--accent); background: var(--accent); }
+.context-shelf section, .generated-workflow section, .workflow-test section { padding: 16px; border-bottom: 1px solid var(--line); }
+.context-shelf section > span, .generated-workflow section > span, .workflow-test section > span, .preset-shelf > div > span { display: block; margin-bottom: 9px; color: var(--text-muted); font-size: 9px; font-weight: 700; }
+.context-shelf section > p, .generated-workflow section > p, .workflow-test section > p { color: var(--text-muted); font-size: 10px; }
+.context-shelf section button { width: 100%; display: flex; align-items: center; gap: 7px; padding: 8px 6px; border: 0; border-bottom: 1px solid var(--line); color: var(--text); background: transparent; text-align: left; cursor: pointer; }
+.context-shelf section button b { color: var(--state-selected); font: 9px "Geist Mono", monospace; }
+.generated-workflow h2 { font-size: 14px; }
+.generated-step { display: flex; align-items: center; gap: 9px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.generated-step i { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; color: var(--state-selected); background: var(--state-selected-surface); font-size: 10px; font-style: normal; }
+.generated-step p, .generated-step b, .generated-step small { margin: 0; display: block; }
+.generated-step b { font-size: 11px; }
+.generated-step small { margin-top: 3px; color: var(--text-muted); font-size: 9px; }
+.prompt-draft { padding: 9px; border-left: 2px solid var(--state-selected); background: var(--surface-muted); }
+.generated-workflow > .primary-action, .workflow-test > .primary-action { width: calc(100% - 32px); margin: 16px; }
+.preset-shelf > section { padding: 10px 8px; }
+.preset-shelf > section button { width: 100%; padding: 10px; border: 1px solid transparent; border-radius: 6px; color: var(--text); background: transparent; text-align: left; cursor: pointer; }
+.preset-shelf > section button.active { border-color: color-mix(in oklab, var(--state-selected) 35%, var(--line)); background: var(--state-selected-surface); }
+.preset-shelf > section b, .preset-shelf > section small { display: block; }
+.preset-shelf > section b { font-size: 11px; }
+.preset-shelf > section small { margin-top: 4px; color: var(--text-muted); font-size: 9px; }
+.preset-shelf > div { padding: 16px; border-top: 1px solid var(--line); }
+.preset-shelf select { width: 100%; padding: 8px; font-size: 10px; }
+.workflow-steps { padding: 22px max(18px, calc((100% - 720px) / 2)) 80px; overflow-y: auto; }
+.workflow-start { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; color: var(--state-selected); }
+.workflow-start b, .workflow-start small { display: block; }
+.workflow-start b { font-size: 11px; }
+.workflow-start small { margin-top: 3px; color: var(--text-muted); font-size: 9px; }
+.workflow-steps article { position: relative; display: grid; grid-template-columns: 26px minmax(0, 1fr) 160px; align-items: center; gap: 12px; margin-bottom: 12px; padding: 13px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-raised); }
+.workflow-steps article::before { content: ""; position: absolute; left: 25px; top: -13px; width: 1px; height: 12px; background: var(--line-strong); }
+.workflow-steps article > i { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; color: white; background: var(--accent); font-size: 10px; font-style: normal; }
+.workflow-steps article span { color: var(--text-muted); font: 9px "Geist Mono", monospace; }
+.workflow-steps article h2 { margin-top: 3px; font-size: 12px; }
+.workflow-steps article p { margin: 5px 0 0; color: var(--text-muted); font-size: 10px; }
+.workflow-steps article select { height: 32px; padding: 0 7px; font-size: 10px; }
+.test-message { margin: 16px; padding: 10px; border-left: 2px solid var(--state-selected); background: var(--surface-muted); }
+.test-message b { font-size: 10px; }
+.test-message p { margin: 5px 0 0; font-size: 10px; }
+.conversation-prototype-state { position: fixed; right: 14px; bottom: 72px; z-index: 80; width: 190px; padding: 7px 9px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--surface-overlay); box-shadow: 0 7px 22px rgb(15 23 42 / .1); }
+.conversation-prototype-state summary { cursor: pointer; font: 10px "Geist Mono", monospace; }
+.conversation-prototype-state pre { overflow: auto; font-size: 9px; white-space: pre-wrap; }
+.conversation-variant-switcher { position: fixed; left: calc(50% + 108px); bottom: 16px; z-index: 90; display: grid; grid-template-columns: 34px minmax(160px, auto) 34px; align-items: center; padding: 5px; border: 1px solid rgb(255 255 255 / .16); border-radius: 8px; color: white; background: #171717; box-shadow: 0 10px 30px rgb(0 0 0 / .24); }
+.conversation-variant-switcher button { width: 34px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 5px; color: white; background: transparent; cursor: pointer; }
+.conversation-variant-switcher button:hover { background: rgb(255 255 255 / .1); }
+.conversation-variant-switcher b { padding: 0 10px; font-size: 11px; text-align: center; }
+@media (max-width: 1120px) {
+  .node-conversation, .runtime-room { grid-template-columns: 220px minmax(340px, 1fr) 260px; }
+  .orchestrator-console { grid-template-columns: 220px minmax(360px, 1fr) 300px; }
+  .workflow-studio { grid-template-columns: 210px minmax(380px, 1fr) 280px; }
+}
+@media (max-width: 820px) {
+  body:has(.conversation-prototype) .app-shell { grid-template-columns: 1fr; }
+  body:has(.conversation-prototype) .sidebar { position: fixed; inset: 0 auto 0 0; width: 216px; display: none; box-shadow: 8px 0 28px rgb(15 23 42 / .16); }
+  body:has(.conversation-prototype) .sidebar.sidebar-open { display: grid; }
+  body:has(.conversation-prototype) .menu-button, body:has(.conversation-prototype) .sidebar-close { display: inline-grid !important; }
+  .node-conversation, .runtime-room, .orchestrator-console, .workflow-studio { grid-template-columns: 1fr; grid-template-rows: 132px minmax(0, 1fr); }
+  .conversation-rail { display: grid; grid-template-columns: 200px minmax(0, 1fr); grid-template-rows: 36px 96px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .conversation-rail > header { height: 36px; grid-column: 1 / -1; }
+  .orchestrator-entry { width: auto; height: 96px; border-right: 1px solid var(--line); }
+  .conversation-node-list { width: auto; height: 96px; display: flex; overflow-x: auto; }
+  .conversation-node-list details { flex: 0 0 auto; display: block; }
+  .conversation-node-list details > div { width: max-content; height: 96px; display: flex; }
+  .conversation-node-list details summary { display: none; }
+  .conversation-node-list button { flex: 0 0 180px; min-height: 96px; border-right: 1px solid var(--line); }
+  .runtime-dock, .runtime-inspector, .generated-workflow, .workflow-test, .context-shelf, .preset-shelf { display: none; }
+  .prototype-composer { padding-bottom: 66px; }
+  .conversation-prototype-state { display: none; }
+  .conversation-variant-switcher { left: 50%; transform: translateX(-50%); }
+}

@@ -1,0 +1,74 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v06 · 能力装配甲板：挑战 ADR-0022 未落地的装配/钉入/渐进披露交互。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v06 · 能力装配甲板 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:dark;--bg:#0e1116;--panel:#161b23;--ink:#e6ebf2;--muted:#8792a3;--line:#252d3a;--cyan:#47c7d6;--amber:#d9a441;--green:#5fb878}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{display:grid;grid-template-rows:56px 1fr;height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+  header b{font-size:15px}.hint{margin-left:auto;color:var(--muted);font:11px ui-monospace,monospace}
+  .body{display:grid;grid-template-columns:1fr 400px;min-height:0}
+  .library{padding:16px;overflow:auto}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+  .pkg{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--panel);cursor:pointer;position:relative}
+  .pkg:hover{border-color:var(--cyan)}.pkg.on{outline:2px solid var(--cyan)}
+  .pkg b{font-size:13px}.pkg small{display:block;color:var(--muted);margin-top:3px;min-height:32px}
+  .tags{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}.tag{padding:2px 7px;border-radius:5px;font:9px ui-monospace,monospace;background:#1e2632;color:var(--cyan)}
+  aside{border-left:1px solid var(--line);background:var(--panel);padding:16px;overflow:auto;display:flex;flex-direction:column;gap:12px}
+  h2{font-size:12px;letter-spacing:.08em;color:var(--muted);margin:0}
+  .slots{min-height:70px;border:1px dashed var(--line);border-radius:10px;padding:8px;display:flex;gap:6px;flex-wrap:wrap}
+  .slot{display:flex;align-items:center;gap:5px;padding:5px 8px;border-radius:7px;background:#1e2632;border:1px solid #2c3745;font:10px ui-monospace,monospace;cursor:pointer}
+  .slot i{font-style:normal;color:var(--muted);cursor:pointer}
+  .disclosure{padding:10px;border:1px solid var(--line);border-radius:10px;background:#12161d;font:11px ui-monospace,monospace;color:#9fe3c8;min-height:50px}
+  .pre{overflow:auto;border:1px solid var(--line);border-radius:10px;background:#0a0d12;padding:10px;font:10.5px/1.5 ui-monospace,monospace;color:#cfe8d8;height:180px}
+  button.cta{padding:9px;border-radius:8px;background:var(--cyan);border:0;color:#071014;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><b>能力装配甲板</b><span style="color:var(--muted);font-size:11px">装配者按项目问题从能力库选包 → 执行单元启动时固定 → 写入执行凭据</span><span class="hint">运行中新增能力 = 新装配 + 新执行单元（ADR-0022）</span></header>
+  <div class="body">
+    <main class="library"><h2>能力库 · 按领域组织</h2><div class="grid" id="lib"></div></main>
+    <aside><h2>当前装配 · q089 能量转换效率</h2><div class="slots" id="slots"></div>
+      <h2>渐进披露 · 悬停查看工具详情</h2><div class="disclosure" id="disclosure">将鼠标移到能力包或插槽上，工具 schema 才展开——默认不进入上下文。</div>
+      <h2>执行凭据（固定后不可变）</h2><div class="pre" id="credential">尚未固定</div>
+      <button class="cta" id="seal">固定装配并写入凭据</button></aside>
+  </div>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const LIB=[
+ {id:"search-web",name:"anysearch",desc:"多引擎网页检索，返回标题/URL/摘要",tags:["tool","内置"]},
+ {id:"scholar",name:"tavily-scholar",desc:"学术检索与引用核对，会议优先于 arxiv",tags:["tool","可选"]},
+ {id:"lean4",name:"lean4-proof",desc:"形式化证明环境，数学题实验变为证明交付",tags:["skill","数学"]},
+ {id:"sim",name:"simulation-base",desc:"仿真环境基座：环境配置与实验解耦",tags:["dockerfile","物理"]},
+ {id:"wetlab",name:"wetlab-intake",desc:"湿实验人工返回登记：样本/照片/仪器读数",tags:["skill","化学"]},
+ {id:"jpl",name:"jpl-ephemeris",desc:"JPL 星历导入与残差计算",tags:["tool","天文"]},
+ {id:"sleep",name:"sleep-edf-loader",desc:"Sleep-EDF 解析 + 手表对齐",tags:["tool","神经"]},
+ {id:"matbench",name:"matbench-chain",desc:"Matbench 任务集与材料性质基线",tags:["tool","材料"]},
+ {id:"scifact",name:"scifact-evidence",desc:"证据句绑定到原子主张的检索器",tags:["tool","医学"]},
+ {id:"repro",name:"repro-hash",desc:"产物 SHA-256 寻址与重放校验",tags:["skill","全部"]},
+ {id:"plot",name:"plot-export",desc:"图表导出 SVG/PNG，禁随机样式",tags:["skill","全部"]},
+ {id:"mcp-allow",name:"mcp-whitelist",desc:"MCP 白名单：read-only 文件与库查询",tags:["mcp","全部"]},
+];
+let chosen=[];
+function detail(p){return `${p.name}\n用途：${p.desc}\n声明：${p.tags.join(" + ")}\n默认上下文：仅此一行；详细 schema 按需查询`}
+function render(){const slots=$("slots");slots.innerHTML=chosen.map(p=>`<span class="slot" data-id="${p.id}">${p.name}<i data-rm="${p.id}">×</i></span>`).join("")||"<span style='color:var(--muted);font-size:11px'>空装配：点击左侧能力包</span>";
+ $("lib").innerHTML=LIB.map(p=>`<div class="pkg ${chosen.some(x=>x.id===p.id)?"on":""}" data-id="${p.id}"><b>${p.name}</b><small>${p.desc}</small><div class="tags">${p.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</div></div>`).join("");
+ if(RWUI)RWUI.setState({装配:chosen.map(p=>p.name),固定:sealed?"已固定":"未固定"});}
+let sealed=false;
+function seal(){if(!chosen.length){$("credential").textContent="先选能力包";return}sealed=true;
+ const cred={project:"q089",assembly_id:"asm-"+Math.floor(RW.genMs*7)+"-q089",created_at:new Date().toISOString(),capabilities:chosen.map(p=>p.id),rule:"运行中新增能力 = 新装配 + 新执行单元"};
+ $("credential").textContent=JSON.stringify(cred,null,2);if(RWUI)RWUI.setState({凭据:cred});}
+document.addEventListener("mouseover",e=>{const p=e.target.closest(".pkg,.slot");if(!p)return;const found=LIB.find(x=>x.id===(p.dataset.id||p.dataset.rm));if(found)$("disclosure").textContent=detail(found)});
+document.addEventListener("click",e=>{const p=e.target.closest(".pkg");if(p){const found=LIB.find(x=>x.id===p.dataset.id);if(found&&!chosen.some(x=>x.id===found.id)){chosen.push(found);sealed=false;$("credential").textContent="装配已变更，凭据需重新固定";render()}}
+ const rm=e.target.closest("[data-rm]");if(rm){chosen=chosen.filter(x=>x.id!==rm.dataset.rm);sealed=false;$("credential").textContent="装配已变更，凭据需重新固定";render()}
+ if(e.target.closest("#seal"))seal();});
+document.addEventListener("DOMContentLoaded",()=>{render();RWUI&&RWUI.setState({设计命题:"能力库/装配/凭据/渐进披露如何在 UI 中闭环",挑战对象:"ADR-0022 尚未落地的装配交互",交互:"选包 + 悬停披露 + 固定凭据",数据:"12 个 mock 能力包"});});
+</script>
+</body>
+</html>

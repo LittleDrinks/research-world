@@ -1,0 +1,96 @@
+{
+  "paper": {
+    "id": "oc20",
+    "title": "The Open Catalyst 2020 (OC20) Dataset and Community Challenges",
+    "shortTitle": "The Open Catalyst 2020 (OC20) Dataset and Community Challenges",
+    "authors": "Lowik Chanussot, Abhishek Das, Siddharth Goyal et al.",
+    "year": 2020,
+    "domain": "Scientific machine learning",
+    "modality": "Benchmark",
+    "category": "benchmark",
+    "sourceUrl": "https://arxiv.org/abs/2010.09990",
+    "localPath": "raw/oc20/paper.pdf"
+  },
+  "thesis": "The dataset and baseline models are both provided as open resources, as well as a public leader board to encourage community contributions to solve these important tasks.",
+  "reconstruction": {
+    "scope": "abstract-level graph with retained full text",
+    "method": "deterministic sentence selection",
+    "review": "schema-audited"
+  },
+  "nodes": [
+    {
+      "id": "oc20-q",
+      "kind": "question",
+      "title": "Research question",
+      "body": "How can the target scientific task be compared under fixed data and evaluation rules?",
+      "provenance": "inferred",
+      "locator": "Abstract",
+      "state": "open"
+    },
+    {
+      "id": "oc20-d",
+      "kind": "decision",
+      "title": "Freeze tasks and metrics",
+      "body": "Despite considerable effort by the catalysis community to apply machine learning models to the computational catalyst discovery process, it remains an open challenge to build models that can generalize across both elemental compositions of surfaces and adsorbate identity/configurations, perhaps because datasets have been smaller in catalysis than related fields.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "accepted"
+    },
+    {
+      "id": "oc20-i",
+      "kind": "investigation",
+      "title": "Evaluate reference systems",
+      "body": "To address this we developed the OC20 dataset, consisting of 1,281,040 Density Functional Theory (DFT) relaxations (~264,890,000 single point evaluations) across a wide swath of materials, surfaces, and adsorbates (nitrogen, carbon, and oxygen chemistries).",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "completed"
+    },
+    {
+      "id": "oc20-e",
+      "kind": "evidence",
+      "title": "Primary reported result",
+      "body": "We applied three state-of-the-art graph neural network models (CGCNN, SchNet, Dimenet++) to each of these tasks as baseline demonstrations for the community to build on.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supporting"
+    },
+    {
+      "id": "oc20-c",
+      "kind": "claim",
+      "title": "Published conclusion",
+      "body": "The dataset and baseline models are both provided as open resources, as well as a public leader board to encourage community contributions to solve these important tasks.",
+      "provenance": "explicit",
+      "locator": "Abstract",
+      "state": "supported"
+    }
+  ],
+  "edges": [
+    {
+      "from": "oc20-q",
+      "to": "oc20-d",
+      "relation": "motivates",
+      "provenance": "inferred"
+    },
+    {
+      "from": "oc20-d",
+      "to": "oc20-i",
+      "relation": "constrains",
+      "provenance": "inferred"
+    },
+    {
+      "from": "oc20-i",
+      "to": "oc20-e",
+      "relation": "produces",
+      "provenance": "explicit"
+    },
+    {
+      "from": "oc20-e",
+      "to": "oc20-c",
+      "relation": "supports",
+      "provenance": "inferred"
+    }
+  ],
+  "openQuestions": [
+    "The local full text supports deeper section-level extraction beyond this abstract-level graph."
+  ]
+}

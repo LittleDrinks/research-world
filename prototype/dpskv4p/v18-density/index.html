@@ -1,0 +1,61 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v18 · 密度压力表：局部组件。大规模数据可视化验证——同一数据在 DOM 与 Canvas 两条路径上的真实耗时。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v18 · 密度压力表 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:dark;--bg:#080b10;--panel:#0d131c;--ink:#dbe6f2;--muted:#74839a;--line:#1c2938;--cyan:#4fc3d8;--green:#65d18e;--amber:#d8a84e;--red:#d2685f}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{display:grid;grid-template-columns:300px 1fr;height:100vh}
+  aside{border-right:1px solid var(--line);background:var(--panel);padding:16px;overflow:auto}
+  h1{font-size:17px;margin:0}.sub{color:var(--muted);font-size:11px;line-height:1.5}
+  .sizes{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}.size{padding:7px 11px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+  .size.on{background:var(--cyan);color:#041016;border-color:var(--cyan)}
+  .metric{border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:10px;background:#0a1018}
+  .metric small{color:var(--muted);font:10px ui-monospace,monospace}.metric b{display:block;font:700 20px ui-monospace,monospace;margin-top:2px}
+  .ok{color:var(--green)}.warn{color:var(--amber)}.bad{color:var(--red)}
+  main{display:flex;flex-direction:column;min-width:0;padding:14px}
+  .head{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+  .head button{padding:8px 13px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+  .head button.on{background:var(--green);color:#06150a;border-color:var(--green)}
+  .stage{position:relative;flex:1;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#090d14}
+  #dom{position:absolute;inset:0}.node{position:absolute;border-radius:2px;background:#3c556f}
+  .node.q{background:#4fc3d8}.node.exp{background:#65d18e}.node.pending{background:#d8a84e}.node.running{outline:2px solid #4fc3d8}
+  canvas{position:absolute;inset:0;width:100%;height:100%}
+  .badge{position:absolute;left:12px;top:10px;font:10px ui-monospace,monospace;color:var(--muted);background:#0a1018cc;padding:5px 9px;border-radius:6px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside><h1>密度压力表</h1><p class="sub">“展示大规模数据已验证系统真实可用”的硬证据：不接后端，用确定性生成器现场造数，记录生成与渲染耗时。</p>
+    <div class="sizes" id="sizes"></div>
+    <div class="metric"><small>生成耗时（造数）</small><b id="m-gen">—</b></div>
+    <div class="metric"><small>DOM 渲染耗时</small><b id="m-dom">—</b></div>
+    <div class="metric"><small>Canvas 渲染耗时</small><b id="m-canvas">—</b></div>
+    <div class="metric"><small>首帧交互预算</small><b id="m-fps">—</b></div>
+    <div class="metric"><small>判定</small><b id="m-judge" class="ok">—</b></div></aside>
+  <main><div class="head"><b style="font-size:14px">渲染路径对比</b><button id="domBtn" class="on">DOM · 可选中/可读</button><button id="cvBtn">Canvas · 全量点云</button><span style="color:var(--muted);font-size:11px" id="info"></span></div>
+    <div class="stage"><div id="dom"></div><canvas id="cv" style="display:none"></canvas><div class="badge" id="badge"></div></div></main>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const SIZES=[500,1000,2500,5000];let n=500,mode="dom";
+function bench(fn){const t=performance.now();const r=fn();return{ms:+(performance.now()-t).toFixed(1),r}}
+function run(){const t=performance.now();const g=RW.graph(n,1000,620);const gen=+(performance.now()-t).toFixed(1);
+ const stage=$("dom").parentElement,W=stage.clientWidth-4,H=stage.clientHeight-30;
+ const domR=bench(()=>{$("dom").innerHTML="";const frag=document.createDocumentFragment();g.nodes.forEach(nd=>{const d=document.createElement("i");d.className="node "+nd.kind+(nd.status==="pending"?" pending":nd.status==="running"?" running":"");d.style.left=(nd.x/1000*W)+"px";d.style.top=(nd.y/620*H)+"px";const s=Math.max(2,Math.min(8,n<2500?6:3));d.style.width=d.style.height=s+"px";frag.appendChild(d)});$("dom").appendChild(frag)});
+ const cv=$("cv");const ctx=cv.getContext("2d");const cvR=bench(()=>{cv.width=W;cv.height=H;ctx.fillStyle="#090d14";ctx.fillRect(0,0,W,H);g.edges.forEach(e=>{const a=g.nodes.find(x=>x.id===e.source),b=g.nodes.find(x=>x.id===e.target);ctx.strokeStyle="#1d3040";ctx.beginPath();ctx.moveTo(a.x/1000*W,a.y/620*H);ctx.lineTo(b.x/1000*W,b.y/620*H);ctx.stroke()});g.nodes.forEach(nd=>{ctx.fillStyle=nd.kind==="question"?"#4fc3d8":nd.kind==="experiment"?"#65d18e":nd.status==="pending"?"#d8a84e":"#3c556f";ctx.fillRect(nd.x/1000*W,nd.y/620*H,3,3)})});
+ $("m-gen").textContent=gen+" ms";$("m-dom").textContent=domR.ms+" ms";$("m-canvas").textContent=cvR.ms+" ms";
+ const fps=1000/Math.max(16.7,domR.ms);$("m-fps").textContent=fps.toFixed(0)+" ms/帧"+(domR.ms<50?" · 可交互":" · 建议切 Canvas");
+ const j=$("m-judge");j.className=domR.ms<80?"ok":domR.ms<220?"warn":"bad";j.textContent=domR.ms<80?"实用可用":domR.ms<220?"可用但需懒加载":"必须虚拟化/Canvas";
+ $("badge").textContent=`${mode==="dom"?"DOM":"Canvas"} · ${n} 节点 / ${g.edges.length} 边 · 数据生成 ${gen} ms · ${mode==="dom"?"DOM": "Canvas"} ${mode==="dom"?domR.ms:cvR.ms} ms`;
+ if(RWUI)RWUI.setState({节点:n,边:g.edges.length,生成ms:gen,DOM渲染ms:domR.ms,Canvas渲染ms:cvR.ms,判定:j.textContent});}
+function setSize(v){n=v;document.querySelectorAll(".size").forEach(b=>b.classList.toggle("on",+b.dataset.n===v));run()}
+function $(id){return document.getElementById(id)}
+document.addEventListener("click",e=>{const s=e.target.closest(".size");if(s)setSize(+s.dataset.n);if(e.target.closest("#domBtn")){mode="dom";$("dom").style.display="";$("cv").style.display="none";$("domBtn").classList.add("on");$("cvBtn").classList.remove("on");run()}if(e.target.closest("#cvBtn")){mode="cv";$("dom").style.display="none";$("cv").style.display="";$("cvBtn").classList.add("on");$("domBtn").classList.remove("on");run()}});
+document.addEventListener("DOMContentLoaded",()=>{$("sizes").innerHTML=SIZES.map(v=>`<button class="size ${v===n?"on":""}" data-n="${v}">${v}</button>`).join("");setTimeout(run,50);RWUI&&RWUI.setState({设计命题:"大图渲染的性能证据如何现场给出",挑战对象:"图谱密度未验证：33/48 节点 vs 125 题规模",交互:"500→5000 节点切换 + DOM/Canvas 双路径计时",数据:"确定性生成器现场造数，每档可复现"});});
+</script>
+</body>
+</html>

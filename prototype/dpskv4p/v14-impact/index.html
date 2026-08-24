@@ -1,0 +1,50 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v14 · 影响半径计算器：局部组件。挑战 ADR-0020 失效影响范围只有文字、无交互。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v14 · 影响半径计算器 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:light;--bg:#fafbfc;--ink:#17212a;--muted:#6f7d89;--line:#dfe6ec;--red:#c2433b;--blue:#2e6fb0}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{display:grid;grid-template-columns:1fr 340px;height:100vh}
+  main{position:relative;padding:16px 18px 90px;overflow:auto}
+  h1{font-size:18px;margin:0 0 4px}.sub{color:var(--muted);font-size:12px}
+  svg{width:100%;min-width:820px;height:calc(100vh - 130px);border:1px solid var(--line);border-radius:12px;background:#fff;margin-top:10px}
+  .edge{stroke:#b9c6d2;stroke-width:1.6;fill:none}.edge.dead{stroke:var(--red);stroke-width:3}
+  .n{cursor:pointer;stroke:#fff;stroke-width:2}.n.killed{fill:var(--red)!important}
+  .label{font:10px ui-monospace,monospace;fill:var(--muted);pointer-events:none}
+  aside{border-left:1px solid var(--line);background:#fff;padding:16px;overflow:auto}
+  h2{font-size:13px;margin:0 0 10px}.btn{padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:var(--red);color:#fff;cursor:pointer;font-weight:700;width:100%}
+  .btn.reset{background:#fff;color:var(--ink);margin-top:6px}
+  .list{margin-top:10px}.list div{padding:7px 9px;border-bottom:1px dashed var(--line);font-size:12px}
+  .summary{padding:10px;border-radius:9px;background:#fdf1ef;color:var(--red);font-size:12px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="app">
+  <main><h1>影响半径计算器</h1><p class="sub">上游事实被否定时，按依赖边撤销全部后代，不重写无关分支（ADR-0020）。点击节点后“注入否定”。</p><svg id="svg"></svg></main>
+  <aside><h2 id="selTitle">未选择</h2><p id="selMeta" style="color:var(--muted);font-size:11px"></p>
+    <button class="btn" id="kill">对该节点注入否定</button><button class="btn reset" id="reset">恢复整图</button>
+    <div class="summary" id="summary" style="display:none"></div><h2>撤销清单</h2><div class="list" id="list"></div></aside>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const G=RW.graph(26,900,560);let sel=G.nodes[2],killed=new Set();
+const parents=new Map(G.nodes.map(n=>[n.id,[]]));G.edges.forEach(e=>parents.get(e.target)?.push(e.source));
+function descendants(id){const out=new Set([id]);let grow=true;while(grow){grow=false;G.edges.forEach(e=>{if(out.has(e.source)&&!out.has(e.target)){out.add(e.target);grow=true}})}out.delete(id);return out}
+function draw(){const svg=$("svg");const nodes=G.nodes.map(n=>{const x=n.x/900*920+20,y=n.y/560*(560);const d=descendants(n.id);
+ return `<g class="n" data-id="${n.id}"><circle class="n ${killed.has(n.id)?"killed":""}" data-id="${n.id}" cx="${x}" cy="${y}" r="${n.id===sel.id?13:8}" fill="${killed.has(n.id)?"#c2433b":n.id===sel.id?"#2e6fb0":"#8ba4bb"}"/><text class="label" x="${x}" y="${y-14}" text-anchor="middle">${n.id}</text>${killed.has(n.id)?`<text class="label" x="${x}" y="${y+20}" text-anchor="middle" fill="#c2433b">撤销</text>`:""}</g>`}).join("");
+ const edges=G.edges.map(e=>{const a=G.nodes.find(n=>n.id===e.source),b=G.nodes.find(n=>n.id===e.target);const dead=killed.has(e.source)&&killed.has(e.target);return `<line class="edge ${dead?"dead":""}" x1="${a.x/900*920+20}" y1="${a.y/560*560}" x2="${b.x/900*920+20}" y2="${b.y/560*560}"/>`}).join("");
+ svg.innerHTML=edges+nodes;
+ const d=descendants(sel.id);$("selTitle").textContent=`已选 ${sel.id}`;$("selMeta").textContent=`${sel.title} · 下游 ${d.size} 个后代 · 上游 ${parents.get(sel.id).length} 个`;
+ const affected=[...killed];$("list").innerHTML=affected.length?affected.map(id=>`<div><b style="font-family:ui-monospace,monospace">${id}</b> · ${G.nodes.find(n=>n.id===id).title}</div>`).join(""):"<div style='color:var(--muted)'>尚无节点被撤销。</div>";
+ if(RWUI)RWUI.setState({选中:sel.id,下游:d.size,已撤销:[...killed]});}
+function kill(){descendants(sel.id).forEach(id=>killed.add(id));killed.add(sel.id);$("summary").style.display="block";$("summary").innerHTML=`否定 ${sel.id}：按依赖边撤销 ${killed.size-1} 个后代；无关分支保持原样。此结果是确定性图算法，不靠模型读历史猜测。`;draw()}
+function $(id){return document.getElementById(id)}
+document.addEventListener("click",e=>{const c=e.target.closest("circle.n");if(c){sel=G.nodes.find(n=>n.id===c.dataset.id);draw()}if(e.target.closest("#kill"))kill();if(e.target.closest("#reset")){killed.clear();$("summary").style.display="none";draw()}});
+document.addEventListener("DOMContentLoaded",()=>{draw();RWUI&&RWUI.setState({设计命题:"上游失效的影响范围如何可计算、可点击",挑战对象:"PROBLEM 成功条件 4：错误上游定位依赖结果",交互:"点击选点 + 注入否定 + 撤销清单 + 重置",数据:"26 节点 / 34 边 DAG"});});
+</script>
+</body>
+</html>

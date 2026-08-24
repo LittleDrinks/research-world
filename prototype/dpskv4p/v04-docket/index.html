@@ -1,0 +1,66 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v04 · 双审庭审台：挑战节点 Inspector 与双审交互。分歧升级人，抗辩沉淀。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v04 · 双审庭审台 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:light;--bg:#f3efe7;--paper:#fffdf8;--ink:#241d16;--muted:#857a6b;--line:#d8cdba;--red:#8f2e24;--green:#3f6f45;--blue:#315d7c}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{display:grid;grid-template-rows:54px 1fr;height:100vh}
+  header{display:flex;align-items:center;gap:14px;padding:0 18px;border-bottom:2px solid var(--ink);background:var(--paper)}
+  header h1{margin:0;font:700 17px Georgia,"Songti SC",serif}.stamp{margin-left:auto;padding:4px 12px;border:2px solid var(--red);color:var(--red);font:700 11px ui-monospace,monospace;transform:rotate(-3deg)}
+  .body{display:grid;grid-template-columns:1fr 320px;min-height:0}
+  main{overflow:auto;padding:18px 18px 70px}
+  .case{border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:14px 16px;margin-bottom:12px;display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:start}
+  .case.no{font:700 26px Georgia,serif;color:var(--muted);text-align:center;padding-top:2px}
+  .case h3{margin:0;font-size:14px}.case .meta{color:var(--muted);font:10px ui-monospace,monospace}
+  .claims{margin:8px 0}.claims li{margin:2px 0;font-size:12px}
+  .reviewers{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  .rv{padding:8px 10px;border-left:3px solid var(--muted);background:#f8f4ec;font-size:11px}
+  .rv b{font:700 10px ui-monospace,monospace}.rv.approve{border-color:var(--green)}.rv.reject{border-color:var(--red)}
+  .acts{display:flex;flex-direction:column;gap:6px}
+  .acts button{padding:7px 10px;border:1px solid var(--line);border-radius:7px;background:#fff;cursor:pointer}
+  .acts .ok{background:var(--green);color:#fff;border-color:var(--green)}.acts .no{background:var(--red);color:#fff;border-color:var(--red)}
+  .verdict{font:700 12px ui-monospace,monospace;text-align:right}.verdict.admitted{color:var(--green)}.verdict.ghost{color:var(--red)}.verdict.human{color:var(--blue)}
+  aside{border-left:1px solid var(--line);background:var(--paper);padding:16px;overflow:auto}
+  h2{font-size:13px;border-bottom:2px solid var(--ink);padding-bottom:6px}
+  .stat{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--line);font-size:12px}.stat b{font:700 14px ui-monospace,monospace}
+  .queue{margin-top:14px}.queue div{padding:9px;border:1px solid var(--line);border-radius:8px;margin-bottom:7px;background:#fff8ec;font-size:11px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1>双审庭审台</h1><span style="color:var(--muted);font-size:12px">审查带宽是瓶颈：把每次入图审核做成一次可裁决的庭审，而不是一行日志</span><span class="stamp">ADMITTED / GHOST / 升级人</span></header>
+  <div class="body">
+    <main id="docket"></main>
+    <aside><h2>庭期统计</h2><div id="stats"></div><h2>人工裁决队列</h2><div class="queue" id="queue"></div><p style="color:var(--muted);font-size:11px;line-height:1.6">原型规则：reviewer#1 与 #2 均为 approve → 入图；一致 reject → ghost；分歧 → waiting_human，人裁决后 rebuttal 随节点沉淀。</p></aside>
+  </div>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+function makeCase(i){const rnd=RW.graph(1,1,1);const p=RW.PROJECTS[i%RW.PROJECTS.length];
+ const claims=["统计阈值通过，建议补充跨尺度复核","代码与随机种子完整，可复现","效应量未与基线对照，证据不足","湿实验原始记录缺失，需补登记","反例扫描未发现边界异常"];
+ const r1=claims[(i*3)%5],r2=claims[(i*3+2)%5];
+ const same=((i*7)%10)<6;const a=((i*5)%10)<7;
+ return {id:"CASE-"+String(i+1).padStart(3,"0"),project:p.id,title:"D-"+String((i*17)%240+1).padStart(3,"0")+" · "+(p.title.slice(0,34)+"…"),claims:[claims[i%5],claims[(i+2)%5]],r1:{txt:r1,decision:a?"approve":"reject"},r2:{txt:r2,decision:same?a:(!a)?"reject":"approve"},status:"pending",rebuttal:null};}
+let cases=Array.from({length:12},(_,i)=>makeCase(i));
+function verdict(c){if(c.status==="admitted")return["admitted","一致通过 · 入图"];if(c.status==="ghost")return["ghost","一致驳回 · 幽灵"];if(c.status==="human")return["human","分歧 · 升级人工"];return["human","等待双审"];}
+function render(){document.getElementById("docket").innerHTML=cases.map(c=>{const [cls,label]=verdict(c);const same=c.r1.decision===c.r2.decision;
+ return `<div class="case"><div class="no">${c.id.slice(5)}</div><div><h3>${c.title}</h3><div class="meta">${c.project} · 原子断言审计 · 机制审查 + 执行有效性审查分离</div><ul class="claims">${c.claims.map(x=>`<li>${x}</li>`).join("")}</ul><div class="reviewers"><div class="rv ${c.r1.decision}"><b>REVIEWER #1 · ${c.r1.decision==="approve"?"APPROVE":"REJECT"}</b><br>${c.r1.txt}</div><div class="rv ${c.r2.decision}"><b>REVIEWER #2 · ${c.r2.decision==="approve"?"APPROVE":"REJECT"}</b><br>${c.r2.txt}</div></div>${c.rebuttal?`<p style="margin:6px 0 0;font-size:11px;color:var(--red)"><b>抗辩沉淀：</b>${c.rebuttal}</p>`:""}</div>
+ <div class="acts">${c.status==="pending"&&!same?`<button class="ok" data-act="admit" data-id="${c.id}">人工裁定 · 入图</button><button class="no" data-act="ghost" data-id="${c.id}">人工裁定 · 驳回</button>`:c.status==="pending"?`<button data-act="run" data-id="${c.id}">执行双审</button>`:`<span style="font-size:11px;color:var(--muted)">终态已沉淀</span>`}</div>
+ <div class="verdict ${cls}">${label}</div></div>`}).join("");
+ const admitted=cases.filter(c=>c.status==="admitted").length,ghost=cases.filter(c=>c.status==="ghost").length,human=cases.filter(c=>c.status==="human").length,pending=cases.filter(c=>c.status==="pending").length;
+ document.getElementById("stats").innerHTML=`<div class="stat"><span>待双审</span><b>${pending}</b></div><div class="stat"><span>一致入图</span><b>${admitted}</b></div><div class="stat"><span>幽灵隔离</span><b>${ghost}</b></div><div class="stat"><span>升级人工</span><b>${human}</b></div><div class="stat"><span>每案阅读成本</span><b>≤ 12 行</b></div>`;
+ document.getElementById("queue").innerHTML=cases.filter(c=>c.status==="human").map(c=>`<div><b>${c.id}</b> · ${c.project}<br>两个 reviewer 分歧，需要人类裁决</div>`).join("")||"<div style='color:var(--muted)'>队列为空</div>";
+ if(RWUI)RWUI.setState({庭审:cases.length,入图:admitted,幽灵:ghost,升级人:human,待审:pending});}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const c=cases.find(x=>x.id===b.dataset.id);
+ if(b.dataset.act==="run"){c.status=c.r1.decision===c.r2.decision?(c.r1.decision==="approve"?"admitted":"ghost"):"human";c.rebuttal=c.status==="ghost"?"机制证据不足，保留适用范围，供后续相似性匹配。":null;}
+ if(b.dataset.act==="admit"){c.status="admitted";c.rebuttal="人工裁决：分歧点限定为跨尺度复现策略，不阻断入图。"}
+ if(b.dataset.act==="ghost"){c.status="ghost";c.rebuttal="人工裁决：执行有效性证据不足，隔离并保留原始记录。"}
+ render();});
+document.addEventListener("DOMContentLoaded",()=>{render();RWUI&&RWUI.setState({设计命题:"双审分歧如何一眼可裁：庭审 docket + 抗辩沉淀",挑战对象:"节点 Inspector 只读审查意见",交互:"执行双审 / 人工裁决按钮 + 终态沉淀 + 队列",数据:"12 mock 庭审，规则同 ADR-0017"});});
+</script>
+</body>
+</html>

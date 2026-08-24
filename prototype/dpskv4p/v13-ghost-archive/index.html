@@ -1,0 +1,43 @@
+<!doctype html>
+<!-- THROWAWAY UI PROTOTYPE v13 · 幽灵档案室：局部组件。挑战 G13：驳回内容不参与查重、阻断理由无披露。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v13 · 幽灵档案室 — dpskv4p</title>
+<link rel="stylesheet" href="../shared/rw-ui.css" />
+<style>
+  :root{color-scheme:dark;--bg:#0d0f12;--paper:#16191e;--ink:#e5e9ed;--muted:#8a929c;--line:#272c34;--red:#c95a4d;--green:#5fae7a}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-sans-serif,system-ui,"PingFang SC",sans-serif}
+  .app{display:grid;grid-template-columns:1fr 360px;min-height:100vh}
+  main{padding:20px 20px 90px}
+  h1{font-size:20px;margin:0}.sub{color:var(--muted);font-size:12px;margin:4px 0 16px}
+  .shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+  .file{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;position:relative;overflow:hidden}
+  .file::before{content:"GHOST";position:absolute;right:-8px;top:8px;transform:rotate(12deg);border:1.5px solid var(--red);color:var(--red);font:700 9px ui-monospace,monospace;padding:2px 8px;opacity:.7}
+  .file:hover,.file.on{border-color:var(--red)}.file b{font:12px ui-monospace,monospace;color:var(--red)}.file h3{margin:6px 0;font-size:13px}
+  .reason{color:#d9b9b4;font-size:11px;margin:4px 0}.def{color:var(--green);font-size:11px}
+  aside{border-left:1px solid var(--line);background:var(--paper);padding:16px;overflow:auto}
+  h2{font-size:13px;margin:0 0 10px}
+  .cand{padding:10px;border:1px solid var(--line);border-radius:9px;margin-bottom:8px;font-size:12px}
+  .sim{height:7px;border-radius:4px;background:#22272e;margin-top:5px;overflow:hidden}.sim i{display:block;height:100%;border-radius:4px}
+  .verdict{font:11px ui-monospace,monospace;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="app">
+  <main><h1>幽灵档案室</h1><p class="sub">ghost 不删除、不隐藏：驳回理由 + 抗辩 + 适用范围全部隔离留存，只在后续审核时做相似性匹配（CONTEXT/ADR-0017）</p><div class="shelf" id="shelf"></div></main>
+  <aside id="side"><h2>相似性匹配（入池前检查）</h2><p style="color:var(--muted);font-size:11px">选中左侧档案后，新候选按 cosine 与全部 ghost 匹配：&gt;0.8 转 reflect/合并；0.6–0.8 成对裁决；&lt;0.6 才入池。</p><div id="match"></div></aside>
+</div>
+<script src="../shared/questions.js"></script><script src="../shared/seed.js"></script><script src="../shared/ui.js"></script>
+<script>
+const REASONS=["统计阈值未过，效应量 0.2 低于预注册 0.5","执行有效性不足：产物哈希缺失","重复已有方向，MMR 同质化","湿实验原始记录不完整","引用了未发表的预印本作为唯一证据"];
+const DEFS=["改用贝叶斯区间估计并补充预注册","补全执行凭据后可重提","与 D-014 合并为同一候选","补登照片与仪器读数后重审","升级为会议论文后重新提交"];
+let files=Array.from({length:16},(_,i)=>({id:"G-"+String(i+1).padStart(3,"0"),reason:REASONS[i%5],def:DEFS[i%5],scope:"适用范围：仅限 "+["q001 短区间素数","q049 长期摄动","q089 界面热阻","q112 生物基聚合物"][i%4],project:RW.PROJECTS[(i*11)%125].id}));let sel=files[0];
+function render(){document.getElementById("shelf").innerHTML=files.map(f=>`<div class="file ${f.id===sel.id?"on":""}" data-id="${f.id}"><b>${f.id} · ${f.project}</b><h3>${f.scope}</h3><p class="reason"><b>驳回理由：</b>${f.reason}</p><p class="def"><b>抗辩：</b>${f.def}</p></div>`).join("");
+ const sims=[0.91,0.77,0.61,0.34,0.22];document.getElementById("match").innerHTML=sims.map((s,i)=>{const col=s>.8?"#c95a4d":s>.6?"#d8a04a":"#5fae7a";const rule=s>.8?"转 reflect / 合并，披露阻断理由":s>.6?"LLM 成对裁决":"入池";return `<div class="cand"><b>候选 C-${i+1}</b> · 与 ${sel.id} 相似度 ${s.toFixed(2)}<div class="sim"><i style="width:${s*100}%;background:${col}"></i></div><div class="verdict" style="color:${col}">${rule}</div></div>`}).join("");
+ if(RWUI)RWUI.setState({档案:files.length,选中:sel.id,匹配规则:"0.8/0.6 双阈值（ADR-0017）"});}
+document.addEventListener("click",e=>{const f=e.target.closest(".file");if(f){sel=files.find(x=>x.id===f.dataset.id);render()}});
+document.addEventListener("DOMContentLoaded",()=>{render();RWUI&&RWUI.setState({设计命题:"被驳回内容如何从负资产变成查重资产",挑战对象:"G13：brainstorm 查重显式排除 ghost",交互:"档案墙 + 相似度阈值三色判定",数据:"16 份 ghost 档案，规则同 ADR"});});
+</script>
+</body>
+</html>
