@@ -28,12 +28,13 @@ function RuntimeList({ state }) {
 }
 
 function RuntimeRow({ item, state }) {
-  const selected = state.profile.runtime === item.id;
-  return <article className={`arp-runtime-row ${selected ? "selected" : ""}`}><label className="arp-runtime-choice"><input type="radio" name="runtime" checked={selected} disabled={item.status !== "ready"} onChange={() => state.patchProfile({ runtime: item.id })} /><Terminal size={17} /><span><b>{item.name}</b><code>{item.executable} · {item.version || "version unknown"}</code></span></label><Status value={item.status} /><RuntimeFacts item={item} />{item.status !== "ready" && <button className="arp-prepare-link" onClick={state.openPrepare}><Wrench size={14} />查看准备计划</button>}</article>;
+  const selected = state.profile.runtime === item.id && state.profile.realm === item.realm;
+  const preparable = ["missing", "error"].includes(item.status);
+  return <article className={`arp-runtime-row ${selected ? "selected" : ""}`}><label className="arp-runtime-choice"><input type="radio" name="runtime" checked={selected} disabled={item.status !== "ready"} onChange={() => state.patchProfile({ runtime: item.id, realm: item.realm })} /><Terminal size={17} /><span><b>{item.name}</b><code>{item.executable} · {item.version || "version unknown"}</code></span></label><Status value={item.status} /><RuntimeFacts item={item} />{preparable && <button className="arp-prepare-link" onClick={() => state.openPrepare(item)}><Wrench size={14} />CLI 准备计划</button>}</article>;
 }
 
 function RuntimeFacts({ item }) {
-  return <div className="arp-runtime-facts"><span><b>Source</b>{item.source}</span><span><b>Last checked</b>{item.checked}</span><span className="wide"><b>Reason</b>{item.reason}</span><div className="wide"><b>Path</b><CopyValue>{item.path || "No executable resolved in this realm"}</CopyValue></div><span className="wide"><b>Capabilities</b>{item.caps.length ? item.caps.join(" · ") : "none confirmed"}</span></div>;
+  return <div className="arp-runtime-facts"><span><b>Realm</b>{item.realm}</span><span><b>Source</b>{item.source}</span><span><b>Last checked</b>{item.checked}</span><span className="wide"><b>Reason</b>{item.reason}</span><div className="wide"><b>Discovery path</b><CopyValue>{item.path || "No discovery entry in this realm"}</CopyValue></div><div className="wide"><b>Resolved executable</b><CopyValue>{item.resolvedPath || "No executable resolved in this realm"}</CopyValue></div><span className="wide"><b>Capabilities</b>{item.caps.length ? item.caps.join(" · ") : "none confirmed"}</span></div>;
 }
 
 function LoadingRows() {
@@ -42,5 +43,5 @@ function LoadingRows() {
 
 function RuntimeSemantics() {
   const states = ["found", "ready", "auth-required", "missing", "error", "unsupported"];
-  return <section className="arp-section"><header><h2>状态语义</h2><p>状态使用稳定枚举和 reason code；页面不会从产品名或 OpenCLI 安装状态推断 readiness。</p></header><div className="arp-status-legend">{states.map((item) => <Status key={item} value={item} />)}</div><div className="arp-inline-note"><Search size={15} /><span>Probe boundary</span><code>Runtime process · 2 s/step · 5 s/candidate · no shell · no model call</code></div></section>;
+  return <section className="arp-section"><header><h2>状态语义</h2><p>状态使用稳定枚举和 reason code；页面不从产品名推断 readiness。</p></header><div className="arp-status-legend">{states.map((item) => <Status key={item} value={item} />)}</div><div className="arp-inline-note"><Search size={15} /><span>Probe boundary</span><code>Runtime process · 2 s/step · 5 s/candidate · no shell · no model call</code></div></section>;
 }

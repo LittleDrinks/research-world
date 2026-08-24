@@ -8,7 +8,7 @@ export function AgentRail({ state }) {
 }
 
 function RailHeader({ state }) {
-  return <header><div><span>Agent Profiles</span><b>{state.agents.length}</b></div><IconButton label="新建 Agent" onClick={state.beginDraft}><Plus size={17} /></IconButton></header>;
+  return <header><div><span>Agent Profiles</span><b>{state.profiles.length}</b></div><IconButton label="新建 Agent" onClick={state.beginDraft}><Plus size={17} /></IconButton></header>;
 }
 
 function RailSearch({ state }) {
@@ -17,7 +17,7 @@ function RailSearch({ state }) {
 
 function AgentRow({ agent, state }) {
   const active = agent.id === state.selectedId;
-  return <button className={active ? "active" : ""} onClick={() => state.setSelectedId(agent.id)}><Bot size={16} /><span><b>{agent.name}</b><code>{agent.id}</code><small>{agent.runtime} · {agent.model}</small></span><Status value={agent.status} /></button>;
+  return <button className={active ? "active" : ""} aria-label={`选择 ${agent.name}`} onClick={() => state.setSelectedId(agent.id)}><Bot size={16} /><span><b>{agent.name}</b><code>{agent.id}</code><small>Preset · {agent.preset}</small><small>{agent.runtime || "runtime unresolved"} · {agent.model || "model unresolved"}</small><small>{agent.skills.length} Skills · {agent.tools.length} Tools</small></span><Status value={agent.readiness.status} /></button>;
 }
 
 function RailFooter({ state }) {

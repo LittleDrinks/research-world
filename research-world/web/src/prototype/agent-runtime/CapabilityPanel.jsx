@@ -1,4 +1,4 @@
-import { Search, Wrench } from "lucide-react";
+import { ExternalLink, Search } from "lucide-react";
 import { SKILLS, TOOLS } from "./seed";
 import { CopyValue, EmptyState, Status } from "./shared";
 import { Section } from "./ProfilePanels";
@@ -16,7 +16,7 @@ function CatalogSearch({ state, type }) {
 
 function CapabilityRow({ item, type, state }) {
   const selected = state.profile[type].includes(item.id);
-  return <article className={selected ? "selected" : ""}><label><input type="checkbox" checked={selected} onChange={() => state.toggleCapability(type, item.id)} /><span><b>{item.name}</b><code>{item.id}</code></span></label><Status value={item.status} /><p>{item.description}</p>{type === "skills" ? <SkillFacts item={item} /> : <ToolFacts item={item} />}{item.status === "setup-required" && <button onClick={state.openPrepare}><Wrench size={14} />查看准备计划</button>}</article>;
+  return <article className={selected ? "selected" : ""}><label><input aria-label={`选择 ${item.name}`} type="checkbox" checked={selected} onChange={() => state.toggleCapability(type, item.id)} /><span><b>{item.name}</b><code>{item.id}</code></span></label><Status value={item.status} /><p>{item.description}</p>{type === "skills" ? <SkillFacts item={item} /> : <ToolFacts item={item} />}{item.status !== "ready" && <button onClick={() => state.setNotice("Tool provision 由 #43 Tool Catalog 负责；未触发 CLI prepare。") }><ExternalLink size={14} />前往 Tool Catalog</button>}</article>;
 }
 
 function SkillFacts({ item }) {

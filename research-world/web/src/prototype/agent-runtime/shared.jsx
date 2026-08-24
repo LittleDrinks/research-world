@@ -1,6 +1,6 @@
-import { Check, CircleAlert, CircleDashed, CircleDot, Clock3, Copy, X } from "lucide-react";
+import { Check, CircleAlert, CircleDashed, CircleDot, Clock3, Copy, LoaderCircle, X } from "lucide-react";
 
-const ICONS = { ready: Check, found: CircleDot, "auth-required": CircleAlert, missing: CircleDashed, error: CircleAlert, unsupported: CircleDashed, blocked: CircleAlert, unknown: CircleDot, "setup-required": Clock3, unavailable: CircleDashed };
+const ICONS = { ready: Check, configured: Check, "not-required": Check, succeeded: Check, found: CircleDot, running: LoaderCircle, "auth-required": CircleAlert, missing: CircleDashed, error: CircleAlert, failed: CircleAlert, cancelled: CircleDashed, unsupported: CircleDashed, blocked: CircleAlert, unknown: CircleDot, "setup-required": Clock3, unavailable: CircleDashed };
 
 export function Status({ value, text }) {
   const Icon = ICONS[value] || CircleDot;
