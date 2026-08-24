@@ -8,6 +8,7 @@
 6. 先翻已有依赖能做什么，再考虑加新包。
 7. 架构决策往长了做。不接受"先这样以后再换"。
 8. 先看成熟产品怎么解决同一问题，别从零发明。
+9. Git 工作流固定为 `GitHub issue → feat/<issue>-<slug> → PR → 全新独立 Codex 验收 → 合并 PR → 关闭 issue 与 Herdr worker`：开工前 issue 须包含明确验收标准；每个 issue 独占一个分支，一个分支只服务一个 issue；提交原子化并只推送 feat 分支，禁止直接 push `main` 与 force push；PR 正文须关联对应 issue；实现者自验后交由全新独立 Codex 按 issue 验收，失败不合并、不关闭；通过后合并 PR，远端回读成功后关闭 issue 与 Herdr worker。
 
 # 文档
 
