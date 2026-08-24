@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RUN_STATUS, shortId } from "../../utils/labels";
 import { StatusPill } from "../bits";
+import { AdmissionControl } from "../AdmissionControl";
 
 
 export function RunCard({ run, threadId, onDismiss }) {
@@ -55,7 +56,7 @@ function SourceCandidate({ candidate, source }) {
     <Row label="核验" value={`${candidate.retrieval.database} · ${candidate.retrieval.verified_at}`} />
     <Row label="Artifact" value={artifact ? `${artifact.id} · ${artifact.media_type} · ${artifact.sha256}` : "全文不可得"} />
     {source?.rejection_reason && <Row label="驳回理由" value={source.rejection_reason} />}
-  </dl></li>;
+  </dl>{source && <AdmissionControl node={source} />}</li>;
 }
 
 

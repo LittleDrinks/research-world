@@ -4,7 +4,7 @@ from functools import partial
 import pytest
 
 from server.artifacts import ArtifactStore
-from server.kernel import KernelCommand, ResearchKernel
+from server.kernel import KernelCommand, KernelQuery, ResearchKernel
 from server.source_candidates import validate_source_candidate
 from server.workflows import PipelineEngine
 
@@ -22,11 +22,13 @@ PIPELINE = {
 class SourceAgents:
     def __init__(self, candidates):
         self.candidates = candidates
+        self.contexts = []
 
     def validate(self, _pipeline):
         return None
 
-    def collect_sources(self, _context, _agent, _operation):
+    def collect_sources(self, context, _agent, _operation):
+        self.contexts.append(context)
         return {"source_candidates": self.candidates}
 
 
@@ -119,15 +121,19 @@ def test_pipeline_submits_pending_sources_and_admission_creates_edges(
     artifact = full_text(world, project, workspace=kernel._workspace(project["id"]))
     run = world.create_run(project["id"], direction["id"], PIPELINE, {})
     submit = partial(kernel._submit_source_candidate, project["id"])
-    engine = PipelineEngine(world, SourceAgents([candidate(direction["id"], artifact)]), None, None, None, submit)
+    agents = SourceAgents([candidate(direction["id"], artifact)])
+    engine = PipelineEngine(world, agents, None, None, None, submit)
 
     completed = engine.run(run["id"])
 
     source = completed["payload"]["_pipeline"]["values"]["sources"][0]
+    assert agents.contexts[0]["direction_id"] == direction["id"]
     assert source["life_state"] == "pending"
     assert world.edges(project["id"]) == []
     admitted = execute(kernel, KernelCommand("resolve_admission", project["id"], {"node_id": source["id"], "decision": "approve"}))
     assert admitted["life_state"] == "admitted"
+    projected = asyncio.run(kernel.query(KernelQuery("run", project["id"], {"run_id": run["id"]})))
+    assert projected["payload"]["_pipeline"]["values"]["sources"][0]["life_state"] == "admitted"
     assert world.edges(project["id"]) == [{"source": source["id"], "target": direction["id"], "polarity": "supports", "created_at": world.edges(project["id"])[0]["created_at"]}]
 
 

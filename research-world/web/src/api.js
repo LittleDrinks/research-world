@@ -56,6 +56,7 @@ function emitFrame(frame, onEvent) {
 
 export const searchNodes = (projectId, query) => fetch("/api/v1/tools/graph-query", json("POST", { arguments: { action: "search", project_id: projectId, query } })).then(decode);
 export const getNode = (nodeId) => fetch(`/api/v1/nodes/${enc(nodeId)}`).then(decode);
+export const resolveAdmission = (projectId, nodeId, body) => fetch(`/api/v1/projects/${enc(projectId)}/nodes/${enc(nodeId)}/admission`, json("POST", body)).then(decode);
 
 export const getCatalog = (projectId) => fetch(`/api/v1/runtime/catalog?project_id=${enc(projectId)}`).then(decode);
 export const getSession = (sessionId) => fetch(`/api/v1/runtime/sessions/${enc(sessionId)}`).then(decode);

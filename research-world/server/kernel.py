@@ -430,9 +430,20 @@ class ResearchKernel:
     def _run_view(self, run: dict) -> dict:
         return {
             **run,
+            "payload": self._current_source_payload(run["payload"]),
             "steps": self._world.steps(run["id"]),
             "events": self._world.run_events(run["id"]),
         }
+
+    def _current_source_payload(self, payload: dict) -> dict:
+        pipeline = payload.get("_pipeline")
+        values = pipeline.get("values", {}) if isinstance(pipeline, dict) else {}
+        sources = values.get("sources")
+        if not isinstance(sources, list):
+            return payload
+        current = [self._world.node(source["id"]) for source in sources]
+        updated = {**values, "sources": current}
+        return {**payload, "_pipeline": {**pipeline, "values": updated}}
 
     def _project_cards(self) -> list[dict]:
         return [self._project_card(project) for project in self._world.projects()]

@@ -138,6 +138,15 @@ select { min-height: 38px; padding: 0 10px; }
 .button.secondary:hover:not(:disabled) { background: var(--surface-muted); }
 .icon-button { width: 36px; height: 36px; flex: 0 0 auto; display: inline-grid; place-items: center; padding: 0; border: 0; border-radius: 8px; color: inherit; background: transparent; cursor: pointer; }
 .icon-button:hover:not(:disabled) { background: var(--surface-muted); }
+.admission-control { display: grid; gap: 8px; margin-top: 12px; }
+.admission-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.admission-reject label, .admission-reject label > span { display: block; }
+.admission-reject label > span { margin-bottom: 6px; color: var(--text-muted); font-size: 12px; font-weight: 600; }
+.admission-reject textarea { width: 100%; resize: vertical; }
+.admission-reject .admission-actions { margin-top: 8px; }
+.admission-error, .admission-success { margin: 8px 0 0; font-size: 12px; }
+.admission-error { color: var(--state-failed); }
+.admission-success { color: var(--state-success); }
 
 /* —— 工作台壳：单栏侧栏 + 页面宿主 —— */
 .app-shell { height: 100%; display: grid; grid-template-columns: 252px minmax(0, 1fr); }
@@ -231,6 +240,7 @@ select { min-height: 38px; padding: 0 10px; }
   .mobile-bar { grid-row: 2; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--app-topbar); }
   .mobile-bar b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; color: var(--text-strong); }
   .error-toast { width: calc(100% - 24px); justify-self: stretch; }
+  .admission-actions .button { flex: 1 1 120px; min-width: 0; white-space: normal; }
 }
 
 @media (prefers-reduced-motion: reduce) {

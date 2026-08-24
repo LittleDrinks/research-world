@@ -2,6 +2,7 @@ import { Activity, Check, Copy, GitBranch, Play } from "lucide-react";
 import { useState } from "react";
 import { useWorld } from "../context/WorldContext";
 import { nodeText, RUN_STATUS } from "../utils/labels";
+import { AdmissionControl } from "../components/AdmissionControl";
 
 
 const LABELS = { question: "问题", source: "来源", direction: "方向", experiment: "实验",
@@ -22,6 +23,7 @@ function NodeHeader({ node, run, onStart, onOpen }) {
   const title = nodeText(node);
   return <header className="inspector-header"><div className="eyebrow"><span>{LABELS[node.kind]}</span><span>{LABELS[node.life_state]}</span>{node.direction_status && <span>{LABELS[node.direction_status]}</span>}</div>
     <h1>{title}</h1>{node.rejection_reason && <p className="rejection-reason">{node.rejection_reason}</p>}
+    <AdmissionControl node={node} />
     {run && <button className="button primary workflow-start" onClick={() => onOpen(run)}><Activity size={16} />{RUN_STATUS[run.status] || run.status} · 查看轨迹</button>}
     {!run && node.life_state === "admitted" && <PipelineLauncher node={node} onStart={onStart} />}</header>;
 }

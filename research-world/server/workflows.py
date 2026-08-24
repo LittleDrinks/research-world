@@ -209,7 +209,7 @@ class PipelineEngine:
     def _collect_sources(self, stage: dict, context: dict) -> dict:
         run = context["run"]
         direction = self.world.node(run["node_id"])
-        payload = self._agent_context(run, direction["payload"])
+        payload = self._agent_context(run, {**direction["payload"], "direction_id": direction["id"]})
         operation = f"{run['id']}:{stage['id']}:sources"
         result = self.agents.collect_sources(payload, stage["agent"], operation)
         self._record_agent(run["id"], "source-researcher", result)
