@@ -8,6 +8,7 @@
     "build": "vite build",
     "test:unit": "node --test tests/unit/*.test.js",
     "test": "playwright test",
+    "test:source": "playwright test tests/source-research.spec.js",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {

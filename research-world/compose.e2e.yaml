@@ -1,0 +1,49 @@
+services:
+  control:
+    environment:
+      RW_EMBEDDING_MODEL: e2e-embedding
+    volumes:
+      - rw-e2e-kernel-data:/app/data
+      - rw-e2e-projects:/projects
+      - rw-e2e-agents:/app/agents
+
+  worker:
+    environment:
+      RW_EMBEDDING_MODEL: e2e-embedding
+    volumes:
+      - rw-e2e-kernel-data:/app/data
+      - rw-e2e-projects:/projects:ro
+      - rw-e2e-agents:/app/agents:ro
+
+  runtime:
+    env_file: !reset []
+    environment:
+      RUNTIME_API_BASE: http://e2e-model:8099/v1
+      RUNTIME_API_KEY: e2e
+      RUNTIME_MODEL: qwen3.7-flash
+      RUNTIME_EMBEDDING_MODEL: e2e-embedding
+      RUNTIME_ENDPOINTS: >-
+        [{"id":"openai-compatible","name":"E2E Model","adapter":"openai-compatible","models":["qwen3.7-flash"],"embedding_models":["e2e-embedding"],"base_url_env":"RUNTIME_API_BASE","api_key_env":"RUNTIME_API_KEY","priority":100}]
+    volumes:
+      - rw-e2e-runtime-data:/runtime-data
+      - rw-e2e-projects:/projects
+    depends_on:
+      e2e-model:
+        condition: service_healthy
+
+  e2e-model:
+    build:
+      context: .
+      target: e2e-model
+    networks: [worker-egress]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8099/health')"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+volumes:
+  rw-e2e-kernel-data:
+  rw-e2e-projects:
+  rw-e2e-agents:
+  rw-e2e-runtime-data:
