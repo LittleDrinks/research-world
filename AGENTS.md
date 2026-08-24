@@ -11,6 +11,7 @@
 9. 原子化 git commit，利用回滚和分支明确当前进度
 10. 服务一律 `docker compose up --build -d`（research-world/）启动，不裸跑本地实例；API 凭证在仓库根 .env（小写键 apikey/baseurl，compose 已映射）。
 11. 讨论结论先落 ADR/术语，再动代码；文档没更新的实现当作不存在。
+12. 计划实现的每一个模块，都去检索一轮已有代码，作为参考
 
 # 文档
 
