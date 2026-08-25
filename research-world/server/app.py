@@ -23,6 +23,11 @@ def register_routes(app, kernel) -> None:
     health_routes(app)
     project_routes(app, kernel)
     project_state_routes(app, kernel)
+    project_export_routes(app, kernel)
+    remaining_routes(app, kernel)
+
+
+def remaining_routes(app, kernel) -> None:
     graph_node_routes(app, kernel)
     graph_evidence_routes(app, kernel)
     thread_routes(app, kernel)
@@ -83,15 +88,17 @@ def project_state_routes(app, kernel) -> None:
     async def bootstrap(project_id: str | None = None):
         return await kernel.query(KernelQuery("bootstrap", project_id))
 
+
+def project_export_routes(app, kernel) -> None:
     @app.get("/api/v1/projects/{project_id}/export")
     async def export_project(project_id: str):
         content = await kernel.query(KernelQuery("project_export", project_id))
-        filename = f'{project_id.replace(":", "-")}-export.zip'
-        return Response(
-            content,
-            media_type="application/zip",
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-        )
+        return _export_response(project_id, content)
+
+
+def _export_response(project_id: str, content: bytes) -> Response:
+    filename = f'{project_id.replace(":", "-")}-export.zip'
+    return Response(content, media_type="application/zip", headers={"Content-Disposition": f'attachment; filename="{filename}"'})
 
 
 def graph_node_routes(app, kernel) -> None:

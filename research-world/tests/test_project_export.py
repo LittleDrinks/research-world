@@ -77,6 +77,27 @@ def test_safe_text_removes_secrets_and_paths_without_url_damage(text):
         assert text.encode() in value
 
 
+@pytest.mark.parametrize("text", [
+    'API *** KEY :: "secret,comma-tail"\npublic=kept',
+    "client___secret: 'secret;semicolon-tail'\npublic=kept",
+    "ToKeN = plain,comma-tail\npublic=kept",
+    "Bearer___Token = plain;semicolon-tail\npublic=kept",
+])
+def test_export_redacts_credential_line_tails_in_raw_and_members(text):
+    raw = package({"id": "project:test", "note": text}, {}, [], {}, [])
+    files = archive(raw)
+
+    assert b"tail" not in raw
+    assert b"tail" not in members(files)
+    assert b"public=kept" in members(files)
+
+
+def test_export_preserves_nonsecret_comma_and_semicolon_content():
+    files = archive(package({"id": "project:test", "note": "mode=fast, format=json; keep=yes"}, {}, [], {}, []))
+
+    assert b"mode=fast, format=json; keep=yes" in files.read("project.json")
+
+
 def test_public_metadata_never_leaks_malformed_values():
     artifact = item(b"body", "text/plain; token=media-secret")
     content = package({"id": "/private/project"}, {}, [], {}, [artifact])
@@ -127,6 +148,21 @@ def test_safe_transform_bounds_deep_and_cyclic_runtime_values():
     assert b"secret" not in members(files)
     assert json.loads(files.read("traces.json"))["tuple"] == ["[REDACTED]", "[REDACTED]"]
     assert json.loads(files.read("traces.json"))["mapping"] == {"ok": 1}
+
+
+def test_safe_transform_bounds_direct_wide_values():
+    values = list(range(10_001))
+    files = archive(package({"id": "project:test", "direct": values}, {}, [], {}, []))
+
+    assert json.loads(files.read("project.json")) == "[REDACTED]"
+
+
+def test_safe_transform_bounds_serialized_wide_values():
+    values = json.dumps(list(range(10_001)))
+    files = archive(package({"id": "project:test", "serialized": values}, {}, [], {}, []))
+    project = json.loads(files.read("project.json"))
+
+    assert project["project"]["serialized"] == "[REDACTED]"
 
 
 def test_package_is_deterministic_with_valid_manifest():

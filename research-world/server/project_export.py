@@ -10,11 +10,13 @@ from collections.abc import Mapping
 from urllib.parse import unquote_plus, urlsplit, urlunsplit
 
 _SECRET = {"apikey", "authorization", "clientsecret", "credential", "credentials", "password", "secret", "token", "tokens", "accesstoken", "refreshtoken", "idtoken", "bearertoken"}
-_SECRET_TEXT = re.compile(r"(?ix)(?P<label>\b(?:api[^a-z0-9\r\n]*key|authorization|client[^a-z0-9\r\n]*secret|credentials?|password|secrets?|tokens?|access[^a-z0-9\r\n]*token|refresh[^a-z0-9\r\n]*token|id[^a-z0-9\r\n]*token|bearer[^a-z0-9\r\n]*token)\b\s*[:=]\s*)(?:[\"'][^\r\n]*?[\"']|[\[\(\{][^\r\n]*?[\]\)\}]|[^\r\n,;]+)")
+_SECRET_TEXT = re.compile(r"(?ix)(?P<label>\b(?:api[^a-z0-9\r\n]*key|authorization|client[^a-z0-9\r\n]*secret|credentials?|password|secrets?|tokens?|access[^a-z0-9\r\n]*token|refresh[^a-z0-9\r\n]*token|id[^a-z0-9\r\n]*token|bearer[^a-z0-9\r\n]*token)\b[^a-z0-9\r\n]*[:=]\s*)[^\r\n]*")
+_JSON_TOKEN = re.compile(r'\s+|[,:}\]]|[{\[]|"(?:\\.|[^"\\])*"|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null')
 _URL = re.compile(r"(https?://[^\s\"'<>]+)", re.I)
 _PATH = re.compile(r"(?i)(?<![:\w/])/(?:[^/\r\n]+/)*[^/\r\n]+|\b[a-z]:[\\/][^\r\n]*")
 _MARK = "[REDACTED]"
 _MAX_DEPTH = 64
+_MAX_ITEMS = 10_000
 
 
 def package(project, graph, runs, traces, artifacts) -> bytes:
@@ -67,13 +69,15 @@ def _member_digest(artifact) -> str:
 
 def _safe(value, key=""):
     result = {}
-    _walk(result, "value", value, key)
-    return result["value"]
+    return result["value"] if _walk(result, "value", value, key) else _MARK
 
 
 def _walk(parent, slot, value, key):
     stack = [(parent, slot, value, key, 0, ())]
+    count = 0
     while stack:
+        count += 1
+        if count > _MAX_ITEMS: return False
         target, name, item, label, depth, ancestors = stack.pop()
         if _scalar(target, name, item, label):
             continue
@@ -85,6 +89,7 @@ def _walk(parent, slot, value, key):
         _put(target, name, result)
         lineage = ancestors + (id(item),)
         stack.extend((result, index, child, child_key, depth + 1, lineage) for index, child, child_key in reversed(values))
+    return True
 
 
 def _put(parent, slot, value):
@@ -143,10 +148,26 @@ def _fragment(value: str) -> str:
 
 
 def _serialized(value):
+    if not _serialized_limit(value):
+        return _MARK
     try:
         return _json(_safe(json.loads(value))).decode().rstrip()
     except (json.JSONDecodeError, RecursionError, TypeError, ValueError):
         return _MARK
+
+
+def _serialized_limit(value):
+    count = index = 0
+    while index < len(value):
+        token = _JSON_TOKEN.match(value, index)
+        if token is None:
+            return True
+        text = token.group()
+        count += text[0] not in " \t\r\n,:}]"
+        if count > _MAX_ITEMS:
+            return False
+        index = token.end()
+    return True
 
 
 def _url(value):
