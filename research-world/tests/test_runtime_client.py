@@ -8,6 +8,7 @@ from acp import RequestError
 
 from server.kernel import KernelCommand, ResearchKernel
 from server.runtime_client import (
+    AgentResultError,
     KernelClient,
     RuntimeCapabilityError,
     RuntimeClient,
@@ -42,6 +43,15 @@ class RetryingRuntime(RuntimeClient):
 
     async def _workspace(self):
         return "/workspace"
+
+
+class TraceRuntime(RetryingRuntime):
+    async def inspect(self, session_id):
+        view = await super().inspect(session_id)
+        if view["turns"]:
+            turn = view["turns"][-1]
+            turn["events"] = [{"type": "turn_end", "data": {"usage": {"output_tokens": 17}}}]
+        return view
 
 
 class FailingExtensionRuntime(RuntimeClient):
@@ -124,6 +134,21 @@ async def test_json_retries_missing_required_field_in_same_session():
     assert result["duplicate"] is False
     assert result["_session_id"] == "session:test"
     assert "缺少必需字段：duplicate" in runtime.prompts[1]
+
+
+@pytest.mark.asyncio
+async def test_json_preserves_latest_trace_after_missing_title_retries():
+    runtime = TraceRuntime(['{"action":{"command":["true"]}}'] * 2)
+
+    with pytest.raises(AgentResultError, match="missing required field 'title'") as raised:
+        await runtime._json({}, "plan", {}, ("title", "action"))
+
+    assert len(runtime.prompts) == 2
+    assert raised.value.result == {
+        "_session_id": "session:test",
+        "_turn_id": "turn:2",
+        "_usage": {"output_tokens": 17},
+    }
 
 
 @pytest.mark.asyncio

@@ -20,7 +20,12 @@ from .execution_evidence import (
     verify_evidence_artifact,
 )
 from .pipelines import PipelineRegistry, StagePrimitiveRegistry
-from .runtime_client import RuntimeCapabilityError, RuntimeClient, RuntimeEmbedding
+from .runtime_client import (
+    AgentResultError,
+    RuntimeCapabilityError,
+    RuntimeClient,
+    RuntimeEmbedding,
+)
 from .titles import TITLE_TOKEN_LIMIT, validate_title
 from .world import World
 
@@ -181,12 +186,6 @@ class AgentFacade:
             return validator()
         except (TypeError, ValueError) as error:
             raise AgentResultError(error, value) from error
-
-
-class AgentResultError(ValueError):
-    def __init__(self, error: Exception, result: dict):
-        super().__init__(str(error))
-        self.result = result
 
 
 @dataclass

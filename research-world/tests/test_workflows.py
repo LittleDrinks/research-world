@@ -9,6 +9,7 @@ import server.world as world_module
 from server.artifacts import ArtifactStore
 from server.execution_evidence import build_evidence
 from server.kernel import KernelQuery, ResearchKernel
+from server.runtime_client import RuntimeClient
 from server.workflows import (
     BRAINSTORM_PROMPT,
     PLAN_PROMPT,
@@ -222,6 +223,34 @@ class FakeRuntime:
     def json(self, agent_spec, instruction, payload, required, operation_id=None):
         self.call = (agent_spec, instruction, payload, required, operation_id)
         return self.value
+
+
+class TraceRuntime(RuntimeClient):
+    def __init__(self, outputs):
+        self.outputs, self.prompts = outputs, []
+        self.project_id = "project:test"
+
+    async def launch(self, _agent_spec, _workspace, **_values):
+        return "s-missing-title"
+
+    async def prompt(self, _session_id, message, _project_id=None):
+        self.prompts.append(message)
+
+    async def inspect(self, session_id):
+        if not self.prompts:
+            return {"session": {"id": session_id}, "turns": []}
+        index = len(self.prompts)
+        return {"session": {"id": session_id}, "turns": [self._turn(index)]}
+
+    async def _workspace(self):
+        return "/workspace"
+
+    def _turn(self, index):
+        return {
+            "id": f"t-missing-title-{index}",
+            "output": self.outputs[index - 1],
+            "events": [{"type": "turn_end", "data": {"usage": {"output_tokens": index}}}],
+        }
 
 
 class FakeAgentRegistry:
@@ -1011,45 +1040,34 @@ def test_brainstorm_rejects_over_limit_title_without_truncation():
         facade.brainstorm({}, 1, "assistant")
 
 
-def test_worker_persists_pipeline_title_failure_in_run_trace(world, project, tmp_path):
-    root = world.nodes(project["id"])[0]
-    world.embedding = FakeEmbedding({root["payload"]["text"]: [1], "Novel": [1]})
-    run = world.create_run(project["id"], root["id"], brainstorm_pipeline())
-    result = {
-        "candidates": [
-            {"title": "a b c d e f g h i j k l m", "text": "Novel"}
-            for _ in range(8)
-        ],
-        "_session_id": "s-invalid-title",
-        "_turn_id": "t-invalid-title",
-        "_usage": {"output_tokens": 17},
-    }
+def test_worker_persists_missing_runtime_title_trace(world, project, tmp_path):
+    direction = admitted_direction(world, project)
+    run = world.create_run(project["id"], direction["id"], research_pipeline())
+    outputs = ['{"action":{"image":"busybox:1.36","command":["true"]}}'] * 2
     service = engine(
         world,
         AgentFacade(
-            FakeRuntime(result),
+            TraceRuntime(outputs),
             FakeAgentRegistry(
                 {"assistant": agent_spec("assistant"), "reviewer": agent_spec("reviewer")}
             ),
         ),
-        world.embedding,
     )
     kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
     worker.execute(PipelineKernel(kernel, service), run["id"])
 
     view = asyncio.run(kernel.query(KernelQuery("run", values={"run_id": run["id"]})))
     assert view["status"] == "failed"
-    assert "12-token" in view["payload"]["error"]
+    assert view["payload"]["error"] == "runtime response missing required field 'title'"
     assert view["events"][-1]["type"] == "run_failed"
     assert view["events"][-1]["payload"] == {"error": view["payload"]["error"]}
     session = next(event for event in view["events"] if event["type"] == "agent_session")
     assert session["payload"] == {
-        "stage_id": "generate",
-        "session_id": "s-invalid-title",
-        "turn_id": "t-invalid-title",
-        "usage": {"output_tokens": 17},
+        "stage_id": "plan",
+        "session_id": "s-missing-title",
+        "turn_id": "t-missing-title-2",
+        "usage": {"output_tokens": 2},
     }
-    assert all(node["kind"] != "direction" for node in world.nodes(project["id"]))
 
 
 class PipelineKernel:

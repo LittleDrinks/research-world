@@ -34,6 +34,12 @@ class RuntimeRequestError(ValueError):
         self.code = code
 
 
+class AgentResultError(ValueError):
+    def __init__(self, error: Exception, result: dict):
+        super().__init__(str(error))
+        self.result = result
+
+
 def _raise_request_error(error: RequestError) -> None:
     data = error.data if isinstance(error.data, dict) else {}
     message = str(data.get("details") or error)
@@ -133,7 +139,7 @@ class RuntimeClient:
             if not missing:
                 return _json_result(value, session_id, turn)
             prompt = _json_correction(missing)
-        raise ValueError(f"runtime response missing required field '{missing[0]}'")
+        raise _missing_required_error(missing, session_id, turn)
 
     async def _extension(self, method: str, params: dict) -> dict:
         try:
@@ -335,6 +341,13 @@ def _json_result(value: dict, session_id: str, turn: dict) -> dict:
         "_turn_id": turn["id"],
         "_usage": _turn_usage(turn),
     }
+
+
+def _missing_required_error(
+    missing: list[str], session_id: str, turn: dict
+) -> AgentResultError:
+    error = ValueError(f"runtime response missing required field '{missing[0]}'")
+    return AgentResultError(error, _json_result({}, session_id, turn))
 
 
 def _cached_json(view: dict, required: tuple[str, ...], session_id: str) -> dict | None:

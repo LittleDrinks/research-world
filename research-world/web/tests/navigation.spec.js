@@ -49,15 +49,17 @@ test("does not substitute a project name for a missing question title", async ({
 });
 
 
-test("shows an invalid pipeline title failure with its runtime session", async ({ page }) => {
-  const failed = run({ status: "failed", payload: { error: "node title exceeds the 12-token limit" },
-    events: [{ id: 1, actor: "pipeline", type: "agent_session", payload: { stage_id: "generate", session_id: "s-invalid-title", turn_id: "t-invalid-title", usage: {} } },
-      { id: 2, actor: "control", type: "run_failed", payload: { error: "node title exceeds the 12-token limit" } }] });
+test("shows a missing-title runtime failure with its persisted session", async ({ page }) => {
+  const error = "runtime response missing required field 'title'";
+  const failed = run({ status: "failed", stage: "plan", payload: { error },
+    definition_snapshot: { id: "research", name: "规划与验证", stages: [{ id: "plan", type: "prompt", agent: "assistant" }] },
+    events: [{ id: 1, actor: "pipeline", type: "agent_session", payload: { stage_id: "plan", session_id: "s-missing-title", turn_id: "t-missing-title-2", usage: { output_tokens: 2 } } },
+      { id: 2, actor: "control", type: "run_failed", payload: { error } }] });
   await mockBase(page, bootstrap({ runs: [failed] }));
   await page.goto("/traces/run%3Ar1");
-  await expect(page.locator(".run-header")).toContainText("node title exceeds the 12-token limit");
-  await expect(page.locator(".trace-tree")).toContainText("SESSION s-invalid-titl");
-  await expect(page.locator(".trace-tree")).toContainText("失败");
+  await expect(page.locator(".run-header")).toContainText(error);
+  await page.locator(".tree-row", { hasText: "STAGE plan" }).click();
+  await expect(page.locator(".trace-tree")).toContainText("SESSION s-missing-titl");
 });
 
 
