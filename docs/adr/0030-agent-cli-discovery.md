@@ -52,7 +52,7 @@ Runtime 对每个内置候选执行固定 argv allowlist，不经过 shell。定
 `wsl`、`windows` 与 `container` 是独立 execution realm。Runtime 只把当前 launch realm 的 descriptor 用于 AgentSpec readiness；其他 realm 仅作为 inventory 事实展示。
 结果按 `(workspace_id, realm, runtime_build)` 缓存 60 秒；key 不含 host path、Profile id 或认证值。页面进入读取缓存；手动刷新绕过缓存。首次无缓存为 `loading`，刷新时旧 snapshot 保持可读并标记 `refreshing`，候选 catalog 为空为 `empty`。刷新失败返回本次各 descriptor 的稳定错误并保留上次 snapshot 供对照，不把旧结果标记为本次成功。
 ## Readiness 与准备
-`found != ready != enabled`。AgentSpec 只保存用户确认的稳定 `runtime` 引用；Profile readiness 由 runtime、Endpoint/model、Skills、Tools、workspace 与 secret status 联合投影。secret `configured`、`not-required` 投影为 `ready`，`missing`、`invalid` 投影为 `blocked`，只有 `unknown` 投影为 `unknown`；`missing`、`invalid` 的 reason code 可见并阻止保存与 Launch。inventory 不嵌入 Profile snapshot，刷新不得改变 Profile/Preset。
+`found != ready != enabled`。Profile readiness 由已选 catalog 项、workspace 与 secret status 联合投影。secret `configured`、`not-required` 投影为 `ready`，`missing`、`invalid` 投影为 `blocked`，只有 `unknown` 投影为 `unknown`；`missing`、`invalid` 的 reason code 可见并阻止保存与 Launch。inventory 不嵌入 Profile snapshot，刷新不得改变 Profile/Preset。
 Profile 编辑使用与最后保存 snapshot 分离的工作副本。dirty 由两者显式深比较得出；仅 dirty 时显示 Cancel/Save，Cancel 恢复最后保存 snapshot，Save 写入新的独立 snapshot 后清除 dirty。
 CLI 缺失或不兼容时，UI 可请求 `runtime/prepare/plan` 生成 CLI-only 计划；二次确认后才执行。Tool provision 始终由 #43 Tool catalog/Provisioner 负责，Discovery 不调用 Tool prepare。保存 Profile、页面进入与 Chat 草稿均不得触发 CLI prepare。
 ## API 投影
@@ -75,5 +75,3 @@ CLI 缺失或不兼容时，UI 可请求 `runtime/prepare/plan` 生成 CLI-only 
   "cache": {"realm": "wsl:ubuntu", "runtime_build": "0.1.0", "ttl_seconds": 60, "stale": false}
 }
 ```
-## AgentSpec 边界
-AgentSpec 增加稳定 `runtime` 引用；`endpoint` 与 `model` 继续描述模型服务选择。descriptor 是 Runtime inventory，不嵌入 Profile。CLI、Endpoint、Tool、Skill、Preset 与 Profile 分属不同实体；MCP 只作为 Tool Adapter 来源，OpenCLI 只可由稳定 Tool id `browser.opencli` 选择。
