@@ -74,99 +74,19 @@ test("uses one chat scroll container and keeps the composer reachable", async ({
     .map((selector) => [selector, getComputedStyle(document.querySelector(selector)).overflowY])));
   expect(overflow).toEqual({ ".chat-page": "hidden", ".chat-scroll": "auto" });
   await expect.poll(() => page.locator(".chat-scroll").evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
-  const scrollHeight = await page.locator(".chat-scroll").evaluate((element) => element.scrollHeight);
-  await page.getByRole("button", { name: "研究运行" }).click();
-  await expect(page.getByRole("dialog", { name: "研究运行与流程" })).toBeVisible();
-  expect(await page.locator(".chat-scroll").evaluate((element) => element.scrollHeight)).toBe(scrollHeight);
+  await expect(page.getByRole("link", { name: "研究运行 1" })).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   const composer = await page.locator(".composer-wrap").boundingBox();
   expect(Math.abs(composer.y + composer.height - await page.evaluate(() => innerHeight))).toBeLessThanOrEqual(1);
 });
 
 
-test("renders run cards linked by thread_id and navigates to the trace", async ({ page }) => {
+test("renders a compact context link without an inline run list", async ({ page }) => {
   await mockChat(page);
   await page.goto("/chat/thread%3At1");
-  const section = page.getByRole("button", { name: /研究运行/ });
-  await expect(section).toHaveAttribute("aria-expanded", "false");
+  const section = page.getByRole("link", { name: "研究运行 1" });
+  await expect(section).toHaveAttribute("href", /\/traces\?project_id=project%3Atest&thread_id=thread%3At1&from=%2Fchat%2Fthread%253At1/);
   await expect(page.locator(".run-card")).toHaveCount(0);
-  await section.click();
-  const card = page.locator(".run-card");
-  await expect(card).toHaveCount(1);
-  await expect(card).toContainText("生成研究方向");
-  await card.locator(".run-card-head").click();
-  await page.locator(".session-row").click();
-  await expect(page).toHaveURL(/\/traces\/run%3Ar1\?session=s-abc&from=thread%3At1/);
-  await expect(page.getByRole("button", { name: "返回对话" })).toBeVisible();
-  await page.getByRole("button", { name: "返回对话" }).click();
-  await expect(page).toHaveURL(/\/chat\/thread%3At1$/);
-});
-
-
-test("locally hides terminal runs without removing trace access", async ({ page }) => {
-  const terminal = [run({ status: "completed" }), run({ id: "run:r2", status: "failed" })];
-  await mockBase(page, bootstrap({ runs: [...terminal, run({ id: "run:r3" })] }));
-  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill({ json: threadDetail() }));
-  await page.goto("/chat/thread%3At1");
-  await page.getByRole("button", { name: /研究运行/ }).click();
-  await expect(page.locator(".run-card")).toHaveCount(3);
-  await expect(page.getByRole("button", { name: /从当前列表移除运行/ })).toHaveCount(2);
-  await page.getByRole("button", { name: /从当前列表移除运行/ }).first().click();
-  await expect(page.locator(".run-card")).toHaveCount(2);
-  await expect(page.getByRole("button", { name: "查看轨迹" })).toHaveCount(2);
-  await page.getByRole("button", { name: "恢复已移出的 1 项" }).click();
-  await expect(page.locator(".run-card")).toHaveCount(3);
-  await expect(page.getByRole("button", { name: "查看轨迹" })).toHaveCount(3);
-  await page.getByRole("button", { name: /从当前列表移除运行/ }).first().click();
-  await page.reload();
-  await page.getByRole("button", { name: /研究运行/ }).click();
-  await expect(page.locator(".run-card")).toHaveCount(3);
-});
-
-
-test("launches a pipeline explicitly with the thread id in the payload", async ({ page }) => {
-  let request;
-  await mockChat(page);
-  await page.route(/\/api\/v1\/projects\/project%3Atest\/runs/, (route) => {
-    request = route.request().postDataJSON();
-    return route.fulfill({ status: 201, json: run() });
-  });
-  await page.goto("/chat/thread%3At1");
-  await page.getByRole("button", { name: "研究运行" }).click();
-  await page.getByLabel("选择流程").selectOption("research");
-  await page.getByRole("button", { name: "启动流程" }).click();
-  await expect.poll(() => request).toBeTruthy();
-  expect(request.pipeline_id).toBe("research");
-  expect(request.node_id).toBe("node:q");
-  expect(request.payload.thread_id).toBe("thread:t1");
-});
-
-
-test("dismisses the research popover and restores trigger focus", async ({ page }) => {
-  await mockChat(page);
-  await page.goto("/chat/thread%3At1");
-  const trigger = page.getByRole("button", { name: "研究运行" });
-  await trigger.click();
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog", { name: "研究运行与流程" })).toHaveCount(0);
-  await expect(trigger).toBeFocused();
-  await trigger.click();
-  await page.locator(".thread-header h1").click();
-  await expect(page.getByRole("dialog", { name: "研究运行与流程" })).toHaveCount(0);
-  await expect(trigger).toBeFocused();
-});
-
-
-test("keeps long research runs inside the composer popover on mobile", async ({ page }) => {
-  const runs = Array.from({ length: 12 }, (_, index) => run({ id: `run:r${index}` }));
-  await page.setViewportSize({ width: 390, height: 844 });
-  await mockBase(page, bootstrap({ runs }));
-  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill({ json: threadDetail() }));
-  await page.goto("/chat/thread%3At1");
-  await page.getByRole("button", { name: "研究运行" }).click();
-  await expect.poll(() => page.locator(".research-popover-runs").evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
-  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await expect(page.getByRole("button", { name: "发送" })).toBeVisible();
-  await page.screenshot({ path: "test-results/research-popover-mobile.png" });
 });
 
 
@@ -234,29 +154,19 @@ test("offers inline restart when the session spec is outdated", async ({ page })
 });
 
 
-test("only lists runs bound to the thread id", async ({ page }) => {
-  const foreign = run({ id: "run:r2", node_id: "node:q", payload: {} });
-  await mockBase(page, bootstrap({ runs: [run(), foreign] }));
+test("counts only current project and thread runs without changing mobile composer size", async ({ page }) => {
+  const foreignThread = run({ id: "run:r2", payload: { thread_id: "thread:other" } });
+  const foreignProject = run({ id: "run:r3", project_id: "project:other" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockBase(page, bootstrap({ runs: [run(), foreignThread, foreignProject] }));
   await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill({ json: threadDetail() }));
   await page.goto("/chat/thread%3At1");
-  await page.getByRole("button", { name: /研究运行/ }).click();
-  await expect(page.locator(".run-card")).toHaveCount(1);
-  await expect(page.locator(".run-card")).not.toContainText("run:r2");
-});
-
-
-test("always offers a trace link on run cards, even without sessions", async ({ page }) => {
-  const quiet = run({ id: "run:r9", events: [], steps: [], payload: { thread_id: "thread:t1" } });
-  await mockBase(page, bootstrap({ runs: [quiet] }));
-  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill({ json: threadDetail() }));
-  await page.goto("/chat/thread%3At1");
-  await page.getByRole("button", { name: /研究运行/ }).click();
-  const card = page.locator(".run-card");
-  await expect(card).toHaveCount(1);
-  await expect(card.locator(".run-card-head")).toHaveAttribute("aria-expanded", "false");
-  await card.getByRole("button", { name: "查看轨迹" }).click();
-  await expect(page).toHaveURL(/\/traces\/run%3Ar9\?from=thread%3At1/);
-  await expect(page.getByRole("button", { name: "返回对话" })).toBeVisible();
+  const link = page.getByRole("link", { name: "研究运行 1" });
+  await expect(link).toBeVisible();
+  await expect(page.locator(".run-card, .research-popover")).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const composer = await page.locator(".composer-wrap").boundingBox();
+  expect(composer.y + composer.height).toBe(await page.evaluate(() => innerHeight));
 });
 
 

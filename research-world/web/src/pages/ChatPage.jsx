@@ -37,7 +37,7 @@ function NoThreads() {
 
 
 function threadRuns(runs, thread) {
-  return runs.filter((run) => run.payload?.thread_id === thread.id);
+  return runs.filter((run) => run.project_id === thread.project_id && run.payload?.thread_id === thread.id);
 }
 
 

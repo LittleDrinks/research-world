@@ -1,6 +1,6 @@
 import { Activity, ArrowLeft, Check, ChevronDown, ChevronRight, ThumbsDown, ThumbsUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { createSearchParams, Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { confirmRun, getSession, resolveRun } from "../api";
 import { EmptyState, StatusPill } from "../components/bits";
 import { useWorld } from "../context/WorldContext";
@@ -10,22 +10,86 @@ import "../traces.css";
 
 export function TracesPage() {
   const { runId } = useParams();
-  const { data, loading } = useWorld();
+  const [params] = useSearchParams();
+  const { data, loading, projectId } = useWorld();
   if (loading) return <div className="page-loading">正在载入轨迹...</div>;
-  if (!runId && data.runs.length) return <Navigate to={`/traces/${encodeURIComponent(data.runs[0].id)}`} replace />;
-  if (!runId) return <EmptyState icon={Activity} title="暂无运行" hint="在对话中钉入节点并启动流程后，这里会出现轨迹。" />;
-  const run = data.runs.find((item) => item.id === runId);
-  if (!run) return <EmptyState icon={Activity} title="运行不存在" hint="它可能已被清理，或属于其他项目。" />;
-  return <RunTrace key={run.id} run={run} />;
+  const context = traceContext(params, projectId);
+  const runs = filterRuns(data.runs, context, projectId);
+  if (!runId) return <TraceBrowser runs={runs} context={context} />;
+  const run = runs.find((item) => item.id === runId);
+  if (!run) return <TraceNotFound context={context} />;
+  return <RunTrace key={run.id} run={run} context={context} />;
 }
 
 
-function RunTrace({ run }) {
+function traceContext(params, currentProjectId) {
+  return { projectId: params.get("project_id") || currentProjectId, threadId: params.get("thread_id") || "", from: params.get("from") || "" };
+}
+
+
+function filterRuns(runs, context, currentProjectId) {
+  if (context.projectId !== currentProjectId) return [];
+  const projectRuns = runs.filter((run) => run.project_id === context.projectId);
+  return context.threadId ? projectRuns.filter((run) => run.payload?.thread_id === context.threadId) : projectRuns;
+}
+
+
+function returnPath(context) {
+  return context.from || (context.threadId ? `/chat/${encodeURIComponent(context.threadId)}` : "");
+}
+
+
+function traceSearch(context) {
+  const values = { project_id: context.projectId };
+  if (context.threadId) values.thread_id = context.threadId;
+  if (context.from) values.from = context.from;
+  return createSearchParams(values).toString();
+}
+
+
+function tracePath(runId, context) {
+  return `/traces/${encodeURIComponent(runId)}?${traceSearch(context)}`;
+}
+
+
+function TraceBrowser({ runs, context }) {
+  const navigate = useNavigate();
+  const back = returnPath(context);
+  return <section className="traces-page trace-browser">
+    <header className="trace-browser-header">
+      {back && <button className="button secondary" onClick={() => navigate(back)}><ArrowLeft size={15} />返回对话</button>}
+      <div><h1>研究运行</h1><span>{context.threadId ? `当前对话 · ${runs.length} 个关联运行` : `${runs.length} 个运行`}</span></div>
+    </header>
+    <div className="trace-list">{runs.length ? runs.map((run) => <TraceRunLink key={run.id} run={run} context={context} />)
+      : <p className="trace-empty">暂无运行</p>}</div>
+  </section>;
+}
+
+
+function TraceNotFound({ context }) {
+  const navigate = useNavigate();
+  const back = returnPath(context);
+  return <EmptyState icon={Activity} title="运行不存在" hint="它可能已被清理，或不属于当前上下文。">
+    {back && <button className="button secondary" onClick={() => navigate(back)}><ArrowLeft size={15} />返回对话</button>}
+  </EmptyState>;
+}
+
+
+function TraceRunLink({ run, context }) {
+  const name = run.definition_snapshot?.name || run.pipeline_id;
+  return <Link className="trace-run-link" to={tracePath(run.id, context)}>
+    <span><b>{name}</b><small className="mono">{shortId(run.id)} · 节点 {shortId(run.node_id)}</small></span>
+    <StatusPill status={run.status} label={RUN_STATUS[run.status] || run.status} /><ChevronRight size={16} />
+  </Link>;
+}
+
+
+function RunTrace({ run, context }) {
   const [params] = useSearchParams();
   const sessions = useMemo(() => sessionEvents(run), [run]);
   const inspects = useSessionInspects(sessions);
   return <section className="traces-page">
-    <RunHeader run={run} from={params.get("from")} />
+    <RunHeader run={run} returnTo={returnPath(context)} />
     <div className="trace-tree"><RunNode run={run} sessions={sessions} inspects={inspects} focusSession={params.get("session")} /></div></section>;
 }
 
@@ -61,11 +125,11 @@ function HumanGate({ run, busy, act }) {
 }
 
 
-function RunHeader({ run, from }) {
+function RunHeader({ run, returnTo }) {
   const { busy, act } = useRunActions(run);
   const navigate = useNavigate();
   return <header className="run-header">
-    {from && <button className="button secondary" onClick={() => navigate(`/chat/${encodeURIComponent(from)}`)}><ArrowLeft size={15} />返回对话</button>}
+    {returnTo && <button className="button secondary" onClick={() => navigate(returnTo)}><ArrowLeft size={15} />返回对话</button>}
     <div className="run-title"><h1>{run.definition_snapshot?.name || run.pipeline_id} <span className="mono">{shortId(run.id)}</span></h1>
       <span>节点 {shortId(run.node_id)} · 当前阶段 {run.stage} · {formatDate(run.created_at)}</span>
       {run.payload?.error && <p className="trace-error">{run.payload.error}</p>}</div>

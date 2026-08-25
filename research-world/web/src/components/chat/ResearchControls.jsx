@@ -1,36 +1,13 @@
-import { Workflow, X } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
-import { LaunchControl } from "./LaunchControl";
-import { RunCard } from "./RunCard";
-import { usePopoverDismiss } from "./usePopoverDismiss";
+import { Workflow } from "lucide-react";
+import { createSearchParams, Link, useLocation } from "react-router-dom";
+import { useWorld } from "../../context/WorldContext";
 
 
 export function ResearchControls({ thread, runs }) {
-  const [open, setOpen] = useState(false);
-  const [hidden, setHidden] = useState(() => new Set());
-  const root = useRef(null);
-  const trigger = useRef(null);
-  const close = useCallback(() => setOpen(false), []);
-  usePopoverDismiss(open, root, trigger, close);
-  const visible = runs.filter((run) => !hidden.has(run.id));
-  const hide = (runId) => setHidden((value) => new Set([...value, runId]));
-  return <div className="research-controls" ref={root}>
-    <button ref={trigger} className="composer-tool" aria-label="研究运行" aria-expanded={open}
-      onClick={() => setOpen(!open)}><Workflow size={15} /><span>研究运行</span><em>{visible.length}</em></button>
-    {open && <ResearchPopover thread={thread} runs={visible} hidden={hidden} hide={hide}
-      restore={() => setHidden(new Set())} close={close} />}
-  </div>;
-}
-
-
-function ResearchPopover({ thread, runs, hidden, hide, restore, close }) {
-  return <section className="research-popover" role="dialog" aria-label="研究运行与流程">
-    <header><b>研究运行</b><button className="icon-button" aria-label="关闭研究运行" onClick={close}><X size={15} /></button></header>
-    <LaunchControl thread={thread} />
-    <div className="research-popover-runs">
-      {runs.map((run) => <RunCard key={run.id} run={run} threadId={thread.id} onDismiss={hide} />)}
-      {!runs.length && <p className="record-empty">当前对话没有运行</p>}
-      {hidden.size > 0 && <button className="run-restore" onClick={restore}>恢复已移出的 {hidden.size} 项</button>}
-    </div>
-  </section>;
+  const { projectId } = useWorld();
+  const location = useLocation();
+  const from = `${location.pathname}${location.search}`;
+  const search = createSearchParams({ project_id: projectId, thread_id: thread.id, from }).toString();
+  return <Link className="composer-tool" aria-label={`研究运行 ${runs.length}`}
+    to={{ pathname: "/traces", search }}><Workflow size={15} /><span>研究运行 {runs.length}</span></Link>;
 }

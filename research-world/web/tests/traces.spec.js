@@ -2,6 +2,35 @@ import { expect, test } from "@playwright/test";
 import { bootstrap, mockBase, run } from "./fixtures";
 
 
+test("filters the trace browser by project and thread, opens a run, and returns to chat", async ({ page }) => {
+  const matching = run({ id: "run:r2" });
+  const otherThread = run({ id: "run:r3", payload: { thread_id: "thread:other" } });
+  const otherProject = run({ id: "run:r4", project_id: "project:other", payload: { thread_id: "thread:t1" } });
+  await mockBase(page, bootstrap({ runs: [run(), matching, otherThread, otherProject] }));
+  await page.goto("/traces?project_id=project%3Atest&thread_id=thread%3At1&from=%2Fchat%2Fthread%253At1");
+  await expect(page.getByText("当前对话 · 2 个关联运行")).toBeVisible();
+  await expect(page.locator(".trace-run-link")).toHaveCount(2);
+  await expect(page.locator(".trace-run-link").nth(0)).toContainText("r1");
+  await expect(page.locator(".trace-run-link").nth(1)).toContainText("r2");
+  await expect(page.locator(".trace-run-link").nth(0)).not.toContainText("r3");
+  await expect(page.locator(".trace-run-link").nth(1)).not.toContainText("r4");
+  await page.locator(".trace-run-link").nth(1).click();
+  await expect(page).toHaveURL(/\/traces\/run%3Ar2\?project_id=project%3Atest&thread_id=thread%3At1&from=%2Fchat%2Fthread%253At1/);
+  await expect(page.locator(".tree-row", { hasText: "RUN" })).toBeVisible();
+  await page.getByRole("button", { name: "返回对话" }).click();
+  await expect(page).toHaveURL(/\/chat\/thread%3At1$/);
+});
+
+
+test("shows an empty context with a return entry", async ({ page }) => {
+  await mockBase(page, bootstrap({ runs: [] }));
+  await page.goto("/traces?project_id=project%3Atest&thread_id=thread%3At1&from=%2Fchat%2Fthread%253At1");
+  await expect(page.getByText("暂无运行")).toBeVisible();
+  await page.getByRole("button", { name: "返回对话" }).click();
+  await expect(page).toHaveURL(/\/chat\/thread%3At1$/);
+});
+
+
 test("renders the run -> stage -> session -> turn -> tool tree", async ({ page }) => {
   await mockBase(page);
   await page.goto("/traces/run%3Ar1");
