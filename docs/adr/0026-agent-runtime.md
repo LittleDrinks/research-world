@@ -15,7 +15,7 @@ sources:
 ## 外部接口
 | 动作 | 输入 | 输出 | ACP 映射 |
 |---|---|---|---|
-| 识别 | workspace | 可用 Endpoint、模型、Skill、Tool 及 readiness | `runtime/discover` extension |
+| 识别 | workspace | 可用 Runtime、Endpoint、模型、Skill、Tool 及 readiness | `runtime/discover` extension |
 | 准备 Tool | workspace、tool_id、action、values | 更新后的 Tool 状态 | `runtime/tools/prepare` extension |
 | 启动 | AgentSpec、workspace、parent、mode | session_id | `runtime/launch` extension |
 | 发送 | session_id、内容块 | 实时 session update、终止原因 | `session/prompt` |
@@ -23,7 +23,7 @@ sources:
 | 向量化 | endpoint、texts | vectors | `runtime/embed` extension |
 ACP Python SDK 负责连接、schema 与 HTTP/WebSocket 传输。Web 通过 Research Kernel 使用同一 ACP Client；Runtime 不暴露第二套 REST 会话协议。
 ## 内部所有权
-`endpoints` 识别 OpenAI 兼容服务与 Codex CLI，并在同模型 Endpoint 间故障切换；`skills` 解析 `SKILL.md`；`tools` 识别、准备、绑定并执行全部模型能力；`trace` 写入并重放 Session；`acp` 只翻译外部协议。外部调用方不感知这些目录。
+`runtimes` 识别 Codex、Claude、Pi、Kimi 产品 Adapter 与 execution realm；`endpoints` 只识别模型服务；`skills` 解析 `SKILL.md`；`tools` 识别、准备、绑定并执行全部模型能力；`trace` 写入并重放 Session；`acp` 只翻译外部协议。Runtime 不从 Endpoint 推断，不跨产品 Adapter 或 Endpoint fallback。外部调用方不感知这些目录。
 `2026-08-24T14:23:05Z` 只读 probe 的本机 Codex 0.149.1 没有 ACP 子命令，作为 Runtime 内部 CLI adapter 使用 `codex exec --json`；该版本是点时事实，不是产品固定版本，它也不是新的外部边界。
 ## Tool Runtime
 Tool Runtime 是 Agent Runtime 内部深模块。AgentSpec、Preset、设置页与 orchestrator 只理解稳定 Tool id；Adapter kind、operation 名称、MCP、HTTP、SSE、stdio、CLI、数据库驱动、位置、进程生命周期、凭证与依赖配方全部隐藏。
@@ -38,7 +38,7 @@ Trace 是 Session 的唯一事实源，不建消息数据库。凡进入模型�
 Thread 只在 Research Kernel 保存 `project_id + session_id` 指针。新建 Thread 启动新 Session；归档 Thread 不删除 Trace。
 Project 创建只接收名称与研究问题；Research Kernel 在受控 projects 根目录内分配 workspace，Web 不提交文件系统路径。
 ## Pipeline Run
-PipelineSpec 由 Research Kernel 从 YAML 识别并校验。数据库只保存 `pipeline_id + definition_snapshot`，没有固定 kind；模板修改不影响在途 run。AgentSpec Instructions 只保存跨任务稳定的角色约束，prompt stage 保存本次操作契约；prompt stage 的 `agent` 引用已保存 AgentSpec，Research Kernel 不临时改写 Endpoint、模型、Skill 或 Tool。启动时将完整 AgentSpec 交给 Runtime 快照。run event 只记录 stage、gate、人工决策与 session_id，模型消息和工具细节留在 Runtime Trace。
+PipelineSpec 由 Research Kernel 从 YAML 识别并校验。数据库只保存 `pipeline_id + definition_snapshot`，没有固定 kind；模板修改不影响在途 run。AgentSpec Instructions 只保存跨任务稳定的角色约束，prompt stage 保存本次操作契约；prompt stage 的 `agent` 引用已保存 AgentSpec，Research Kernel 不临时改写 Runtime、Endpoint、模型、Skill 或 Tool。启动时将完整 AgentSpec 交给 Runtime 快照。run event 只记录 stage、gate、人工决策与 session_id，模型消息和工具细节留在 Runtime Trace。
 ## 渐进披露
 Skill 与节点正文默认不进入模型请求。模型只看到名称、描述和 `@node_id`；调用 `read_skill` 或 `read_resource` 后，读取结果才进入 Trace 与后续模型请求。只有 AgentSpec 选择的 Tool operation schema 对模型可见。
 报告工具只请求 Research Kernel 的报告投影、BibTeX 导出与交付校验。Endpoint 可用性由 Kernel 查询 Runtime 识别结果后推导，Agent 和 HTTP 调用方不能自报。
