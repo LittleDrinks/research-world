@@ -10,7 +10,7 @@ tools:
   - read_resource
   - graph_query
   - report_projection
-  - report_validate
+  - publish_report
   - export_bibtex
   - submit_observation
 options:
