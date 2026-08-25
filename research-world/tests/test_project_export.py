@@ -290,8 +290,9 @@ def test_mixed_key_yaml_is_deterministic_and_parseable():
 
 
 def test_xml_retains_comments_and_processing_instructions():
-    exported, item = export_item("<root><?status ready?><!--token=comment-secret--><token>xml-secret</token></root>", "application/xml")
+    exported, item = export_item("<root><?status ready?><!--token=comment-secret--><![CDATA[token=cdata-secret]]><token>xml-secret</token></root>", "application/xml")
     member = artifact_member(exported, item)
 
     assert b"<!--token=[REDACTED]-->" in member and b"<?status ready?>" in member
-    assert b"xml-secret" not in member and ElementTree.fromstring(member).tag == "root"
+    assert b"xml-secret" not in member and b"cdata-secret" not in member
+    assert ElementTree.fromstring(member).tag == "root"
