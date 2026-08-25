@@ -3,7 +3,7 @@
 ## Language
 **Project**：一个科学问题及其研究状态；id 是稳定、不承载业务语义的标识符。
 _Avoid_: 课题、任务
-**Q001–Q125 Project corpus**：用于展示系统研究状态的固定科学问题集合。
+**Q001–Q125 Project corpus**：用于展示系统研究状态的固定科学问题集合；“125 问”与“《Science》125 个前沿科学问题”均指此集合。
 _Avoid_: Benchmark
 **Research Kernel**：项目研究状态的唯一写入门；解释 commands、queries 与 Pipeline，内部拥有图谱、准入、运行和投影。
 _Avoid_: World 服务、CRUD 层
@@ -26,6 +26,12 @@ _Avoid_: 分支、会话树
 _Avoid_: 固定 workflow kind、任务、job
 **Pipeline run**：Pipeline 的一次执行实例；按发生次序区分多次 run，不形成独立研究轮次。
 _Avoid_: Research Round、轮次实体
+**研究版本**：同一 Project 中两个有次序 Pipeline run 的确定性对比投影；V1 / V2 只标记比较次序，不拥有节点或事实。
+_Avoid_: Research Round、可变报告草稿
+**Auto**：Research Kernel 在冻结预算内根据证据与反馈选择并启动后续 Pipeline run 的控制策略；可暂停、恢复、停止，并以明确终止原因结束。
+_Avoid_: 跳过确认的布尔值、无限 reflect 级联、无人批准高风险动作
+**Auto 终止原因**：Auto 一次执行的唯一终态解释，区分目标完成、预算耗尽、无改进、人工介入、用户停止与失败。
+_Avoid_: 最后一条日志、模型自报完成
 **Stage**：Pipeline 的最小执行单元；每个 prompt stage 启动干净 Session，只接收结构化上游引用。
 _Avoid_: 长对话续跑
 **双审**：两个独立 reviewer 一致 approve 才准入；分歧时 Pipeline run 转 waiting_human 由人裁决。
@@ -43,7 +49,7 @@ _Avoid_: 裸路径、覆盖写
 _Avoid_: 跨表拼装、Agent 自报事实
 **执行凭据**：step 的完整执行描述与结果：image、command、files、seed、limits、退出码、输出哈希。
 _Avoid_: 日志片段、口头复现
-**AgentSpec**：Endpoint、模型、Instructions、Skills、Tool id 与执行参数的声明；启动时编译并快照。
+**AgentSpec**：Runtime、Endpoint、模型、Instructions、Skills、Tool id 与执行参数的声明；启动时编译并快照。
 _Avoid_: 能力装配模块、动态挂载
 **Tool**：科研人员为 Agent 选择的稳定能力；一个 Tool 可向模型展开多个 operation，AgentSpec 只保存 Tool id。
 _Avoid_: Connector、MCP server、transport、模型函数名
@@ -56,6 +62,8 @@ _Avoid_: 手填 Endpoint、手填 Skill、手填 transport
 **渐进披露**：Skill 与节点正文默认不进入模型请求；模型调用读取工具后才进入 Trace。
 _Avoid_: 全量投喂、字符串拼接钉入
 ## Agent Runtime
+**Runtime**：执行 AgentSpec 的产品 Adapter 与 execution realm 稳定引用；Codex、Claude、Pi、Kimi 是不同 Runtime，协议细节不越过 Agent Runtime seam。
+_Avoid_: Endpoint、模型服务、传输协议
 **Session**：AgentSpec 的一次运行实例；Trace 是其唯一事实源。
 _Avoid_: 消息数据库、Thread
 **Turn**：一次 prompt 驱动的 Session 执行，终态为 completed、limit、cancelled 或 error。

@@ -21,12 +21,6 @@ sources:
   - id: divalign
     title: "DivAlign: MMR-style de-homogenization for ideation"
     url: https://arxiv.org/abs/2607.28087
-  - id: evoscientist
-    title: "EvoScientist: Towards Multi-Agent Evolving AI Scientists for End-to-End Scientific Discovery"
-    url: https://arxiv.org/abs/2603.08127
-  - id: co-scientist
-    title: "Accelerating scientific discovery with Co-Scientist"
-    url: https://doi.org/10.1038/s41586-026-10644-y
   - id: trrack
     title: "Trrack: A Library for Provenance-Tracking in Web-Based Visualizations"
     url: https://doi.org/10.1109/vis47514.2020.00030
@@ -43,12 +37,6 @@ Pipeline 是 `prompt/tool/spawn` stage 序列，policy 修饰算法，on 路由�
 - brainstorm：生成 N 候选（可叠 Verbalized Sampling）→ embedding 查重（余弦 >0.8 转 reflect/合并并渐进披露阻断理由；0.6–0.8 LLM 成对裁决；<0.6 入池）→ MMR 贪心入池（质量分 − 0.2·max_sim）→ pending direction 入图 → review。
 - research：plan → 执行 experiment → review（机械证据审计加质量/多样性分；双审冲突升级人，rebuttal 格式沉淀）→ reflect 产新 direction 候选。
 GraphMind 将新颖性审核放在交互式图谱中 [graphmind]；实证研究显示复杂 Agent 仍会收缩探索空间 [exploration-narrowing]。Verbalized Sampling 只能提供生成多样性 [verbalized-sampling]，MMR 式去同质化才把多样性放入入池目标 [divalign]，故相似度阈值只是当前运营门槛，须随语料校准，不能成为节点语义。
-## auto 模式
-- 开：reflect 产 direction 直接进 review；review 过即自动启动 research run 自主迭代。
-- 关：direction 启动与每步 plan 执行均需人确认。
-- 人工可驳回未执行的 plan；run 暂停、experiment 变 ghost、direction 释放 working，不产生 supports/refutes 边。
-- 熔断：同一谱系 review 连续驳回 2 次，auto 暂停该谱系并升级人。
-EvoScientist 将失败方向作为后续搜索的显式记忆 [evoscientist]，Co-Scientist 将提出、执行和复核连接为受反馈约束的研究循环 [co-scientist]。幽灵车道保留失败的适用范围，熔断则避免同一谱系在无新证据时空转。
 ## 恢复
 - Control 只把人工闸门决策写入 run 并重新排队；Worker 是唯一 Pipeline 解释器驱动者。
 - Worker 对 `running` run 续期；租约过期后其他 Worker 可原子领取并从 run 快照继续。
