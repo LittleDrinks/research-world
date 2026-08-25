@@ -16,6 +16,7 @@ from ..types import TraceError
 VERSION = re.compile(r"codex-cli\s+(\S+)")
 TERMINALS = {"turn.completed", "turn.failed", "turn.cancelled"}
 EVENTS = {"thread.started", "turn.started", "item.started", "item.updated", "item.completed", *TERMINALS}
+TERMINATE_TIMEOUT = 2.0
 
 
 class CodexProvider:
@@ -44,6 +45,15 @@ class CodexProvider:
         return provider
 
     async def start(self, model: str, context: dict[str, Any]):
+        task = asyncio.create_task(self._start(model, context))
+        try:
+            return await asyncio.shield(task)
+        except asyncio.CancelledError:
+            process = await task
+            await self.stop(process)
+            raise
+
+    async def _start(self, model: str, context: dict[str, Any]):
         return await asyncio.create_subprocess_exec(
             *self._command(model, context),
             cwd=context["workspace"],
@@ -61,7 +71,11 @@ class CodexProvider:
 
     async def stop(self, process) -> None:
         self.cancel(process)
-        await process.wait()
+        if await _wait(process):
+            return
+        _kill_tree(process)
+        if not await _wait(process):
+            raise TraceError("cli_termination_timeout", "codex did not terminate")
 
     def _command(self, model: str, context: dict[str, Any]) -> list[str]:
         options = ["--json", "--skip-git-repo-check", "-m", model]
@@ -107,14 +121,27 @@ async def _stdout(process, prompt: str, timeout: float) -> bytes:
             process.communicate(prompt.encode()), timeout
         )
     except TimeoutError as error:
-        _kill_tree(process)
-        await process.wait()
+        await _stop_after_timeout(process)
         raise TraceError(
             "cli_timeout", f"codex timed out after {timeout:g}s"
         ) from error
     if process.returncode:
         raise TraceError("cli_failed", f"codex exited {process.returncode}")
     return stdout
+
+
+async def _stop_after_timeout(process) -> None:
+    _kill_tree(process)
+    if not await _wait(process):
+        raise TraceError("cli_termination_timeout", "codex did not terminate")
+
+
+async def _wait(process) -> bool:
+    try:
+        await asyncio.wait_for(process.wait(), TERMINATE_TIMEOUT)
+    except TimeoutError:
+        return False
+    return process.returncode is not None
 
 
 def _process_group_options() -> dict[str, int | bool]:
@@ -174,7 +201,7 @@ def _invalid_jsonl() -> TraceError:
 
 
 def _validate_stream(events: list[dict]) -> None:
-    terminal = _stream_state(events)
+    terminal = _Lifecycle().consume(events)
     if terminal == "turn.completed":
         return
     if terminal in {"turn.failed", "turn.cancelled"}:
@@ -184,20 +211,54 @@ def _validate_stream(events: list[dict]) -> None:
     )
 
 
-def _stream_state(events: list[dict]) -> str:
-    state = "new"
-    for event in events:
-        state = _next_state(state, event["type"])
-    if state not in TERMINALS:
-        raise TraceError("cli_incomplete_stream", "codex returned an incomplete terminal stream")
-    return state
+class _Lifecycle:
+    def __init__(self):
+        self.state = "new"
+        self.items: dict[str, str] = {}
+
+    def consume(self, events: list[dict]) -> str:
+        for event in events:
+            self._event(event)
+        if self.state not in TERMINALS:
+            raise _incomplete()
+        return self.state
+
+    def _event(self, event: dict) -> None:
+        kind = event["type"]
+        if kind in {"thread.started", "turn.started"}:
+            self._start(kind)
+        elif kind in TERMINALS:
+            self._terminal(kind)
+        else:
+            self._item(kind, event["item"]["id"])
+
+    def _start(self, kind: str) -> None:
+        expected = "thread.started" if self.state == "new" else "turn.started"
+        if kind != expected:
+            raise _invalid_jsonl()
+        self.state = kind
+
+    def _item(self, kind: str, item_id: str) -> None:
+        if self.state != "turn.started":
+            raise _invalid_jsonl()
+        previous = self.items.get(item_id)
+        if kind == "item.started" and previous is None:
+            self.items[item_id] = "started"
+        elif kind == "item.updated" and previous == "started":
+            self.items[item_id] = "updated"
+        elif kind == "item.completed" and previous in {"started", "updated"}:
+            self.items[item_id] = "completed"
+        else:
+            raise _invalid_jsonl()
+
+    def _terminal(self, kind: str) -> None:
+        if self.state != "turn.started" or any(value != "completed" for value in self.items.values()):
+            raise _invalid_jsonl()
+        self.state = kind
 
 
-def _next_state(state: str, kind: str) -> str:
-    allowed = {"new": {"thread.started"}, "thread.started": {"turn.started"}, "turn.started": EVENTS - {"thread.started", "turn.started"}}
-    if kind not in allowed.get(state, set()):
-        raise _invalid_jsonl()
-    return kind if kind in {"thread.started", "turn.started", *TERMINALS} else state
+def _incomplete() -> TraceError:
+    return TraceError("cli_incomplete_stream", "codex returned an incomplete terminal stream")
 
 
 def _valid_shape(event: object) -> bool:
@@ -223,9 +284,17 @@ def _valid_thread(event: dict) -> bool:
 
 def _valid_item(event: dict) -> bool:
     item = event.get("item")
-    if not isinstance(item, dict) or not isinstance(item.get("type"), str):
+    if not _item_identity(item) or not isinstance(item.get("type"), str):
         return False
-    return item["type"] != "agent_message" or isinstance(item.get("text"), str)
+    return _item_text_is_valid(event["type"], item)
+
+
+def _item_text_is_valid(kind: str, item: dict) -> bool:
+    return kind != "item.completed" or item["type"] != "agent_message" or isinstance(item.get("text"), str)
+
+
+def _item_identity(item: object) -> bool:
+    return isinstance(item, dict) and isinstance(item.get("id"), str) and bool(item["id"].strip())
 
 
 def _valid_usage(event: dict) -> bool:

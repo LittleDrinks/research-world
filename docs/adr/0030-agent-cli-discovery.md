@@ -26,15 +26,13 @@ OpenCLI 是浏览器自动化 Tool Adapter，只能以 `browser.opencli` 进入 
 | `executable` | string | 固定 probe 使用的命令名 |
 | `version` | string/null | 固定 version probe 解析后的版本 |
 | `source` | enum | 发现机制：`path`、`win_get`、`npm`、`installer`、`explicit`、`container_image` |
-| `path` | string/null | 发现入口；PATH 命中的 shim、symlink、`.cmd` 或 executable 路径 |
-| `resolved_path` | string/null | 在该 realm 内解析后的最终 executable；缺失项为 null |
 | `status` | enum | `found`、`ready`、`auth-required`、`missing`、`error`、`unsupported` |
 | `reason` | object/null | `code`、可展示 `message` 与失败 `probe`；不含 stdout、stderr、环境值或凭证 |
 | `last_checked_at` | RFC 3339 | 该 descriptor 最近完成探测的时间 |
 | `capabilities` | string[] | Adapter 已确认的能力 id；缺省为空，不从产品名推断 |
-同一产品在不同 realm 返回独立 descriptor，以 `(id, realm)` 唯一标识。UI 使用 `runtimeKey(id, realm) = JSON.stringify([id, realm])` 作为 option value、React key 与选择回读 key；选择和 Profile snapshot 始终同时保存 `id`、`realm`，不按 `id` 回退查找。`path` 不跟随 symlink、shim 或 wrapper；`resolved_path` 完成 realm 内解析。`source` 只表示发现来源，不编码 realm、文件类型或 readiness。
+同一产品在不同 realm 返回独立 descriptor，以 `(id, realm)` 唯一标识。UI 使用 `runtimeKey(id, realm) = JSON.stringify([id, realm])` 作为 option value、React key 与选择回读 key；选择和 Profile snapshot 始终同时保存 `id`、`realm`，不按 `id` 回退查找。路径与最终 executable 仅保留在 Runtime probe/launch 内部；catalog、Agent API 与 capability snapshot 只包含安全 readiness 字段。`source` 只表示发现来源，不编码 realm、文件类型或 readiness。
 `capabilities` 使用 Runtime 内置词表：`interactive`、`non-interactive`、`streaming`、`resume`、`model-select`、`reasoning-select`、`workspace`、`auth-probe`。Profile 选择的 Skill、Tool 与 MCP 来源不进入该数组。
-每个内置 Runtime 候选始终进入 inventory；缺失、无效版本或 probe 超时只改变该候选的 `status` 与 `reason`。`codex` 是 Codex CLI Runtime 独占的保留 Endpoint id，OpenAI-compatible Endpoint 配置不得使用该 id。
+每个内置 Runtime 候选始终进入 inventory；缺失、无效版本或 probe 超时只改变该候选的 `status` 与 `reason`。`codex` Endpoint 由 Codex Runtime 独占创建和绑定，Endpoint 配置与其他 Runtime 不能表示该 id。
 ## 状态与错误
 | 状态 | 判定 |
 |---|---|
@@ -66,12 +64,10 @@ CLI 缺失或不兼容时，UI 可请求 `runtime/prepare/plan` 生成 CLI-only 
     "executable": "codex",
     "version": "0.149.1",
     "source": "installer",
-    "path": "~/.local/bin/codex",
-    "resolved_path": "~/.codex/packages/standalone/releases/0.149.1-x86_64-unknown-linux-musl/bin/codex",
     "status": "ready",
     "reason": null,
     "last_checked_at": "2026-08-24T14:23:05Z",
-    "capabilities": ["non-interactive", "streaming", "resume", "model-select", "reasoning-select", "workspace", "auth-probe"]
+    "capabilities": ["non-interactive", "resume", "model-select", "reasoning-select", "workspace", "auth-probe"]
   }],
   "cache": {"realm": "wsl:ubuntu", "runtime_build": "0.1.0", "ttl_seconds": 60, "stale": false}
 }

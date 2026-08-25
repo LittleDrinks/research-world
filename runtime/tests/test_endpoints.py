@@ -1,7 +1,7 @@
 import json
 
 import pytest
-from runtime.endpoints import EndpointPool, load_endpoints
+from runtime.endpoints import Endpoint, EndpointPool, load_endpoints
 from runtime.providers.base import EndpointUnavailable
 from runtime.service import Runtime
 from runtime.runtimes import REALM, RuntimeAdapter, RuntimeDescriptor
@@ -167,6 +167,11 @@ def test_endpoint_settings_reserve_codex_for_the_cli_runtime(monkeypatch, tmp_pa
             tmp_path / "data", load_endpoints(),
             runtimes=[RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM))],
         )
+
+
+def test_endpoint_constructor_cannot_claim_codex_ownership():
+    with pytest.raises(ValueError, match="reserved by Codex CLI"):
+        Endpoint("codex", "Codex", "codex", ("model",), (), 1, None)
 
 
 async def test_embedding_requires_an_endpoint_id(tmp_path):

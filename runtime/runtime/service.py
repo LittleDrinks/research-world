@@ -13,12 +13,11 @@ from acp.interfaces import Client
 
 from . import catalog
 from .adapters import ToolDefinition, discover_adapters
-from .endpoints import Endpoint, EndpointPool, load_endpoints
+from .endpoints import Endpoint, EndpointPool, codex_endpoint, load_endpoints
 from .runtimes import (
     CodexRuntimeAdapter,
     RuntimeAdapter,
     RuntimePool,
-    codex_endpoint,
     load_runtimes,
 )
 from .skills import Skill, discover_skills, skill_index
@@ -54,6 +53,7 @@ class Runtime:
         self._locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._cancelled: set[tuple[str, str]] = set()
         self._active_turns: dict[str, tuple[str, RuntimeAdapter]] = {}
+        self._bindings: dict[str, _LaunchBinding] = {}
 
     async def recognize(self, workspace: str) -> dict:
         path = _workspace(workspace)
@@ -71,18 +71,23 @@ class Runtime:
         spec = AgentSpec.parse(value["agent_spec"])
         session_id = _session_id(value.get("session_id"))
         if self.trace.path(session_id).exists():
-            _validate_existing_session(
-                self.inspect(session_id)["session"],
-                _launch_identity(spec, workspace, value),
-            )
-            return {"session_id": session_id}
+            self._validate_launch(session_id, spec, workspace, value)
+        else:
+            await self._create_session(session_id, spec, workspace, value)
+        return {"session_id": session_id}
+
+    def _validate_launch(self, session_id, spec, workspace, value) -> None:
+        _validate_existing_session(self.inspect(session_id)["session"], _launch_identity(spec, workspace, value))
+
+    async def _create_session(self, session_id, spec, workspace, value) -> None:
         recognized = await self.recognize(str(workspace))
-        _validate_spec(spec, recognized, self.runtimes.require(spec.runtime))
+        adapter = self.runtimes.require(spec.runtime)
+        _validate_spec(spec, recognized, adapter)
+        endpoint = self.endpoints.require(spec.endpoint, spec.model)
         snapshots = _skill_snapshots(spec, workspace)
         plan = await self._tool_plan(spec, workspace, snapshots)
-        meta = _session_meta(spec, workspace, value, snapshots, plan, recognized)
-        self.trace.create(session_id, meta)
-        return {"session_id": session_id}
+        self.trace.create(session_id, _session_meta(spec, workspace, value, snapshots, plan, recognized, endpoint))
+        self._bindings[session_id] = _LaunchBinding(adapter, endpoint, spec)
 
     async def _tool_plan(self, spec: AgentSpec, workspace: Path, snapshots) -> list:
         skills = {value["id"]: _SnapshotSkill(value) for value in snapshots}
@@ -133,13 +138,15 @@ class Runtime:
 
     async def _prompt(self, session_id, blocks, client, emit):
         events = self._events(session_id)
-        spec, meta = _session_spec(events)
+        _session_spec(events)
+        binding = self._binding(session_id)
+        spec, meta = binding.spec, events[0]["data"]
         turn_id = f"t-{uuid.uuid4().hex}"
         self.trace.append(session_id, "turn_start", {"prompt": blocks}, turn_id)
-        adapter = self.runtimes.require(spec.runtime)
+        adapter = binding.adapter
         self._active_turns[session_id] = (turn_id, adapter)
         try:
-            return await self._run_turn(session_id, turn_id, spec, meta, client, emit)
+            return await self._run_turn(session_id, turn_id, binding, meta, client, emit)
         except Exception as error:
             if (session_id, turn_id) in self._cancelled:
                 return self._finish(session_id, turn_id, "cancelled", "", {})
@@ -148,22 +155,24 @@ class Runtime:
         finally:
             self._active_turns.pop(session_id, None)
 
-    async def _run_turn(self, session_id, turn_id, spec, meta, client, emit):
+    async def _run_turn(self, session_id, turn_id, binding, meta, client, emit):
+        spec = binding.spec
         skills = _skills_from_meta(meta)
         workspace = Path(meta["workspace"])
         adapters = discover_adapters(workspace, self.tool_definitions)
         async with ToolBox(workspace, skills, spec.tools, adapters, client) as tools:
             _require_frozen_plan(tools.plan(), meta.get("tool_plan"))
-            return await self._rounds(session_id, turn_id, spec, meta, tools, emit)
+            return await self._rounds(session_id, turn_id, binding, meta, tools, emit)
 
-    async def _rounds(self, session_id, turn_id, spec, meta, tools, emit):
+    async def _rounds(self, session_id, turn_id, binding, meta, tools, emit):
+        spec = binding.spec
         usage = {"prompt_tokens": 0, "completion_tokens": 0}
         result = ""
         for _ in range(spec.options.max_rounds):
             if (session_id, turn_id) in self._cancelled:
                 return self._finish(session_id, turn_id, "cancelled", result, usage)
             done, result = await self._round(
-                session_id, turn_id, spec, meta, tools, emit, usage
+                session_id, turn_id, binding, meta, tools, emit, usage
             )
             if (session_id, turn_id) in self._cancelled:
                 return self._finish(session_id, turn_id, "cancelled", result, usage)
@@ -173,15 +182,15 @@ class Runtime:
                 break
         return self._finish(session_id, turn_id, "limit", result, usage)
 
-    async def _round(self, session_id, turn_id, spec, meta, tools, emit, usage):
+    async def _round(self, session_id, turn_id, binding, meta, tools, emit, usage):
+        spec = binding.spec
         messages = _messages(self._events(session_id), meta)
-        endpoint = self.endpoints.require(spec.endpoint, spec.model)
         specs = (
-            tools.specs() if not self.runtimes.require(spec.runtime).owns_process else []
+            tools.specs() if not binding.adapter.owns_process else []
         )
         self._record_request(session_id, turn_id, spec.model, messages, specs)
         endpoint_id, result = await self._generate(
-            session_id, spec, meta, messages, specs, emit
+            session_id, binding, meta, messages, specs, emit
         )
         _add_usage(usage, result.usage)
         self._record_response(session_id, turn_id, endpoint_id, result)
@@ -196,10 +205,9 @@ class Runtime:
         data = {"model": model, "messages": messages, "tools": tools}
         self.trace.append(session_id, "model_request", data, turn_id)
 
-    async def _generate(self, session_id, spec, meta, messages, tools, emit):
+    async def _generate(self, session_id, binding, meta, messages, tools, emit):
         context = _provider_context(meta, self._events(session_id))
-        endpoint = self.endpoints.require(spec.endpoint, spec.model)
-        adapter = self.runtimes.require(spec.runtime)
+        endpoint, adapter, spec = binding.endpoint, binding.adapter, binding.spec
         if adapter.owns_process:
             return await adapter.generate(
                 session_id, endpoint, spec.model, messages, tools, emit, context
@@ -255,6 +263,12 @@ class Runtime:
             raise SessionNotFound(session_id)
         return events
 
+    def _binding(self, session_id):
+        binding = self._bindings.get(session_id)
+        if binding is None:
+            raise SessionSpecInvalid("session launch binding is unavailable")
+        return binding
+
 
 async def _ignore(text: str) -> None:
     return None
@@ -286,15 +300,11 @@ def _codex_endpoints(adapters: list[RuntimeAdapter]) -> list[Endpoint]:
 
 def _runtime_endpoints(values, adapters) -> list[Endpoint]:
     _reject_reserved_endpoint(values)
-    existing = {item.id for item in values}
-    return [
-        *values,
-        *(item for item in _codex_endpoints(adapters) if item.id not in existing),
-    ]
+    return [*values, *_codex_endpoints(adapters)]
 
 
 def _reject_reserved_endpoint(values) -> None:
-    if any(item.id == "codex" and item.adapter != "codex" for item in values):
+    if any(item.id == "codex" for item in values):
         raise ValueError("endpoint id is reserved by Codex CLI")
 
 
@@ -375,7 +385,7 @@ def _require(value, available, kind):
         raise CapabilityNotFound(f"{kind} is not available: {value}")
 
 
-def _session_meta(spec, workspace, value, skills, tool_plan, capabilities):
+def _session_meta(spec, workspace, value, skills, tool_plan, capabilities, endpoint):
     return {
         "agent_spec": spec.snapshot(),
         "workspace": str(workspace),
@@ -384,6 +394,7 @@ def _session_meta(spec, workspace, value, skills, tool_plan, capabilities):
         "skills": skills,
         "tool_plan": tool_plan,
         "capability_snapshot": _capability_snapshot(spec, capabilities),
+        "endpoint_snapshot": endpoint.public(),
     }
 
 
@@ -394,6 +405,13 @@ def _capability_snapshot(spec, recognized):
         if (item["id"], item["realm"]) == (spec.runtime.id, spec.runtime.realm)
     )
     return {"runtime": runtime}
+
+
+class _LaunchBinding:
+    def __init__(self, adapter, endpoint, spec):
+        self.adapter = adapter
+        self.endpoint = endpoint
+        self.spec = spec
 
 
 def _require_frozen_plan(current: list, frozen: list | None) -> None:

@@ -25,7 +25,7 @@ ACP Python SDK 负责连接、schema 与 HTTP/WebSocket 传输。Web 通过 Rese
 ## 内部所有权
 `runtimes`、`endpoints`、`skills`、`tools`、`trace` 分别管理对应 catalog、生命周期与事实；`acp` 只翻译外部协议。外部调用方不感知这些目录。
 `2026-08-24T14:23:05Z` 只读 probe 的本机 Codex 0.149.1 没有 ACP 子命令，作为 Runtime 内部 CLI adapter 使用 `codex exec --json`；该版本是点时事实，不是产品固定版本，它也不是新的外部边界。
-Codex JSONL 只接受 `thread.started → turn.started → (item.started | item.updated | item.completed)* → turn.completed`；`turn.failed` 与 `turn.cancelled` 是失败终态，缺少终态、未知事件或越序事件都拒绝。
+Codex JSONL 只接受一个 `thread.started → turn.started → item lifecycle* → terminal turn`。每个 item 有非空稳定 `id`，只能 `started → updated* → completed`，不得重复、跳过、重开或悬挂；turn 只终结一次，`completed` 要求所有 item 已完成，`failed` 与 `cancelled` 是失败终态。缺少终态、未知事件或越序事件都拒绝。`codex exec --json` 以缓冲方式收集，未实现增量输出时不声明 `streaming`。Launch 冻结所选 Runtime Adapter、Endpoint、model 与 AgentSpec；后续 catalog 替换不得改变既有 Session。
 ## Tool Runtime
 Tool Runtime 是 Agent Runtime 内部深模块。AgentSpec、Preset、设置页与 orchestrator 只理解稳定 Tool id；Adapter kind、operation 名称、MCP、HTTP、SSE、stdio、CLI、数据库驱动、位置、进程生命周期、凭证与依赖配方全部隐藏。
 `catalog(workspace)` 返回 Tool id、名称、描述、来源、`ready | setup_required | unavailable` 状态及声明式安装或配置动作，不返回 URL、command、args、header、env 名或 secret。`prepare(workspace, tool_id, action, values)` 只执行目录声明的受控动作，不接受任意安装命令。宿主 GPU 驱动和外部数据库权限只检测并报告。

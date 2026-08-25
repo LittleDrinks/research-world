@@ -28,6 +28,15 @@ def test_agent_spec_rejects_legacy_fields(legacy):
         AgentSpec.parse({**spec(), **legacy})
 
 
+@pytest.mark.parametrize("value", [
+    spec(endpoint="codex"),
+    spec(runtime={"id": "codex", "realm": REALM}),
+])
+def test_agent_spec_binds_codex_runtime_and_endpoint(value):
+    with pytest.raises(SpecError):
+        AgentSpec.parse(value)
+
+
 @pytest.mark.parametrize(
     "invalid",
     [
@@ -59,27 +68,18 @@ async def test_launch_rejects_unrecognized_capability(tmp_path, monkeypatch):
         )
 
 
-async def test_runtime_registry_is_independent_from_endpoint_catalog(tmp_path):
-    runtime = Runtime(
-        tmp_path / "data", [endpoint(FakeProvider([]))],
-        runtimes=[RuntimeAdapter(RuntimeDescriptor("codex", REALM))],
-    )
-    catalog = await runtime.recognize(str(tmp_path))
-    assert [item["id"] for item in catalog["runtimes"]] == ["codex"]
-    with pytest.raises(CapabilityNotFound, match="runtime"):
-        await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec()})
+def test_non_codex_adapter_cannot_register_codex_runtime(tmp_path):
+    with pytest.raises(ValueError, match="requires CodexRuntimeAdapter"):
+        Runtime(
+            tmp_path / "data", [endpoint(FakeProvider([]))],
+            runtimes=[RuntimeAdapter(RuntimeDescriptor("codex", REALM))],
+        )
 
 
-async def test_launch_rejects_endpoint_for_another_runtime(tmp_path):
-    runtime = Runtime(
-        tmp_path / "data", [endpoint(FakeProvider([]))],
-        runtimes=[RuntimeAdapter(RuntimeDescriptor("codex", REALM))],
-    )
-    with pytest.raises(CapabilityNotFound, match="endpoint is not available for runtime"):
-        await runtime.launch({
-            "workspace": str(tmp_path),
-            "agent_spec": spec(runtime={"id": "codex", "realm": REALM}),
-        })
+def test_duplicate_runtime_identity_is_rejected(tmp_path):
+    adapter = RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM))
+    with pytest.raises(ValueError, match="runtime id and realm must be unique"):
+        Runtime(tmp_path / "data", [endpoint(FakeProvider([]))], [adapter, adapter])
 
 
 def test_default_spec_selects_runtime_before_endpoint(tmp_path):
