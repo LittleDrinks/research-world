@@ -8,6 +8,8 @@ import re
 import shutil
 import signal
 import subprocess
+import threading
+import time
 from datetime import UTC, datetime
 from typing import Any
 
@@ -30,6 +32,8 @@ USAGE_FIELDS = {
 }
 PROBE_OUTPUT_LIMIT = 16 * 1024
 TERMINATE_TIMEOUT = 2.0
+PROBE_CANDIDATE_TIMEOUT = 5.0
+PROBE_CLEANUP_SLICE = 0.1
 
 
 class CodexProvider:
@@ -74,6 +78,7 @@ class CodexProvider:
         return await asyncio.create_subprocess_exec(
             *self._command(model, context),
             cwd=context["workspace"],
+            env=_environment(context),
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
@@ -90,11 +95,22 @@ class CodexProvider:
         await _bounded_stop(process)
 
     def _command(self, model: str, context: dict[str, Any]) -> list[str]:
-        options = ["--json", "--skip-git-repo-check", "-m", model]
-        options += ["-c", f'model_reasoning_effort="{context["reasoning_effort"]}"']
+        options = _options(model, context)
         if session_id := context.get("provider_session_id"):
             return [self.executable, "exec", "resume", *options, session_id, "-"]
         return [self.executable, "exec", *options, "-s", context["sandbox"], "-"]
+
+
+def _options(model: str, context: dict[str, Any]) -> list[str]:
+    return ["--json", "--skip-git-repo-check", "--ignore-user-config", "--ignore-rules",
+            "--disable", "shell_tool", "-m", model,
+            "-c", f'model_reasoning_effort="{context["reasoning_effort"]}"']
+
+
+def _environment(context: dict[str, Any]) -> dict[str, str]:
+    environment = os.environ.copy()
+    environment["CODEX_HOME"] = context["codex_home"]
+    return environment
 
 
 def _version(executable: str) -> tuple[str | None, str, dict[str, str] | None]:
@@ -114,39 +130,76 @@ def _version_probe(executable: str):
 
 
 def _probe(argv: list[str], name: str):
+    deadline = time.monotonic() + PROBE_CANDIDATE_TIMEOUT
     try:
         process = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                   text=True, **_process_group_options())
+                                   **_process_group_options())
     except OSError:
         return None, "error", _reason("probe_failed", name)
+    stdout, stderr = _bounded_probe_output(process)
     try:
-        stdout, stderr = process.communicate(timeout=2)
+        process.wait(timeout=_remaining(deadline))
     except subprocess.TimeoutExpired:
-        _stop_probe(process)
+        _stop_probe(process, deadline)
+        _join_probe_readers(stdout, stderr, deadline=deadline)
         return None, "error", _reason("probe_timeout", name)
     except OSError:
+        _join_probe_readers(stdout, stderr, deadline=deadline)
         return None, "error", _reason("probe_failed", name)
-    return subprocess.CompletedProcess(argv, process.returncode, _cap(stdout), _cap(stderr))
+    _join_probe_readers(stdout, stderr, deadline=deadline)
+    return subprocess.CompletedProcess(argv, process.returncode, stdout.value, stderr.value)
 
 
-def _cap(value: str | None) -> str:
-    return (value or "")[:PROBE_OUTPUT_LIMIT]
+def _bounded_probe_output(process):
+    stdout, stderr = _ProbeOutput(), _ProbeOutput()
+    _start_probe_reader(process.stdout, stdout)
+    _start_probe_reader(process.stderr, stderr)
+    return stdout, stderr
 
 
-def _stop_probe(process) -> None:
+def _start_probe_reader(stream, output) -> None:
+    thread = threading.Thread(target=_drain_probe_stream, args=(stream, output), daemon=True)
+    thread.start()
+    output.thread = thread
+
+
+def _drain_probe_stream(stream, output) -> None:
+    while chunk := stream.read(4096):
+        if len(output.chunks) < PROBE_OUTPUT_LIMIT:
+            output.chunks.extend(chunk[:PROBE_OUTPUT_LIMIT - len(output.chunks)])
+
+
+def _join_probe_readers(*outputs, deadline) -> None:
+    for output in outputs:
+        output.thread.join(_remaining(deadline))
+        output.value = bytes(output.chunks).decode(errors="replace")
+
+
+class _ProbeOutput:
+    def __init__(self):
+        self.chunks = bytearray()
+        self.thread = None
+        self.value = ""
+
+
+def _stop_probe(process, deadline) -> None:
     _terminate_tree(process)
-    if _wait_probe(process):
+    if _wait_probe(process, deadline):
         return
     _kill_tree(process)
-    _wait_probe(process)
+    _wait_probe(process, deadline)
 
 
-def _wait_probe(process) -> bool:
+def _wait_probe(process, deadline) -> bool:
     try:
-        process.wait(timeout=TERMINATE_TIMEOUT)
+        process.wait(timeout=min(PROBE_CLEANUP_SLICE, _remaining(deadline)))
     except subprocess.TimeoutExpired:
         return False
     return process.returncode is not None
+
+
+def _remaining(deadline) -> float:
+    return max(0.0, deadline - time.monotonic())
 
 
 def _version_status(version: str) -> tuple[str, str, dict[str, str] | None]:
@@ -194,8 +247,7 @@ async def _wait(process) -> bool:
 
 async def _bounded_stop(process) -> None:
     _terminate_tree(process)
-    if await _wait(process):
-        return
+    await asyncio.sleep(TERMINATE_TIMEOUT)
     _kill_tree(process)
     if not await _wait(process):
         raise TraceError("cli_termination_timeout", "codex did not terminate")
@@ -208,21 +260,24 @@ def _process_group_options() -> dict[str, int | bool]:
 
 
 def _terminate_tree(process) -> None:
-    _signal_tree(process, signal.SIGTERM, "terminate")
+    _signal_tree(process, signal.SIGTERM, "terminate", force=True)
 
 
 def _kill_tree(process) -> None:
     if os.name == "nt":
         _taskkill(process)
         return
-    _signal_tree(process, signal.SIGKILL, "kill")
+    _signal_tree(process, signal.SIGKILL, "kill", force=True)
 
 
-def _signal_tree(process, sig, fallback: str) -> None:
-    if process.returncode is not None:
+def _signal_tree(process, sig, fallback: str, force: bool = False) -> None:
+    if process.returncode is not None and not force:
         return
     if os.name == "posix" and getattr(process, "pid", None):
-        os.killpg(os.getpgid(process.pid), sig)
+        try:
+            os.killpg(process.pid, sig)
+        except ProcessLookupError:
+            return
         return
     if os.name == "nt" and getattr(process, "pid", None):
         _taskkill(process)
@@ -314,11 +369,13 @@ class _Lifecycle:
         previous = self.items.get(item_id)
         if previous is not None and previous[1] != item_type:
             raise _invalid_jsonl()
+        if not _phase_matches(kind, item):
+            raise _invalid_jsonl()
         self._advance_item(kind, item_id, item_type, previous)
 
     def _advance_item(self, kind, item_id, item_type, previous) -> None:
         state = previous[0] if previous else None
-        if kind == "item.started" and state is None:
+        if kind == "item.started" and _starts_item(item_type, state):
             self.items[item_id] = ("started", item_type)
         elif kind == "item.updated" and _may_update(state, item_type):
             self.items[item_id] = ("updated", item_type)
@@ -399,6 +456,19 @@ def _item_identity(item: object) -> bool:
 
 def _may_update(state, item_type) -> bool:
     return state in {"started", "updated"} and item_type == "todo_list"
+
+
+def _starts_item(item_type, state) -> bool:
+    return state is None and item_type not in COMPLETED_ONLY_ITEMS
+
+
+def _phase_matches(kind, item) -> bool:
+    status = item.get("status")
+    if status is None:
+        return True
+    return (kind == "item.started" and status == "in_progress") or (
+        kind == "item.completed" and status != "in_progress"
+    )
 
 
 def _text_item(item: dict) -> bool:
@@ -485,8 +555,8 @@ def _web_item(item: dict) -> bool:
 def _web_action(value) -> bool:
     if not isinstance(value, dict) or value.get("type") not in {"search", "open_page", "find_in_page", "other"}:
         return False
-    fields = {"search": {"type", "query", "queries"}, "open_page": {"type", "url"}, "find_in_page": {"type", "url", "pattern"}, "other": {"type"}}
-    return _exact(value, fields[value["type"]]) and _web_action_values(value)
+    fields = {"search": ({"type", "query"}, {"type", "query", "queries"}), "open_page": ({"type", "url"},), "find_in_page": ({"type", "url", "pattern"},), "other": ({"type"},)}
+    return set(value) in fields[value["type"]] and _web_action_values(value)
 
 
 def _web_action_values(value) -> bool:

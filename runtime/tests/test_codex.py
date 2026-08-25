@@ -1,9 +1,14 @@
 import asyncio
+import io
 import json
+import os
 import subprocess
+import sys
+import time
+from pathlib import Path
 
 import pytest
-from runtime.providers.codex import CodexProvider, _collect, _taskkill
+from runtime.providers.codex import CodexProvider, _collect, _probe, _taskkill
 from runtime.runtimes import CodexRuntimeAdapter, REALM, load_runtimes
 from runtime.service import Runtime, _messages, _provider_context
 
@@ -21,13 +26,12 @@ def ready_provider(executable="echo"):
 class _Probe:
     def __init__(self, output="", returncode=0, error=None):
         self.output, self.returncode, self.error = output, returncode, error
-
-    def communicate(self, timeout):
-        if self.error:
-            raise self.error
-        return self.output, "secret"
+        self.stdout = io.BytesIO(output.encode())
+        self.stderr = io.BytesIO(b"secret")
 
     def wait(self, timeout):
+        if self.error:
+            raise self.error
         return self.returncode
 
     def terminate(self):
@@ -103,22 +107,102 @@ def test_readiness_uses_only_safe_login_status(monkeypatch, result, status, code
     assert provider.reason == {"code": code, "probe": "login status"}
 
 
+def test_probe_caps_noisy_stdout_before_buffering(monkeypatch):
+    monkeypatch.setattr("runtime.providers.codex.PROBE_OUTPUT_LIMIT", 128)
+    result = _probe([sys.executable, "-c", "import sys;sys.stdout.write('x'*1000000)"], "test")
+    assert len(result.stdout) == 128
+    assert result.stderr == ""
+
+
+@pytest.mark.skipif(os.name != "posix", reason="process groups require POSIX")
+def test_probe_deadline_bounds_noisy_descendant_reader_join(monkeypatch, tmp_path):
+    monkeypatch.setattr("runtime.providers.codex.PROBE_CANDIDATE_TIMEOUT", 0.2)
+    child = f"import os,time;os.setsid();open({str(tmp_path / 'pid')!r},'w').write(str(os.getpid()));time.sleep(10)"
+    parent = f"import subprocess,sys,time;subprocess.Popen([sys.executable,'-c',{child!r}]);time.sleep(.05);exec('while True: pass')"
+    pid_file, started = tmp_path / "pid", time.monotonic()
+    result = _probe([sys.executable, "-c", parent], "test")
+    _kill_pid(int(pid_file.read_text())) if pid_file.exists() else None
+    assert result[2]["code"] == "probe_timeout"
+    assert time.monotonic() - started < 0.4
+
+
+def _kill_pid(pid):
+    try:
+        os.kill(pid, 9)
+    except ProcessLookupError:
+        return
+
+
+@pytest.mark.skipif(os.name != "posix", reason="process groups require POSIX")
+async def test_stop_kills_same_group_descendant_after_parent_exit(monkeypatch, tmp_path):
+    monkeypatch.setattr("runtime.providers.codex.TERMINATE_TIMEOUT", 0.05)
+    process = await asyncio.create_subprocess_exec(
+        sys.executable, "-c", _term_ignoring_parent(tmp_path / "pid"),
+        start_new_session=True,
+    )
+    await process.wait()
+    pid = int((tmp_path / "pid").read_text())
+    await CodexProvider().stop(process)
+    assert await _process_gone(pid)
+
+
+def _term_ignoring_parent(path):
+    child = f"import os,signal,time;signal.signal(signal.SIGTERM,signal.SIG_IGN);open({str(path)!r},'w').write(str(os.getpid()));time.sleep(10)"
+    return f"import pathlib,subprocess,sys,time;subprocess.Popen([sys.executable,'-c',{child!r}]);p=pathlib.Path({str(path)!r});exec('while not p.exists(): time.sleep(.001)')"
+
+
+async def _process_gone(pid):
+    for _ in range(50):
+        if not os.path.exists(f"/proc/{pid}"):
+            return True
+        await asyncio.sleep(0.01)
+    return False
+
+
 def test_codex_command_uses_official_exec_jsonl_contract():
     provider = ready_provider()
     assert provider._command("gpt-test", _context()) == _fresh_command(provider)
     assert provider._command("gpt-test", _context("thread-1")) == _resume_command(provider)
 
 
+def test_runtime_dockerfile_pins_the_audited_codex_release():
+    dockerfile = Path(__file__).parents[1] / "Dockerfile"
+    assert "npm install --global @openai/codex@0.149.1" in dockerfile.read_text()
+
+
 def _context(session_id=None):
-    return {"workspace": "/tmp", "sandbox": "workspace-write", "reasoning_effort": "medium", "provider_session_id": session_id}
+    return {"workspace": "/tmp", "sandbox": "workspace-write", "reasoning_effort": "medium", "provider_session_id": session_id, "codex_home": "/tmp/sessions/s-one/codex-home"}
 
 
 def _fresh_command(provider):
-    return [provider.executable, "exec", "--json", "--skip-git-repo-check", "-m", "gpt-test", "-c", 'model_reasoning_effort="medium"', "-s", "workspace-write", "-"]
+    return [provider.executable, "exec", "--json", "--skip-git-repo-check", "--ignore-user-config", "--ignore-rules", "--disable", "shell_tool", "-m", "gpt-test", "-c", 'model_reasoning_effort="medium"', "-s", "workspace-write", "-"]
 
 
 def _resume_command(provider):
-    return [provider.executable, "exec", "resume", "--json", "--skip-git-repo-check", "-m", "gpt-test", "-c", 'model_reasoning_effort="medium"', "thread-1", "-"]
+    return [provider.executable, "exec", "resume", "--json", "--skip-git-repo-check", "--ignore-user-config", "--ignore-rules", "--disable", "shell_tool", "-m", "gpt-test", "-c", 'model_reasoning_effort="medium"', "thread-1", "-"]
+
+
+def test_codex_session_home_is_per_session_and_restart_stable(tmp_path):
+    first = str(tmp_path / "sessions" / "s-one" / "codex-home")
+    second = str(tmp_path / "sessions" / "s-two" / "codex-home")
+    assert first != second and first.endswith("s-one/codex-home")
+
+
+async def test_codex_launch_isolated_across_sessions_and_restart(monkeypatch, tmp_path):
+    calls = []
+    monkeypatch.setattr("runtime.providers.codex.asyncio.create_subprocess_exec", _record_launches(calls))
+    first = codex_runtime(tmp_path, ready_provider())
+    one = await _launch_and_prompt(first, tmp_path, "one")
+    await _launch_and_prompt(first, tmp_path, "two")
+    await codex_runtime(tmp_path, ready_provider()).prompt(one, [{"type": "text", "text": "again"}])
+    assert len({call[1]["env"]["CODEX_HOME"] for call in calls}) == 2
+    assert all(_isolated_codex_command(call) for call in calls)
+
+
+async def test_codex_rejects_selected_runtime_tools(tmp_path):
+    runtime = codex_runtime(tmp_path, ready_provider())
+    with pytest.raises(RuntimeError, match="cannot expose selected Tool"):
+        await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec(tools=["tool"])})
 
 
 def test_provider_context_reads_agent_options_and_session_id():
@@ -484,6 +568,18 @@ async def test_collect_accepts_release_completed_only_items_and_updates():
     assert result.message["content"] == "answer"
 
 
+async def test_collect_accepts_query_only_web_search():
+    result = await _collect(Process(_stream(_query_only_web_events())), "prompt", _ignore, 1)
+    assert result.provider_items[1]["item"]["action"] == {"type": "search", "query": "q"}
+
+
+@pytest.mark.parametrize("phase, status", [("started", "completed"), ("completed", "in_progress")])
+async def test_collect_rejects_mismatched_item_phase_status(phase, status):
+    event = {"type": f"item.{phase}", "item": _command(status)}
+    with pytest.raises(RuntimeError, match="invalid JSONL"):
+        await _collect(Process(_stream([event])), "prompt", _ignore, 1)
+
+
 async def test_inspect_projects_every_official_item_and_repeated_update(tmp_path, monkeypatch):
     provider = ready_provider()
     monkeypatch.setattr(provider, "start", lambda *_: _process(Process(_all_items_stream())))
@@ -549,6 +645,11 @@ def _all_items_stream():
 
 def _failed_stream():
     return _stream([{"type": "item.completed", "item": _error()}], failed=True)
+
+
+def _query_only_web_events():
+    item = {"id": "web", "type": "web_search", "query": "q", "action": {"type": "search", "query": "q"}}
+    return [{"type": "item.started", "item": item}, {"type": "item.completed", "item": item}, {"type": "item.completed", "item": _agent()}]
 
 
 def _stream(events, failed=False):
@@ -749,6 +850,25 @@ def _resuming_start(contexts):
     return start
 
 
+def _record_launches(calls):
+    async def create(*args, **kwargs):
+        calls.append((args, kwargs))
+        return _completed_process()
+    return create
+
+
+async def _launch_and_prompt(runtime, path, session_id):
+    launched = await runtime.launch({"workspace": str(path), "agent_spec": _spec(), "session_id": f"s-{session_id}"})
+    await runtime.prompt(launched["session_id"], [{"type": "text", "text": session_id}])
+    return launched["session_id"]
+
+
+def _isolated_codex_command(call):
+    args, kwargs = call
+    flags = {"--ignore-user-config", "--ignore-rules", "--disable", "shell_tool"}
+    return flags <= set(args) and bool(kwargs["env"]["CODEX_HOME"])
+
+
 def _created_after(started, ready, process):
     async def start(*_args, **_kwargs):
         started.set()
@@ -772,8 +892,8 @@ async def _active_task(runtime, tmp_path, started):
     return task, session
 
 
-def _spec():
-    return {
+def _spec(**extra):
+    value = {
         "id": "researcher",
         "name": "Researcher",
         "runtime": {"id": "codex", "realm": REALM},
@@ -781,6 +901,8 @@ def _spec():
         "model": "gpt-5.6-sol",
         "instructions": "Answer.",
     }
+    value.update(extra)
+    return value
 
 
 class TreeProcess(Process):

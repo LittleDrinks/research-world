@@ -2,11 +2,24 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import threading
+from urllib.parse import urlsplit, urlunsplit
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+
+CREDENTIAL_LABEL = r"(?:x[\W_]*)?api[\W_]*key|client[\W_]*secret|secret|token|password|credential|authorization"
+CREDENTIAL = re.compile(rf"(?i)((?:bearer|basic)\s+|(?:{CREDENTIAL_LABEL})\s*[:=]\s*)[^\s'\"]+")
+UNIX_PATH = re.compile(r"(?<![\w:])/(?:[^\s'\"]+)")
+WINDOWS_PATH = re.compile(r"(?i)\b[A-Z]:\\(?:[^\s'\"]+)")
+CREDENTIAL_FIELDS = {
+    "apikey", "apikeys", "xapikey", "authorization", "authorizations",
+    "password", "credential", "credentials", "secret", "secrets",
+    "clientsecret", "token", "tokens", "baseurl", "endpoint",
+}
 
 
 class TraceStore:
@@ -62,10 +75,74 @@ def inspect_trace(events: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _public_event(event):
-    if event["type"] != "session_meta":
-        return event
-    data = {key: value for key, value in event["data"].items() if key != "runtime_binding"}
+    data = _public_data(event["data"])
     return {**event, "data": data}
+
+
+def _public_data(data):
+    hidden = {"runtime_binding", "codex_home"}
+    return _redact(data, hidden, ())
+
+
+def _redact(value, hidden, path):
+    if isinstance(value, dict):
+        return {key: _redact_field(key, item, hidden, path) for key, item in value.items() if key not in hidden}
+    if isinstance(value, list):
+        return [_redact(item, hidden, path) for item in value]
+    return _redact_text(value) if isinstance(value, str) else value
+
+
+def _redact_field(key, value, hidden, path):
+    if _credential_field(key) and not _logical_endpoint(key, path):
+        return "<redacted>"
+    return _redact(value, hidden, (*path, key))
+
+
+def _logical_endpoint(key, path):
+    return key == "endpoint" and path[-1:] == ("agent_spec",)
+
+
+def _credential_field(key):
+    normalized = re.sub(r"[^a-z0-9]", "", key.lower())
+    return normalized in CREDENTIAL_FIELDS or bool(
+        re.search(r"(?:^|[_-])(?:access|auth|bearer|id|refresh|session)?token$", key, re.I)
+    )
+
+
+def _redact_text(value):
+    value = _redact_urls(value)
+    value = _redact_credentials(value)
+    value = _redact_paths(value)
+    return value
+
+
+def _redact_urls(value):
+    return re.sub(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s'\"]+", _redact_url, value)
+
+
+def _redact_url(match):
+    value = match.group(0)
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        return value
+    if not parsed.netloc:
+        return value
+    host = parsed.hostname or ""
+    try:
+        port = f":{parsed.port}" if parsed.port else ""
+    except ValueError:
+        port = ""
+    return urlunsplit((parsed.scheme, host + port, parsed.path, "<redacted>" if parsed.query else "", parsed.fragment))
+
+
+def _redact_credentials(value):
+    return CREDENTIAL.sub(r"\1<redacted>", value)
+
+
+def _redact_paths(value):
+    value = UNIX_PATH.sub("<path>", value)
+    return WINDOWS_PATH.sub("<path>", value)
 
 
 def _event(session_id, seq, event_type, data, turn_id):

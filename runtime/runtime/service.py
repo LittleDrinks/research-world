@@ -77,7 +77,8 @@ class Runtime:
         return {"session_id": session_id}
 
     def _validate_launch(self, session_id, spec, workspace, value) -> None:
-        _validate_existing_session(self.inspect(session_id)["session"], _launch_identity(spec, workspace, value))
+        meta = self._events(session_id)[0]["data"]
+        _validate_existing_session(meta, _launch_identity(spec, workspace, value))
 
     async def _create_session(self, session_id, spec, workspace, value) -> None:
         recognized = await self.recognize(str(workspace))
@@ -86,7 +87,9 @@ class Runtime:
         endpoint = self.endpoints.require(spec.endpoint, spec.model)
         snapshots = _skill_snapshots(spec, workspace)
         plan = await self._tool_plan(spec, workspace, snapshots)
-        self.trace.create(session_id, _session_meta(spec, workspace, value, snapshots, plan, recognized, endpoint, adapter))
+        meta = _session_meta(spec, workspace, value, snapshots, plan, recognized, endpoint, adapter)
+        _add_codex_home(meta, self.trace.path(session_id), spec)
+        self.trace.create(session_id, meta)
         self._bindings[session_id] = _LaunchBinding(adapter, endpoint, spec)
 
     async def _tool_plan(self, spec: AgentSpec, workspace: Path, snapshots) -> list:
@@ -363,6 +366,8 @@ def _validate_spec(spec: AgentSpec, recognized: dict, runtime) -> None:
     endpoint = _validate_endpoint(spec, recognized)
     if not runtime.accepts(endpoint):
         raise CapabilityNotFound("endpoint is not available for runtime")
+    if runtime.owns_process and spec.tools:
+        raise CapabilityNotFound("codex cannot expose selected Tool schemas")
     _validate_dependencies(spec, recognized)
 
 
@@ -412,6 +417,15 @@ def _session_meta(spec, workspace, value, skills, tool_plan, capabilities, endpo
         "endpoint_snapshot": endpoint.public(),
         "runtime_binding": {"runtime": _adapter_identity(adapter)},
     }
+
+
+def _add_codex_home(meta, path, spec) -> None:
+    if spec.runtime.id != "codex":
+        return
+    home = path.parent / "codex-home"
+    home.mkdir(parents=True, exist_ok=True)
+    home.chmod(0o700)
+    meta["codex_home"] = str(home)
 
 
 def _capability_snapshot(spec, recognized):
@@ -577,6 +591,7 @@ def _provider_context(meta, events):
         "reasoning_effort": options.get("reasoning_effort", "medium"),
         "runtime_session_id": events[0]["session_id"],
         "provider_session_id": _provider_session(events),
+        "codex_home": meta.get("codex_home", ""),
     }
 
 
