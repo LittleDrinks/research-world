@@ -133,11 +133,7 @@ class Runtime:
 
     async def _prompt(self, session_id, blocks, client, emit):
         events = self._events(session_id)
-        meta = events[0]["data"]
-        try:
-            spec = AgentSpec.parse(meta["agent_spec"])
-        except RuntimeInputError as error:
-            raise SessionSpecInvalid(str(error)) from error
+        spec, meta = _session_spec(events)
         turn_id = f"t-{uuid.uuid4().hex}"
         self.trace.append(session_id, "turn_start", {"prompt": blocks}, turn_id)
         adapter = self.runtimes.require(spec.runtime)
@@ -271,6 +267,14 @@ def _workspace(value: str) -> Path:
     return path
 
 
+def _session_spec(events):
+    meta = events[0]["data"]
+    try:
+        return AgentSpec.parse(meta["agent_spec"]), meta
+    except RuntimeInputError as error:
+        raise SessionSpecInvalid(str(error)) from error
+
+
 def _codex_endpoints(adapters: list[RuntimeAdapter]) -> list[Endpoint]:
     values = [
         item
@@ -281,6 +285,7 @@ def _codex_endpoints(adapters: list[RuntimeAdapter]) -> list[Endpoint]:
 
 
 def _runtime_endpoints(values, adapters) -> list[Endpoint]:
+    _reject_reserved_endpoint(values)
     existing = {item.id for item in values}
     return [
         *values,
@@ -288,8 +293,13 @@ def _runtime_endpoints(values, adapters) -> list[Endpoint]:
     ]
 
 
+def _reject_reserved_endpoint(values) -> None:
+    if any(item.id == "codex" and item.adapter != "codex" for item in values):
+        raise ValueError("endpoint id is reserved by Codex CLI")
+
+
 def _bind_endpoint_ids(adapters, endpoints) -> None:
-    ids = tuple(item.id for item in endpoints)
+    ids = tuple(item.id for item in endpoints if item.id != "codex")
     for adapter in adapters:
         if adapter.descriptor.id == "openai-compatible":
             adapter.endpoint_ids = ids

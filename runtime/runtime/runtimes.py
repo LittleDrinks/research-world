@@ -14,8 +14,13 @@ REALM = "container:runtime"
 class RuntimeDescriptor:
     id: str
     realm: str
+    display_name: str = ""
     executable: str | None = None
     version: str | None = None
+    source: str = "path"
+    path: str | None = None
+    resolved_path: str | None = None
+    last_checked_at: str | None = None
     status: str = "ready"
     capabilities: tuple[str, ...] = ()
     reason: dict[str, str] | None = None
@@ -24,8 +29,13 @@ class RuntimeDescriptor:
         return {
             "id": self.id,
             "realm": self.realm,
+            "display_name": self.display_name,
             "executable": self.executable,
             "version": self.version,
+            "source": self.source,
+            "path": self.path,
+            "resolved_path": self.resolved_path,
+            "last_checked_at": self.last_checked_at,
             "status": self.status,
             "capabilities": list(self.capabilities),
             "reason": self.reason,
@@ -72,6 +82,9 @@ class CodexRuntimeAdapter(RuntimeAdapter):
         try:
             result = await self.provider.collect(process, messages, emit)
             return endpoint.id, result
+        except BaseException:
+            await self.provider.stop(process)
+            raise
         finally:
             self._processes.pop(session_id, None)
             self._cancelled.discard(session_id)
@@ -106,8 +119,7 @@ class RuntimePool:
 
 def load_runtimes() -> list[RuntimeAdapter]:
     values = [RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM), ())]
-    if provider := CodexProvider.detected():
-        values.append(CodexRuntimeAdapter(provider))
+    values.append(CodexRuntimeAdapter(CodexProvider.detected()))
     return values
 
 
@@ -115,11 +127,10 @@ def _codex_descriptor(provider: CodexProvider) -> RuntimeDescriptor:
     return RuntimeDescriptor(
         "codex",
         REALM,
-        provider.executable,
-        provider.version,
-        provider.status,
-        capabilities=("non-interactive", "resume"),
-        reason=provider.reason,
+        "Codex CLI", "codex", provider.version, "path", provider.path,
+        provider.resolved_path, provider.last_checked_at, provider.status,
+        ("non-interactive", "streaming", "resume", "model-select",
+         "reasoning-select", "workspace", "auth-probe"), provider.reason,
     )
 
 

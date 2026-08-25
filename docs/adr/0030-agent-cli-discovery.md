@@ -34,6 +34,7 @@ OpenCLI 是浏览器自动化 Tool Adapter，只能以 `browser.opencli` 进入 
 | `capabilities` | string[] | Adapter 已确认的能力 id；缺省为空，不从产品名推断 |
 同一产品在不同 realm 返回独立 descriptor，以 `(id, realm)` 唯一标识。UI 使用 `runtimeKey(id, realm) = JSON.stringify([id, realm])` 作为 option value、React key 与选择回读 key；选择和 Profile snapshot 始终同时保存 `id`、`realm`，不按 `id` 回退查找。`path` 不跟随 symlink、shim 或 wrapper；`resolved_path` 完成 realm 内解析。`source` 只表示发现来源，不编码 realm、文件类型或 readiness。
 `capabilities` 使用 Runtime 内置词表：`interactive`、`non-interactive`、`streaming`、`resume`、`model-select`、`reasoning-select`、`workspace`、`auth-probe`。Profile 选择的 Skill、Tool 与 MCP 来源不进入该数组。
+每个内置 Runtime 候选始终进入 inventory；缺失、无效版本或 probe 超时只改变该候选的 `status` 与 `reason`。`codex` 是 Codex CLI Runtime 独占的保留 Endpoint id，OpenAI-compatible Endpoint 配置不得使用该 id。
 ## 状态与错误
 | 状态 | 判定 |
 |---|---|

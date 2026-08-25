@@ -4,6 +4,7 @@ import pytest
 from runtime.endpoints import EndpointPool, load_endpoints
 from runtime.providers.base import EndpointUnavailable
 from runtime.service import Runtime
+from runtime.runtimes import REALM, RuntimeAdapter, RuntimeDescriptor
 from runtime.types import CapabilityNotFound
 from tests.helpers import FakeProvider, endpoint
 
@@ -157,6 +158,15 @@ def test_endpoint_settings_reject_inline_credentials(monkeypatch):
 
     with pytest.raises(ValueError, match="invalid endpoint definition"):
         load_endpoints()
+
+
+def test_endpoint_settings_reserve_codex_for_the_cli_runtime(monkeypatch, tmp_path):
+    monkeypatch.setenv("RUNTIME_ENDPOINTS", json.dumps([configured_row(id="codex")]))
+    with pytest.raises(ValueError, match="reserved by Codex CLI"):
+        Runtime(
+            tmp_path / "data", load_endpoints(),
+            runtimes=[RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM))],
+        )
 
 
 async def test_embedding_requires_an_endpoint_id(tmp_path):

@@ -7,6 +7,7 @@ import re
 import shutil
 import signal
 import subprocess
+from datetime import UTC, datetime
 from typing import Any
 
 from .base import Emit, ModelResult
@@ -14,6 +15,7 @@ from ..types import TraceError
 
 VERSION = re.compile(r"codex-cli\s+(\S+)")
 TERMINALS = {"turn.completed", "turn.failed", "turn.cancelled"}
+EVENTS = {"thread.started", "turn.started", "item.started", "item.updated", "item.completed", *TERMINALS}
 
 
 class CodexProvider:
@@ -21,23 +23,24 @@ class CodexProvider:
 
     def __init__(self, executable: str = "codex", timeout: float = 300.0):
         resolved = shutil.which(executable)
-        if not resolved:
-            raise RuntimeError("codex executable not found")
-        self.executable = resolved
+        self.executable = resolved or executable
+        self.path = resolved
+        self.resolved_path = os.path.realpath(resolved) if resolved else None
         self.timeout = timeout
         self.version: str | None = None
-        self.status = "ready"
+        self.status = "ready" if resolved else "missing"
         self.reason: dict[str, str] | None = None
+        self.last_checked_at = _checked_at()
 
     @classmethod
-    def detected(cls) -> CodexProvider | None:
-        executable = shutil.which("codex")
-        version = _version(executable) if executable else None
-        if version is None:
-            return None
-        provider = cls(executable)
-        provider.version = version
-        provider.status, provider.reason = _readiness(executable)
+    def detected(cls) -> CodexProvider:
+        provider = cls()
+        if provider.path is None:
+            provider.reason = {"code": "not_on_path", "probe": "path"}
+            return provider
+        provider.version, provider.status, provider.reason = _version(provider.path)
+        if provider.status == "found":
+            provider.status, provider.reason = _readiness(provider.path)
         return provider
 
     async def start(self, model: str, context: dict[str, Any]):
@@ -56,6 +59,10 @@ class CodexProvider:
     def cancel(self, process) -> None:
         _terminate_tree(process)
 
+    async def stop(self, process) -> None:
+        self.cancel(process)
+        await process.wait()
+
     def _command(self, model: str, context: dict[str, Any]) -> list[str]:
         options = ["--json", "--skip-git-repo-check", "-m", model]
         options += ["-c", f'model_reasoning_effort="{context["reasoning_effort"]}"']
@@ -64,9 +71,7 @@ class CodexProvider:
         return [self.executable, "exec", *options, "-s", context["sandbox"], "-"]
 
 
-def _version(executable: str | None) -> str | None:
-    if executable is None:
-        return None
+def _version(executable: str) -> tuple[str | None, str, dict[str, str] | None]:
     try:
         result = subprocess.run(
             [executable, "--version"],
@@ -75,10 +80,14 @@ def _version(executable: str | None) -> str | None:
             text=True,
             timeout=2,
         )
-    except (OSError, subprocess.TimeoutExpired):
-        return None
+    except subprocess.TimeoutExpired:
+        return None, "error", _reason("probe_timeout", "version")
+    except OSError:
+        return None, "error", _reason("probe_failed", "version")
     match = VERSION.search(result.stdout) if result.returncode == 0 else None
-    return match.group(1) if match else None
+    if match:
+        return match.group(1), "found", None
+    return None, "error", _reason("probe_invalid_output", "version")
 
 
 async def _collect(process, prompt: str, emit: Emit, timeout: float) -> ModelResult:
@@ -154,7 +163,7 @@ def _events(stdout: bytes) -> list[dict]:
         ]
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise _invalid_jsonl() from error
-    if not values or not all(_valid_event(item) for item in values):
+    if not values or not all(_valid_shape(item) for item in values):
         raise _invalid_jsonl()
     _validate_stream(values)
     return values
@@ -165,8 +174,7 @@ def _invalid_jsonl() -> TraceError:
 
 
 def _validate_stream(events: list[dict]) -> None:
-    _validate_thread(events)
-    terminal = _stream_terminal(events)
+    terminal = _stream_state(events)
     if terminal == "turn.completed":
         return
     if terminal in {"turn.failed", "turn.cancelled"}:
@@ -176,26 +184,33 @@ def _validate_stream(events: list[dict]) -> None:
     )
 
 
-def _validate_thread(events: list[dict]) -> None:
-    threads = [item for item in events if item["type"] == "thread.started"]
-    if len(threads) != 1 or not _valid_thread(threads[0]):
+def _stream_state(events: list[dict]) -> str:
+    state = "new"
+    for event in events:
+        state = _next_state(state, event["type"])
+    if state not in TERMINALS:
+        raise TraceError("cli_incomplete_stream", "codex returned an incomplete terminal stream")
+    return state
+
+
+def _next_state(state: str, kind: str) -> str:
+    allowed = {"new": {"thread.started"}, "thread.started": {"turn.started"}, "turn.started": EVENTS - {"thread.started", "turn.started"}}
+    if kind not in allowed.get(state, set()):
         raise _invalid_jsonl()
+    return kind if kind in {"thread.started", "turn.started", *TERMINALS} else state
 
 
-def _stream_terminal(events: list[dict]) -> str | None:
-    terminals = [index for index, item in enumerate(events) if item["type"] in TERMINALS]
-    if len(terminals) != 1 or terminals[0] != len(events) - 1:
-        raise _invalid_jsonl()
-    return events[terminals[0]]["type"]
-
-
-def _valid_event(event: object) -> bool:
+def _valid_shape(event: object) -> bool:
     if not isinstance(event, dict) or not isinstance(event.get("type"), str):
         return False
     kind = event["type"]
+    if kind not in EVENTS:
+        return False
     if kind == "thread.started":
         return _valid_thread(event)
-    if kind == "item.completed":
+    if kind == "turn.started":
+        return True
+    if kind in {"item.started", "item.updated", "item.completed"}:
         return _valid_item(event)
     if kind == "turn.completed":
         return _valid_usage(event)
@@ -229,6 +244,14 @@ def _valid_terminal(event: dict) -> bool:
     if event["type"] == "turn.cancelled" and error is None:
         return True
     return isinstance(error, dict) and isinstance(error.get("message"), str)
+
+
+def _checked_at() -> str:
+    return datetime.now(UTC).isoformat()
+
+
+def _reason(code: str, probe: str) -> dict[str, str]:
+    return {"code": code, "probe": probe}
 
 
 def _token_count(value: object) -> bool:

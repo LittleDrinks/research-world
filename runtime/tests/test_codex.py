@@ -3,7 +3,7 @@ import subprocess
 
 import pytest
 from runtime.providers.codex import CodexProvider, _collect
-from runtime.runtimes import CodexRuntimeAdapter, REALM
+from runtime.runtimes import CodexRuntimeAdapter, REALM, load_runtimes
 from runtime.endpoints import Endpoint
 from runtime.service import Runtime, _provider_context
 
@@ -15,7 +15,7 @@ def codex_runtime(tmp_path, provider):
             Endpoint(
                 "codex",
                 "Codex CLI",
-                "unrelated",
+                "codex",
                 ("gpt-test",),
                 (),
                 200,
@@ -46,13 +46,15 @@ def test_readiness_checks_version_without_exposing_probe_output(monkeypatch):
     assert calls[1][1]["stdout"] is subprocess.DEVNULL
 
 
-def test_readiness_rejects_missing_or_invalid_version(monkeypatch):
+def test_readiness_keeps_invalid_version_candidate(monkeypatch):
     monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: "/bin/codex")
     monkeypatch.setattr(
         "runtime.providers.codex.subprocess.run",
         lambda *_, **__: subprocess.CompletedProcess([], 0, "unknown", "secret"),
     )
-    assert CodexProvider.detected() is None
+    descriptor = load_runtimes()[1].descriptor.public()
+    assert descriptor["status"] == "error"
+    assert descriptor["reason"] == {"code": "probe_invalid_output", "probe": "version"}
 
 
 @pytest.mark.parametrize(
@@ -153,6 +155,7 @@ class Process:
 async def test_collect_normalizes_jsonl_into_model_result():
     process = Process(
         b'{"type":"thread.started","thread_id":"thread-1"}\n'
+        b'{"type":"turn.started"}\n'
         b'{"type":"item.completed","item":{"type":"agent_message","text":"answer"}}\n'
         b'{"type":"turn.completed","usage":{"input_tokens":3,"output_tokens":2}}\n'
     )
@@ -178,6 +181,7 @@ async def test_collect_normalizes_jsonl_into_model_result():
         (
             Process(
                 b'{"type":"thread.started","thread_id":"thread-1"}\n'
+                b'{"type":"turn.started"}\n'
                 b'{"type":"turn.failed","error":{"message":"failed"}}\n'
             ),
             "failed terminal stream",
@@ -224,6 +228,7 @@ async def test_collect_rejects_malformed_event_shapes(event):
 async def test_collect_rejects_failed_or_cancelled_terminal(terminal):
     process = Process(
         b'{"type":"thread.started","thread_id":"thread-1"}\n'
+        b'{"type":"turn.started"}\n'
         + terminal
         + b"\n"
     )
@@ -390,59 +395,77 @@ async def test_runtime_preserves_capability_snapshot_and_recovers_resume(
 ):
     provider = CodexProvider("echo")
     contexts = []
-
-    async def start(_, context):
-        contexts.append(context)
-        return Process(
-            b'{"type":"thread.started","thread_id":"thread-1"}\n'
-            b'{"type":"item.completed","item":{"type":"agent_message","text":"answer"}}\n'
-            b'{"type":"turn.completed"}\n'
-        )
-
-    monkeypatch.setattr(provider, "start", start)
+    monkeypatch.setattr(provider, "start", _resuming_start(contexts))
     runtime = codex_runtime(tmp_path, provider)
-    spec = {
-        "id": "researcher",
-        "name": "Researcher",
-        "runtime": {"id": "codex", "realm": "container:runtime"},
-        "endpoint": "codex",
-        "model": "gpt-test",
-        "instructions": "Answer.",
-    }
-    launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec})
+    launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()})
     await runtime.prompt(launched["session_id"], [{"type": "text", "text": "one"}])
     await runtime.prompt(launched["session_id"], [{"type": "text", "text": "two"}])
     session = runtime.inspect(launched["session_id"])["session"]
     assert session["agent_spec"]["endpoint"] == "codex"
     snapshot = session["capability_snapshot"]["runtime"]
-    assert set(snapshot) == {
-        "id",
-        "realm",
-        "executable",
-        "version",
-        "status",
-        "capabilities",
-        "reason",
-    }
+    assert set(snapshot) == _DESCRIPTOR_FIELDS
     assert snapshot["id"] == "codex"
     assert snapshot["realm"] == "container:runtime"
-    assert "streaming" not in snapshot["capabilities"]
+    assert "streaming" in snapshot["capabilities"]
     assert contexts[1]["provider_session_id"] == "thread-1"
+
+
+@pytest.mark.parametrize("path, result, status, code", [
+    (None, None, "missing", "not_on_path"),
+    ("/bin/codex", subprocess.TimeoutExpired([], 2), "error", "probe_timeout"),
+])
+def test_discovery_keeps_unready_codex_descriptor(monkeypatch, path, result, status, code):
+    monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: path)
+    if result:
+        monkeypatch.setattr("runtime.providers.codex.subprocess.run", lambda *_a, **_k: (_ for _ in ()).throw(result))
+    descriptor = load_runtimes()[1].descriptor.public()
+    assert descriptor["status"] == status
+    assert descriptor["reason"]["code"] == code
+    assert descriptor["executable"] == "codex"
+    assert {"display_name", "source", "path", "resolved_path", "last_checked_at"} <= set(descriptor)
+
+
+async def test_collect_accepts_complete_item_lifecycle():
+    stream = b'{"type":"thread.started","thread_id":"one"}\n{"type":"turn.started"}\n'
+    stream += b'{"type":"item.started","item":{"type":"command_execution"}}\n'
+    stream += b'{"type":"item.updated","item":{"type":"command_execution"}}\n'
+    stream += b'{"type":"item.completed","item":{"type":"agent_message","text":"ok"}}\n'
+    stream += b'{"type":"turn.completed"}\n'
+    result = await _collect(Process(stream), "prompt", lambda _: asyncio.sleep(0), 1)
+    assert result.message["content"] == "ok"
+
+
+@pytest.mark.parametrize("stream", [
+    b'{"type":"item.completed","item":{"type":"agent_message","text":"x"}}\n{"type":"thread.started","thread_id":"one"}\n{"type":"turn.completed"}\n',
+    b'{"type":"thread.started","thread_id":"one"}\n{"type":"turn.started"}\n',
+])
+async def test_collect_rejects_illegal_lifecycle_order(stream):
+    with pytest.raises(RuntimeError):
+        await _collect(Process(stream), "prompt", lambda _: None, 1)
+
+
+async def test_caller_cancellation_stops_and_unregisters_process(monkeypatch, tmp_path):
+    provider, process, started = CodexProvider("echo"), TreeProcess(hang=True, returncode=None), asyncio.Event()
+    async def communicate(prompt):
+        started.set()
+        return await Process.communicate(process, prompt)
+    process.communicate = communicate
+    monkeypatch.setattr(provider, "start", lambda *_: _process(process))
+    monkeypatch.setattr("runtime.providers.codex.os.getpgid", lambda _: 71)
+    monkeypatch.setattr("runtime.providers.codex.os.killpg", lambda *_: process.terminate())
+    runtime = codex_runtime(tmp_path, provider)
+    session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
+    task = asyncio.create_task(runtime.prompt(session, [{"type": "text", "text": "one"}]))
+    await started.wait()
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError): await task
+    adapter = runtime.runtimes._values[("codex", REALM)]
+    assert not process.child_alive and not adapter._processes
 
 
 async def test_idle_or_late_cancel_does_not_cancel_later_turn(monkeypatch, tmp_path):
     provider = CodexProvider("echo")
-    monkeypatch.setattr(
-        provider,
-        "start",
-        lambda *_: _process(
-            Process(
-                b'{"type":"thread.started","thread_id":"thread-1"}\n'
-                b'{"type":"item.completed","item":{"type":"agent_message","text":"ok"}}\n'
-                b'{"type":"turn.completed"}\n'
-            )
-        ),
-    )
+    monkeypatch.setattr(provider, "start", lambda *_: _process(_completed_process()))
     runtime = codex_runtime(tmp_path, provider)
     launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()})
     runtime.cancel(launched["session_id"])
@@ -452,10 +475,21 @@ async def test_idle_or_late_cancel_does_not_cancel_later_turn(monkeypatch, tmp_p
         launched["session_id"], [{"type": "text", "text": "two"}]
     )
     assert result["status"] == "completed"
-    assert [turn["status"] for turn in runtime.inspect(launched["session_id"])["turns"]] == [
-        "completed",
-        "completed",
-    ]
+    assert [turn["status"] for turn in runtime.inspect(launched["session_id"])["turns"]] == ["completed"] * 2
+
+
+_DESCRIPTOR_FIELDS = {"id", "realm", "display_name", "executable", "version", "source", "path", "resolved_path", "last_checked_at", "status", "capabilities", "reason"}
+
+
+def _completed_process():
+    return Process(b'{"type":"thread.started","thread_id":"thread-1"}\n{"type":"turn.started"}\n{"type":"item.completed","item":{"type":"agent_message","text":"answer"}}\n{"type":"turn.completed"}\n')
+
+
+def _resuming_start(contexts):
+    async def start(_, context):
+        contexts.append(context)
+        return _completed_process()
+    return start
 
 
 def _spec():
