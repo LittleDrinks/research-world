@@ -89,8 +89,7 @@ def test_default_spec_selects_runtime_before_endpoint(tmp_path):
         tmp_path / "data", [endpoint(provider)],
         runtimes=[RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM))],
     )
-    with pytest.raises(CapabilityNotFound, match="no model endpoint"):
-        _default_spec(runtime)
+    assert _default_spec(runtime)["endpoint"] == "openai-compatible"
 
 
 async def test_prompt_and_resume_are_derived_from_trace(tmp_path, monkeypatch):

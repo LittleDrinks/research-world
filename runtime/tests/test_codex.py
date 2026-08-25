@@ -11,26 +11,39 @@ from runtime.service import Runtime, _provider_context
 def codex_runtime(tmp_path, provider):
     return Runtime(
         tmp_path / "data",
-        [Endpoint("codex", "Codex CLI", "codex", ("gpt-test",), (), 200, None)],
+        [
+            Endpoint(
+                "codex",
+                "Codex CLI",
+                "unrelated",
+                ("gpt-test",),
+                (),
+                200,
+                None,
+                available=True,
+            )
+        ],
         runtimes=[CodexRuntimeAdapter(provider)],
     )
 
 
 def test_readiness_checks_version_without_exposing_probe_output(monkeypatch):
-    called = {}
+    calls = []
     monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: "/bin/codex")
     monkeypatch.setattr(
         "runtime.providers.codex.subprocess.run",
         lambda *args, **kwargs: (
-            called.update(args=args, kwargs=kwargs)
+            calls.append((args, kwargs))
             or subprocess.CompletedProcess([], 0, "codex-cli 0.149.1", "secret")
         ),
     )
     provider = CodexProvider.detected()
     assert provider is not None
     assert provider.version == "0.149.1"
-    assert called["args"] == (["/bin/codex", "--version"],)
-    assert called["kwargs"]["stderr"] is subprocess.DEVNULL
+    assert calls[0][0] == (["/bin/codex", "--version"],)
+    assert calls[0][1]["stderr"] is subprocess.DEVNULL
+    assert calls[1][0] == (["/bin/codex", "login", "status"],)
+    assert calls[1][1]["stdout"] is subprocess.DEVNULL
 
 
 def test_readiness_rejects_missing_or_invalid_version(monkeypatch):
@@ -40,6 +53,30 @@ def test_readiness_rejects_missing_or_invalid_version(monkeypatch):
         lambda *_, **__: subprocess.CompletedProcess([], 0, "unknown", "secret"),
     )
     assert CodexProvider.detected() is None
+
+
+@pytest.mark.parametrize(
+    "result, status, code",
+    [
+        (subprocess.CompletedProcess([], 1), "auth-required", "auth_missing"),
+        (subprocess.TimeoutExpired([], 2), "error", "probe_timeout"),
+        (FileNotFoundError(), "found", "auth_probe_unavailable"),
+    ],
+)
+def test_readiness_uses_only_safe_login_status(monkeypatch, result, status, code):
+    monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: "/bin/codex")
+    responses = iter([subprocess.CompletedProcess([], 0, "codex-cli 0.149.1"), result])
+
+    def run(*args, **kwargs):
+        value = next(responses)
+        if isinstance(value, BaseException):
+            raise value
+        return value
+
+    monkeypatch.setattr("runtime.providers.codex.subprocess.run", run)
+    provider = CodexProvider.detected()
+    assert provider.status == status
+    assert provider.reason == {"code": code, "probe": "login status"}
 
 
 def test_codex_command_uses_official_exec_jsonl_contract():
@@ -138,7 +175,13 @@ async def test_collect_normalizes_jsonl_into_model_result():
         (Process(b"not-json\n"), "invalid JSONL"),
         (Process(b'["wrong"]\n'), "invalid JSONL"),
         (Process(b'{"type":"turn.completed","usage":[]}\n'), "invalid JSONL"),
-        (Process(b'{"type":"turn.failed"}\n'), "failed terminal stream"),
+        (
+            Process(
+                b'{"type":"thread.started","thread_id":"thread-1"}\n'
+                b'{"type":"turn.failed","error":{"message":"failed"}}\n'
+            ),
+            "failed terminal stream",
+        ),
     ],
 )
 async def test_collect_rejects_cli_errors_without_stderr(process, message):
@@ -171,17 +214,47 @@ async def test_collect_rejects_malformed_event_shapes(event):
     assert getattr(raised.value, "code") == "cli_invalid_jsonl"
 
 
-@pytest.mark.parametrize("terminal", [b"turn.failed", b"turn.cancelled"])
+@pytest.mark.parametrize(
+    "terminal",
+    [
+        b'{"type":"turn.failed","error":{"message":"failed"}}',
+        b'{"type":"turn.cancelled"}',
+    ],
+)
 async def test_collect_rejects_failed_or_cancelled_terminal(terminal):
     process = Process(
         b'{"type":"thread.started","thread_id":"thread-1"}\n'
-        + b'{"type":"'
         + terminal
-        + b'"}\n'
+        + b"\n"
     )
     with pytest.raises(RuntimeError, match="failed terminal stream") as raised:
         await _collect(process, "prompt", lambda _: None, 1)
     assert getattr(raised.value, "code") == "cli_stream_failed"
+
+
+@pytest.mark.parametrize(
+    "stream",
+    [
+        b'{"type":"turn.completed"}\n',
+        b'{"type":"thread.started","thread_id":"one"}\n'
+        b'{"type":"thread.started","thread_id":"one"}\n'
+        b'{"type":"turn.completed"}\n',
+        b'{"type":"thread.started","thread_id":"one"}\n'
+        b'{"type":"turn.completed"}\n'
+        b'{"type":"item.completed","item":{"type":"agent_message","text":"late"}}\n',
+        b'{"type":"thread.started","thread_id":"one"}\n'
+        b'{"type":"turn.cancelled"}\n'
+        b'{"type":"turn.completed"}\n',
+        b'{"type":"thread.started","thread_id":"one"}\n'
+        b'{"type":"turn.failed","error":{"message":[]}}\n',
+        b'{"type":"thread.started","thread_id":"one"}\n'
+        b'{"type":"turn.failed","error":{}}\n',
+    ],
+)
+async def test_collect_rejects_ambiguous_stream_state(stream):
+    with pytest.raises(RuntimeError, match="invalid JSONL") as raised:
+        await _collect(Process(stream), "prompt", lambda _: None, 1)
+    assert raised.value.code == "cli_invalid_jsonl"
 
 
 async def test_codex_timeout_kills_process():
@@ -197,6 +270,22 @@ async def test_timeout_kills_the_process_group_child(monkeypatch):
     monkeypatch.setattr("runtime.providers.codex.os.killpg", lambda *_: process.kill())
     with pytest.raises(RuntimeError, match="timed out after"):
         await _collect(process, "prompt", lambda _: None, 0.001)
+    assert not process.child_alive
+
+
+async def test_windows_timeout_kills_process_tree_without_sigkill(monkeypatch):
+    process = TreeProcess(hang=True, returncode=None)
+    calls = []
+    monkeypatch.setattr("runtime.providers.codex.os.name", "nt")
+    monkeypatch.delattr("runtime.providers.codex.signal.SIGKILL")
+    monkeypatch.setattr(
+        "runtime.providers.codex.subprocess.run",
+        lambda args, **_: calls.append(args) or process.kill(),
+    )
+    with pytest.raises(RuntimeError, match="timed out after") as raised:
+        await _collect(process, "prompt", lambda _: None, 0.001)
+    assert raised.value.code == "cli_timeout"
+    assert calls == [["taskkill", "/PID", "71", "/T", "/F"]]
     assert not process.child_alive
 
 
@@ -333,11 +422,51 @@ async def test_runtime_preserves_capability_snapshot_and_recovers_resume(
         "version",
         "status",
         "capabilities",
+        "reason",
     }
     assert snapshot["id"] == "codex"
     assert snapshot["realm"] == "container:runtime"
     assert "streaming" not in snapshot["capabilities"]
     assert contexts[1]["provider_session_id"] == "thread-1"
+
+
+async def test_idle_or_late_cancel_does_not_cancel_later_turn(monkeypatch, tmp_path):
+    provider = CodexProvider("echo")
+    monkeypatch.setattr(
+        provider,
+        "start",
+        lambda *_: _process(
+            Process(
+                b'{"type":"thread.started","thread_id":"thread-1"}\n'
+                b'{"type":"item.completed","item":{"type":"agent_message","text":"ok"}}\n'
+                b'{"type":"turn.completed"}\n'
+            )
+        ),
+    )
+    runtime = codex_runtime(tmp_path, provider)
+    launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()})
+    runtime.cancel(launched["session_id"])
+    await runtime.prompt(launched["session_id"], [{"type": "text", "text": "one"}])
+    runtime.cancel(launched["session_id"])
+    result = await runtime.prompt(
+        launched["session_id"], [{"type": "text", "text": "two"}]
+    )
+    assert result["status"] == "completed"
+    assert [turn["status"] for turn in runtime.inspect(launched["session_id"])["turns"]] == [
+        "completed",
+        "completed",
+    ]
+
+
+def _spec():
+    return {
+        "id": "researcher",
+        "name": "Researcher",
+        "runtime": {"id": "codex", "realm": REALM},
+        "endpoint": "codex",
+        "model": "gpt-test",
+        "instructions": "Answer.",
+    }
 
 
 class TreeProcess(Process):

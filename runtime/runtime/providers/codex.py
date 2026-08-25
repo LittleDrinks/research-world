@@ -26,6 +26,8 @@ class CodexProvider:
         self.executable = resolved
         self.timeout = timeout
         self.version: str | None = None
+        self.status = "ready"
+        self.reason: dict[str, str] | None = None
 
     @classmethod
     def detected(cls) -> CodexProvider | None:
@@ -35,6 +37,7 @@ class CodexProvider:
             return None
         provider = cls(executable)
         provider.version = version
+        provider.status, provider.reason = _readiness(executable)
         return provider
 
     async def start(self, model: str, context: dict[str, Any]):
@@ -79,6 +82,17 @@ def _version(executable: str | None) -> str | None:
 
 
 async def _collect(process, prompt: str, emit: Emit, timeout: float) -> ModelResult:
+    stdout = await _stdout(process, prompt, timeout)
+    events = _events(stdout)
+    text = _agent_text(events)
+    if text:
+        await emit(text)
+    return ModelResult(
+        {"role": "assistant", "content": text}, _usage(events), _thread_id(events)
+    )
+
+
+async def _stdout(process, prompt: str, timeout: float) -> bytes:
     try:
         stdout, _ = await asyncio.wait_for(
             process.communicate(prompt.encode()), timeout
@@ -91,13 +105,7 @@ async def _collect(process, prompt: str, emit: Emit, timeout: float) -> ModelRes
         ) from error
     if process.returncode:
         raise TraceError("cli_failed", f"codex exited {process.returncode}")
-    events = _events(stdout)
-    text = _agent_text(events)
-    if text:
-        await emit(text)
-    return ModelResult(
-        {"role": "assistant", "content": text}, _usage(events), _thread_id(events)
-    )
+    return stdout
 
 
 def _process_group_options() -> dict[str, int | bool]:
@@ -111,6 +119,9 @@ def _terminate_tree(process) -> None:
 
 
 def _kill_tree(process) -> None:
+    if os.name == "nt":
+        _taskkill(process)
+        return
     _signal_tree(process, signal.SIGKILL, "kill")
 
 
@@ -121,14 +132,19 @@ def _signal_tree(process, sig, fallback: str) -> None:
         os.killpg(os.getpgid(process.pid), sig)
         return
     if os.name == "nt" and getattr(process, "pid", None):
+        _taskkill(process)
+        return
+    getattr(process, fallback)()
+
+
+def _taskkill(process) -> None:
+    if process.returncode is None and getattr(process, "pid", None):
         subprocess.run(
             ["taskkill", "/PID", str(process.pid), "/T", "/F"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             check=False,
         )
-        return
-    getattr(process, fallback)()
 
 
 def _events(stdout: bytes) -> list[dict]:
@@ -140,7 +156,7 @@ def _events(stdout: bytes) -> list[dict]:
         raise _invalid_jsonl() from error
     if not values or not all(_valid_event(item) for item in values):
         raise _invalid_jsonl()
-    _terminal(values)
+    _validate_stream(values)
     return values
 
 
@@ -148,10 +164,9 @@ def _invalid_jsonl() -> TraceError:
     return TraceError("cli_invalid_jsonl", "codex returned invalid JSONL")
 
 
-def _terminal(events: list[dict]) -> None:
-    terminal = next(
-        (item["type"] for item in reversed(events) if item["type"] in TERMINALS), None
-    )
+def _validate_stream(events: list[dict]) -> None:
+    _validate_thread(events)
+    terminal = _stream_terminal(events)
     if terminal == "turn.completed":
         return
     if terminal in {"turn.failed", "turn.cancelled"}:
@@ -159,6 +174,19 @@ def _terminal(events: list[dict]) -> None:
     raise TraceError(
         "cli_incomplete_stream", "codex returned an incomplete terminal stream"
     )
+
+
+def _validate_thread(events: list[dict]) -> None:
+    threads = [item for item in events if item["type"] == "thread.started"]
+    if len(threads) != 1 or not _valid_thread(threads[0]):
+        raise _invalid_jsonl()
+
+
+def _stream_terminal(events: list[dict]) -> str | None:
+    terminals = [index for index, item in enumerate(events) if item["type"] in TERMINALS]
+    if len(terminals) != 1 or terminals[0] != len(events) - 1:
+        raise _invalid_jsonl()
+    return events[terminals[0]]["type"]
 
 
 def _valid_event(event: object) -> bool:
@@ -171,7 +199,7 @@ def _valid_event(event: object) -> bool:
         return _valid_item(event)
     if kind == "turn.completed":
         return _valid_usage(event)
-    return kind in {"turn.failed", "turn.cancelled"}
+    return _valid_terminal(event) if kind in TERMINALS else False
 
 
 def _valid_thread(event: dict) -> bool:
@@ -192,6 +220,15 @@ def _valid_usage(event: dict) -> bool:
     return all(
         _token_count(usage.get(key, 0)) for key in ("input_tokens", "output_tokens")
     )
+
+
+def _valid_terminal(event: dict) -> bool:
+    if event["type"] == "turn.completed":
+        return _valid_usage(event)
+    error = event.get("error")
+    if event["type"] == "turn.cancelled" and error is None:
+        return True
+    return isinstance(error, dict) and isinstance(error.get("message"), str)
 
 
 def _token_count(value: object) -> bool:
@@ -231,3 +268,22 @@ def _usage(events: list[dict]) -> dict[str, int]:
         "prompt_tokens": usage.get("input_tokens", 0),
         "completion_tokens": usage.get("output_tokens", 0),
     }
+
+
+def _readiness(executable: str) -> tuple[str, dict[str, str] | None]:
+    try:
+        result = subprocess.run(
+            [executable, "login", "status"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=2,
+        )
+    except FileNotFoundError:
+        return "found", {"code": "auth_probe_unavailable", "probe": "login status"}
+    except subprocess.TimeoutExpired:
+        return "error", {"code": "probe_timeout", "probe": "login status"}
+    except OSError:
+        return "error", {"code": "probe_failed", "probe": "login status"}
+    if result.returncode == 0:
+        return "ready", None
+    return "auth-required", {"code": "auth_missing", "probe": "login status"}

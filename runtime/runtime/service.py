@@ -45,13 +45,15 @@ class Runtime:
     ):
         root = Path(data_root or os.getenv("RUNTIME_DATA", "./data"))
         self.trace = TraceStore(root / "sessions")
-        adapters = runtimes if runtimes is not None else load_runtimes()
-        self.runtimes = RuntimePool(adapters)
         values = endpoints if endpoints is not None else load_endpoints()
+        adapters = runtimes if runtimes is not None else load_runtimes()
+        _bind_endpoint_ids(adapters, values)
+        self.runtimes = RuntimePool(adapters)
         self.endpoints = EndpointPool(_runtime_endpoints(values, adapters))
         self.tool_definitions = tuple(tool_definitions)
         self._locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
-        self._cancelled: set[str] = set()
+        self._cancelled: set[tuple[str, str]] = set()
+        self._active_turns: dict[str, tuple[str, RuntimeAdapter]] = {}
 
     async def recognize(self, workspace: str) -> dict:
         path = _workspace(workspace)
@@ -75,7 +77,7 @@ class Runtime:
             )
             return {"session_id": session_id}
         recognized = await self.recognize(str(workspace))
-        _validate_spec(spec, recognized)
+        _validate_spec(spec, recognized, self.runtimes.require(spec.runtime))
         snapshots = _skill_snapshots(spec, workspace)
         plan = await self._tool_plan(spec, workspace, snapshots)
         meta = _session_meta(spec, workspace, value, snapshots, plan, recognized)
@@ -112,12 +114,22 @@ class Runtime:
             for session_id in self.trace.sessions()
         ]
 
-    def cancel(self, session_id: str) -> None:
-        meta = self._events(session_id)[0]["data"]
-        self._cancelled.add(session_id)
-        self.runtimes.require(AgentSpec.parse(meta["agent_spec"]).runtime).cancel(
-            session_id
+    def default_endpoint(self, descriptor) -> Endpoint:
+        adapter = self.runtimes.require(descriptor)
+        endpoint = next(
+            (item for item in self.endpoints.values() if adapter.accepts(item)), None
         )
+        if endpoint is None:
+            raise CapabilityNotFound("no model endpoint is available for runtime")
+        return endpoint
+
+    def cancel(self, session_id: str) -> None:
+        active = self._active_turns.get(session_id)
+        if active is None:
+            return
+        turn_id, adapter = active
+        self._cancelled.add((session_id, turn_id))
+        adapter.cancel(session_id)
 
     async def _prompt(self, session_id, blocks, client, emit):
         events = self._events(session_id)
@@ -128,13 +140,17 @@ class Runtime:
             raise SessionSpecInvalid(str(error)) from error
         turn_id = f"t-{uuid.uuid4().hex}"
         self.trace.append(session_id, "turn_start", {"prompt": blocks}, turn_id)
+        adapter = self.runtimes.require(spec.runtime)
+        self._active_turns[session_id] = (turn_id, adapter)
         try:
             return await self._run_turn(session_id, turn_id, spec, meta, client, emit)
         except Exception as error:
-            if session_id in self._cancelled:
+            if (session_id, turn_id) in self._cancelled:
                 return self._finish(session_id, turn_id, "cancelled", "", {})
             self._fail(session_id, turn_id, error)
             raise
+        finally:
+            self._active_turns.pop(session_id, None)
 
     async def _run_turn(self, session_id, turn_id, spec, meta, client, emit):
         skills = _skills_from_meta(meta)
@@ -148,12 +164,12 @@ class Runtime:
         usage = {"prompt_tokens": 0, "completion_tokens": 0}
         result = ""
         for _ in range(spec.options.max_rounds):
-            if session_id in self._cancelled:
+            if (session_id, turn_id) in self._cancelled:
                 return self._finish(session_id, turn_id, "cancelled", result, usage)
             done, result = await self._round(
                 session_id, turn_id, spec, meta, tools, emit, usage
             )
-            if session_id in self._cancelled:
+            if (session_id, turn_id) in self._cancelled:
                 return self._finish(session_id, turn_id, "cancelled", result, usage)
             if done:
                 return self._finish(session_id, turn_id, "completed", result, usage)
@@ -164,7 +180,9 @@ class Runtime:
     async def _round(self, session_id, turn_id, spec, meta, tools, emit, usage):
         messages = _messages(self._events(session_id), meta)
         endpoint = self.endpoints.require(spec.endpoint, spec.model)
-        specs = tools.specs() if endpoint.adapter == "openai-compatible" else []
+        specs = (
+            tools.specs() if not self.runtimes.require(spec.runtime).owns_process else []
+        )
         self._record_request(session_id, turn_id, spec.model, messages, specs)
         endpoint_id, result = await self._generate(
             session_id, spec, meta, messages, specs, emit
@@ -185,10 +203,14 @@ class Runtime:
     async def _generate(self, session_id, spec, meta, messages, tools, emit):
         context = _provider_context(meta, self._events(session_id))
         endpoint = self.endpoints.require(spec.endpoint, spec.model)
-        endpoint_id, result = await self.runtimes.require(spec.runtime).generate(
-            session_id, endpoint, spec.model, messages, tools, emit, context
+        adapter = self.runtimes.require(spec.runtime)
+        if adapter.owns_process:
+            return await adapter.generate(
+                session_id, endpoint, spec.model, messages, tools, emit, context
+            )
+        return endpoint.id, await endpoint.provider.generate(
+            spec.model, messages, tools, emit, context
         )
-        return endpoint_id, result
 
     def _record_response(self, session_id, turn_id, endpoint_id, result):
         data = {
@@ -215,7 +237,7 @@ class Runtime:
             self.trace.append(session_id, "tool_result", result, turn_id)
 
     def _finish(self, session_id, turn_id, status, result, usage):
-        self._cancelled.discard(session_id)
+        self._cancelled.discard((session_id, turn_id))
         self.trace.append(
             session_id,
             "turn_end",
@@ -250,7 +272,11 @@ def _workspace(value: str) -> Path:
 
 
 def _codex_endpoints(adapters: list[RuntimeAdapter]) -> list[Endpoint]:
-    values = [item for item in adapters if isinstance(item, CodexRuntimeAdapter)]
+    values = [
+        item
+        for item in adapters
+        if isinstance(item, CodexRuntimeAdapter) and item.descriptor.status == "ready"
+    ]
     return [codex_endpoint(_codex_model()) for _ in values]
 
 
@@ -260,6 +286,13 @@ def _runtime_endpoints(values, adapters) -> list[Endpoint]:
         *values,
         *(item for item in _codex_endpoints(adapters) if item.id not in existing),
     ]
+
+
+def _bind_endpoint_ids(adapters, endpoints) -> None:
+    ids = tuple(item.id for item in endpoints)
+    for adapter in adapters:
+        if adapter.descriptor.id == "openai-compatible":
+            adapter.endpoint_ids = ids
 
 
 def _codex_model() -> str:
@@ -290,22 +323,35 @@ def _launch_identity(spec, workspace, value) -> dict:
     }
 
 
-def _validate_spec(spec: AgentSpec, recognized: dict) -> None:
+def _validate_spec(spec: AgentSpec, recognized: dict, runtime) -> None:
+    _validate_runtime(spec, recognized)
+    endpoint = _validate_endpoint(spec, recognized)
+    if not runtime.accepts(endpoint):
+        raise CapabilityNotFound("endpoint is not available for runtime")
+    _validate_dependencies(spec, recognized)
+
+
+def _validate_runtime(spec, recognized) -> None:
     runtimes = {
         (item["id"], item["realm"])
         for item in recognized["runtimes"]
         if item["status"] == "ready"
     }
     _require((spec.runtime.id, spec.runtime.realm), runtimes, "runtime")
+
+
+def _validate_endpoint(spec, recognized) -> dict:
     endpoint_ids = {item["id"] for item in recognized["endpoints"] if item["available"]}
     model_pairs = {(item["endpoint"], item["id"]) for item in recognized["models"]}
     _require(spec.endpoint, endpoint_ids, "endpoint")
     endpoint = next(
         item for item in recognized["endpoints"] if item["id"] == spec.endpoint
     )
-    if endpoint["adapter"] != spec.runtime.id:
-        raise CapabilityNotFound("endpoint is not available for runtime")
     _require((spec.endpoint, spec.model), model_pairs, "model")
+    return endpoint
+
+
+def _validate_dependencies(spec, recognized) -> None:
     skills = {item["id"] for item in recognized["skills"]}
     for value in spec.skills:
         _require(value, skills, "skill")

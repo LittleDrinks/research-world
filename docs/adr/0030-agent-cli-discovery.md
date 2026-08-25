@@ -47,7 +47,7 @@ OpenCLI 是浏览器自动化 Tool Adapter，只能以 `browser.opencli` 进入 
 ## Probe
 Runtime 对每个内置候选执行固定 argv allowlist，不经过 shell。定位、路径解析、版本与认证 probe 分进程运行；单步 2 秒、单候选累计 5 秒，stdout 与 stderr 各截断到 16 KiB，解析后丢弃。进程组超时终止；一个候选失败不改变其他结果。
 固定 version argv 包含 Codex `['codex', '--version']` 与 Kimi Code `['kimi', '--version']`。Kimi 不登记认证 argv；version probe 不运行 `doctor`、读取配置或访问 secret。
-认证只使用官方、非交互、无敏感输出的状态命令。没有这种命令时返回 `found/auth_probe_unavailable`，不得读取配置文件、环境变量值或 token。配置语法有效不等于已认证；Kimi `doctor config` 成功仍保持认证 unknown。probe 不执行 install、update、login、token refresh、doctor 修复、付费模型调用或任意用户命令。
+认证只使用官方、非交互、无敏感输出的状态命令。Codex 固定执行 `['codex', 'login', 'status']`：退出码 0 为 `ready`，非 0 为 `auth-required/auth_missing`；命令不可用为 `found/auth_probe_unavailable`。不得读取配置文件、环境变量值或 token。配置语法有效不等于已认证；Kimi `doctor config` 成功仍保持认证 unknown。probe 不执行 install、update、login、token refresh、doctor 修复、付费模型调用或任意用户命令。
 ## Realm 与缓存
 `wsl`、`windows` 与 `container` 是独立 execution realm。Runtime 只把当前 launch realm 的 descriptor 用于 AgentSpec readiness；其他 realm 仅作为 inventory 事实展示。
 结果按 `(workspace_id, realm, runtime_build)` 缓存 60 秒；key 不含 host path、Profile id 或认证值。页面进入读取缓存；手动刷新绕过缓存。首次无缓存为 `loading`，刷新时旧 snapshot 保持可读并标记 `refreshing`，候选 catalog 为空为 `empty`。刷新失败返回本次各 descriptor 的稳定错误并保留上次 snapshot 供对照，不把旧结果标记为本次成功。

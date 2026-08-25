@@ -38,6 +38,7 @@ class Endpoint:
     provider: Provider | None
     base_url_env: str | None = None
     api_key_env: str | None = None
+    available: bool = False
 
     def public(self) -> dict[str, Any]:
         return {
@@ -47,7 +48,7 @@ class Endpoint:
             "models": list(self.models),
             "embedding_models": list(self.embedding_models),
             "priority": self.priority,
-            "available": self.provider is not None or self.adapter == "codex",
+            "available": self.provider is not None or self.available,
         }
 
 
@@ -78,7 +79,7 @@ class EndpointPool:
             raise CapabilityNotFound(
                 f"{capability} is not available on endpoint: {model}"
             )
-        if endpoint.provider is None and endpoint.adapter != "codex":
+        if endpoint.provider is None and not endpoint.available:
             raise CapabilityNotFound(f"endpoint is not available: {endpoint_id}")
         return endpoint
 
