@@ -8,6 +8,13 @@ from runtime.service import Runtime, _provider_context
 from tests.helpers import endpoint
 
 
+def codex_runtime(tmp_path, provider):
+    return Runtime(
+        tmp_path / "data", [endpoint(provider, "codex", ("gpt-test",))],
+        runtimes=[RuntimeAdapter(RuntimeDescriptor("codex", REALM))],
+    )
+
+
 def test_readiness_checks_version_without_exposing_probe_output(monkeypatch):
     called = {}
     monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: "/bin/codex")
@@ -111,10 +118,7 @@ async def test_codex_timeout_kills_process():
 async def test_runtime_records_declared_cli_trace_error(monkeypatch, tmp_path):
     provider = CodexProvider("echo")
     monkeypatch.setattr(provider, "_start", lambda *_: _process(Process(b"not-json\n")))
-    runtime = Runtime(
-        tmp_path / "data", [endpoint(provider, "codex", ("gpt-test",))],
-        runtimes=[RuntimeAdapter(RuntimeDescriptor("codex", REALM))],
-    )
+    runtime = codex_runtime(tmp_path, provider)
     spec = {"id": "researcher", "name": "Researcher", "runtime": {"id": "codex", "realm": "container:runtime"}, "endpoint": "codex", "model": "gpt-test", "instructions": "Answer."}
     launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec})
     with pytest.raises(RuntimeError, match="invalid JSONL"):
@@ -140,7 +144,7 @@ async def test_cancel_terminates_active_process(monkeypatch, tmp_path):
         return process
 
     monkeypatch.setattr("runtime.providers.codex.asyncio.create_subprocess_exec", start)
-    runtime = Runtime(tmp_path / "data", [endpoint(provider, "codex", ("gpt-test",))])
+    runtime = codex_runtime(tmp_path, provider)
     spec = {"id": "researcher", "name": "Researcher", "runtime": {"id": "codex", "realm": "container:runtime"}, "endpoint": "codex", "model": "gpt-test", "instructions": "Answer."}
     launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec})
     task = asyncio.create_task(runtime.prompt(launched["session_id"], [{"type": "text", "text": "one"}]))
@@ -154,7 +158,7 @@ async def test_cancel_terminates_active_process(monkeypatch, tmp_path):
 
 async def test_runtime_preserves_capability_snapshot_and_recovers_resume(tmp_path):
     provider = ScriptedProvider()
-    runtime = Runtime(tmp_path / "data", [endpoint(provider, "codex", ("gpt-test",))])
+    runtime = codex_runtime(tmp_path, provider)
     spec = {"id": "researcher", "name": "Researcher", "runtime": {"id": "codex", "realm": "container:runtime"}, "endpoint": "codex", "model": "gpt-test", "instructions": "Answer."}
     launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec})
     await runtime.prompt(launched["session_id"], [{"type": "text", "text": "one"}])
