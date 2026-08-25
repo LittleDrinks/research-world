@@ -464,24 +464,15 @@ class ResearchKernel:
 
     def _export_artifacts(self, project_id, graph, runs, traces) -> list[dict]:
         artifact_ids = _export_artifact_ids(graph, runs, traces)
-        bibtex_ids = self._source_artifact_ids(project_id)
         store = ArtifactStore(self._world.artifacts_root, project_id)
         saved = {record["id"] for record in store.all()}
         if missing := artifact_ids - saved:
             raise ValueError(f"export artifact is outside project scope: {min(missing)}")
-        return [_export_artifact(store, item, item in bibtex_ids) for item in sorted(saved)]
+        return [_export_artifact(store, item) for item in sorted(saved)]
 
     def _source_artifact_ids(self, project_id: str) -> set[str]:
-        sources = [
-            node
-            for node in self._world.nodes(project_id)
-            if node["kind"] == "source" and node["life_state"] == "admitted"
-        ]
-        return {
-            artifact_id
-            for node in sources
-            for artifact_id in node["payload"].get("artifact_ids", [])
-        }
+        sources = [node for node in self._world.nodes(project_id) if node["kind"] == "source" and node["life_state"] == "admitted"]
+        return {artifact_id for node in sources for artifact_id in node["payload"].get("artifact_ids", [])}
 
     def _create_project(self, value: dict, workspace: Path) -> dict:
         try:
@@ -566,17 +557,9 @@ def _artifact_view(record: dict) -> dict:
     return {field: record[field] for field in fields}
 
 
-def _export_artifact(store: ArtifactStore, artifact_id: str, bibtex: bool) -> dict:
+def _export_artifact(store: ArtifactStore, artifact_id: str) -> dict:
     record = store.get(artifact_id)
-    return {**_artifact_view(record), "content": store.read(artifact_id), "bibtex": bibtex and _valid_bibtex(store, artifact_id)}
-
-
-def _valid_bibtex(store: ArtifactStore, artifact_id: str) -> bool:
-    try:
-        _bibtex(store, artifact_id)
-    except ValueError:
-        return False
-    return True
+    return _artifact_view(record)
 
 
 def _session_ids(threads: list[dict], runs: list[dict]) -> list[str]:
