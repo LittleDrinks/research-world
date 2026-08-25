@@ -51,6 +51,12 @@ class ArtifactStore:
             raise ArtifactIntegrityError("size_mismatch", artifact_id)
         return content
 
+    def all(self) -> list[dict]:
+        records = []
+        for metadata in sorted(self.root.rglob("*.json")):
+            records.append(self.get(f"artifact:{metadata.stem}"))
+        return records
+
     def _register(self, artifact_id: str, media_type: str, size: int) -> dict:
         digest = self._digest(artifact_id)
         record = self._record(artifact_id, media_type, size)

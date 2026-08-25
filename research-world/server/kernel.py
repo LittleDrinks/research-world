@@ -334,7 +334,7 @@ class ResearchKernel:
         graph = self._export_graph(project_id)
         runs = self._export_runs(project_id)
         traces = await self._export_traces(project_id, runs)
-        artifacts = self._export_artifacts(project_id)
+        artifacts = self._export_artifacts(project_id, graph, runs, traces)
         return package(project, graph, runs, traces, artifacts)
 
     def _export_graph(self, project_id: str) -> dict:
@@ -454,18 +454,22 @@ class ResearchKernel:
     async def _export_traces(self, project_id: str, runs: list[dict]) -> dict:
         session_ids = _session_ids(self._world.threads(project_id), runs)
         if self._runtime is None:
-            return {session_id: {"status": "unavailable"} for session_id in session_ids}
+            if session_ids:
+                raise ValueError("project export requires Runtime Trace access")
+            return {}
         return {
-            session_id: await self._runtime.inspect(session_id)
+            session_id: await _export_trace(self._runtime, session_id)
             for session_id in session_ids
         }
 
-    def _export_artifacts(self, project_id: str) -> list[dict]:
-        nodes = self._world.nodes(project_id)
-        artifact_ids = sorted({item for node in nodes for item in _artifact_ids(node["payload"])})
+    def _export_artifacts(self, project_id, graph, runs, traces) -> list[dict]:
+        artifact_ids = _export_artifact_ids(graph, runs, traces)
         bibtex_ids = self._source_artifact_ids(project_id)
         store = ArtifactStore(self._world.artifacts_root, project_id)
-        return [_export_artifact(store, artifact_id, artifact_id in bibtex_ids) for artifact_id in artifact_ids]
+        saved = {record["id"] for record in store.all()}
+        if missing := artifact_ids - saved:
+            raise ValueError(f"export artifact is outside project scope: {min(missing)}")
+        return [_export_artifact(store, item, item in bibtex_ids) for item in sorted(saved)]
 
     def _source_artifact_ids(self, project_id: str) -> set[str]:
         sources = [
@@ -584,6 +588,18 @@ def _session_ids(threads: list[dict], runs: list[dict]) -> list[str]:
         if event["type"] == "agent_session" and event["payload"].get("session_id")
     )
     return sorted(values)
+
+
+def _export_artifact_ids(graph: dict, runs: list[dict], traces: dict) -> set[str]:
+    admitted = [node["payload"] for node in graph["nodes"] if node["life_state"] == "admitted"]
+    return _artifact_ids([*admitted, runs, traces])
+
+
+async def _export_trace(runtime, session_id: str) -> dict:
+    try:
+        return await runtime.inspect(session_id)
+    except Exception as error:
+        raise ValueError(f"project export cannot read Runtime Trace: {session_id}") from error
 
 
 def _artifact_ids(value) -> set[str]:
