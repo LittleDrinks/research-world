@@ -5,7 +5,7 @@ from base64 import b64decode
 from binascii import Error as Base64Error
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 
 from .config import ROOT
 from .kernel import KernelCommand, KernelQuery, ResearchKernel, default_kernel
@@ -82,6 +82,16 @@ def project_state_routes(app, kernel) -> None:
     @app.get("/api/v1/bootstrap")
     async def bootstrap(project_id: str | None = None):
         return await kernel.query(KernelQuery("bootstrap", project_id))
+
+    @app.get("/api/v1/projects/{project_id}/export")
+    async def export_project(project_id: str):
+        content = await kernel.query(KernelQuery("project_export", project_id))
+        filename = f'{project_id.replace(":", "-")}-export.zip'
+        return Response(
+            content,
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
 
 
 def graph_node_routes(app, kernel) -> None:

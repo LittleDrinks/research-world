@@ -13,6 +13,7 @@ const enc = encodeURIComponent;
 export const getBootstrap = (projectId) => fetch(`/api/v1/bootstrap${projectId ? `?project_id=${enc(projectId)}` : ""}`).then(decode);
 export const createProject = (body) => fetch("/api/v1/projects", json("POST", body)).then(decode);
 export const setProjectAuto = (projectId, auto) => fetch(`/api/v1/projects/${enc(projectId)}`, json("PATCH", { auto })).then(decode);
+export const projectExportUrl = (projectId) => `/api/v1/projects/${enc(projectId)}/export`;
 
 export const listThreads = (projectId) => fetch(`/api/v1/projects/${enc(projectId)}/threads`).then(decode);
 export const createThread = (projectId, body) => fetch(`/api/v1/projects/${enc(projectId)}/threads`, json("POST", body)).then(decode);

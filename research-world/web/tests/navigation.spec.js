@@ -125,3 +125,18 @@ test("opens the sidebar as an overlay on narrow screens", async ({ page }) => {
   await expect(page).toHaveURL(/\/chat/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
+
+
+test("downloads the selected project package", async ({ page }) => {
+  await mockShell(page);
+  await page.route(/\/api\/v1\/projects\/project%3Atest\/export$/, (route) => route.fulfill({
+    body: "project package",
+    headers: { "content-type": "application/zip", "content-disposition": "attachment; filename=\"project-test-export.zip\"" },
+  }));
+  await page.goto("/settings");
+  const link = page.getByRole("link", { name: "下载研究包" });
+  await expect(link).toHaveAttribute("href", "/api/v1/projects/project%3Atest/export");
+  const download = page.waitForEvent("download");
+  await link.click();
+  expect((await download).suggestedFilename()).toBe("project-test-export.zip");
+});

@@ -19,6 +19,7 @@ from .admission import (
 from .artifacts import ArtifactStore
 from .observations import observation_submission
 from .presets import agent_draft, require_tools_ready
+from .project_export import package
 from .reporting import assess_delivery
 from .world import World, node_text
 
@@ -326,6 +327,25 @@ class ResearchKernel:
         )
         return {"id": artifact_id, "content": content}
 
+    async def _query_project_export(self, query: KernelQuery) -> bytes:
+        _validate_fields(query.values, set(), set())
+        project_id = _project_id(query)
+        project = self._world.project(project_id)
+        graph = self._export_graph(project_id)
+        runs = self._export_runs(project_id)
+        traces = await self._export_traces(project_id, runs)
+        artifacts = self._export_artifacts(project_id)
+        return package(project, graph, runs, traces, artifacts)
+
+    def _export_graph(self, project_id: str) -> dict:
+        nodes = sorted(self._world.nodes(project_id), key=lambda node: node["id"])
+        edges = sorted(self._world.edges(project_id), key=lambda edge: tuple(edge.values()))
+        return {"nodes": nodes, "edges": edges}
+
+    def _export_runs(self, project_id: str) -> list[dict]:
+        runs = [self._run_view(run) for run in self._world.runs(project_id)]
+        return sorted(runs, key=lambda run: (run["created_at"], run["id"]))
+
     def _submit_node(self, project_id: str, value: dict) -> dict:
         _validate_fields(value, {"kind", "payload", "parent_id"}, {"kind", "payload"})
         self._validate_parent(project_id, value.get("parent_id"))
@@ -431,6 +451,22 @@ class ResearchKernel:
         store = ArtifactStore(self._world.artifacts_root, project_id)
         return [_artifact_view(store.get(artifact_id)) for artifact_id in artifact_ids]
 
+    async def _export_traces(self, project_id: str, runs: list[dict]) -> dict:
+        session_ids = _session_ids(self._world.threads(project_id), runs)
+        if self._runtime is None:
+            return {session_id: {"status": "unavailable"} for session_id in session_ids}
+        return {
+            session_id: await self._runtime.inspect(session_id)
+            for session_id in session_ids
+        }
+
+    def _export_artifacts(self, project_id: str) -> list[dict]:
+        nodes = self._world.nodes(project_id)
+        artifact_ids = sorted({item for node in nodes for item in _artifact_ids(node["payload"])})
+        bibtex_ids = self._source_artifact_ids(project_id)
+        store = ArtifactStore(self._world.artifacts_root, project_id)
+        return [_export_artifact(store, artifact_id, artifact_id in bibtex_ids) for artifact_id in artifact_ids]
+
     def _source_artifact_ids(self, project_id: str) -> set[str]:
         sources = [
             node
@@ -524,6 +560,30 @@ def _resolution_signal(gate: dict, value: dict) -> dict:
 def _artifact_view(record: dict) -> dict:
     fields = ("id", "sha256", "media_type", "size", "created_at")
     return {field: record[field] for field in fields}
+
+
+def _export_artifact(store: ArtifactStore, artifact_id: str, bibtex: bool) -> dict:
+    record = store.get(artifact_id)
+    return {**_artifact_view(record), "content": store.read(artifact_id), "bibtex": bibtex and _valid_bibtex(store, artifact_id)}
+
+
+def _valid_bibtex(store: ArtifactStore, artifact_id: str) -> bool:
+    try:
+        _bibtex(store, artifact_id)
+    except ValueError:
+        return False
+    return True
+
+
+def _session_ids(threads: list[dict], runs: list[dict]) -> list[str]:
+    values = {thread["session_id"] for thread in threads}
+    values.update(
+        event["payload"]["session_id"]
+        for run in runs
+        for event in run["events"]
+        if event["type"] == "agent_session" and event["payload"].get("session_id")
+    )
+    return sorted(values)
 
 
 def _artifact_ids(value) -> set[str]:

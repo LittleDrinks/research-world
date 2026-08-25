@@ -1,6 +1,6 @@
-import { Settings } from "lucide-react";
+import { Download, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { setProjectAuto } from "../api";
+import { projectExportUrl, setProjectAuto } from "../api";
 import { EmptyState } from "../components/bits";
 import { useWorld } from "../context/WorldContext";
 import { formatDate } from "../utils/labels";
@@ -20,6 +20,7 @@ export function SettingsPage() {
       <div><dt>规模</dt><dd>{project.node_count} 节点 · {project.run_count} 运行</dd></div>
     </dl>
     <AutoToggle project={project} refresh={refresh} setError={setError} />
+    <a className="button secondary settings-export" href={projectExportUrl(project.id)}><Download size={16} />下载研究包</a>
     <ExitProject /></section>;
 }
 
