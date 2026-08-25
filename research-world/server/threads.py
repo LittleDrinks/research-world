@@ -36,7 +36,8 @@ class ThreadManager:
     async def detail(self, thread_id: str) -> dict:
         thread = self.world.thread(thread_id)
         trace = await self.runtime.inspect(thread["session_id"])
-        return {**thread, "runtime": trace}
+        reports = self.world.reports(thread["project_id"], thread["id"])
+        return {**thread, "runtime": trace, "reports": reports}
 
     async def prompt(self, thread_id: str, message: str):
         thread = self.world.thread(thread_id)

@@ -66,28 +66,10 @@ REPORT_VALIDATE = {
     "type": "function",
     "function": {
         "name": "report_validate",
-        "description": "Validate report facts and citations against Research Kernel.",
+        "description": "Validate the current admitted report projection in Research Kernel.",
         "parameters": {
             "type": "object",
-            "properties": {
-                "facts": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "text": {"type": "string"},
-                            "claim_id": {"type": "string"},
-                            "source_ids": {
-                                "type": "array",
-                                "items": {"type": "string"},
-                            },
-                        },
-                        "required": ["text", "claim_id", "source_ids"],
-                        "additionalProperties": False,
-                    },
-                },
-            },
-            "required": ["facts"],
+            "properties": {},
             "additionalProperties": False,
         },
     },
@@ -124,8 +106,8 @@ PUBLISH_REPORT = {
         "description": "Publish a validated report through Research Kernel.",
         "parameters": {
             "type": "object",
-            "properties": {"title": {"type": "string"}, "facts": {"type": "array"}},
-            "required": ["title", "facts"],
+            "properties": {"title": {"type": "string"}},
+            "required": ["title"],
             "additionalProperties": False,
         },
     },
@@ -365,7 +347,7 @@ async def _graph_query(bound, session_id, values):
 async def _report_validate(bound, session_id, values):
     if bound.client is None:
         raise RuntimeError("client does not provide report validation")
-    if set(values) != {"facts"}:
+    if values:
         raise ValueError("unexpected report validation fields")
     result = await bound.client.ext_method("research/report_validate", values)
     return json.dumps(result, ensure_ascii=False)
@@ -390,7 +372,7 @@ async def _report_projection(bound, session_id, values):
 async def _publish_report(bound, session_id, values):
     if bound.client is None:
         raise RuntimeError("client does not provide report publication")
-    if set(values) != {"title", "facts"}:
+    if set(values) != {"title"}:
         raise ValueError("unexpected report publication fields")
     result = await bound.client.ext_method("research/publish_report", values)
     return json.dumps(result, ensure_ascii=False)

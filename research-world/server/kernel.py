@@ -164,26 +164,33 @@ class ResearchKernel:
 
     async def _command_publish_report(self, command: KernelCommand) -> dict:
         values, project_id = command.values, _project_id(command)
-        _validate_fields(values, {"title", "facts"}, {"title", "facts"})
-        projection = await self._query_report_projection(KernelQuery("report_projection", project_id))
-        projection["facts"] = values["facts"]
+        _validate_fields(values, {"title"}, {"title"})
+        return self._publish_report(project_id, values["title"])
+
+    def _command_thread_publish_report(self, command: KernelCommand) -> dict:
+        values = command.values
+        _validate_fields(values, {"thread_id", "title"}, {"thread_id", "title"})
+        thread = self._thread_project(command)
+        project_id = thread["project_id"]
+        return self._publish_report(project_id, values["title"], thread["id"])
+
+    def _publish_report(self, project_id: str, title: str, thread_id: str | None = None) -> dict:
+        projection = self._report_projection(project_id)
         assessment = assess_delivery(projection)
         if not assessment["valid"]:
             return {"status": "failed", "assessment": assessment}
-        title = _report_title(values["title"])
+        title = _report_title(title)
         content = render_html(title, projection, assessment)
         artifact = ArtifactStore(self._world.artifacts_root, project_id).add(content, "text/html")
-        self._world.publish_report(project_id, artifact["id"])
-        return {"status": "published", "title": title, "artifact": _artifact_view(artifact), "assessment": assessment}
+        publication = self._world.publish_report(project_id, title, artifact["id"], thread_id)
+        return {"status": "published", "title": title, "publication": publication, "artifact": _artifact_view(artifact), "assessment": assessment}
 
     def _command_save_report(self, command: KernelCommand) -> dict:
-        values, project_id = command.values, _project_id(command)
-        _validate_fields(values, {"title", "artifact_id"}, {"title", "artifact_id"})
+        values = command.values
+        _validate_fields(values, {"title", "thread_id", "publication_id"}, {"title", "thread_id", "publication_id"})
         title = _report_title(values["title"])
-        store = ArtifactStore(self._world.artifacts_root, project_id)
-        if store.get(values["artifact_id"])["media_type"] != "text/html" or not self._world.is_published_report(project_id, values["artifact_id"]):
-            raise ValueError("report artifact must be text/html")
-        return self._world.save_report(project_id, title, values["artifact_id"])
+        thread = self._thread_project(command)
+        return self._world.save_report(thread["project_id"], thread["id"], title, values["publication_id"])
 
     def _command_claim(self, _command: KernelCommand) -> RunLease | None:
         run = self._world.claim_run()
@@ -325,19 +332,13 @@ class ResearchKernel:
         selected = query.project_id or (projects[0]["id"] if projects else None)
         return self._bootstrap(selected, projects)
 
-    async def _query_report_projection(self, query: KernelQuery) -> dict:
+    def _query_report_projection(self, query: KernelQuery) -> dict:
         _validate_fields(query.values, set(), set())
-        project_id = _project_id(query)
-        endpoint_ready = await self._endpoint_ready(project_id)
-        return self._report_projection(project_id, endpoint_ready)
+        return self._report_projection(_project_id(query))
 
-    async def _query_report_validate(self, query: KernelQuery) -> dict:
-        _validate_fields(query.values, {"facts"}, {"facts"})
-        projection = await self._query_report_projection(
-            KernelQuery("report_projection", _project_id(query))
-        )
-        projection["facts"] = query.values["facts"]
-        return assess_delivery(projection)
+    def _query_report_validate(self, query: KernelQuery) -> dict:
+        _validate_fields(query.values, set(), set())
+        return assess_delivery(self._report_projection(_project_id(query)))
 
     def _query_report_bibtex(self, query: KernelQuery) -> dict:
         _validate_fields(query.values, {"artifact_id"}, {"artifact_id"})
@@ -351,11 +352,12 @@ class ResearchKernel:
         return {"id": artifact_id, "content": content}
 
     def _query_report_content(self, query: KernelQuery) -> bytes:
-        values, project_id = query.values, _project_id(query)
-        _validate_fields(values, {"artifact_id"}, {"artifact_id"})
-        if not self._world.is_published_report(project_id, values["artifact_id"]):
-            raise PermissionError("artifact is not a published report")
-        return ArtifactStore(self._world.artifacts_root, project_id).read(values["artifact_id"])
+        values = query.values
+        _validate_fields(values, {"thread_id", "publication_id"}, {"thread_id", "publication_id"})
+        thread = self._thread_project(query)
+        project_id = thread["project_id"]
+        publication = self._world.publication(project_id, values["publication_id"], values["thread_id"])
+        return ArtifactStore(self._world.artifacts_root, project_id).read(publication["artifact_id"])
 
     def _query_report(self, query: KernelQuery) -> dict:
         _validate_fields(query.values, {"report_id"}, {"report_id"})
@@ -380,6 +382,12 @@ class ResearchKernel:
         if project_id and node["project_id"] != project_id:
             raise PermissionError("node belongs to another project")
         return node
+
+    def _thread_project(self, value: KernelCommand | KernelQuery) -> dict:
+        thread = self._world.thread(value.values["thread_id"])
+        if value.project_id and value.project_id != thread["project_id"]:
+            raise PermissionError("thread belongs to another project")
+        return thread
 
     def _admitted_node(self, project_id: str, node_id: str) -> dict:
         node = self._project_node(project_id, node_id)
@@ -438,33 +446,22 @@ class ResearchKernel:
         runs = [self._run_view(run) for run in self._world.runs(project_id)]
         return _bootstrap_value(self, project_id, projects, runs)
 
-    def _report_projection(self, project_id: str, endpoint_ready: bool) -> dict:
+    def _report_projection(self, project_id: str) -> dict:
         nodes = [
             node
             for node in self._world.nodes(project_id)
             if node["life_state"] == "admitted"
         ]
-        sources = [_source_record(node) for node in nodes if node["kind"] == "source"]
-        claims = [claim for node in nodes for claim in _node_claims(node)]
-        facts = [
-            _claim_fact(claim) for claim in claims if claim["verdict"] == "supported"
-        ]
-        artifacts = self._report_artifacts(project_id, nodes)
-        return {
-            "endpoint_ready": endpoint_ready,
-            "facts": facts,
-            "claims": claims,
-            "sources": sources,
-            "artifacts": artifacts,
-        }
+        claims = _report_claims(nodes)
+        facts = [_claim_fact(claim) for claim in claims if claim["verdict"] == "supported"]
+        sources = _report_sources(nodes, facts)
+        artifacts = self._report_artifacts(project_id, facts)
+        return {"facts": facts, "claims": claims, "sources": sources, "artifacts": artifacts}
 
-    def _report_artifacts(self, project_id: str, nodes: list[dict]) -> list[dict]:
-        evidence = [node for node in nodes if node["kind"] in {"source", "experiment"}]
-        artifact_ids = sorted(
-            {item for node in evidence for item in _artifact_ids(node["payload"])}
-        )
+    def _report_artifacts(self, project_id: str, facts: list[dict]) -> list[dict]:
+        links = _artifact_links(facts)
         store = ArtifactStore(self._world.artifacts_root, project_id)
-        return [_artifact_view(store.get(artifact_id)) for artifact_id in artifact_ids]
+        return [_report_artifact(store.get(artifact_id), links[artifact_id]) for artifact_id in sorted(links)]
 
     def _source_artifact_ids(self, project_id: str) -> set[str]:
         sources = [
@@ -648,30 +645,23 @@ def _node_summary(node: dict) -> dict:
     }
 
 
-def _source_record(node: dict) -> dict:
-    return {
-        **node["payload"],
-        "id": node["id"],
-        "kind": "source",
-        "life_state": "admitted",
-    }
-
-
-def _node_claims(node: dict) -> list[dict]:
-    claims = validate_claims(node["payload"].get("claims", []))
-    return [_claim_record(node, index, claim) for index, claim in enumerate(claims, 1)]
-
-
-def _claim_record(node: dict, index: int, claim: dict) -> dict:
-    evidence = [
-        item for item in claim.get("evidence", []) if str(item).startswith("node:")
+def _report_claims(nodes: list[dict]) -> list[dict]:
+    index = {node["id"]: node for node in nodes}
+    return [
+        _claim_record(node, ordinal, claim, index)
+        for node in nodes
+        for ordinal, claim in enumerate(validate_claims(node["payload"].get("claims", [])), 1)
     ]
+
+
+def _claim_record(node: dict, ordinal: int, claim: dict, index: dict) -> dict:
+    evidence = [index[item] for item in claim.get("evidence", []) if item in index]
     return {
-        "id": claim_id(node, index, claim),
+        "id": claim_id(node, ordinal, claim),
         "text": claim["text"],
-        "life_state": "admitted",
         "verdict": claim["verdict"],
-        "source_ids": evidence,
+        "source_ids": [item["id"] for item in evidence if item["kind"] == "source"],
+        "artifact_ids": sorted({artifact for item in evidence for artifact in _direct_artifact_ids(item)}),
     }
 
 
@@ -680,7 +670,35 @@ def _claim_fact(claim: dict) -> dict:
         "text": claim["text"],
         "claim_id": claim["id"],
         "source_ids": claim["source_ids"],
+        "artifact_ids": claim["artifact_ids"],
     }
+
+
+def _report_sources(nodes: list[dict], facts: list[dict]) -> list[dict]:
+    needed = {source for fact in facts for source in fact["source_ids"]}
+    return [_safe_source(node) for node in nodes if node["id"] in needed]
+
+
+def _safe_source(node: dict) -> dict:
+    payload = node["payload"]
+    return {"id": node["id"], "title": payload.get("title"), "source_level": payload.get("source_level"), "checked_at": payload.get("checked_at"), "anchor": f"source-{node['id']}"}
+
+
+def _artifact_links(facts: list[dict]) -> dict[str, dict]:
+    links = {}
+    for fact in facts:
+        for artifact in fact["artifact_ids"]:
+            links.setdefault(artifact, {"claim_ids": [], "source_ids": []})["claim_ids"].append(fact["claim_id"])
+    return links
+
+
+def _report_artifact(record: dict, links: dict) -> dict:
+    return {"id": record["id"], "media_type": record["media_type"], "size": record["size"], **links}
+
+
+def _direct_artifact_ids(node: dict) -> list[str]:
+    values = node["payload"].get("artifact_ids", [])
+    return values if isinstance(values, list) and all(isinstance(item, str) for item in values) else []
 
 
 def _slots(runs: list[dict], count: int = 2) -> list[dict]:

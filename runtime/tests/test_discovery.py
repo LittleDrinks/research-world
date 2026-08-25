@@ -60,6 +60,7 @@ async def test_catalog_contains_only_detected_workspace_assets(tmp_path, monkeyp
     for tool_id in (
         "report_projection",
         "report_validate",
+        "publish_report",
         "export_bibtex",
         "submit_observation",
     ):

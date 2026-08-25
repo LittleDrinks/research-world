@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -113,6 +115,12 @@ def test_thread_points_to_runtime_session_and_pins_nodes(world, project, tmp_pat
     assert thread["session_id"] == "session-1"
     assert [node["id"] for node in thread["nodes"]] == [question["id"]]
     assert thread["runtime"]["messages"] == []
+
+
+def test_research_assistant_exposes_the_report_publication_tool():
+    agent = AgentRegistry(Path(__file__).parents[1] / "agents").get("research-assistant")
+    assert "research-report" in agent["skills"]
+    assert "publish_report" in agent["tools"]
 
 
 def test_prompt_stream_passes_pinned_node_ids(world, project, tmp_path):

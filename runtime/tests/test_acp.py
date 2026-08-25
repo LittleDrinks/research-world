@@ -100,17 +100,12 @@ async def test_graph_query_crosses_the_client_boundary(tmp_path):
 
 async def test_report_validate_crosses_the_client_boundary(tmp_path):
     client = KernelClient()
-    facts = [{"text": "Result", "claim_id": "claim:1", "source_ids": ["S-1"]}]
     async with ToolBox(tmp_path, {}, ("report_validate",), {}, client) as tools:
-        content, failed = await tools.call(
-            "session",
-            "report_validate",
-            json.dumps({"facts": facts}),
-        )
+        content, failed = await tools.call("session", "report_validate", "{}")
 
     assert failed is False
     assert json.loads(content) == {"valid": True, "delivery_level": 4}
-    assert client.calls == [("research/report_validate", {"facts": facts})]
+    assert client.calls == [("research/report_validate", {})]
 
 
 async def test_report_validate_rejects_caller_readiness(tmp_path):
@@ -151,7 +146,7 @@ async def test_report_projection_crosses_the_client_boundary(tmp_path):
 
 async def test_publish_report_crosses_the_client_boundary(tmp_path):
     client = KernelClient()
-    values = {"title": "Orbit", "facts": []}
+    values = {"title": "Orbit"}
     async with ToolBox(tmp_path, {}, ("publish_report",), {}, client) as tools:
         content, failed = await tools.call("session", "publish_report", json.dumps(values))
 

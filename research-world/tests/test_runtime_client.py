@@ -202,7 +202,7 @@ async def test_kernel_client_captures_artifact_then_submits_observation(
 
     assert observation["life_state"] == "pending"
     assert observation["payload"]["artifact_ids"] == [artifact["id"]]
-    assert projection["artifacts"] == [artifact]
+    assert projection["artifacts"] == []
 
 
 def test_embedding_wraps_runtime_failure():

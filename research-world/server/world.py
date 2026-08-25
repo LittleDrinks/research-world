@@ -19,6 +19,10 @@ DIRECTION_STATES = {"proposed", "supported", "refuted"}
 RUN_LEASE_SECONDS = 30
 
 
+class ReportNameTaken(ValueError):
+    code = "report_name_taken"
+
+
 def decode(row: sqlite3.Row) -> dict:
     value = dict(row)
     for key in ("payload", "rebuttal", "output", "assembly", "definition_snapshot"):
@@ -342,22 +346,41 @@ class World:
         sql = "SELECT n.* FROM thread_nodes t JOIN nodes n ON n.id=t.node_id WHERE t.thread_id=? ORDER BY t.pinned_at"
         return self._many(sql, (thread_id,))
 
-    def save_report(self, project_id: str, title: str, artifact_id: str) -> dict:
-        report_id, timestamp = f"report:{secrets.token_hex(12)}", now()
-        values = (report_id, project_id, title, artifact_id, timestamp)
+    def publish_report(self, project_id: str, title: str, artifact_id: str, thread_id: str | None = None) -> dict:
+        publication_id, timestamp = f"publication:{secrets.token_hex(12)}", now()
+        values = (publication_id, project_id, thread_id, title, artifact_id, timestamp)
         with self.db.connect() as connection:
-            connection.execute("INSERT INTO reports VALUES(?,?,?,?,?)", values)
+            connection.execute("INSERT INTO report_publications VALUES(?,?,?,?,?,?)", values)
+        return self.publication(project_id, publication_id, thread_id)
+
+    def save_report(self, project_id: str, thread_id: str, title: str, publication_id: str) -> dict:
+        publication = self.publication(project_id, publication_id, thread_id)
+        report_id, timestamp = f"report:{secrets.token_hex(12)}", now()
+        values = (report_id, project_id, thread_id, publication_id, title, publication["artifact_id"], timestamp)
+        try:
+            with self.db.connect() as connection:
+                connection.execute("INSERT INTO reports VALUES(?,?,?,?,?,?,?)", values)
+        except sqlite3.IntegrityError as error:
+            raise ReportNameTaken("report_name_taken") from error
         return self.report(project_id, report_id)
 
-    def publish_report(self, project_id: str, artifact_id: str) -> None:
-        with self.db.connect() as connection:
-            connection.execute("INSERT OR IGNORE INTO published_reports VALUES(?,?)", (artifact_id, project_id))
+    def publication(self, project_id: str, publication_id: str, thread_id: str | None = None) -> dict:
+        sql = "SELECT * FROM report_publications WHERE id=? AND project_id=?"
+        params = (publication_id, project_id)
+        if thread_id is not None:
+            sql, params = f"{sql} AND thread_id=?", (*params, thread_id)
+        return self._one(sql, params)
 
-    def is_published_report(self, project_id: str, artifact_id: str) -> bool:
-        return bool(self._rows("SELECT 1 FROM published_reports WHERE project_id=? AND artifact_id=?", (project_id, artifact_id)))
+    def report_publications(self, project_id: str, thread_id: str) -> list[dict]:
+        sql = "SELECT * FROM report_publications WHERE project_id=? AND thread_id=? ORDER BY created_at DESC"
+        return self._many(sql, (project_id, thread_id))
 
     def report(self, project_id: str, report_id: str) -> dict:
         return self._one("SELECT * FROM reports WHERE id=? AND project_id=?", (report_id, project_id))
+
+    def reports(self, project_id: str, thread_id: str) -> list[dict]:
+        sql = "SELECT * FROM reports WHERE project_id=? AND thread_id=? ORDER BY created_at DESC"
+        return self._many(sql, (project_id, thread_id))
 
     def _validate_thread_node(self, thread_id: str, node_id: str) -> None:
         thread, node = self.thread(thread_id), self.node(node_id)

@@ -31,9 +31,9 @@ test("renders project thread messages and sends via the prompts stream", async (
 
 test("publishes a validated report card, previews, downloads and saves a version", async ({ page }) => {
   await mockChat(page);
-  await page.route(/\/report\/projection$/, (route) => route.fulfill({ json: { facts: [{ text: "42 K", claim_id: "claim:1", source_ids: ["node:s"] }] } }));
-  await page.route(/\/report\/publish$/, (route) => route.fulfill({ status: 201, json: { status: "published", title: "测试项目", artifact: { id: "artifact:html", created_at: "2026-08-26T00:00:00Z" }, assessment: { delivery_level: 4, minimum_source_level: "published" } } }));
-  await page.route(/\/report\/save$/, (route) => route.fulfill({ status: 201, json: { id: "report:v1" } }));
+  const publication = { id: "publication:p1", thread_id: "thread:t1", created_at: "2026-08-26T00:00:00Z" };
+  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 201, json: { status: "published", title: "测试项目", publication, assessment: { delivery_level: 4, minimum_source_level: "published" } } }));
+  await page.route(/\/threads\/thread%3At1\/report\/save$/, (route) => route.fulfill({ status: 201, json: { id: "report:v1" } }));
   await page.goto("/chat/thread%3At1");
   await page.getByRole("button", { name: "生成报告" }).click();
   await expect(page.getByText("已校验")).toBeVisible();
@@ -48,13 +48,23 @@ test("publishes a validated report card, previews, downloads and saves a version
 test("keeps failed citation reports retryable without preview links on mobile", async ({ page }) => {
   await mockChat(page);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.route(/\/report\/projection$/, (route) => route.fulfill({ json: { facts: [] } }));
-  await page.route(/\/report\/publish$/, (route) => route.fulfill({ status: 201, json: { status: "failed", assessment: { gaps: [{ code: "source_missing", path: "facts[0]" }] } } }));
+  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 201, json: { status: "failed", assessment: { gaps: [{ code: "source_missing", path: "facts[0]", value: "node:s" }] } } }));
   await page.goto("/chat/thread%3At1");
   await page.getByRole("button", { name: "生成报告" }).click();
-  await expect(page.getByRole("alert")).toContainText("source_missing: facts[0]");
+  await expect(page.getByRole("alert")).toContainText("source_missing: facts[0] = \"node:s\"");
   await expect(page.getByRole("link", { name: /下载 HTML/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "重试" })).toBeVisible();
+});
+
+
+test("restores named thread report cards after reload", async ({ page }) => {
+  const reports = [{ id: "report:v1", title: "V1", publication_id: "publication:p1" }];
+  await mockChat(page, threadDetail({ reports }));
+  await page.goto("/chat/thread%3At1");
+  await expect(page.getByText("V1")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("V1")).toBeVisible();
+  await expect(page.getByRole("link", { name: "下载" })).toHaveAttribute("download", "");
 });
 
 

@@ -49,11 +49,15 @@ CREATE TABLE IF NOT EXISTS thread_nodes(
 );
 CREATE TABLE IF NOT EXISTS reports(
   id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  thread_id TEXT NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+  publication_id TEXT NOT NULL REFERENCES report_publications(id),
   title TEXT NOT NULL, artifact_id TEXT NOT NULL, created_at TEXT NOT NULL,
   UNIQUE(project_id,title)
 );
-CREATE TABLE IF NOT EXISTS published_reports(
-  artifact_id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE
+CREATE TABLE IF NOT EXISTS report_publications(
+  id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  thread_id TEXT REFERENCES threads(id) ON DELETE CASCADE,
+  title TEXT NOT NULL, artifact_id TEXT NOT NULL, created_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS lineages(
   id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,

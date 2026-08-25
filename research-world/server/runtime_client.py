@@ -229,9 +229,10 @@ class KernelClient:
     async def _report_validate(self, params: dict) -> dict:
         from .kernel import KernelQuery
 
-        values = {"facts": params.get("facts")}
+        if params:
+            raise ValueError("report validation takes no fields")
         return await self.kernel.query(
-            KernelQuery("report_validate", self.project_id, values)
+            KernelQuery("report_validate", self.project_id)
         )
 
     async def _report_projection(self, params: dict) -> dict:

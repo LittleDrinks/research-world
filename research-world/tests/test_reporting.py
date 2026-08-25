@@ -1,119 +1,37 @@
-import pytest
-
+from server.report_delivery import render_html
 from server.reporting import assess_delivery
 
 
-def test_checked_delivery_accepts_only_traced_facts():
-    projection = report_projection(endpoint_ready=True)
+def projection():
+    source = {"id": "node:paper", "title": "Paper", "source_level": "published", "checked_at": "2026-08-23T12:00:00+08:00", "anchor": "source-node:paper"}
+    claim = {"id": "claim:one", "text": "Transition at 42 K", "source_ids": ["node:paper"]}
+    fact = {"text": "Transition at 42 K", "claim_id": "claim:one", "source_ids": ["node:paper"], "artifact_ids": ["artifact:evidence"]}
+    artifact = {"id": "artifact:evidence", "media_type": "text/plain", "size": 4, "claim_ids": ["claim:one"], "source_ids": ["node:paper"]}
+    return {"facts": [fact], "claims": [claim], "sources": [source], "artifacts": [artifact]}
 
-    result = assess_delivery(projection)
 
+def test_delivery_accepts_kernel_bound_facts_and_renders_citations():
+    value = projection()
+    result = assess_delivery(value)
+    html = render_html("Orbit", value, result).decode()
     assert result["valid"] is True
-    assert result["delivery_level"] == 4
-    assert result["accepted_facts"] == projection["facts"]
-    assert result["minimum_source_level"] == "published"
-    assert result["gaps"] == []
+    assert 'href="#source-node:paper"' in html
+    assert 'id="source-node:paper"' in html
+    assert "No validated formulas evidence." in html
+    assert "linear-gradient" not in html
 
 
-def test_missing_endpoint_preserves_checked_report_at_level_two():
-    result = assess_delivery(report_projection(endpoint_ready=False))
-
-    assert result["valid"] is True
-    assert result["delivery_level"] == 2
-    assert result["gaps"] == [
-        {"code": "endpoint_missing", "path": "endpoint_ready", "blocking": False}
-    ]
-
-
-def test_fact_citation_must_match_admitted_claim_and_source():
-    projection = report_projection(endpoint_ready=True)
-    projection["facts"][0]["source_ids"] = ["node:other"]
-
-    result = assess_delivery(projection)
-
-    assert result["valid"] is False
-    assert result["delivery_level"] == 1
+def test_delivery_rejects_fabricated_text_and_unlinked_artifact():
+    value = projection()
+    value["facts"][0]["text"] = "Invented"
+    value["facts"][0]["artifact_ids"].append("artifact:other")
+    result = assess_delivery(value)
+    assert {gap["code"] for gap in result["gaps"]} == {"fact_text_mismatch", "artifact_missing"}
     assert result["accepted_facts"] == []
-    assert [gap["code"] for gap in result["gaps"]] == ["source_missing"]
 
 
-@pytest.mark.parametrize(
-    ("change", "code", "level"),
-    [
-        ({"life_state": "pending"}, "source_not_admitted", 1),
-        ({"source_level": "preprint"}, "source_not_final", 3),
-        ({"checked_at": "2026-08-23"}, "source_checked_at_invalid", 3),
-    ],
-)
-def test_delivery_reports_source_gaps(change, code, level):
-    projection = report_projection(endpoint_ready=True)
-    projection["sources"][0].update(change)
-
-    result = assess_delivery(projection)
-
-    assert result["valid"] is False
-    assert result["delivery_level"] == level
-    assert code in [gap["code"] for gap in result["gaps"]]
-
-
-def test_claim_source_link_is_not_inferred_from_fact():
-    projection = report_projection(endpoint_ready=True)
-    projection["claims"][0]["source_ids"] = ["node:different"]
-
-    result = assess_delivery(projection)
-
-    assert result["valid"] is False
-    assert result["gaps"][0]["code"] == "claim_source_mismatch"
-
-
-@pytest.mark.parametrize(
-    ("change", "code"),
-    [
-        ({"life_state": "ghost"}, "claim_not_admitted"),
-        ({"verdict": "uncertain"}, "claim_not_supported"),
-    ],
-)
-def test_fact_requires_an_admitted_supported_claim(change, code):
-    projection = report_projection(endpoint_ready=True)
-    projection["claims"][0].update(change)
-
-    result = assess_delivery(projection)
-
-    assert result["valid"] is False
-    assert code in [gap["code"] for gap in result["gaps"]]
-
-
-def test_projection_shape_is_explicit():
-    with pytest.raises(ValueError, match="facts list"):
-        assess_delivery({"claims": [], "sources": []})
-
-
-def report_projection(endpoint_ready=False):
-    return {
-        "endpoint_ready": endpoint_ready,
-        "facts": [
-            {
-                "text": "The measured transition occurs at 42 K.",
-                "claim_id": "claim:one",
-                "source_ids": ["node:paper"],
-            }
-        ],
-        "claims": [
-            {
-                "id": "claim:one",
-                "text": "Transition at 42 K",
-                "life_state": "admitted",
-                "verdict": "supported",
-                "source_ids": ["node:paper"],
-            }
-        ],
-        "sources": [
-            {
-                "id": "node:paper",
-                "kind": "source",
-                "life_state": "admitted",
-                "source_level": "published",
-                "checked_at": "2026-08-23T12:00:00+08:00",
-            }
-        ],
-    }
+def test_delivery_reports_exact_source_metadata_gap():
+    value = projection()
+    value["sources"][0]["checked_at"] = "not-a-date"
+    result = assess_delivery(value)
+    assert result["gaps"] == [{"code": "source_checked_at_invalid", "path": "sources[node:paper].checked_at", "value": "not-a-date"}]

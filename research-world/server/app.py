@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from .config import ROOT
 from .kernel import KernelCommand, KernelQuery, ResearchKernel, default_kernel
 from .library import list_packages
+from .world import ReportNameTaken
 
 
 def create_app(kernel: ResearchKernel) -> FastAPI:
@@ -28,6 +29,7 @@ def register_routes(app, kernel) -> None:
     thread_routes(app, kernel)
     thread_prompt_routes(app, kernel)
     thread_pin_routes(app, kernel)
+    thread_report_routes(app, kernel)
     runtime_routes(app, kernel)
     agent_routes(app, kernel)
     pipeline_definition_routes(app, kernel)
@@ -40,6 +42,10 @@ def register_routes(app, kernel) -> None:
 
 
 def error_handlers(app: FastAPI) -> None:
+    @app.exception_handler(ReportNameTaken)
+    async def report_name_taken(_request, error):
+        return JSONResponse({"code": error.code, "detail": str(error)}, status_code=409)
+
     @app.exception_handler(KeyError)
     async def missing(_request, _error):
         return JSONResponse({"detail": "not found"}, status_code=404)
@@ -171,6 +177,24 @@ def thread_pin_routes(app, kernel) -> None:
         )
 
 
+def thread_report_routes(app, kernel) -> None:
+    @app.post("/api/v1/threads/{thread_id}/report/publish", status_code=201)
+    async def publish_thread_report(thread_id: str, request: Request):
+        values = {"thread_id": thread_id, **await request.json()}
+        return await kernel.command(KernelCommand("thread_publish_report", values=values))
+
+    @app.post("/api/v1/threads/{thread_id}/report/save", status_code=201)
+    async def save_thread_report(thread_id: str, request: Request):
+        values = {"thread_id": thread_id, **await request.json()}
+        return await kernel.command(KernelCommand("save_report", values=values))
+
+    @app.get("/api/v1/threads/{thread_id}/report/{publication_id}/content")
+    async def report_content(thread_id: str, publication_id: str, download: bool = False):
+        values = {"thread_id": thread_id, "publication_id": publication_id}
+        content = await kernel.query(KernelQuery("report_content", values=values))
+        return report_response(content, download)
+
+
 def runtime_routes(app, kernel) -> None:
     @app.get("/api/v1/runtime/catalog")
     async def catalog(project_id: str):
@@ -284,36 +308,22 @@ def report_routes(app, kernel) -> None:
     async def report_projection(project_id: str):
         return await kernel.query(KernelQuery("report_projection", project_id))
 
-    @app.post("/api/v1/projects/{project_id}/report/validate")
-    async def validate_report(project_id: str, request: Request):
-        values = await request.json()
-        return await kernel.query(KernelQuery("report_validate", project_id, values))
-
     @app.get("/api/v1/projects/{project_id}/report/bibtex")
     async def export_bibtex(project_id: str, artifact_id: str):
         values = {"artifact_id": artifact_id}
         return await kernel.query(KernelQuery("report_bibtex", project_id, values))
 
-    @app.post("/api/v1/projects/{project_id}/report/publish", status_code=201)
-    async def publish_report(project_id: str, request: Request):
-        return await kernel.command(KernelCommand("publish_report", project_id, await request.json()))
-
-    @app.post("/api/v1/projects/{project_id}/report/save", status_code=201)
-    async def save_report(project_id: str, request: Request):
-        return await kernel.command(KernelCommand("save_report", project_id, await request.json()))
-
-    @app.get("/api/v1/projects/{project_id}/report/content/{artifact_id}")
-    async def report_preview(project_id: str, artifact_id: str, download: bool = False):
-        content = await kernel.query(KernelQuery("report_content", project_id, {"artifact_id": artifact_id}))
-        headers = {"Content-Security-Policy": "sandbox; default-src 'none'; style-src 'unsafe-inline'"}
-        if download:
-            headers["Content-Disposition"] = 'attachment; filename="report.html"'
-            return Response(content, media_type="text/html", headers=headers)
-        return HTMLResponse(content, headers=headers)
-
     @app.get("/api/v1/projects/{project_id}/report/{report_id}")
     async def read_report(project_id: str, report_id: str):
         return await kernel.query(KernelQuery("report", project_id, {"report_id": report_id}))
+
+
+def report_response(content: bytes, download: bool):
+    headers = {"Content-Security-Policy": "sandbox; default-src 'none'; style-src 'unsafe-inline'"}
+    if download:
+        headers["Content-Disposition"] = 'attachment; filename="report.html"'
+        return Response(content, media_type="text/html", headers=headers)
+    return HTMLResponse(content, headers=headers)
 
 
 def _artifact_values(value: dict) -> dict:
