@@ -142,18 +142,26 @@ class Runtime:
         binding = self._binding(session_id)
         spec, meta = binding.spec, events[0]["data"]
         turn_id = f"t-{uuid.uuid4().hex}"
-        self.trace.append(session_id, "turn_start", {"prompt": blocks}, turn_id)
-        adapter = binding.adapter
-        self._active_turns[session_id] = (turn_id, adapter)
+        self._begin_turn(session_id, turn_id, blocks, binding.adapter)
         try:
             return await self._run_turn(session_id, turn_id, binding, meta, client, emit)
-        except Exception as error:
-            if (session_id, turn_id) in self._cancelled:
-                return self._finish(session_id, turn_id, "cancelled", "", {})
-            self._fail(session_id, turn_id, error)
+        except asyncio.CancelledError:
+            self._finish(session_id, turn_id, "cancelled", "", {})
             raise
+        except Exception as error:
+            return self._handle_turn_error(session_id, turn_id, error)
         finally:
             self._active_turns.pop(session_id, None)
+
+    def _begin_turn(self, session_id, turn_id, blocks, adapter) -> None:
+        self.trace.append(session_id, "turn_start", {"prompt": blocks}, turn_id)
+        self._active_turns[session_id] = (turn_id, adapter)
+
+    def _handle_turn_error(self, session_id, turn_id, error):
+        if (session_id, turn_id) in self._cancelled:
+            return self._finish(session_id, turn_id, "cancelled", "", {})
+        self._fail(session_id, turn_id, error)
+        raise error
 
     async def _run_turn(self, session_id, turn_id, binding, meta, client, emit):
         spec = binding.spec
@@ -266,7 +274,8 @@ class Runtime:
     def _binding(self, session_id):
         binding = self._bindings.get(session_id)
         if binding is None:
-            raise SessionSpecInvalid("session launch binding is unavailable")
+            binding = _restore_binding(self._events(session_id), self.runtimes, self.endpoints)
+            self._bindings[session_id] = binding
         return binding
 
 
@@ -414,6 +423,39 @@ class _LaunchBinding:
         self.spec = spec
 
 
+def _restore_binding(events, runtimes, endpoints):
+    _, meta = _session_spec(events)
+    spec = AgentSpec.parse(meta["agent_spec"])
+    adapter = runtimes.require(spec.runtime)
+    endpoint = _persisted_endpoint(endpoints, spec)
+    _require_binding_snapshot(meta, adapter, endpoint)
+    return _LaunchBinding(adapter, endpoint, spec)
+
+
+def _persisted_endpoint(endpoints, spec):
+    try:
+        return endpoints.require(spec.endpoint, spec.model)
+    except CapabilityNotFound as error:
+        raise SessionSpecInvalid("persisted endpoint binding is unavailable") from error
+
+
+def _require_binding_snapshot(meta, adapter, endpoint) -> None:
+    snapshot = meta.get("capability_snapshot", {}).get("runtime")
+    if not isinstance(snapshot, dict) or not isinstance(meta.get("endpoint_snapshot"), dict):
+        raise SessionSpecInvalid("session launch binding is unavailable")
+    if not _same_runtime(snapshot, adapter.descriptor.public()):
+        raise SessionSpecInvalid("persisted runtime binding is unavailable")
+    if meta["endpoint_snapshot"] != endpoint.public():
+        raise SessionSpecInvalid("persisted endpoint binding is unavailable")
+
+
+def _same_runtime(expected, actual) -> bool:
+    ignored = {"last_checked_at"}
+    left = {key: value for key, value in expected.items() if key not in ignored}
+    right = {key: value for key, value in actual.items() if key not in ignored}
+    return left == right
+
+
 def _require_frozen_plan(current: list, frozen: list | None) -> None:
     if current != frozen:
         raise ToolPlanDrift("tool operations changed since launch; start a new session")
@@ -444,9 +486,27 @@ def _skills_from_meta(meta) -> dict[str, Skill]:
 
 def _messages(events, meta):
     messages = [{"role": "system", "content": _system_prompt(meta)}]
+    replayable = _replayable_turns(events)
     for event in events:
-        _append_message(messages, event)
+        if event.get("turn_id") in replayable:
+            _append_message(messages, event)
     return messages
+
+
+def _replayable_turns(events) -> set[str]:
+    completed = {
+        event["turn_id"]
+        for event in events
+        if event["type"] == "turn_end"
+        and event["data"]["status"] in {"completed", "limit"}
+    }
+    return completed | _latest_open_turn(events)
+
+
+def _latest_open_turn(events) -> set[str]:
+    ended = {event["turn_id"] for event in events if event["type"] == "turn_end"}
+    starts = [event["turn_id"] for event in events if event["type"] == "turn_start"]
+    return {starts[-1]} if starts and starts[-1] not in ended else set()
 
 
 def _system_prompt(meta):

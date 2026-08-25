@@ -2,9 +2,9 @@ import asyncio
 import subprocess
 
 import pytest
-from runtime.providers.codex import CodexProvider, _collect
+from runtime.providers.codex import CodexProvider, _collect, _taskkill
 from runtime.runtimes import CodexRuntimeAdapter, REALM, load_runtimes
-from runtime.service import Runtime, _provider_context
+from runtime.service import Runtime, _messages, _provider_context
 
 
 def codex_runtime(tmp_path, provider):
@@ -39,6 +39,17 @@ def test_readiness_keeps_invalid_version_candidate(monkeypatch):
     descriptor = load_runtimes()[1].descriptor.public()
     assert descriptor["status"] == "error"
     assert descriptor["reason"] == {"code": "probe_invalid_output", "probe": "version"}
+
+
+def test_readiness_rejects_parseable_incompatible_version(monkeypatch):
+    monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: "/bin/codex")
+    monkeypatch.setattr(
+        "runtime.providers.codex.subprocess.run",
+        lambda *_a, **_k: subprocess.CompletedProcess([], 0, "codex-cli 0.149.2"),
+    )
+    provider = CodexProvider.detected()
+    assert provider.status == "unsupported"
+    assert provider.reason == {"code": "version_incompatible", "probe": "version"}
 
 
 @pytest.mark.parametrize(
@@ -207,10 +218,9 @@ async def test_collect_rejects_malformed_event_shapes(event):
     "terminal",
     [
         b'{"type":"turn.failed","error":{"message":"failed"}}',
-        b'{"type":"turn.cancelled"}',
     ],
 )
-async def test_collect_rejects_failed_or_cancelled_terminal(terminal):
+async def test_collect_rejects_failed_terminal(terminal):
     process = Process(
         b'{"type":"thread.started","thread_id":"thread-1"}\n'
         b'{"type":"turn.started"}\n'
@@ -279,6 +289,17 @@ async def test_windows_timeout_kills_process_tree_without_sigkill(monkeypatch):
     assert not process.child_alive
 
 
+def test_windows_taskkill_is_bounded(monkeypatch):
+    process = TreeProcess(returncode=None)
+    monkeypatch.setattr("runtime.providers.codex.os.name", "nt")
+    monkeypatch.setattr(
+        "runtime.providers.codex.subprocess.run",
+        lambda *_a, **_k: (_ for _ in ()).throw(subprocess.TimeoutExpired([], 2)),
+    )
+    _taskkill(process)
+    assert process.returncode is None
+
+
 async def test_runtime_records_declared_cli_trace_error(monkeypatch, tmp_path):
     provider = CodexProvider("echo")
     monkeypatch.setattr(provider, "start", lambda *_: _process(Process(b"not-json\n")))
@@ -309,6 +330,7 @@ async def test_cancel_terminates_active_process(monkeypatch, tmp_path):
     assert (await task)["status"] == "cancelled"
     assert process.terminated
     assert runtime.inspect(session)["turns"][-1]["status"] == "cancelled"
+    assert not runtime.runtimes._values[("codex", REALM)]._processes
 
 
 async def test_cancel_terminates_process_group_after_child_exists(
@@ -335,6 +357,19 @@ async def test_cancel_terminates_process_group_after_child_exists(
     assert not process.child_alive
 
 
+async def test_explicit_cancel_drives_bounded_stop_and_unregisters(monkeypatch, tmp_path):
+    provider, process, stopped = CodexProvider("echo"), TreeProcess(returncode=None), asyncio.Event()
+    monkeypatch.setattr(provider, "stop", _stops_process(process, stopped))
+    runtime = codex_runtime(tmp_path, provider)
+    adapter = runtime.runtimes._values[("codex", REALM)]
+    session = "s-cancel"
+    runtime._active_turns[session] = ("t-cancel", adapter)
+    adapter._processes[session] = process
+    runtime.cancel(session)
+    await adapter._stops[session]
+    assert stopped.is_set() and not process.child_alive and not adapter._processes
+
+
 async def test_runtime_preserves_capability_snapshot_and_recovers_resume(
     tmp_path, monkeypatch
 ):
@@ -353,6 +388,29 @@ async def test_runtime_preserves_capability_snapshot_and_recovers_resume(
     assert snapshot["realm"] == "container:runtime"
     assert "streaming" not in snapshot["capabilities"]
     assert contexts[1]["provider_session_id"] == "thread-1"
+
+
+async def test_fresh_runtime_restores_the_persisted_binding(tmp_path, monkeypatch):
+    first, second, contexts = CodexProvider("echo"), CodexProvider("echo"), []
+    monkeypatch.setattr(first, "start", _resuming_start([]))
+    runtime = codex_runtime(tmp_path, first)
+    session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
+    await runtime.prompt(session, [{"type": "text", "text": "one"}])
+    monkeypatch.setattr(second, "start", _resuming_start(contexts))
+    restored = codex_runtime(tmp_path, second)
+    result = await restored.prompt(session, [{"type": "text", "text": "two"}])
+    assert result["status"] == "completed"
+    assert contexts[0]["provider_session_id"] == "thread-1"
+
+
+async def test_fresh_runtime_rejects_changed_persisted_endpoint(tmp_path, monkeypatch):
+    provider = CodexProvider("echo")
+    monkeypatch.setattr(provider, "start", _resuming_start([]))
+    runtime = codex_runtime(tmp_path, provider)
+    session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
+    monkeypatch.setenv("CODEX_MODEL", "other")
+    with pytest.raises(RuntimeError, match="persisted endpoint binding"):
+        await codex_runtime(tmp_path, CodexProvider("echo")).prompt(session, [])
 
 
 @pytest.mark.parametrize("path, result, status, code", [
@@ -379,6 +437,40 @@ async def test_collect_accepts_complete_item_lifecycle():
     stream += b'{"type":"turn.completed"}\n'
     result = await _collect(Process(stream), "prompt", lambda _: asyncio.sleep(0), 1)
     assert result.message["content"] == "ok"
+
+
+async def test_collect_accepts_release_completed_only_items_and_updates():
+    result = await _collect(Process(_release_valid_stream()), "prompt", _ignore, 1)
+    assert result.message["content"] == "answer"
+
+
+async def test_collect_accepts_top_level_error_before_failed_turn():
+    stream = b'{"type":"thread.started","thread_id":"one"}\n'
+    stream += b'{"type":"turn.started"}\n{"type":"error","message":"fatal"}\n'
+    stream += b'{"type":"turn.failed","error":{"message":"fatal"}}\n'
+    with pytest.raises(RuntimeError, match="failed terminal stream") as raised:
+        await _collect(Process(stream), "prompt", _ignore, 1)
+    assert raised.value.code == "cli_stream_failed"
+
+
+def _release_valid_stream():
+    rows = [
+        b'{"type":"thread.started","thread_id":"one"}', b'{"type":"turn.started"}',
+        b'{"type":"item.completed","item":{"id":"a","type":"agent_message","text":"answer"}}',
+        b'{"type":"item.completed","item":{"id":"r","type":"reasoning","text":"summary"}}',
+        b'{"type":"item.completed","item":{"id":"w","type":"error","message":"warning"}}',
+        b'{"type":"item.completed","item":{"id":"f","type":"file_change","changes":[]}}',
+        b'{"type":"item.started","item":{"id":"t","type":"todo_list","items":[]}}',
+        b'{"type":"item.updated","item":{"id":"t","type":"todo_list","items":[]}}',
+        b'{"type":"item.updated","item":{"id":"t","type":"todo_list","items":[]}}',
+        b'{"type":"item.completed","item":{"id":"t","type":"todo_list","items":[]}}',
+        b'{"type":"turn.completed","usage":{"input_tokens":1,"output_tokens":1}}', b"",
+    ]
+    return b"\n".join(rows)
+
+
+async def _ignore(_text):
+    return None
 
 
 @pytest.mark.parametrize("stream", [
@@ -425,6 +517,7 @@ async def test_caller_cancellation_during_start_stops_created_process(monkeypatc
     with pytest.raises(asyncio.CancelledError):
         await task
     assert process.terminated
+    assert runtime.inspect(session)["turns"][-1]["status"] == "cancelled"
 
 
 async def test_caller_cancellation_stops_and_unregisters_process(monkeypatch, tmp_path):
@@ -461,6 +554,29 @@ async def test_idle_or_late_cancel_does_not_cancel_later_turn(monkeypatch, tmp_p
     assert [turn["status"] for turn in runtime.inspect(launched["session_id"])["turns"]] == ["completed"] * 2
 
 
+def test_cancelled_or_unfinished_turns_are_not_replayed():
+    messages = _messages(_replay_events(), {"agent_spec": _spec()})
+    assert messages == [
+        {"role": "system", "content": "Answer."},
+        {"role": "user", "content": "keep"},
+    ]
+
+
+def _replay_events():
+    return [
+        _turn_start("cancelled", "drop"), _turn_end("cancelled", "cancelled"),
+        _turn_start("keep", "keep"),
+    ]
+
+
+def _turn_start(turn_id, text):
+    return {"type": "turn_start", "turn_id": turn_id, "data": {"prompt": [{"type": "text", "text": text}]}}
+
+
+def _turn_end(turn_id, status):
+    return {"type": "turn_end", "turn_id": turn_id, "data": {"status": status}}
+
+
 _DESCRIPTOR_FIELDS = {"id", "realm", "display_name", "executable", "version", "source", "last_checked_at", "status", "capabilities", "reason"}
 
 
@@ -481,6 +597,14 @@ def _created_after(started, ready, process):
         await ready.wait()
         return process
     return start
+
+
+def _stops_process(process, stopped):
+    async def stop(_process):
+        stopped.set()
+        process.kill()
+
+    return stop
 
 
 async def _active_task(runtime, tmp_path, started):

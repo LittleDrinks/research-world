@@ -14,8 +14,11 @@ from .base import Emit, ModelResult
 from ..types import TraceError
 
 VERSION = re.compile(r"codex-cli\s+(\S+)")
-TERMINALS = {"turn.completed", "turn.failed", "turn.cancelled"}
-EVENTS = {"thread.started", "turn.started", "item.started", "item.updated", "item.completed", *TERMINALS}
+COMPATIBLE_VERSION = "0.149.1"
+TERMINALS = {"turn.completed", "turn.failed"}
+ITEM_EVENTS = {"item.started", "item.updated", "item.completed"}
+EVENTS = {"thread.started", "turn.started", "error", *ITEM_EVENTS, *TERMINALS}
+COMPLETED_ONLY_ITEMS = {"agent_message", "reasoning", "error", "file_change"}
 TERMINATE_TIMEOUT = 2.0
 
 
@@ -86,8 +89,18 @@ class CodexProvider:
 
 
 def _version(executable: str) -> tuple[str | None, str, dict[str, str] | None]:
+    result = _version_probe(executable)
+    if isinstance(result, tuple):
+        return result
+    match = VERSION.search(result.stdout) if result.returncode == 0 else None
+    if match is None:
+        return None, "error", _reason("probe_invalid_output", "version")
+    return _version_status(match.group(1))
+
+
+def _version_probe(executable: str):
     try:
-        result = subprocess.run(
+        return subprocess.run(
             [executable, "--version"],
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
@@ -98,10 +111,12 @@ def _version(executable: str) -> tuple[str | None, str, dict[str, str] | None]:
         return None, "error", _reason("probe_timeout", "version")
     except OSError:
         return None, "error", _reason("probe_failed", "version")
-    match = VERSION.search(result.stdout) if result.returncode == 0 else None
-    if match:
-        return match.group(1), "found", None
-    return None, "error", _reason("probe_invalid_output", "version")
+
+
+def _version_status(version: str) -> tuple[str, str, dict[str, str] | None]:
+    if version == COMPATIBLE_VERSION:
+        return version, "found", None
+    return version, "unsupported", _reason("version_incompatible", "version")
 
 
 async def _collect(process, prompt: str, emit: Emit, timeout: float) -> ModelResult:
@@ -175,12 +190,19 @@ def _signal_tree(process, sig, fallback: str) -> None:
 
 def _taskkill(process) -> None:
     if process.returncode is None and getattr(process, "pid", None):
-        subprocess.run(
-            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
+        _run_taskkill(process.pid)
+
+
+def _run_taskkill(pid: int) -> None:
+    try:
+        subprocess.run(_taskkill_args(pid), stdout=subprocess.DEVNULL,
+                       stderr=subprocess.DEVNULL, check=False, timeout=TERMINATE_TIMEOUT)
+    except (OSError, subprocess.TimeoutExpired):
+        return
+
+
+def _taskkill_args(pid: int) -> list[str]:
+    return ["taskkill", "/PID", str(pid), "/T", "/F"]
 
 
 def _events(stdout: bytes) -> list[dict]:
@@ -204,7 +226,7 @@ def _validate_stream(events: list[dict]) -> None:
     terminal = _Lifecycle().consume(events)
     if terminal == "turn.completed":
         return
-    if terminal in {"turn.failed", "turn.cancelled"}:
+    if terminal == "turn.failed":
         raise TraceError("cli_stream_failed", "codex returned a failed terminal stream")
     raise TraceError(
         "cli_incomplete_stream", "codex returned an incomplete terminal stream"
@@ -214,7 +236,8 @@ def _validate_stream(events: list[dict]) -> None:
 class _Lifecycle:
     def __init__(self):
         self.state = "new"
-        self.items: dict[str, str] = {}
+        self.items: dict[str, tuple[str, str]] = {}
+        self.failed = False
 
     def consume(self, events: list[dict]) -> str:
         for event in events:
@@ -229,8 +252,10 @@ class _Lifecycle:
             self._start(kind)
         elif kind in TERMINALS:
             self._terminal(kind)
+        elif kind == "error":
+            self._error()
         else:
-            self._item(kind, event["item"]["id"])
+            self._item(kind, event["item"])
 
     def _start(self, kind: str) -> None:
         expected = "thread.started" if self.state == "new" else "turn.started"
@@ -238,21 +263,41 @@ class _Lifecycle:
             raise _invalid_jsonl()
         self.state = kind
 
-    def _item(self, kind: str, item_id: str) -> None:
+    def _item(self, kind: str, item: dict) -> None:
         if self.state != "turn.started":
             raise _invalid_jsonl()
+        item_id, item_type = item["id"], item["type"]
         previous = self.items.get(item_id)
-        if kind == "item.started" and previous is None:
-            self.items[item_id] = "started"
-        elif kind == "item.updated" and previous == "started":
-            self.items[item_id] = "updated"
-        elif kind == "item.completed" and previous in {"started", "updated"}:
-            self.items[item_id] = "completed"
+        if previous is not None and previous[1] != item_type:
+            raise _invalid_jsonl()
+        self._advance_item(kind, item_id, item_type, previous)
+
+    def _advance_item(self, kind, item_id, item_type, previous) -> None:
+        state = previous[0] if previous else None
+        if kind == "item.started" and state is None:
+            self.items[item_id] = ("started", item_type)
+        elif kind == "item.updated" and state in {"started", "updated"}:
+            self.items[item_id] = ("updated", item_type)
+        elif kind == "item.completed" and self._completable(state, item_type):
+            self.items[item_id] = ("completed", item_type)
         else:
             raise _invalid_jsonl()
 
+    def _completable(self, state, item_type) -> bool:
+        return state in {"started", "updated"} or (
+            state is None and item_type in COMPLETED_ONLY_ITEMS
+        )
+
+    def _error(self) -> None:
+        if self.state != "turn.started":
+            raise _invalid_jsonl()
+        self.failed = True
+
     def _terminal(self, kind: str) -> None:
-        if self.state != "turn.started" or any(value != "completed" for value in self.items.values()):
+        complete = all(value[0] == "completed" for value in self.items.values())
+        if self.state != "turn.started" or not complete:
+            raise _invalid_jsonl()
+        if self.failed and kind != "turn.failed":
             raise _invalid_jsonl()
         self.state = kind
 
@@ -271,11 +316,13 @@ def _valid_shape(event: object) -> bool:
         return _valid_thread(event)
     if kind == "turn.started":
         return True
-    if kind in {"item.started", "item.updated", "item.completed"}:
+    if kind in ITEM_EVENTS:
         return _valid_item(event)
     if kind == "turn.completed":
         return _valid_usage(event)
-    return _valid_terminal(event) if kind in TERMINALS else False
+    if kind == "turn.failed":
+        return _valid_terminal(event)
+    return _valid_error(event)
 
 
 def _valid_thread(event: dict) -> bool:
@@ -307,12 +354,12 @@ def _valid_usage(event: dict) -> bool:
 
 
 def _valid_terminal(event: dict) -> bool:
-    if event["type"] == "turn.completed":
-        return _valid_usage(event)
     error = event.get("error")
-    if event["type"] == "turn.cancelled" and error is None:
-        return True
     return isinstance(error, dict) and isinstance(error.get("message"), str)
+
+
+def _valid_error(event: dict) -> bool:
+    return isinstance(event.get("message"), str)
 
 
 def _checked_at() -> str:

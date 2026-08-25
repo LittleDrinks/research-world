@@ -64,6 +64,7 @@ class CodexRuntimeAdapter(RuntimeAdapter):
         self.provider = provider
         self._processes: dict[str, object] = {}
         self._cancelled: set[str] = set()
+        self._stops: dict[str, asyncio.Task] = {}
 
     @property
     def owns_process(self) -> bool:
@@ -90,18 +91,32 @@ class CodexRuntimeAdapter(RuntimeAdapter):
         process = await self.provider.start(model, context)
         self._processes[session_id] = process
         if session_id in self._cancelled:
-            self.provider.cancel(process)
+            self._schedule_stop(session_id, process)
         return process
 
     def _unregister(self, session_id, process) -> None:
-        if process is not None and process.returncode is not None:
+        if process is not None:
             self._processes.pop(session_id, None)
         self._cancelled.discard(session_id)
 
     def cancel(self, session_id: str) -> None:
         self._cancelled.add(session_id)
         if process := self._processes.get(session_id):
-            self.provider.cancel(process)
+            self._schedule_stop(session_id, process)
+
+    def _schedule_stop(self, session_id, process) -> None:
+        if session_id not in self._stops:
+            self._stops[session_id] = asyncio.create_task(
+                self._stop_registered(session_id, process)
+            )
+
+    async def _stop_registered(self, session_id, process) -> None:
+        try:
+            await _cleanup(self.provider, process)
+        finally:
+            if self._processes.get(session_id) is process:
+                self._processes.pop(session_id, None)
+            self._stops.pop(session_id, None)
 
 
 class RuntimePool:
