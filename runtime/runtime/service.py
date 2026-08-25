@@ -14,6 +14,7 @@ from acp.interfaces import Client
 from . import catalog
 from .adapters import ToolDefinition, discover_adapters
 from .endpoints import Endpoint, EndpointPool, load_endpoints
+from .runtimes import RuntimeAdapter, RuntimePool, load_runtimes
 from .skills import Skill, discover_skills, skill_index
 from .tools import ToolBox
 from .trace import TraceStore, inspect_trace
@@ -23,6 +24,7 @@ from .types import (
     SessionNotFound,
     SessionSpecInvalid,
     ToolPlanDrift,
+    TraceError,
 )
 from .types import RuntimeError as RuntimeInputError
 
@@ -32,12 +34,15 @@ class Runtime:
         self,
         data_root: Path | None = None,
         endpoints: list[Endpoint] | None = None,
+        runtimes: list[RuntimeAdapter] | None = None,
         tool_definitions: Iterable[ToolDefinition] = (),
     ):
         root = Path(data_root or os.getenv("RUNTIME_DATA", "./data"))
         self.trace = TraceStore(root / "sessions")
         values = endpoints if endpoints is not None else load_endpoints()
         self.endpoints = EndpointPool(values)
+        adapters = runtimes if runtimes is not None else load_runtimes()
+        self.runtimes = RuntimePool(adapters)
         self.tool_definitions = tuple(tool_definitions)
         self._locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._cancelled: set[str] = set()
@@ -45,7 +50,9 @@ class Runtime:
     async def recognize(self, workspace: str) -> dict:
         path = _workspace(workspace)
         adapters = discover_adapters(path, self.tool_definitions)
-        return await catalog.discover(path, self.endpoints.values(), adapters)
+        return await catalog.discover(
+            path, self.endpoints.values(), self.runtimes, adapters
+        )
 
     def validate_agent(self, value: dict[str, Any]) -> dict[str, bool]:
         AgentSpec.parse(value)
@@ -100,9 +107,11 @@ class Runtime:
         ]
 
     def cancel(self, session_id: str) -> None:
-        self._events(session_id)
+        meta = self._events(session_id)[0]["data"]
         self._cancelled.add(session_id)
-        self.endpoints.cancel(session_id)
+        self.runtimes.require(
+            AgentSpec.parse(meta["agent_spec"]).runtime
+        ).cancel(session_id)
 
     async def _prompt(self, session_id, blocks, client, emit):
         events = self._events(session_id)
@@ -138,6 +147,8 @@ class Runtime:
             done, result = await self._round(
                 session_id, turn_id, spec, meta, tools, emit, usage
             )
+            if session_id in self._cancelled:
+                return self._finish(session_id, turn_id, "cancelled", result, usage)
             if done:
                 return self._finish(session_id, turn_id, "completed", result, usage)
             if sum(usage.values()) >= spec.options.token_budget:
@@ -167,9 +178,11 @@ class Runtime:
 
     async def _generate(self, session_id, spec, meta, messages, tools, emit):
         context = _provider_context(meta, self._events(session_id))
-        return await self.endpoints.generate(
-            spec.endpoint, spec.model, messages, tools, emit, context
+        candidates = self.endpoints.candidates(spec.endpoint, spec.model)
+        endpoint_id, result = await self.runtimes.require(spec.runtime).generate(
+            session_id, candidates, spec.model, messages, tools, emit, context
         )
+        return endpoint_id, result
 
     def _record_response(self, session_id, turn_id, endpoint_id, result):
         data = {
@@ -206,7 +219,7 @@ class Runtime:
         return {"status": status, "result_text": result, "usage": usage}
 
     def _fail(self, session_id, turn_id, error):
-        message = {"error": f"{type(error).__name__}: {error}"}
+        message = {"code": _error_code(error), "message": str(error)}
         self.trace.append(session_id, "error", message, turn_id)
         self.trace.append(
             session_id, "turn_end", {"status": "error", "result_text": None}, turn_id
@@ -255,9 +268,18 @@ def _launch_identity(spec, workspace, value) -> dict:
 
 
 def _validate_spec(spec: AgentSpec, recognized: dict) -> None:
+    runtimes = {
+        (item["id"], item["realm"])
+        for item in recognized["runtimes"]
+        if item["status"] == "ready"
+    }
+    _require((spec.runtime.id, spec.runtime.realm), runtimes, "runtime")
     endpoint_ids = {item["id"] for item in recognized["endpoints"] if item["available"]}
     model_pairs = {(item["endpoint"], item["id"]) for item in recognized["models"]}
     _require(spec.endpoint, endpoint_ids, "endpoint")
+    endpoint = next(item for item in recognized["endpoints"] if item["id"] == spec.endpoint)
+    if endpoint["adapter"] != spec.runtime.id:
+        raise CapabilityNotFound("endpoint is not available for runtime")
     _require((spec.endpoint, spec.model), model_pairs, "model")
     skills = {item["id"] for item in recognized["skills"]}
     for value in spec.skills:
@@ -280,8 +302,16 @@ def _session_meta(spec, workspace, value, skills, tool_plan, capabilities):
         "mode": value.get("mode", "resume"),
         "skills": skills,
         "tool_plan": tool_plan,
-        "capabilities": capabilities,
+        "capability_snapshot": _capability_snapshot(spec, capabilities),
     }
+
+
+def _capability_snapshot(spec, recognized):
+    runtime = next(
+        item for item in recognized["runtimes"]
+        if (item["id"], item["realm"]) == (spec.runtime.id, spec.runtime.realm)
+    )
+    return {"runtime": runtime}
 
 
 def _require_frozen_plan(current: list, frozen: list | None) -> None:
@@ -381,6 +411,10 @@ def _provider_session(events):
 def _add_usage(total, current):
     for key in total:
         total[key] += current.get(key, 0)
+
+
+def _error_code(error: Exception) -> str:
+    return error.code if isinstance(error, TraceError) else "runtime_error"
 
 
 def _session_info(view, session_id):

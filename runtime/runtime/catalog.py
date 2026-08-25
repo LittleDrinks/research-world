@@ -4,6 +4,7 @@ from pathlib import Path
 
 from .adapters import McpAdapter
 from .endpoints import Endpoint
+from .runtimes import RuntimePool
 from .skills import discover_skills
 from .tools import BUILTINS, BuiltinAdapter
 
@@ -26,12 +27,14 @@ PRESETS = (
 async def discover(
     workspace: Path,
     endpoints: list[Endpoint],
+    runtimes: RuntimePool,
     adapters: dict[str, McpAdapter],
     skill_paths: tuple[Path, ...] = (),
 ) -> dict:
     skills = discover_skills(workspace, skill_paths)
     values = [item.public() for item in endpoints]
     return {
+        "runtimes": runtimes.public(),
         "endpoints": values,
         "models": _models(values),
         "skills": [item.public() for item in skills.values()],

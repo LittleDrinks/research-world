@@ -3,6 +3,7 @@ import subprocess
 
 import pytest
 from runtime.providers.codex import CodexProvider, _collect
+from runtime.runtimes import REALM, RuntimeAdapter, RuntimeDescriptor
 from runtime.service import Runtime, _provider_context
 from tests.helpers import endpoint
 
@@ -93,7 +94,7 @@ async def test_collect_normalizes_jsonl_into_model_result():
     assert emitted == ["answer"]
 
 
-@pytest.mark.parametrize("process, message", [(Process(returncode=2, stderr=b"secret"), "exited 2"), (Process(b"not-json\n"), "invalid JSONL")])
+@pytest.mark.parametrize("process, message", [(Process(returncode=2, stderr=b"secret"), "exited 2"), (Process(b"not-json\n"), "invalid JSONL"), (Process(b'["wrong"]\n'), "invalid JSONL"), (Process(b'{"type":"turn.completed","usage":[]}\n'), "invalid JSONL"), (Process(b'{"type":"turn.failed"}\n'), "failed terminal stream")])
 async def test_collect_rejects_cli_errors_without_stderr(process, message):
     with pytest.raises(RuntimeError, match=message) as raised:
         await _collect(process, "prompt", lambda _: None, 1)
@@ -107,37 +108,63 @@ async def test_codex_timeout_kills_process():
     assert process.killed
 
 
+async def test_runtime_records_declared_cli_trace_error(monkeypatch, tmp_path):
+    provider = CodexProvider("echo")
+    monkeypatch.setattr(provider, "_start", lambda *_: _process(Process(b"not-json\n")))
+    runtime = Runtime(
+        tmp_path / "data", [endpoint(provider, "codex", ("gpt-test",))],
+        runtimes=[RuntimeAdapter(RuntimeDescriptor("codex", REALM))],
+    )
+    spec = {"id": "researcher", "name": "Researcher", "runtime": {"id": "codex", "realm": "container:runtime"}, "endpoint": "codex", "model": "gpt-test", "instructions": "Answer."}
+    launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec})
+    with pytest.raises(RuntimeError, match="invalid JSONL"):
+        await runtime.prompt(launched["session_id"], [{"type": "text", "text": "one"}])
+    error = runtime.inspect(launched["session_id"])["events"][-2]["data"]
+    assert error == {"code": "cli_invalid_jsonl", "message": "codex returned invalid JSONL"}
+
+
+async def _process(process):
+    return process
+
+
 async def test_cancel_terminates_active_process(monkeypatch, tmp_path):
     provider = CodexProvider("echo")
     process = Process(hang=True, returncode=None)
     started = asyncio.Event()
 
+    release = asyncio.Event()
+
     async def start(*_, **__):
         started.set()
+        await release.wait()
         return process
 
     monkeypatch.setattr("runtime.providers.codex.asyncio.create_subprocess_exec", start)
     runtime = Runtime(tmp_path / "data", [endpoint(provider, "codex", ("gpt-test",))])
-    spec = {"id": "researcher", "name": "Researcher", "endpoint": "codex", "model": "gpt-test", "instructions": "Answer."}
+    spec = {"id": "researcher", "name": "Researcher", "runtime": {"id": "codex", "realm": "container:runtime"}, "endpoint": "codex", "model": "gpt-test", "instructions": "Answer."}
     launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec})
     task = asyncio.create_task(runtime.prompt(launched["session_id"], [{"type": "text", "text": "one"}]))
     await started.wait()
-    await asyncio.sleep(0)
     runtime.cancel(launched["session_id"])
+    release.set()
     assert (await task)["status"] == "cancelled"
     assert process.terminated
+    assert runtime.inspect(launched["session_id"])["turns"][-1]["status"] == "cancelled"
 
 
 async def test_runtime_preserves_capability_snapshot_and_recovers_resume(tmp_path):
     provider = ScriptedProvider()
     runtime = Runtime(tmp_path / "data", [endpoint(provider, "codex", ("gpt-test",))])
-    spec = {"id": "researcher", "name": "Researcher", "endpoint": "codex", "model": "gpt-test", "instructions": "Answer."}
+    spec = {"id": "researcher", "name": "Researcher", "runtime": {"id": "codex", "realm": "container:runtime"}, "endpoint": "codex", "model": "gpt-test", "instructions": "Answer."}
     launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec})
     await runtime.prompt(launched["session_id"], [{"type": "text", "text": "one"}])
     await runtime.prompt(launched["session_id"], [{"type": "text", "text": "two"}])
     session = runtime.inspect(launched["session_id"])["session"]
     assert session["agent_spec"]["endpoint"] == "codex"
-    assert session["capabilities"]["models"] == [{"id": "gpt-test", "endpoint": "codex"}]
+    snapshot = session["capability_snapshot"]["runtime"]
+    assert set(snapshot) == {"id", "realm", "executable", "version", "status", "capabilities"}
+    assert snapshot["id"] == "codex"
+    assert snapshot["realm"] == "container:runtime"
     assert provider.contexts[1]["provider_session_id"] == "thread-1"
 
 

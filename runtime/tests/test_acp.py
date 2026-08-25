@@ -69,6 +69,7 @@ async def test_acp_is_the_runtime_transport(tmp_path, monkeypatch):
                 "agent_spec": {
                     "id": "researcher",
                     "name": "Researcher",
+                    "runtime": {"id": "openai-compatible", "realm": "container:runtime"},
                     "endpoint": "openai-compatible",
                     "model": "qwen-test",
                     "instructions": "Use cited nodes.",
@@ -246,6 +247,7 @@ async def test_prompt_on_legacy_session_meta_surfaces_validation_error(tmp_path)
     legacy_spec = {
         "id": "researcher",
         "name": "Researcher",
+        "runtime": {"id": "openai-compatible", "realm": "container:runtime"},
         "runtime": "openai-compatible",
         "model": "qwen-test",
         "instructions": "Use cited nodes.",
@@ -333,6 +335,7 @@ def valid_agent_spec():
     return {
         "id": "researcher",
         "name": "Researcher",
+        "runtime": {"id": "openai-compatible", "realm": "container:runtime"},
         "endpoint": "embedding",
         "model": "embed-model",
         "instructions": "Use evidence.",

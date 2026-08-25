@@ -54,6 +54,7 @@ async def test_selected_tool_exposes_and_executes_operations(tmp_path, monkeypat
     agent = {
         "id": "researcher",
         "name": "Researcher",
+        "runtime": {"id": "openai-compatible", "realm": "container:runtime"},
         "endpoint": "openai-compatible",
         "model": "qwen-test",
         "instructions": "Use tools.",
@@ -96,6 +97,7 @@ async def test_tool_dying_after_launch_closes_the_failed_turn(tmp_path, monkeypa
     agent = {
         "id": "researcher",
         "name": "Researcher",
+        "runtime": {"id": "openai-compatible", "realm": "container:runtime"},
         "endpoint": "openai-compatible",
         "model": "qwen-test",
         "instructions": "Use tools.",
@@ -171,6 +173,7 @@ async def test_tool_plan_snapshot_carries_no_location_or_command(tmp_path, monke
     agent = {
         "id": "researcher",
         "name": "Researcher",
+        "runtime": {"id": "openai-compatible", "realm": "container:runtime"},
         "endpoint": "openai-compatible",
         "model": "qwen-test",
         "instructions": "Use tools.",
@@ -264,6 +267,7 @@ async def test_tool_config_and_credentials_do_not_enter_trace(tmp_path, monkeypa
     agent = {
         "id": "researcher",
         "name": "Researcher",
+        "runtime": {"id": "openai-compatible", "realm": "container:runtime"},
         "endpoint": "openai-compatible",
         "model": "qwen-test",
         "instructions": "Use evidence.",

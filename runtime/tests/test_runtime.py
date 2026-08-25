@@ -1,7 +1,9 @@
 import json
 
 import pytest
+from runtime.acp_agent import _default_spec
 from runtime.service import Runtime
+from runtime.runtimes import REALM, RuntimeAdapter, RuntimeDescriptor
 from runtime.types import AgentSpec, CapabilityNotFound
 from runtime.types import RuntimeError as SpecError
 from tests.helpers import FakeProvider, endpoint
@@ -11,6 +13,7 @@ def spec(**values):
     data = {
         "id": "researcher",
         "name": "Researcher",
+        "runtime": {"id": "openai-compatible", "realm": "container:runtime"},
         "endpoint": "openai-compatible",
         "model": "qwen-test",
         "instructions": "Answer from evidence.",
@@ -54,6 +57,40 @@ async def test_launch_rejects_unrecognized_capability(tmp_path, monkeypatch):
         await runtime.launch(
             {"workspace": str(tmp_path), "agent_spec": spec(skills=["missing"])}
         )
+
+
+async def test_runtime_registry_is_independent_from_endpoint_catalog(tmp_path):
+    runtime = Runtime(
+        tmp_path / "data", [endpoint(FakeProvider([]))],
+        runtimes=[RuntimeAdapter(RuntimeDescriptor("codex", REALM))],
+    )
+    catalog = await runtime.recognize(str(tmp_path))
+    assert [item["id"] for item in catalog["runtimes"]] == ["codex"]
+    with pytest.raises(CapabilityNotFound, match="runtime"):
+        await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec()})
+
+
+async def test_launch_rejects_endpoint_for_another_runtime(tmp_path):
+    runtime = Runtime(
+        tmp_path / "data", [endpoint(FakeProvider([]))],
+        runtimes=[RuntimeAdapter(RuntimeDescriptor("codex", REALM))],
+    )
+    with pytest.raises(CapabilityNotFound, match="endpoint is not available for runtime"):
+        await runtime.launch({
+            "workspace": str(tmp_path),
+            "agent_spec": spec(runtime={"id": "codex", "realm": REALM}),
+        })
+
+
+def test_default_spec_selects_runtime_before_endpoint(tmp_path):
+    provider = FakeProvider([])
+    provider.id = "codex"
+    runtime = Runtime(
+        tmp_path / "data", [endpoint(provider)],
+        runtimes=[RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM))],
+    )
+    with pytest.raises(CapabilityNotFound, match="no model endpoint"):
+        _default_spec(runtime)
 
 
 async def test_prompt_and_resume_are_derived_from_trace(tmp_path, monkeypatch):

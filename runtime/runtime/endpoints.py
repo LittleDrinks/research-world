@@ -74,6 +74,10 @@ class EndpointPool:
             endpoint_id, model, "embedding_models", "embedding model"
         )
 
+    def candidates(self, endpoint_id: str, model: str) -> list[Endpoint]:
+        endpoint = self.require(endpoint_id, model)
+        return self._candidates(endpoint, model, "models")
+
     def _require(self, endpoint_id, model, field, capability) -> Endpoint:
         endpoint = self._values.get(endpoint_id)
         if endpoint is None:
@@ -92,6 +96,15 @@ class EndpointPool:
         )
         if endpoint is None:
             raise CapabilityNotFound("no model endpoint is available")
+        return endpoint
+
+    def default_for(self, adapter: str) -> Endpoint:
+        endpoint = next(
+            (item for item in self._ordered() if item.adapter == adapter and item.provider and item.models),
+            None,
+        )
+        if endpoint is None:
+            raise CapabilityNotFound("no model endpoint is available for runtime")
         return endpoint
 
     async def generate(
@@ -125,13 +138,6 @@ class EndpointPool:
         raise last_error or CapabilityNotFound(
             f"endpoint is not available: {endpoint_id}"
         )
-
-    def cancel(self, session_id: str) -> None:
-        providers = [item.provider for item in self._values.values() if item.provider]
-        for provider in providers:
-            cancel = getattr(provider, "cancel", None)
-            if cancel:
-                cancel(session_id)
 
     def _ordered(self) -> list[Endpoint]:
         return sorted(self._values.values(), key=lambda item: (item.priority, item.id))

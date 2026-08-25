@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import builtins
 import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -10,7 +11,7 @@ from jsonschema import Draft202012Validator
 SCHEMA = Path(__file__).parents[1] / "schemas" / "agent.schema.json"
 
 
-class RuntimeError(Exception):
+class RuntimeError(builtins.RuntimeError):
     pass
 
 
@@ -26,6 +27,12 @@ class CapabilityNotFound(RuntimeError):
     pass
 
 
+class TraceError(RuntimeError):
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code = code
+
+
 class ToolPlanDrift(SessionSpecInvalid):
     pass
 
@@ -39,9 +46,16 @@ class AgentOptions:
 
 
 @dataclass(frozen=True)
+class RuntimeRef:
+    id: str
+    realm: str
+
+
+@dataclass(frozen=True)
 class AgentSpec:
     id: str
     name: str
+    runtime: RuntimeRef
     endpoint: str
     model: str
     instructions: str
@@ -58,8 +72,9 @@ class AgentSpec:
             raise RuntimeError(errors[0].message)
         options = AgentOptions(**value.get("options", {}))
         arrays = {key: tuple(value.get(key, [])) for key in ("skills", "tools")}
+        runtime = RuntimeRef(**value["runtime"])
         return cls(
-            **{key: value[key] for key in _required()}, **arrays, options=options
+            **{key: value[key] for key in _required()}, runtime=runtime, **arrays, options=options
         )
 
     def snapshot(self) -> dict[str, Any]:

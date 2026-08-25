@@ -12,6 +12,7 @@ def spec(endpoint_id="primary", model="shared-model"):
     return {
         "id": "researcher",
         "name": "Researcher",
+        "runtime": {"id": "openai-compatible", "realm": "container:runtime"},
         "endpoint": endpoint_id,
         "model": model,
         "instructions": "Answer from evidence.",

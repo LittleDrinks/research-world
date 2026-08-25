@@ -8,6 +8,7 @@ import subprocess
 from typing import Any
 
 from .base import Emit, ModelResult
+from ..types import TraceError
 
 VERSION = re.compile(r"codex-cli\s+(\S+)")
 
@@ -23,6 +24,7 @@ class CodexProvider:
         self.timeout = timeout
         self.version: str | None = None
         self._processes: dict[str, Any] = {}
+        self._cancelled: set[str] = set()
 
     @classmethod
     def detected(cls) -> CodexProvider | None:
@@ -37,18 +39,22 @@ class CodexProvider:
     async def generate(
         self, model, messages, tools, emit: Emit, context
     ) -> ModelResult:
-        process = await self._start(model, context)
         session_id = context["runtime_session_id"]
+        process = await self._start(model, context)
         self._processes[session_id] = process
+        if session_id in self._cancelled:
+            process.terminate()
         try:
             return await _collect(process, _latest_user(messages), emit, self.timeout)
         finally:
             self._processes.pop(session_id, None)
+            self._cancelled.discard(session_id)
 
     async def embed(self, model: str, texts: list[str]) -> list[list[float]]:
         raise RuntimeError("Codex CLI does not expose embeddings")
 
     def cancel(self, session_id: str) -> None:
+        self._cancelled.add(session_id)
         process = self._processes.get(session_id)
         if process and process.returncode is None:
             process.terminate()
@@ -96,9 +102,9 @@ async def _collect(process, prompt: str, emit: Emit, timeout: float) -> ModelRes
     except TimeoutError as error:
         process.kill()
         await process.wait()
-        raise RuntimeError(f"codex timed out after {timeout:g}s") from error
+        raise TraceError("cli_timeout", f"codex timed out after {timeout:g}s") from error
     if process.returncode:
-        raise RuntimeError(f"codex exited {process.returncode}")
+        raise TraceError("cli_failed", f"codex exited {process.returncode}")
     events = _events(stdout)
     text = _agent_text(events)
     if text:
@@ -108,9 +114,40 @@ async def _collect(process, prompt: str, emit: Emit, timeout: float) -> ModelRes
 
 def _events(stdout: bytes) -> list[dict]:
     try:
-        return [json.loads(line) for line in stdout.splitlines() if line.strip()]
-    except json.JSONDecodeError as error:
-        raise RuntimeError("codex returned invalid JSONL") from error
+        values = [
+            json.loads(line) for line in stdout.decode().splitlines() if line.strip()
+        ]
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise TraceError("cli_invalid_jsonl", "codex returned invalid JSONL") from error
+    if not all(_valid_event(item) for item in values):
+        raise TraceError("cli_invalid_jsonl", "codex returned invalid JSONL")
+    _terminal(values)
+    return values
+
+
+def _terminal(events: list[dict]) -> None:
+    terminal = next(
+        (item["type"] for item in reversed(events) if item["type"].startswith("turn.")),
+        None,
+    )
+    if terminal == "turn.completed":
+        return
+    if terminal in {"turn.failed", "turn.cancelled"}:
+        raise TraceError("cli_stream_failed", "codex returned a failed terminal stream")
+    raise TraceError("cli_incomplete_stream", "codex returned an incomplete terminal stream")
+
+
+def _valid_event(event: object) -> bool:
+    if not isinstance(event, dict) or not isinstance(event.get("type"), str):
+        return False
+    if "item" in event and not isinstance(event["item"], dict):
+        return False
+    if "usage" in event and not isinstance(event["usage"], dict):
+        return False
+    return all(
+        isinstance(event["usage"].get(key, 0), int)
+        for key in ("input_tokens", "output_tokens")
+    ) if "usage" in event else True
 
 
 def _latest_user(messages: list[dict]) -> str:

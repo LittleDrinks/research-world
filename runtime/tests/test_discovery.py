@@ -52,7 +52,8 @@ async def test_catalog_contains_only_detected_workspace_assets(tmp_path, monkeyp
 
     value = await Runtime(tmp_path / "data").recognize(str(tmp_path))
 
-    assert set(value) == {"endpoints", "models", "skills", "tools", "presets"}
+    assert set(value) == {"runtimes", "endpoints", "models", "skills", "tools", "presets"}
+    assert {item["id"] for item in value["runtimes"]} >= {"openai-compatible"}
     assert {item["id"] for item in value["endpoints"]} >= {"openai-compatible"}
     assert {item["id"] for item in value["models"]} >= {"qwen-test"}
     assert all(set(item) == {"id", "endpoint"} for item in value["models"])

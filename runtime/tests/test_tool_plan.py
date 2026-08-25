@@ -17,6 +17,7 @@ def spec():
     return {
         "id": "researcher",
         "name": "Researcher",
+        "runtime": {"id": "openai-compatible", "realm": "container:runtime"},
         "endpoint": "openai-compatible",
         "model": "qwen-test",
         "instructions": "Use tools.",
