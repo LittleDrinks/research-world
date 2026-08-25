@@ -289,6 +289,8 @@ function setRowExpanded(model, id, open) {
 }
 
 function focusRow(id) {
+  const row = document.getElementById(id);
+  if (row) return row.focus();
   requestAnimationFrame(() => document.getElementById(id)?.focus());
 }
 

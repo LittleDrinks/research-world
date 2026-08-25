@@ -184,6 +184,10 @@ function utf8Boundaries() {
 }
 
 async function keyboardTree(page) {
+  for (let attempt = 0; attempt < 2; attempt += 1) await keyboardTreeAttempt(page);
+}
+
+async function keyboardTreeAttempt(page) {
   await page.goto(`${base}${trace}`);
   const stage = page.locator("#stage-execute");
   await stage.focus();
