@@ -52,7 +52,7 @@ function MobileBar({ openNav }) {
   const { data, projectId } = useWorld();
   const project = data.projects.find((item) => item.id === projectId);
   return <header className="mobile-bar"><button className="icon-button" onClick={openNav} title="打开导航" aria-label="打开导航"><Menu size={19} /></button>
-    <b>{project?.title || project?.name}</b></header>;
+    <b>{project?.title}</b></header>;
 }
 
 

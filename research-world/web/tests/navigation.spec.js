@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { bootstrap, mockBase, project, threadDetail } from "./fixtures";
+import { bootstrap, mockBase, project, run, threadDetail } from "./fixtures";
 
 
 async function mockShell(page) {
@@ -36,6 +36,28 @@ test("shows only current run activity on project cards", async ({ page }) => {
   const counts = page.locator(".project-counts");
   await expect(counts.nth(0)).toHaveText("13 节点");
   await expect(counts.nth(1)).toHaveText("7 节点 · 2 运行中");
+});
+
+
+test("does not substitute a project name for a missing question title", async ({ page }) => {
+  const corrupt = { ...project(), name: "不得显示的名称", title: undefined };
+  await mockBase(page, bootstrap({ projects: [corrupt] }));
+  await page.goto("/projects");
+  await expect(page.locator(".project-list > button")).not.toContainText("不得显示的名称");
+  await page.goto("/settings");
+  await expect(page.locator(".settings-record")).not.toContainText("不得显示的名称");
+});
+
+
+test("shows an invalid pipeline title failure with its runtime session", async ({ page }) => {
+  const failed = run({ status: "failed", payload: { error: "node title exceeds the 12-token limit" },
+    events: [{ id: 1, actor: "pipeline", type: "agent_session", payload: { stage_id: "generate", session_id: "s-invalid-title", turn_id: "t-invalid-title", usage: {} } },
+      { id: 2, actor: "control", type: "run_failed", payload: { error: "node title exceeds the 12-token limit" } }] });
+  await mockBase(page, bootstrap({ runs: [failed] }));
+  await page.goto("/traces/run%3Ar1");
+  await expect(page.locator(".run-header")).toContainText("node title exceeds the 12-token limit");
+  await expect(page.locator(".trace-tree")).toContainText("SESSION s-invalid-titl");
+  await expect(page.locator(".trace-tree")).toContainText("失败");
 });
 
 

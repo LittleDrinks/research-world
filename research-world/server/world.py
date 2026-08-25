@@ -443,6 +443,31 @@ class World:
             _append_run_event(connection, run_id, event, timestamp)
         return self.run(run_id)
 
+    def fail_run(
+        self, run_id: str, error: Exception, result: dict | None = None
+    ) -> dict:
+        timestamp = now()
+        with self.db.connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM pipeline_runs WHERE id=?", (run_id,)
+            ).fetchone()
+            if row is None:
+                raise KeyError(run_id)
+            run = decode(row)
+            _fail_steps(connection, run_id, error, timestamp)
+            _release_run_nodes(connection, run, error, timestamp)
+            if result and result.get("_session_id"):
+                _append_run_event(
+                    connection, run_id, _agent_failure_event(run, result), timestamp
+                )
+            payload = {**run["payload"], "error": str(error)}
+            connection.execute(
+                "UPDATE pipeline_runs SET stage='failed',status='failed',payload=?,updated_at=? WHERE id=?",
+                (json.dumps(payload), timestamp, run_id),
+            )
+            _append_run_event(connection, run_id, _failed_run_event(error), timestamp)
+        return self.run(run_id)
+
     def queue_run_signal(self, run_id: str, signal: dict) -> dict:
         run = self.run(run_id)
         gate = run["payload"].get("_pipeline", {}).get("gate")
@@ -639,6 +664,72 @@ def _append_run_event(connection, run_id, event, timestamp) -> None:
             timestamp,
         ),
     )
+
+
+def _fail_steps(connection, run_id, error, timestamp) -> None:
+    output = {"exit_code": 1, "stdout": "", "stderr": str(error)}
+    rows = connection.execute(
+        "SELECT id FROM pipeline_steps WHERE run_id=? AND status='running'", (run_id,)
+    ).fetchall()
+    for row in rows:
+        connection.execute(
+            "UPDATE pipeline_steps SET status='failed',output=?,completed_at=? WHERE id=?",
+            (json.dumps(output), timestamp, row["id"]),
+        )
+        event = {
+            "actor": "runner",
+            "type": "tool_result",
+            "payload": {"step_id": row["id"], **output},
+        }
+        _append_run_event(connection, run_id, event, timestamp)
+
+
+def _release_run_nodes(connection, run, error, timestamp) -> None:
+    node_ids = _run_node_ids(run)
+    for node_id in node_ids:
+        row = connection.execute(
+            "SELECT life_state FROM nodes WHERE id=?", (node_id,)
+        ).fetchone()
+        if row is None:
+            continue
+        if row["life_state"] == "pending":
+            connection.execute(
+                "UPDATE nodes SET life_state='ghost',working=0,rejection_reason=?,updated_at=? WHERE id=?",
+                (f"运行失败：{error}", timestamp, node_id),
+            )
+        else:
+            connection.execute(
+                "UPDATE nodes SET working=0,updated_at=? WHERE id=?",
+                (timestamp, node_id),
+            )
+
+
+def _run_node_ids(run: dict) -> set[str]:
+    values = run["payload"].get("_pipeline", {}).get("values", {})
+    directions = {
+        item.get("node_id")
+        for item in values.get("directions", [])
+        if isinstance(item, dict)
+    }
+    owned = {run["node_id"], run["payload"].get("experiment_id"), values.get("experiment")}
+    return (directions | owned) - {None}
+
+
+def _agent_failure_event(run: dict, result: dict) -> dict:
+    return {
+        "actor": "pipeline",
+        "type": "agent_session",
+        "payload": {
+            "stage_id": run["stage"],
+            "session_id": result["_session_id"],
+            "turn_id": result.get("_turn_id"),
+            "usage": result.get("_usage", {}),
+        },
+    }
+
+
+def _failed_run_event(error: Exception) -> dict:
+    return {"actor": "control", "type": "run_failed", "payload": {"error": str(error)}}
 
 
 def _validate_run_signal(gate: dict, signal: dict) -> None:

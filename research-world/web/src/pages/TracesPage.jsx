@@ -123,6 +123,7 @@ function stageStatus(stage, run, stages) {
   const index = stages.findIndex((item) => item.id === stage.id);
   const current = stages.findIndex((item) => item.id === run.stage);
   if (run.status === "completed") return "completed";
+  if (run.status === "failed" && index === current) return "failed";
   if (current < 0) return run.stage === stage.id && run.status === "running" ? "running" : "";
   if (index < current) return "completed";
   if (index === current && ["running", "waiting_human"].includes(run.status)) return "running";
@@ -136,7 +137,7 @@ function StageNode({ stage, run, sessions, inspects, focusSession }) {
   const status = stageStatus(stage, run, stages);
   const meta = [stage.type, stage.agent || stage.tool, status && (RUN_STATUS[status] || status)].filter(Boolean).join(" · ");
   return <TreeNode label={<b>STAGE <span className="mono">{stage.id}</span></b>} meta={meta} tone={status}
-    defaultOpen={status === "running" || sessions.some((event) => event.payload.session_id === focusSession)}>
+    defaultOpen={status === "running" || status === "failed" || sessions.some((event) => event.payload.session_id === focusSession)}>
     {steps.map((step) => <StepNode key={step.id} step={step} />)}
     {sessions.map((event) => <SessionNode key={event.id} event={event} inspect={inspects[event.payload.session_id]} focus={focusSession === event.payload.session_id} />)}
     {!steps.length && !sessions.length && <p className="record-empty">暂无记录</p>}

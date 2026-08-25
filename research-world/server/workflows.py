@@ -91,7 +91,9 @@ class AgentFacade:
             ("candidates",),
             operation_id,
         )
-        candidates = validate_candidates(required(value, "candidates"), count)
+        candidates = self._validate(
+            value, lambda: validate_candidates(required(value, "candidates"), count)
+        )
         return {**value, "candidates": candidates}
 
     def pairwise(self, left: str, right: str, operation_id: str | None = None) -> dict:
@@ -113,9 +115,7 @@ class AgentFacade:
         value = self._call(
             agent, PLAN_PROMPT, direction, ("title", "action"), operation_id
         )
-        if not isinstance(required(value, "action"), dict):
-            raise TypeError("runtime field 'action' must be an object")
-        return {**value, "title": validate_title(required(value, "title"))}
+        return {**value, "title": self._validate(value, lambda: _plan_title(value))}
 
     def audit_action(self, context: dict, operation_id: str | None = None) -> dict:
         value = self._call(
@@ -160,7 +160,10 @@ class AgentFacade:
         value = self._call(
             agent, RECONCILE_PROMPT, context, ("title", "text"), operation_id
         )
-        return {**value, "title": validate_title(required(value, "title"))}
+        return {
+            **value,
+            "title": self._validate(value, lambda: validate_title(required(value, "title"))),
+        }
 
     def reflect(
         self, context: dict, agent: str, operation_id: str | None = None
@@ -168,7 +171,22 @@ class AgentFacade:
         value = self._call(
             agent, REFLECT_PROMPT, context, ("title", "text"), operation_id
         )
-        return {**value, "title": validate_title(required(value, "title"))}
+        return {
+            **value,
+            "title": self._validate(value, lambda: validate_title(required(value, "title"))),
+        }
+
+    def _validate(self, value: dict, validator):
+        try:
+            return validator()
+        except (TypeError, ValueError) as error:
+            raise AgentResultError(error, value) from error
+
+
+class AgentResultError(ValueError):
+    def __init__(self, error: Exception, result: dict):
+        super().__init__(str(error))
+        self.result = result
 
 
 @dataclass
@@ -1005,41 +1023,14 @@ def default_engine(world: World, project_id: str, kernel) -> PipelineEngine:
 
 
 def fail_run(world: World, run_id: str, error: Exception) -> dict:
-    run = world.run(run_id)
-    _fail_running_steps(world, run_id, error)
-    _release_run_nodes(world, run, error)
-    payload = {**run["payload"], "error": str(error)}
-    world.record_run_event(run_id, "control", "run_failed", {"error": str(error)})
-    return world.update_run(run_id, "failed", "failed", payload)
+    result = error.result if isinstance(error, AgentResultError) else None
+    return world.fail_run(run_id, error, result)
 
 
-def _fail_running_steps(world: World, run_id: str, error: Exception) -> None:
-    output = {"exit_code": 1, "stdout": "", "stderr": str(error)}
-    for step in world.steps(run_id):
-        if step["status"] != "running":
-            continue
-        world.update_step(step["id"], "failed", output)
-        payload = {"step_id": step["id"], **output}
-        world.record_run_event(run_id, "runner", "tool_result", payload)
-
-
-def _release_run_nodes(world: World, run: dict, error: Exception) -> None:
-    world.set_working(run["node_id"], False)
-    for node_id in _owned_pending_nodes(run):
-        node = world.node(node_id)
-        if node["life_state"] == "pending":
-            world.ghost_node(node_id, f"运行失败：{error}")
-        else:
-            world.set_working(node_id, False)
-
-
-def _owned_pending_nodes(run: dict) -> set[str]:
-    payload = run["payload"]
-    values = payload.get("_pipeline", {}).get("values", {})
-    items = values.get("directions", [])
-    direction_ids = {item.get("node_id") for item in items if isinstance(item, dict)}
-    fixed = {payload.get("experiment_id"), values.get("experiment")}
-    return (direction_ids | fixed) - {None, run["node_id"]}
+def _plan_title(value: dict) -> str:
+    if not isinstance(required(value, "action"), dict):
+        raise TypeError("runtime field 'action' must be an object")
+    return validate_title(required(value, "title"))
 
 
 def _pipeline_agents(pipeline: dict) -> set[str]:

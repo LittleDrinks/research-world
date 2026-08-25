@@ -4,6 +4,7 @@ import asyncio
 from pathlib import Path
 
 import pytest
+import server.world as world_module
 
 from server.artifacts import ArtifactStore
 from server.execution_evidence import build_evidence
@@ -855,6 +856,32 @@ def test_failed_run_preserves_payload_and_releases_nodes(world, project):
     assert world.run_events(run["id"])[-1]["type"] == "run_failed"
 
 
+def test_failure_transition_rolls_back_when_terminal_event_is_interrupted(
+    world, project, monkeypatch
+):
+    direction = admitted_direction(world, project)
+    world.set_working(direction["id"], True)
+    run = world.create_run(project["id"], direction["id"], research_pipeline())
+    world.update_run(run["id"], "execute", "running")
+    step = world.add_step(run["id"], 1, "execute", {"command": ["true"]}, True)
+    world.update_step(step["id"], "running")
+    append = world_module._append_run_event
+
+    def interrupt(connection, run_id, event, timestamp):
+        if event["type"] == "run_failed":
+            raise RuntimeError("interrupted")
+        append(connection, run_id, event, timestamp)
+
+    monkeypatch.setattr(world_module, "_append_run_event", interrupt)
+    with pytest.raises(RuntimeError, match="interrupted"):
+        fail_run(world, run["id"], RuntimeError("provider failed"))
+
+    assert world.run(run["id"])["status"] == "running"
+    assert world.node(direction["id"])["working"] == 1
+    assert world.steps(run["id"])[0]["status"] == "running"
+    assert world.run_events(run["id"]) == []
+
+
 def test_direction_review_resumes_from_persisted_node(world, project):
     root = world.nodes(project["id"])[0]
     run = world.create_run(project["id"], root["id"], brainstorm_pipeline())
@@ -988,7 +1015,25 @@ def test_worker_persists_pipeline_title_failure_in_run_trace(world, project, tmp
     root = world.nodes(project["id"])[0]
     world.embedding = FakeEmbedding({root["payload"]["text"]: [1], "Novel": [1]})
     run = world.create_run(project["id"], root["id"], brainstorm_pipeline())
-    service = engine(world, FakeAgents([{"title": "a b c d e f g h i j k l m", "text": "Novel"}]), world.embedding)
+    result = {
+        "candidates": [
+            {"title": "a b c d e f g h i j k l m", "text": "Novel"}
+            for _ in range(8)
+        ],
+        "_session_id": "s-invalid-title",
+        "_turn_id": "t-invalid-title",
+        "_usage": {"output_tokens": 17},
+    }
+    service = engine(
+        world,
+        AgentFacade(
+            FakeRuntime(result),
+            FakeAgentRegistry(
+                {"assistant": agent_spec("assistant"), "reviewer": agent_spec("reviewer")}
+            ),
+        ),
+        world.embedding,
+    )
     kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
     worker.execute(PipelineKernel(kernel, service), run["id"])
 
@@ -997,6 +1042,13 @@ def test_worker_persists_pipeline_title_failure_in_run_trace(world, project, tmp
     assert "12-token" in view["payload"]["error"]
     assert view["events"][-1]["type"] == "run_failed"
     assert view["events"][-1]["payload"] == {"error": view["payload"]["error"]}
+    session = next(event for event in view["events"] if event["type"] == "agent_session")
+    assert session["payload"] == {
+        "stage_id": "generate",
+        "session_id": "s-invalid-title",
+        "turn_id": "t-invalid-title",
+        "usage": {"output_tokens": 17},
+    }
     assert all(node["kind"] != "direction" for node in world.nodes(project["id"]))
 
 

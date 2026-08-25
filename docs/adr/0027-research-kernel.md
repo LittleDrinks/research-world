@@ -10,7 +10,7 @@
 Pipeline run 生命周期、行动审核、执行凭据、Artifact 与 Research event 由 Kernel 维护。模型执行只经 ACP 调用 Agent Runtime；计算执行只经 Runner Adapter。Runtime Trace、模型凭证和 Tool 凭证不进入 Kernel。
 Artifact 在 Project 内按 SHA-256 寻址，读取、关联与复跑校验都携带 project id。Tool Runtime 只能通过 Artifact 与 observation port 提交结果；observation 继续经过 Admission，Tool 调用成功不等于研究事实准入。
 Brainstorm 只要求模型返回候选内容，不接受模型自报 `quality`。候选选择只使用 Kernel 计算的确定性特征与多样性，审核证据另行保存。
-Pipeline 创建的节点把 Agent 生成的简洁 `title` 与完整正文分开存于 payload：brainstorm、reconcile、reflect 返回 `{title,text}`，plan 返回 `{title,action}` 替代占位标题。`title` 硬上限 12 token；token 计量单位：每个 CJK 字符、每段连续 Latin/数字、每个其他非空白标点或符号各计 1。Kernel 拒绝缺失、空白、非字符串或超限的 title，不截断、不合成、不回退正文。
+Pipeline 创建的节点把 Agent 生成的简洁 `title` 与完整正文分开存于 payload：brainstorm、reconcile、reflect 返回 `{title,text}`，plan 返回 `{title,action}` 替代占位标题。`title` 硬上限 12 token；token 计量单位：每个 CJK 字符、每段连续 Latin/数字、每个其他非空白标点或符号各计 1。Kernel 拒绝缺失、空白、非字符串或超限的 title，不截断、不合成、不回退正文。Project 根 question 的 `payload.title` 是项目展示标题的唯一来源；Project `name` 不替代缺失或损坏的 title。
 ## 投影
 地图、科研日志、运行详情和报告从 Kernel 事实确定性投影。适配器只能请求投影，不能拼接跨表业务状态；Agent 搜索、资源读取、Thread 钉入和 Pipeline 启动只消费 admitted 节点。
 报告投影只包含 admitted claim、source 与关联 Artifact；Endpoint 可用性由 Kernel 查询 Runtime 识别结果后推导。BibTeX 只能从当前 Project 内 admitted source 关联的 Artifact 导出，返回内容前完成语法校验；调用方不能提交路径、内容或自报 Endpoint 状态。

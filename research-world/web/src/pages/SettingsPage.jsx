@@ -13,7 +13,7 @@ export function SettingsPage() {
   if (!project) return <EmptyState icon={Settings} title="未选择项目" />;
   return <section className="settings-page"><h1>项目设置</h1>
     <dl className="settings-record">
-      <div><dt>名称</dt><dd>{project.title || project.name}</dd></div>
+      <div><dt>名称</dt><dd>{project.title}</dd></div>
       <div><dt>研究问题</dt><dd>{project.question}</dd></div>
       <div><dt>工作区</dt><dd className="mono">{project.root}</dd></div>
       <div><dt>创建时间</dt><dd>{formatDate(project.created_at)}</dd></div>
