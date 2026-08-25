@@ -24,7 +24,7 @@ sources:
 ACP Python SDK 负责连接、schema 与 HTTP/WebSocket 传输。Web 通过 Research Kernel 使用同一 ACP Client；Runtime 不暴露第二套 REST 会话协议。
 ## 内部所有权
 `endpoints` 识别 OpenAI 兼容服务与 Codex CLI，并在同模型 Endpoint 间故障切换；`skills` 解析 `SKILL.md`；`tools` 识别、准备、绑定并执行全部模型能力；`trace` 写入并重放 Session；`acp` 只翻译外部协议。外部调用方不感知这些目录。
-本机 Codex 0.149.0 没有 ACP 子命令，作为 Runtime 内部 CLI adapter 使用 `codex exec --json`；它不是新的外部边界。
+`2026-08-24T14:23:05Z` 只读 probe 的本机 Codex 0.149.1 没有 ACP 子命令，作为 Runtime 内部 CLI adapter 使用 `codex exec --json`；该版本是点时事实，不是产品固定版本，它也不是新的外部边界。
 ## Tool Runtime
 Tool Runtime 是 Agent Runtime 内部深模块。AgentSpec、Preset、设置页与 orchestrator 只理解稳定 Tool id；Adapter kind、operation 名称、MCP、HTTP、SSE、stdio、CLI、数据库驱动、位置、进程生命周期、凭证与依赖配方全部隐藏。
 `catalog(workspace)` 返回 Tool id、名称、描述、来源、`ready | setup_required | unavailable` 状态及声明式安装或配置动作，不返回 URL、command、args、header、env 名或 secret。`prepare(workspace, tool_id, action, values)` 只执行目录声明的受控动作，不接受任意安装命令。宿主 GPU 驱动和外部数据库权限只检测并报告。

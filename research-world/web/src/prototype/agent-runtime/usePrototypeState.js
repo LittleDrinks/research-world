@@ -1,86 +1,330 @@
 import { useMemo, useState } from "react";
-import { CAPABILITIES, DEFAULT_DRAFT, PROVIDERS, RUNTIMES } from "./seed";
+import { DRAFTS, ENDPOINTS, PREPARE_STEPS, PROFILES, RUNTIMES, SKILLS, TOOLS } from "./seed";
+import { runtimeKey } from "./runtimeKey";
 
 export function usePrototypeState() {
-  const core = useCoreState();
-  const runtime = RUNTIMES.find((item) => item.id === core.draft.runtimeId) || RUNTIMES[0];
-  const provider = PROVIDERS.find((item) => item.id === core.draft.providerId) || PROVIDERS[0];
-  const inventory = useMemo(() => filterInventory(core.query, core.custom), [core.query, core.custom]);
-  return { ...core, runtime, provider, inventory, ...buildActions(core) };
+  const state = useCoreState();
+  const profile = useMemo(() => selectedProfile(state), [state.profiles, state.selectedId]);
+  const savedProfile = useMemo(() => profileById(state.savedProfiles, state.selectedId), [state.savedProfiles, state.selectedId]);
+  const dirty = useMemo(() => profileDirty(profile, savedProfile), [profile, savedProfile]);
+  const readiness = useMemo(() => readinessFor(profile), [profile]);
+  const draftReadiness = useMemo(() => readinessFor(state.draft), [state.draft]);
+  const visibleAgents = useMemo(() => filterProfiles(state), [state.profiles, state.agentQuery]);
+  return { ...state, profile, savedProfile, dirty, readiness, draftReadiness, visibleAgents, ...buildActions(state) };
 }
 
 function useCoreState() {
-  const [draft, setDraft] = useState({ ...DEFAULT_DRAFT });
-  const [agents, setAgents] = useState([{ id: "agent:reviewer", name: "Independent Reviewer", runtime: "codex" }]);
-  const [scan, setScan] = useState({ status: "done", label: "刚刚完成", count: 20 });
-  const [tests, setTests] = useState({});
-  const [query, setQuery] = useState("");
-  const [group, setGroup] = useState("skills");
-  const [custom, setCustom] = useState({ skills: [], tools: [], mcp: [] });
+  const [profiles, setProfiles] = useState(() => clone(PROFILES));
+  const [savedProfiles, setSavedProfiles] = useState(() => clone(PROFILES));
+  const [selectedId, setSelectedId] = useState(PROFILES[0].id);
+  const [activeTab, setActiveTab] = useState("runtime");
+  const [agentQuery, setAgentQuery] = useState("");
+  const [catalogQuery, setCatalogQuery] = useState("");
+  const [inventoryState, setInventoryState] = useState("content");
   const [notice, setNotice] = useState("");
-  return { draft, setDraft, agents, setAgents, scan, setScan, tests, setTests, query, setQuery, group, setGroup, custom, setCustom, notice, setNotice };
+  const [draft, setDraft] = useState(null);
+  const [prepare, setPrepare] = useState(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  return { profiles, setProfiles, savedProfiles, setSavedProfiles, selectedId, setSelectedId, activeTab, setActiveTab, agentQuery, setAgentQuery, catalogQuery, setCatalogQuery, inventoryState, setInventoryState, notice, setNotice, draft, setDraft, prepare, setPrepare, deleteOpen, setDeleteOpen };
 }
 
-function buildActions({ draft, setDraft, agents, setAgents, custom, setCustom, setScan, setTests, setNotice }) {
-  const patch = (value) => setDraft((current) => ({ ...current, ...value }));
-  const selectRuntime = (item) => item.status === "ready" && patch({ channel: "cli", runtimeId: item.id, model: item.models[0], effort: item.efforts[1] || item.efforts[0] });
-  const selectProvider = (item) => item.status === "ready" && patch({ channel: "api", providerId: item.id,
-    model: item.models[0] || "", effort: item.efforts[1] || item.efforts[0] });
-  const toggle = (type, id) => setDraft((current) => ({ ...current, selected: toggleSelected(current.selected, type, id) }));
-  const test = (key) => runTimed(setTests, key);
-  const rescan = () => runScan(setScan);
-  const beginNew = () => startDraft(setDraft, setNotice);
-  const create = () => createAgent(draft, agents, setAgents, setDraft, setNotice);
-  const addCapability = (type, path) => addCustomCapability(type, path, custom, setCustom, setNotice);
-  return { patch, selectRuntime, selectProvider, toggle, test, rescan, beginNew, create, addCapability };
+function buildActions(state) {
+  return { ...profileActions(state), ...draftActions(state), ...prepareActions(state) };
 }
 
-function filterInventory(query, custom) {
-  const needle = query.trim().toLowerCase();
-  const merged = Object.fromEntries(Object.entries(CAPABILITIES).map(([key, items]) => [key, [...items, ...custom[key]]]));
-  if (!needle) return merged;
-  return Object.fromEntries(Object.entries(merged).map(([key, items]) => [key, items.filter((item) =>
-    `${item.name} ${item.source} ${item.path} ${item.detail}`.toLowerCase().includes(needle))]));
+function profileActions(state) {
+  return {
+    patchProfile: (value) => patchProfile(state, value),
+    toggleCapability: (type, id) => toggleProfileCapability(state, type, id),
+    refresh: () => refreshInventory(state),
+    copyAgent: () => copyAgent(state),
+    deleteAgent: () => deleteAgent(state),
+    cancel: () => cancelProfile(state),
+    save: () => saveProfile(state),
+  };
 }
 
-function addCustomCapability(type, path, custom, setCustom, setNotice) {
-  const cleanPath = path.trim().replace(/\/$/, "");
-  if (!cleanPath) return;
-  const name = cleanPath.split("/").pop() || `custom-${type}`;
-  const item = { id: `custom-${type}-${custom[type].length + 1}`, name, path: cleanPath, source: "自定义来源", status: "ready", detail: customDetail(type) };
-  setCustom((value) => ({ ...value, [type]: [...value[type], item] }));
-  setNotice(`已识别 ${name}；保存 Agent 前不会写入配置。`);
+function draftActions(state) {
+  return {
+    beginDraft: () => state.setDraft({ step: "choose", mode: null, goal: "" }),
+    chooseDraft: (mode) => chooseDraft(state, mode),
+    patchDraft: (value) => state.setDraft((current) => ({ ...current, ...value })),
+    toggleDraftCapability: (type, id) => toggleDraftCapability(state, type, id),
+    generateDraft: () => generateDraft(state),
+    confirmDraft: () => confirmDraft(state),
+  };
 }
 
-function customDetail(type) {
-  return type === "skills" ? "从自定义目录识别的 SKILL.md" : "从自定义路径识别的本地工具";
+function prepareActions(state) {
+  return {
+    openPrepare: (runtime) => openPrepare(state, runtime),
+    advancePrepare: () => advancePrepare(state),
+    runPrepare: () => runPrepare(state),
+    cancelPrepare: () => cancelPrepare(state),
+    retryPrepare: () => retryPrepare(state),
+  };
 }
 
-function toggleSelected(selected, type, id) {
-  const current = selected[type];
-  const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
-  return { ...selected, [type]: next };
+function selectedProfile(state) {
+  return profileById(state.profiles, state.selectedId) || state.profiles[0];
 }
 
-function runTimed(setTests, key) {
-  setTests((value) => ({ ...value, [key]: "testing" }));
-  window.setTimeout(() => setTests((value) => ({ ...value, [key]: "passed" })), 650);
+function profileById(profiles, id) {
+  return profiles.find((item) => item.id === id);
 }
 
-function runScan(setScan) {
-  setScan({ status: "scanning", label: "正在扫描", count: 0 });
-  window.setTimeout(() => setScan({ status: "done", label: "刚刚完成", count: 20 }), 850);
+function filterProfiles(state) {
+  const needle = state.agentQuery.trim().toLowerCase();
+  const rows = state.profiles.map((item) => ({ ...item, readiness: readinessFor(item) }));
+  if (!needle) return rows;
+  return rows.filter((item) => profileSearchText(item).includes(needle));
 }
 
-function startDraft(setDraft, setNotice) {
-  setDraft({ ...DEFAULT_DRAFT, id: "agent:new", name: "", instructions: "", selected: { skills: [], tools: [], mcp: [] } });
-  setNotice("已开启空白 Agent 草稿；确认前不会写入任何配置。\n原型中的创建也只保存在页面内存。");
+function profileSearchText(item) {
+  return [item.name, item.id, item.preset, item.runtime, item.model].join(" ").toLowerCase();
 }
 
-function createAgent(draft, agents, setAgents, setDraft, setNotice) {
-  const suffix = String(agents.length + 1).padStart(2, "0");
-  const next = { id: `agent:${suffix}`, name: draft.name || `Agent ${suffix}`, runtime: draft.channel === "cli" ? draft.runtimeId : draft.providerId };
-  setAgents((items) => [...items, next]);
-  setDraft((value) => ({ ...value, id: next.id }));
-  setNotice(`已在内存中创建 ${next.id}`);
+function patchProfile(state, value) {
+  state.setProfiles((items) => items.map((item) => (
+    item.id === state.selectedId ? { ...item, ...value } : item
+  )));
+}
+
+function toggleProfileCapability(state, type, id) {
+  const profile = selectedProfile(state);
+  patchProfile(state, { [type]: toggled(profile[type], id) });
+}
+
+function toggleDraftCapability(state, type, id) {
+  state.setDraft((current) => ({ ...current, [type]: toggled(current[type], id) }));
+}
+
+function toggled(values, id) {
+  return values.includes(id) ? values.filter((item) => item !== id) : [...values, id];
+}
+
+function refreshInventory(state) {
+  state.setInventoryState("refreshing");
+  window.setTimeout(() => state.setInventoryState("content"), 600);
+}
+
+function chooseDraft(state, mode) {
+  if (mode === "orchestrator") {
+    state.setDraft({ step: "describe", mode, goal: "" });
+    return;
+  }
+  state.setDraft({ ...clone(DRAFTS[mode]), step: "confirm", mode });
+}
+
+function generateDraft(state) {
+  state.setDraft((current) => ({
+    ...clone(DRAFTS.orchestrator), goal: current.goal, step: "confirm", mode: "orchestrator",
+  }));
+}
+
+function confirmDraft(state) {
+  const readiness = readinessFor(state.draft);
+  if (readiness.status !== "ready") return;
+  const profile = { ...state.draft, modified: "now" };
+  delete profile.step;
+  delete profile.mode;
+  delete profile.rationale;
+  delete profile.goal;
+  addSavedProfile(state, profile);
+  state.setSelectedId(profile.id);
+  state.setDraft(null);
+  state.setNotice(`已创建 ${profile.id}；未调用 prepare 或模型。`);
+}
+
+function copyAgent(state) {
+  const source = selectedProfile(state);
+  const id = copyId(source.id, state.profiles);
+  const copy = { ...clone(source), id, name: `${source.name} Copy`, preset: `copy:${source.id}`, modified: "now" };
+  addSavedProfile(state, copy);
+  state.setSelectedId(id);
+  state.setNotice(`已复制为 ${id}；两个 Profile state 相互独立。`);
+}
+
+function copyId(id, profiles) {
+  const base = `${id}-copy`;
+  let next = base;
+  let index = 2;
+  while (profiles.some((item) => item.id === next)) next = `${base}-${index++}`;
+  return next;
+}
+
+function deleteAgent(state) {
+  const remaining = state.profiles.filter((item) => item.id !== state.selectedId);
+  state.setProfiles(remaining);
+  state.setSavedProfiles((items) => items.filter((item) => item.id !== state.selectedId));
+  state.setSelectedId(remaining[0]?.id || "");
+  state.setDeleteOpen(false);
+  state.setNotice("Profile 已从 prototype 页面内存删除。");
+}
+
+function saveProfile(state) {
+  const current = selectedProfile(state);
+  if (readinessFor(current).status !== "ready") return;
+  const saved = { ...clone(current), modified: "now" };
+  state.setProfiles((items) => replaceProfile(items, saved));
+  state.setSavedProfiles((items) => replaceProfile(items, clone(saved)));
+  state.setNotice("Profile snapshot 已保存到 prototype 页面内存。");
+}
+
+function cancelProfile(state) {
+  const saved = profileById(state.savedProfiles, state.selectedId);
+  if (!saved) return;
+  state.setProfiles((items) => replaceProfile(items, clone(saved)));
+  state.setNotice("已恢复最后保存的 Profile snapshot。");
+}
+
+function addSavedProfile(state, profile) {
+  state.setProfiles((items) => [...items, clone(profile)]);
+  state.setSavedProfiles((items) => [...items, clone(profile)]);
+}
+
+function replaceProfile(profiles, profile) {
+  return profiles.map((item) => item.id === profile.id ? profile : item);
+}
+
+export function profileDirty(profile, saved) {
+  return JSON.stringify(profile) !== JSON.stringify(saved);
+}
+
+function openPrepare(state, runtime) {
+  const target = runtime || RUNTIMES.find((item) => item.status === "missing");
+  state.setPrepare({ state: "plan", target, outcome: "succeeded", steps: clone(PREPARE_STEPS), logs: ["plan · CLI 计划已生成"] });
+}
+
+function advancePrepare(state) {
+  state.setPrepare((current) => ({
+    ...current, state: "confirm", logs: [...current.logs, "confirm · 等待用户二次确认"],
+  }));
+}
+
+function runPrepare(state) {
+  state.setPrepare((current) => ({
+    ...current, state: "running", steps: stepState(current.steps, "running"), logs: [...current.logs, "running · 开始受控 CLI prepare"],
+  }));
+  window.setTimeout(() => finishPrepare(state), 450);
+}
+
+function finishPrepare(state) {
+  state.setPrepare((current) => {
+    if (!current || current.state !== "running") return current;
+    const result = current.outcome;
+    return { ...current, state: result, steps: stepState(current.steps, result), logs: [...current.logs, `${result} · 脱敏日志已保留`] };
+  });
+}
+
+function cancelPrepare(state) {
+  state.setPrepare((current) => ({
+    ...current, state: "cancelled", logs: [...current.logs, "cancelled · 用户取消，未继续写入"],
+  }));
+}
+
+function retryPrepare(state) {
+  state.setPrepare((current) => ({
+    ...current, state: "confirm", steps: stepState(current.steps, "queued"), logs: [...current.logs, "retry · 保留旧日志并重新确认"],
+  }));
+}
+
+function stepState(steps, value) {
+  return steps.map((item) => ({ ...item, state: value }));
+}
+
+export function readinessFor(profile) {
+  if (!profile?.id && !profile?.runtime && !profile?.endpoint) return blankReadiness(profile);
+  const key = runtimeKey(profile.runtime, profile.realm);
+  const runtime = RUNTIMES.find((item) => runtimeKey(item.id, item.realm) === key);
+  const endpoint = ENDPOINTS.find((item) => item.id === profile.endpoint);
+  const issues = readinessIssues(profile, runtime, endpoint);
+  return { status: issues.length ? "blocked" : "ready", issues, groups: readinessGroups(profile, runtime, endpoint) };
+}
+
+function readinessIssues(profile, runtime, endpoint) {
+  return [
+    ...requiredIssues(profile),
+    ...runtimeIssues(profile, runtime),
+    ...endpointIssues(profile, endpoint),
+    ...capabilityIssues(profile),
+  ];
+}
+
+function requiredIssues(profile) {
+  const fields = [["id", "Stable id"], ["name", "名称"], ["instructions", "Instructions"], ["workspace", "Workspace"], ["sandbox", "Sandbox"], ["reasoning", "Reasoning"]];
+  return fields.filter(([key]) => !profile?.[key]?.trim()).map(([key, name]) => ({ code: `${key}_required`, message: `${name} 未决` }));
+}
+
+function runtimeIssues(profile, runtime) {
+  if (!profile?.runtime || !profile?.realm) return [{ code: "runtime_required", message: "Runtime 与 realm 未决" }];
+  if (!runtime) return [{ code: "runtime_unknown", message: "Runtime inventory 无对应 descriptor" }];
+  return runtime.status === "ready" ? [] : [{ code: "runtime_not_ready", message: `${runtime.name}: ${runtime.reason}` }];
+}
+
+function endpointIssues(profile, endpoint) {
+  if (!endpoint) return [{ code: "endpoint_required", message: "Endpoint 未决" }];
+  if (!profile.model) return [{ code: "model_required", message: "Model 未决" }];
+  if (!endpoint.models.includes(profile.model)) return [{ code: "model_mismatch", message: "Model 与 Endpoint 不匹配" }];
+  if (!endpoint.runtimes.includes(profile.runtime)) return [{ code: "endpoint_runtime_mismatch", message: "Endpoint 与 Runtime 不匹配" }];
+  if (secretReadiness(endpoint.secret) === "ready") return [];
+  const reason = endpoint.secretReason || "secret_status_unknown";
+  return [{ code: "secret_unresolved", message: `Secret ${endpoint.secret}: ${reason}` }];
+}
+
+function capabilityIssues(profile) {
+  const skills = unavailable(profile.skills || [], SKILLS);
+  const tools = unavailable(profile.tools || [], TOOLS);
+  return [...skills.map(capabilityIssue("Skill")), ...tools.map(capabilityIssue("Tool"))];
+}
+
+function capabilityIssue(kind) {
+  return (item) => ({ code: `${kind.toLowerCase()}_not_ready`, message: `${kind} ${item.id}: ${item.status}` });
+}
+
+function unavailable(ids, catalog) {
+  return ids.map((id) => catalog.find((item) => item.id === id) || { id, status: "missing" }).filter((item) => item.status !== "ready");
+}
+
+function readinessGroups(profile, runtime, endpoint) {
+  const skills = unavailable(profile.skills || [], SKILLS);
+  const tools = unavailable(profile.tools || [], TOOLS);
+  return [
+    group("Execution Runtime", runtime?.status === "ready", runtime ? `${runtime.id} · ${runtime.realm}` : "unresolved"),
+    group("Endpoint / model", endpointReady(profile, endpoint), profile.endpoint && profile.model ? `${profile.endpoint} · ${profile.model}` : "unresolved"),
+    group("Skills", !skills.length, `${profile.skills?.length || 0} selected · ${skills.length} blocked`),
+    group("Tools", !tools.length, `${profile.tools?.length || 0} selected · ${tools.length} blocked`),
+    group("Workspace", Boolean(profile.workspace && profile.sandbox), profile.workspace || "unresolved"),
+    secretGroup(endpoint),
+  ];
+}
+
+function endpointReady(profile, endpoint) {
+  return Boolean(endpoint && endpoint.models.includes(profile.model) && endpoint.runtimes.includes(profile.runtime) && secretReadiness(endpoint.secret) === "ready");
+}
+
+function group(name, ready, detail) {
+  return { name, status: ready ? "ready" : "blocked", detail };
+}
+
+function secretGroup(endpoint) {
+  const status = endpoint?.secret || "unknown";
+  const detail = endpoint?.secretReason ? `${status} · ${endpoint.secretReason}` : status;
+  return { name: "Secrets", status: secretReadiness(status), detail };
+}
+
+export function secretReadiness(status) {
+  if (["configured", "not-required"].includes(status)) return "ready";
+  if (["missing", "invalid"].includes(status)) return "blocked";
+  return "unknown";
+}
+
+function blankReadiness(profile) {
+  const issues = requiredIssues(profile || {});
+  issues.push({ code: "runtime_required", message: "Runtime 与 realm 未决" }, { code: "endpoint_required", message: "Endpoint 未决" });
+  return { status: "blocked", issues, groups: readinessGroups(profile || {}, null, null) };
+}
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
 }
