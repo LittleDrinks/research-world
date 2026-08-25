@@ -126,6 +126,13 @@ class EndpointPool:
             f"endpoint is not available: {endpoint_id}"
         )
 
+    def cancel(self, session_id: str) -> None:
+        providers = [item.provider for item in self._values.values() if item.provider]
+        for provider in providers:
+            cancel = getattr(provider, "cancel", None)
+            if cancel:
+                cancel(session_id)
+
     def _ordered(self) -> list[Endpoint]:
         return sorted(self._values.values(), key=lambda item: (item.priority, item.id))
 

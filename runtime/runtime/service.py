@@ -65,7 +65,7 @@ class Runtime:
         _validate_spec(spec, recognized)
         snapshots = _skill_snapshots(spec, workspace)
         plan = await self._tool_plan(spec, workspace, snapshots)
-        meta = _session_meta(spec, workspace, value, snapshots, plan)
+        meta = _session_meta(spec, workspace, value, snapshots, plan, recognized)
         self.trace.create(session_id, meta)
         return {"session_id": session_id}
 
@@ -102,6 +102,7 @@ class Runtime:
     def cancel(self, session_id: str) -> None:
         self._events(session_id)
         self._cancelled.add(session_id)
+        self.endpoints.cancel(session_id)
 
     async def _prompt(self, session_id, blocks, client, emit):
         events = self._events(session_id)
@@ -115,6 +116,8 @@ class Runtime:
         try:
             return await self._run_turn(session_id, turn_id, spec, meta, client, emit)
         except Exception as error:
+            if session_id in self._cancelled:
+                return self._finish(session_id, turn_id, "cancelled", "", {})
             self._fail(session_id, turn_id, error)
             raise
 
@@ -269,7 +272,7 @@ def _require(value, available, kind):
         raise CapabilityNotFound(f"{kind} is not available: {value}")
 
 
-def _session_meta(spec, workspace, value, skills, tool_plan):
+def _session_meta(spec, workspace, value, skills, tool_plan, capabilities):
     return {
         "agent_spec": spec.snapshot(),
         "workspace": str(workspace),
@@ -277,6 +280,7 @@ def _session_meta(spec, workspace, value, skills, tool_plan):
         "mode": value.get("mode", "resume"),
         "skills": skills,
         "tool_plan": tool_plan,
+        "capabilities": capabilities,
     }
 
 
@@ -360,6 +364,7 @@ def _provider_context(meta, events):
         "workspace": meta["workspace"],
         "sandbox": options.get("sandbox", "read-only"),
         "reasoning_effort": options.get("reasoning_effort", "medium"),
+        "runtime_session_id": events[0]["session_id"],
         "provider_session_id": _provider_session(events),
     }
 
