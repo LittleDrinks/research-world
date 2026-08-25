@@ -8,9 +8,10 @@ import zipfile
 
 _SECRET_FIELDS = {"api_key", "apikey", "authorization", "credential", "credentials", "password", "secret", "access_token", "refresh_token", "id_token", "bearer_token"}
 _TEMPORARY_FIELD = re.compile(r"^(tmp|temp|temporary)(_|$)", re.I)
-_SECRET_TEXT = re.compile(r"(?i)\b(api[_ -]?key|authorization|credentials?|password|secrets?|access[_ -]?token|refresh[_ -]?token|id[_ -]?token|bearer[_ -]?token)\b(\s*[:=]\s*)([^\s,;)}\]\"']+)")
-_POSIX_PATH = re.compile(r"(?<![\w/])/(?:[^\s,;)}\]\"']+)")
-_WINDOWS_PATH = re.compile(r"(?i)\b[a-z]:\\(?:[^\s,;)}\]\"']+)")
+_SECRET_TEXT = re.compile(r"(?ix)(?P<label>\b(?:api[_ -]?key|authorization|credentials?|password|secrets?|access[_ -]?token|refresh[_ -]?token|id[_ -]?token|bearer[_ -]?token)\b[\"']?\s*[:=]\s*)(?:(?P<quote>[\"'])(?P<quoted>[^\r\n]*?)(?P=quote)|bearer\s+(?P<bearer>[^\s,;)}\]\"'<>]+)|(?P<plain>[^\s,;)}\]\"'<>]+))")
+_POSIX_PATH = re.compile(r"(?<![:\w/])/[A-Za-z_.][A-Za-z0-9_.-]*(?:/[^\r\n,;)}\]\"'<>]+)+")
+_WINDOWS_PATH = re.compile(r"(?i)\b[a-z]:\\[^\r\n,;)}\]\"'<>]+")
+_URL = re.compile(r"(https?://[^\s\"'<>]+)", re.I)
 
 
 def package(project: dict, graph: dict, runs: list[dict], traces: dict, artifacts: list[dict]) -> bytes:
@@ -59,7 +60,8 @@ def _artifact_metadata(artifact: dict) -> dict:
 
 
 def _textual(media_type: str) -> bool:
-    return media_type.startswith("text/") or media_type.endswith("+json") or media_type == "application/json"
+    bibtex = {"application/x-bibtex", "text/x-bibtex"}
+    return media_type.startswith("text/") or media_type.endswith("+json") or media_type in bibtex | {"application/json"}
 
 
 def _manifest(project_id: str, files: dict[str, bytes]) -> dict:
@@ -104,6 +106,17 @@ def _clean(value, key: str = ""):
 
 
 def _clean_text(value: str) -> str:
-    cleaned = _SECRET_TEXT.sub(r"\1\2[REDACTED]", value)
+    return "".join(_clean_fragment(part) for part in _URL.split(value))
+
+
+def _clean_fragment(value: str) -> str:
+    if _URL.fullmatch(value):
+        return _SECRET_TEXT.sub(_redact_secret, value)
+    cleaned = _SECRET_TEXT.sub(_redact_secret, value)
     cleaned = _POSIX_PATH.sub("[REDACTED]", cleaned)
     return _WINDOWS_PATH.sub("[REDACTED]", cleaned)
+
+
+def _redact_secret(match: re.Match) -> str:
+    quote = match.group("quote")
+    return f"{match.group('label')}{quote}[REDACTED]{quote}" if quote else f"{match.group('label')}[REDACTED]"

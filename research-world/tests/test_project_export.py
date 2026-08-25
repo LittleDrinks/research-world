@@ -25,6 +25,17 @@ class TraceRuntime:
         }
 
 
+class AdversarialRuntime:
+    def __init__(self, secret, path):
+        self.secret, self.path = secret, path
+
+    def bind_kernel(self, kernel):
+        self.kernel = kernel
+
+    async def inspect(self, session_id):
+        return {"message": f"Authorization: Bearer {self.secret}", "config": {"api_key": "sk-json-secret"}, "path": self.path, "url": "https://example.org/paper", "usage": {"prompt_tokens": 17, "cost": 0.02}}
+
+
 def inspect(kernel, project_id):
     return asyncio.run(kernel.query(KernelQuery("project_export", project_id)))
 
@@ -35,6 +46,20 @@ def archive(content):
 
 def add_artifact(store, content, media_type="text/plain"):
     return store.add(content.encode(), media_type)
+
+
+def adversarial_export(world, project, tmp_path):
+    secret, path = "sk-live-secret", "/home/researcher/Project Files/private result.txt"
+    srv_path, store = "/srv/study/private data.csv", ArtifactStore(world.artifacts_root, project["id"])
+    bibtex = add_artifact(store, f'@article{{orbit, note={{Authorization: Bearer {secret} {path}}}}}', "application/x-bibtex")
+    artifact = add_artifact(store, f'{{"api_key": "sk-json-secret", "path": "{path}", "note": "stored at {srv_path}; score=0.97"}}')
+    text_bibtex = add_artifact(store, f"@book{{orbit, note={{api_key={secret} {path}}}}}", "text/x-bibtex")
+    source = world.create_node(project["id"], "source", {"title": "Source", "artifact_ids": [bibtex["id"], text_bibtex["id"]]})
+    world.admit_node(source["id"])
+    run = world.create_run(project["id"], world.nodes(project["id"])[0]["id"], {"id": "research", "stages": []}, {"artifact_id": artifact["id"]})
+    world.record_run_event(run["id"], "agent", "agent_session", {"session_id": "session:adversarial"})
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects", runtime=AdversarialRuntime(secret, path))
+    return inspect(kernel, project["id"]), (bibtex, text_bibtex), (secret, "sk-json-secret", "/home/researcher", "Project Files", "/srv/study", "private data.csv")
 
 
 def test_export_redacts_embedded_text_and_preserves_artifact_identity(world, project, tmp_path):
@@ -59,6 +84,20 @@ def test_export_redacts_embedded_text_and_preserves_artifact_identity(world, pro
     assert report_metadata["export_sha256"] != report["sha256"]
     assert report_metadata["redacted"] is True
     assert f"reports/{report['sha256']}.html" not in exported.namelist()
+
+
+def test_export_redacts_adversarial_text_without_damaging_urls(world, project, tmp_path):
+    content, bibtex_artifacts, sensitive = adversarial_export(world, project, tmp_path)
+    exported = archive(content)
+    files = {name: exported.read(name) for name in exported.namelist()}
+    copies = b"".join(files.values())
+
+    assert all(value.encode() not in copies for value in sensitive)
+    assert b"https://example.org/paper" in files["traces.json"]
+    assert b'"prompt_tokens": 17' in files["traces.json"] and b'"cost": 0.02' in files["traces.json"]
+    for item in bibtex_artifacts:
+        assert files[f"artifacts/{item['sha256']}"] == files[f"bibtex/{item['sha256']}.bib"]
+        assert sensitive[0].encode() not in files[f"bibtex/{item['sha256']}.bib"]
 
 
 def test_export_includes_run_trace_and_saved_artifacts_only_from_project(world, project, tmp_path):
