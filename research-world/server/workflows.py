@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import math
 import os
-import re
 import secrets
 from dataclasses import dataclass
 
@@ -22,6 +21,7 @@ from .execution_evidence import (
 )
 from .pipelines import PipelineRegistry, StagePrimitiveRegistry
 from .runtime_client import RuntimeCapabilityError, RuntimeClient, RuntimeEmbedding
+from .titles import TITLE_TOKEN_LIMIT, validate_title
 from .world import World
 
 
@@ -980,31 +980,6 @@ def _validate_candidate(candidate) -> dict:
     if not isinstance(text, str) or not text.strip():
         raise ValueError("each candidate requires text")
     return {"title": title, "text": text.strip()}
-
-
-TITLE_TOKEN_LIMIT = 12
-
-
-def validate_title(value) -> str:
-    if not isinstance(value, str):
-        raise TypeError("runtime field 'title' must be a string")
-    title = value.strip()
-    if not title:
-        raise ValueError("runtime field 'title' must be non-empty text")
-    if _title_tokens(title) > TITLE_TOKEN_LIMIT:
-        raise ValueError("runtime field 'title' exceeds the 12-token limit")
-    return title
-
-
-def _title_tokens(title: str) -> int:
-    return len(_TOKEN_PATTERN.findall(title))
-
-
-_TOKEN_PATTERN = re.compile(
-    r"[一-鿿豈-﫿]"
-    r"|[A-Za-z0-9]+"
-    r"|[^\sA-Za-z0-9一-鿿豈-﫿]"
-)
 
 
 def validate_claims(value) -> list[dict]:

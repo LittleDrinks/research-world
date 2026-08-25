@@ -61,7 +61,7 @@ test("redirects removed routes to project selection", async ({ page }) => {
 });
 
 
-test("creates a project posting only name and question", async ({ page }) => {
+test("creates a project posting the explicit question title", async ({ page }) => {
   let body;
   await mockShell(page);
   await page.route(/\/api\/v1\/bootstrap/, (route) => {
@@ -72,14 +72,14 @@ test("creates a project posting only name and question", async ({ page }) => {
   await page.route(/\/api\/v1\/projects$/, (route) => {
     if (route.request().method() !== "POST") return route.fulfill({ json: [] });
     body = route.request().postDataJSON();
-    return route.fulfill({ status: 201, json: { id: "project:new", name: body.name, question: body.question } });
+    return route.fulfill({ status: 201, json: { id: "project:new", name: body.name, title: body.title, question: body.question } });
   });
   await page.goto("/projects");
   await page.locator(".projects-bar").getByRole("button", { name: "新建项目" }).click();
   await page.getByLabel("项目名称").fill("新课题");
   await page.getByLabel("研究问题").fill("验证假设 X");
   await page.getByRole("button", { name: "创建项目" }).click();
-  await expect.poll(() => body).toEqual({ name: "新课题", question: "验证假设 X" });
+  await expect.poll(() => body).toEqual({ name: "新课题", title: "新课题", question: "验证假设 X" });
   await expect(page).toHaveURL(/\/map$/);
 });
 

@@ -15,7 +15,7 @@ def test_graph_has_four_node_kinds_and_two_edge_polarities():
 
 def test_pending_node_is_admitted_or_ghosted(world, project):
     pending = world.create_node(
-        project["id"], "direction", {"text": "Test orbit resonance"}
+        project["id"], "direction", {"title": "Test", "text": "Test orbit resonance"}
     )
     assert pending["life_state"] == "pending"
     assert world.admit_node(pending["id"])["life_state"] == "admitted"
@@ -31,7 +31,7 @@ def test_pending_node_is_admitted_or_ghosted(world, project):
 
 def test_direction_state_is_terminal(world, project):
     direction = world.create_node(
-        project["id"], "direction", {"text": "Resonance protects the orbit"}
+        project["id"], "direction", {"title": "Test", "text": "Resonance protects the orbit"}
     )
     supported = world.update_node(direction["id"], direction_status="supported")
     assert supported["direction_status"] == "supported"
@@ -40,7 +40,7 @@ def test_direction_state_is_terminal(world, project):
 
 
 def test_edge_requires_polarity_and_one_project(world, project, tmp_path):
-    direction = world.create_node(project["id"], "direction", {"text": "Candidate"})
+    direction = world.create_node(project["id"], "direction", {"title": "Test", "text": "Candidate"})
     evidence = world.create_node(
         project["id"], "source", {"title": "Paper"}, life_state="admitted"
     )
@@ -48,13 +48,13 @@ def test_edge_requires_polarity_and_one_project(world, project, tmp_path):
         world.add_edge(evidence["id"], direction["id"], "supports")["polarity"]
         == "supports"
     )
-    other = world.create_project("other", tmp_path / "other", "Other question")
+    other = world.create_project("other", tmp_path / "other", "other", "Other question")
     with pytest.raises(ValueError, match="one project"):
         world.add_edge(evidence["id"], world.nodes(other["id"])[0]["id"], "refutes")
 
 
 def test_bootstrap_includes_all_life_states(world, project, tmp_path):
-    world.create_node(project["id"], "direction", {"text": "Pending"})
+    world.create_node(project["id"], "direction", {"title": "Test", "text": "Pending"})
     ghost = world.create_node(project["id"], "experiment", {"title": "Failed"})
     world.ghost_node(ghost["id"], "audit rejected")
     data = asyncio.run(
@@ -96,7 +96,7 @@ def test_bootstrap_project_cards_distinguish_active_runs(
 
 
 def test_active_run_is_idempotent_for_node_and_experiment(world, project):
-    direction = world.create_node(project["id"], "direction", {"text": "Candidate"})
+    direction = world.create_node(project["id"], "direction", {"title": "Test", "text": "Candidate"})
     experiment = world.create_node(
         project["id"], "experiment", {"title": "Pending"}, parent_id=direction["id"]
     )

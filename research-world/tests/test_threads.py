@@ -196,7 +196,7 @@ def test_cross_project_node_cannot_be_pinned(world, project, tmp_path):
         agents=_agents(tmp_path),
     )
     client = TestClient(create_app(kernel))
-    other = world.create_project("other", tmp_path / "other", "Other?")
+    other = world.create_project("other", tmp_path / "other", "other", "Other?")
     foreign = world.nodes(other["id"])[0]
     response = client.post(
         f"/api/v1/projects/{project['id']}/threads",
@@ -217,7 +217,7 @@ def test_unadmitted_node_cannot_enter_thread_context(
         agents=_agents(tmp_path),
     )
     client = TestClient(create_app(kernel))
-    pending = world.create_node(project["id"], "direction", {"text": "unreviewed"})
+    pending = world.create_node(project["id"], "direction", {"title": "Test", "text": "unreviewed"})
     if life_state == "ghost":
         world.ghost_node(pending["id"], "rejected")
 

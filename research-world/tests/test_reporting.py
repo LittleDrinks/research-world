@@ -85,7 +85,7 @@ def test_fact_requires_an_admitted_supported_claim(change, code):
 
 def test_projection_shape_is_explicit():
     with pytest.raises(ValueError, match="facts list"):
-        assess_delivery({"claims": [], "sources": []})
+        assess_delivery({"title": "Test", "claims": [], "sources": []})
 
 
 def report_projection(endpoint_ready=False):

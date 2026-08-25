@@ -72,7 +72,7 @@ async def project_command(args, kernel: ResearchKernel):
     if args.action == "list":
         return await kernel.query(KernelQuery("projects"))
     value = json.loads(args.file.read_text()) if args.file else json.load(sys.stdin)
-    values = {"name": value["name"], "question": value["question"]}
+    values = {key: value[key] for key in ("name", "title", "question")}
     return await kernel.command(KernelCommand("create_project", values=values))
 
 

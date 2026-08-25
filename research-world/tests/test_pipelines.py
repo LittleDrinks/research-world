@@ -175,7 +175,7 @@ def test_pipeline_api_starts_run_by_id(world, project, tmp_path):
 def test_pipeline_api_rejects_unadmitted_nodes(world, project, tmp_path, life_state):
     pipelines = registry(tmp_path)
     pipelines.save("custom", spec())
-    node = world.create_node(project["id"], "direction", {"text": "unreviewed"})
+    node = world.create_node(project["id"], "direction", {"title": "Test", "text": "unreviewed"})
     if life_state == "ghost":
         world.ghost_node(node["id"], "rejected")
     kernel = ResearchKernel(
@@ -225,7 +225,7 @@ def test_pipeline_api_rejects_unadmitted_pins(world, project, tmp_path, life_sta
 
 
 def test_pipeline_api_rejects_cross_project_pin(world, project, tmp_path):
-    other = world.create_project("other", tmp_path / "other", "Other?")
+    other = world.create_project("other", tmp_path / "other", "other", "Other?")
     pin = world.nodes(other["id"])[0]
     response = start_with_payload(world, project, tmp_path, {"pins": [pin["id"]]})
     assert response.status_code == 404
@@ -241,7 +241,7 @@ def test_pipeline_api_accepts_admitted_pin(world, project, tmp_path):
 
 
 def test_pipeline_api_rejects_cross_project_thread(world, project, tmp_path):
-    other = world.create_project("thread-owner", tmp_path / "thread-owner", "Other?")
+    other = world.create_project("thread-owner", tmp_path / "thread-owner", "thread-owner", "Other?")
     thread = world.create_thread(other["id"], "private", "session:x", "assistant")
     response = start_with_payload(world, project, tmp_path, {"thread_id": thread["id"]})
     assert response.status_code == 404

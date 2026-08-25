@@ -23,13 +23,13 @@ def test_project_defaults_to_builtin_assembly(project):
 
 
 def test_project_stores_specified_assembly(world, tmp_path):
-    project = world.create_project("custom", tmp_path / "custom", "Why?", assembly=["graph-query"])
+    project = world.create_project("custom", tmp_path / "custom", "custom", "Why?", assembly=["graph-query"])
     assert project["assembly"] == ["graph-query"]
 
 
 def test_create_project_rejects_unknown_package(world, tmp_path):
     with pytest.raises(ValueError, match="unknown capability packages"):
-        world.create_project("bad", tmp_path / "bad", "Why?", assembly=["warp-drive"])
+        world.create_project("bad", tmp_path / "bad", "bad", "Why?", assembly=["warp-drive"])
 
 
 def test_resolve_assembly_returns_package_definitions():
@@ -44,22 +44,22 @@ def test_library_endpoint_lists_builtin_packages(client):
 
 def test_create_project_api_rejects_unknown_package(client, tmp_path):
     response = client.post("/api/v1/projects", json={
-        "name": "bad-api", "root": str(tmp_path), "question": "Why?", "assembly": ["nope"]})
+        "name": "bad-api", "title": "bad-api", "root": str(tmp_path), "question": "Why?", "assembly": ["nope"]})
     assert response.status_code == 400
 
 
 def test_graph_query_get_returns_full_payload(client, world, project):
-    node = world.create_node(project["id"], "direction", {"text": "Resonance", "quality": 0.7})
+    node = world.create_node(project["id"], "direction", {"title": "Test", "text": "Resonance", "quality": 0.7})
     world.admit_node(node["id"])
     response = client.post("/api/v1/tools/graph-query",
                            json=hook({"action": "get", "project_id": project["id"],
                                       "node_id": node["id"]}))
     assert response.status_code == 200
-    assert response.json() == {"text": "Resonance", "quality": 0.7}
+    assert response.json() == {"title": "Test", "text": "Resonance", "quality": 0.7}
 
 
 def test_graph_query_get_hides_pending_nodes(client, world, project):
-    node = world.create_node(project["id"], "direction", {"text": "Unreviewed"})
+    node = world.create_node(project["id"], "direction", {"title": "Test", "text": "Unreviewed"})
 
     response = client.post(
         "/api/v1/tools/graph-query",
@@ -72,8 +72,8 @@ def test_graph_query_get_hides_pending_nodes(client, world, project):
 
 
 def test_graph_query_get_rejects_cross_project(client, world, project, tmp_path):
-    other = world.create_project("other", tmp_path / "other", "Other?")
-    node = world.create_node(other["id"], "direction", {"text": "Secret"})
+    other = world.create_project("other", tmp_path / "other", "other", "Other?")
+    node = world.create_node(other["id"], "direction", {"title": "Test", "text": "Secret"})
     response = client.post("/api/v1/tools/graph-query",
                            json=hook({"action": "get", "project_id": project["id"],
                                       "node_id": node["id"]}))
@@ -81,9 +81,9 @@ def test_graph_query_get_rejects_cross_project(client, world, project, tmp_path)
 
 
 def test_graph_query_search_returns_summaries(client, world, project):
-    node = world.create_node(project["id"], "direction", {"text": "orbital resonance stability"})
+    node = world.create_node(project["id"], "direction", {"title": "Test", "text": "orbital resonance stability"})
     world.admit_node(node["id"])
-    world.create_node(project["id"], "direction", {"text": "unrelated chaos theory"})
+    world.create_node(project["id"], "direction", {"title": "Test", "text": "unrelated chaos theory"})
     response = client.post("/api/v1/tools/graph-query",
                            json=hook({"action": "search", "project_id": project["id"],
                                       "query": "resonance"}))
@@ -96,7 +96,7 @@ def test_graph_query_search_returns_summaries(client, world, project):
 
 def test_graph_query_search_hides_ghosts(client, world, project):
     node = world.create_node(
-        project["id"], "direction", {"text": "ghost resonance secret"}
+        project["id"], "direction", {"title": "Test", "text": "ghost resonance secret"}
     )
     world.ghost_node(node["id"], "rejected")
 

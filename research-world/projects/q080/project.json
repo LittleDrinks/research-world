@@ -1,5 +1,6 @@
 {
   "name": "q080",
   "root": "q080",
-  "question": "Can we accurately simulate the macro- and microworld?\nWhile we can typically simulate the macroworld in a straightforward manner, doing so at the microlevel requires rigorous and powerful quantum computers. We are getting closer."
+  "question": "Can we accurately simulate the macro- and microworld?\nWhile we can typically simulate the macroworld in a straightforward manner, doing so at the microlevel requires rigorous and powerful quantum computers. We are getting closer.",
+  "title": "Can we accurately simulate the macro- and microworld?"
 }

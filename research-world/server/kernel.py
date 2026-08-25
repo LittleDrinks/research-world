@@ -446,7 +446,7 @@ class ResearchKernel:
     def _create_project(self, value: dict, workspace: Path) -> dict:
         try:
             return self._world.create_project(
-                value["name"], workspace, value["question"]
+                value["name"], workspace, value["title"], value["question"]
             )
         except Exception:
             workspace.rmdir()
@@ -502,9 +502,9 @@ def _project_id(value) -> str:
 
 
 def _validate_project(value: dict) -> None:
-    _validate_fields(value, {"name", "question"}, {"name", "question"})
+    _validate_fields(value, {"name", "title", "question"}, {"name", "title", "question"})
     if not all(isinstance(value[key], str) and value[key].strip() for key in value):
-        raise ValueError("project name and question cannot be empty")
+        raise ValueError("project name, title and question cannot be empty")
 
 
 def _allocate_workspace(projects_root: Path) -> Path:

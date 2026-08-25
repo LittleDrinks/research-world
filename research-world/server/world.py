@@ -11,6 +11,7 @@ from .admission import AdmissionVerdict
 from .artifacts import now
 from .db import Database
 from .library import assembly_names
+from .titles import validate_title
 
 NODE_KINDS = {"question", "source", "direction", "experiment"}
 LIFE_STATES = {"pending", "admitted", "ghost"}
@@ -44,7 +45,7 @@ class World:
         self.embedding = embedding
 
     def create_project(
-        self, name: str, root: Path, question: str, assembly: list[str] | None = None
+        self, name: str, root: Path, title: str, question: str, assembly: list[str] | None = None
     ) -> dict:
         project_id = f"project:{secrets.token_hex(12)}"
         names = json.dumps(assembly_names(assembly))
@@ -54,12 +55,12 @@ class World:
                 "INSERT INTO projects(id,name,root,question,auto,assembly,created_at) VALUES(?,?,?,?,?,?,?)",
                 values,
             )
-            self._insert_question(connection, project_id, question)
+            self._insert_question(connection, project_id, title, question)
         return self.project(project_id)
 
-    def _insert_question(self, connection, project_id: str, text: str) -> None:
+    def _insert_question(self, connection, project_id: str, title: str, text: str) -> None:
         node_id = f"node:{secrets.token_hex(12)}"
-        values = question_values(node_id, project_id, text)
+        values = question_values(node_id, project_id, title, text)
         connection.execute(
             "INSERT INTO nodes VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", values
         )
@@ -87,6 +88,7 @@ class World:
         self._validate_node(
             kind, state.get("life_state", "pending"), state.get("direction_status")
         )
+        payload = {**payload, "title": validate_title(payload.get("title"))}
         node_id = f"node:{secrets.token_hex(12)}"
         parent_id = state.get("parent_id")
         lineage_id = state.get("lineage_id") or self._lineage(parent_id, node_id)
@@ -567,7 +569,7 @@ class World:
         return [decode(row) for row in self._rows(sql, params)]
 
 
-def question_values(node_id: str, project_id: str, text: str) -> tuple:
+def question_values(node_id: str, project_id: str, title: str, text: str) -> tuple:
     timestamp = now()
     return (
         node_id,
@@ -575,7 +577,7 @@ def question_values(node_id: str, project_id: str, text: str) -> tuple:
         None,
         node_id,
         "question",
-        json.dumps({"text": text}),
+        json.dumps({"title": validate_title(title), "text": text}),
         "admitted",
         None,
         0,

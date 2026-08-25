@@ -43,7 +43,7 @@ def test_kernel_submission_is_pending_and_admission_is_structured(
         KernelCommand(
             "submit_node",
             project["id"],
-            {"kind": "direction", "payload": {"text": "Candidate"}},
+            {"kind": "direction", "payload": {"title": "Test", "text": "Candidate"}},
         ),
     )
 
@@ -85,7 +85,7 @@ def test_admission_policy_intercepts_submission(world, project, tmp_path):
         KernelCommand(
             "submit_node",
             project["id"],
-            {"kind": "direction", "payload": {"text": "Reviewed"}},
+            {"kind": "direction", "payload": {"title": "Test", "text": "Reviewed"}},
         ),
     )
 
@@ -126,29 +126,29 @@ def test_node_api_submits_pending_and_cannot_mutate_payload(world, project, tmp_
     client = TestClient(create_app(kernel))
     created = client.post(
         f"/api/v1/projects/{project['id']}/nodes",
-        json={"kind": "direction", "payload": {"text": "Candidate"}},
+        json={"kind": "direction", "payload": {"title": "Test", "text": "Candidate"}},
     )
     node = created.json()
 
     updated = client.patch(
-        f"/api/v1/nodes/{node['id']}", json={"payload": {"text": "Revised"}}
+        f"/api/v1/nodes/{node['id']}", json={"payload": {"title": "Test", "text": "Revised"}}
     )
 
     assert created.status_code == 201
     assert node["life_state"] == "pending"
     assert updated.status_code == 405
-    assert world.node(node["id"])["payload"] == {"text": "Candidate"}
+    assert world.node(node["id"])["payload"] == {"title": "Test", "text": "Candidate"}
 
 
 @pytest.mark.parametrize(
     "claims",
     [
         ["not-an-object"],
-        [{"text": "", "verdict": "supported", "evidence": []}],
-        [{"text": 42, "verdict": "supported", "evidence": []}],
-        [{"text": "Claim", "verdict": "unknown", "evidence": []}],
-        [{"text": "Claim", "verdict": "supported", "evidence": "node:s"}],
-        [{"text": "Claim", "verdict": "supported", "evidence": [{}]}],
+        [{"title": "Test", "text": "", "verdict": "supported", "evidence": []}],
+        [{"title": "Test", "text": 42, "verdict": "supported", "evidence": []}],
+        [{"title": "Test", "text": "Claim", "verdict": "unknown", "evidence": []}],
+        [{"title": "Test", "text": "Claim", "verdict": "supported", "evidence": "node:s"}],
+        [{"title": "Test", "text": "Claim", "verdict": "supported", "evidence": [{}]}],
     ],
 )
 def test_admission_rejects_malformed_claims(world, project, tmp_path, claims):
@@ -156,7 +156,7 @@ def test_admission_rejects_malformed_claims(world, project, tmp_path, claims):
     client = TestClient(create_app(kernel))
     created = client.post(
         f"/api/v1/projects/{project['id']}/nodes",
-        json={"kind": "direction", "payload": {"text": "Candidate", "claims": claims}},
+        json={"kind": "direction", "payload": {"title": "Test", "text": "Candidate", "claims": claims}},
     ).json()
 
     admitted = client.post(
@@ -180,7 +180,7 @@ def test_admission_rejects_duplicate_project_claim_ids(world, project, tmp_path)
     nodes = [
         client.post(
             f"/api/v1/projects/{project['id']}/nodes",
-            json={"kind": "direction", "payload": {"text": text, "claims": claims}},
+            json={"kind": "direction", "payload": {"title": "Test", "text": text, "claims": claims}},
         ).json()
         for text in ("First", "Second")
     ]
@@ -237,7 +237,7 @@ def test_observation_cannot_reference_another_projects_artifact(
         f"/api/v1/projects/{project['id']}/artifacts",
         json={"content_base64": "cmVzdWx0", "media_type": "text/plain"},
     ).json()
-    other = world.create_project("other", tmp_path / "other", "Other question")
+    other = world.create_project("other", tmp_path / "other", "other", "Other question")
 
     response = client.post(
         f"/api/v1/projects/{other['id']}/observations",
@@ -320,6 +320,7 @@ def test_report_validation_uses_caller_facts_and_admitted_graph(
         project["id"],
         "direction",
         {
+            "title": "Stable claim",
             "claims": [
                 {
                     "text": "Stable",
@@ -375,7 +376,7 @@ def test_source_projection_cannot_override_kernel_fields(world, project, tmp_pat
     source = world.create_node(
         project["id"],
         "source",
-        {"id": "node:forged", "kind": "direction", "life_state": "ghost"},
+        {"title": "Forged source", "id": "node:forged", "kind": "direction", "life_state": "ghost"},
     )
     world.admit_node(source["id"])
     projection = inspect(
@@ -422,7 +423,7 @@ def test_bibtex_export_hides_unadmitted_and_cross_project_artifacts(
         create_app(ResearchKernel(world, projects_root=tmp_path / "projects"))
     )
     artifact, _source = create_bibtex_source(client, project, valid_bibtex())
-    other = world.create_project("other-bib", tmp_path / "other-bib", "Other?")
+    other = world.create_project("other-bib", tmp_path / "other-bib", "other-bib", "Other?")
     pending = client.get(
         f"/api/v1/projects/{project['id']}/report/bibtex",
         params={"artifact_id": artifact["id"]},
@@ -494,7 +495,7 @@ def test_node_submission_rejects_internal_state(world, project, tmp_path, field)
     client = TestClient(create_app(kernel))
     response = client.post(
         f"/api/v1/projects/{project['id']}/nodes",
-        json={"kind": "direction", "payload": {"text": "Candidate"}, field: "x"},
+        json={"kind": "direction", "payload": {"title": "Test", "text": "Candidate"}, field: "x"},
     )
 
     assert response.status_code == 400
@@ -502,7 +503,7 @@ def test_node_submission_rejects_internal_state(world, project, tmp_path, field)
 
 
 def test_node_submission_rejects_cross_project_parent(world, project, tmp_path):
-    other = world.create_project("other", tmp_path / "other", "Other question")
+    other = world.create_project("other", tmp_path / "other", "other", "Other question")
     parent = world.nodes(other["id"])[0]
     kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
     client = TestClient(create_app(kernel))
@@ -522,7 +523,7 @@ def test_node_submission_rejects_cross_project_parent(world, project, tmp_path):
 
 @pytest.mark.parametrize("life_state", ["pending", "ghost"])
 def test_node_submission_requires_admitted_parent(world, project, tmp_path, life_state):
-    parent = world.create_node(project["id"], "direction", {"text": "unreviewed"})
+    parent = world.create_node(project["id"], "direction", {"title": "Test", "text": "unreviewed"})
     if life_state == "ghost":
         world.ghost_node(parent["id"], "rejected")
     response = TestClient(
@@ -543,7 +544,7 @@ def test_node_submission_requires_admitted_parent(world, project, tmp_path, life
 def test_node_patch_rejects_internal_state(world, project, tmp_path, field):
     kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
     client = TestClient(create_app(kernel))
-    node = world.create_node(project["id"], "direction", {"text": "Candidate"})
+    node = world.create_node(project["id"], "direction", {"title": "Test", "text": "Candidate"})
 
     response = client.patch(f"/api/v1/nodes/{node['id']}", json={field: "x"})
 

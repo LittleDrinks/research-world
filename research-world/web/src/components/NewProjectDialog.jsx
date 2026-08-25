@@ -16,7 +16,7 @@ export function NewProjectDialog({ open, onClose }) {
   const submit = async (event) => {
     event.preventDefault(); setSubmitting(true);
     try {
-      const result = await createProject({ name: form.title, question: form.question });
+      const result = await createProject({ name: form.title, title: form.title, question: form.question });
       if (!result?.id) throw new Error("创建项目响应缺少 id");
       setForm(EMPTY); onClose();
       await selectProject(result.id); navigate("/map");
