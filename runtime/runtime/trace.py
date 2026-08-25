@@ -50,14 +50,22 @@ class TraceStore:
 def inspect_trace(events: list[dict[str, Any]]) -> dict[str, Any]:
     if not events:
         return {}
-    turns = _turns(events)
+    public_events = [_public_event(event) for event in events]
+    turns = _turns(public_events)
     return {
-        "session": events[0]["data"],
+        "session": public_events[0]["data"],
         "status": _status(turns),
         "messages": _messages(turns),
         "turns": turns,
-        "events": events,
+        "events": public_events,
     }
+
+
+def _public_event(event):
+    if event["type"] != "session_meta":
+        return event
+    data = {key: value for key, value in event["data"].items() if key != "runtime_binding"}
+    return {**event, "data": data}
 
 
 def _event(session_id, seq, event_type, data, turn_id):
@@ -122,6 +130,7 @@ def _turn_view(turn):
         "input": (start or {}).get("data", {}).get("prompt", []),
         "output": (end or {}).get("data", {}).get("result_text"),
         "status": (end or {}).get("data", {}).get("status", "running"),
+        "provider_items": _provider_items(events),
     }
 
 
@@ -132,6 +141,15 @@ def _messages(turns):
         if turn["output"] is not None:
             messages.append({"role": "assistant", "content": turn["output"]})
     return messages
+
+
+def _provider_items(events):
+    items = {}
+    for event in events:
+        if event["type"] == "provider_item":
+            data = event["data"]
+            items[data["item"]["id"]] = {**data["item"], "phase": data["phase"]}
+    return list(items.values())
 
 
 def _prompt_text(blocks):

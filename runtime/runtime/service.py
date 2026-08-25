@@ -86,7 +86,7 @@ class Runtime:
         endpoint = self.endpoints.require(spec.endpoint, spec.model)
         snapshots = _skill_snapshots(spec, workspace)
         plan = await self._tool_plan(spec, workspace, snapshots)
-        self.trace.create(session_id, _session_meta(spec, workspace, value, snapshots, plan, recognized, endpoint))
+        self.trace.create(session_id, _session_meta(spec, workspace, value, snapshots, plan, recognized, endpoint, adapter))
         self._bindings[session_id] = _LaunchBinding(adapter, endpoint, spec)
 
     async def _tool_plan(self, spec: AgentSpec, workspace: Path, snapshots) -> list:
@@ -232,6 +232,8 @@ class Runtime:
             "provider_session_id": result.provider_session_id,
         }
         self.trace.append(session_id, "model_response", data, turn_id)
+        for item in result.provider_items:
+            self.trace.append(session_id, "provider_item", item, turn_id)
 
     async def _tools(self, session_id, turn_id, calls, tools):
         for call in calls:
@@ -259,6 +261,10 @@ class Runtime:
         return {"status": status, "result_text": result, "usage": usage}
 
     def _fail(self, session_id, turn_id, error):
+        for item in getattr(error, "provider_items", []):
+            self.trace.append(session_id, "provider_item", item, turn_id)
+        if terminal := getattr(error, "provider_terminal", None):
+            self.trace.append(session_id, "provider_terminal", terminal, turn_id)
         message = {"code": _error_code(error), "message": str(error)}
         self.trace.append(session_id, "error", message, turn_id)
         self.trace.append(
@@ -394,7 +400,7 @@ def _require(value, available, kind):
         raise CapabilityNotFound(f"{kind} is not available: {value}")
 
 
-def _session_meta(spec, workspace, value, skills, tool_plan, capabilities, endpoint):
+def _session_meta(spec, workspace, value, skills, tool_plan, capabilities, endpoint, adapter):
     return {
         "agent_spec": spec.snapshot(),
         "workspace": str(workspace),
@@ -404,6 +410,7 @@ def _session_meta(spec, workspace, value, skills, tool_plan, capabilities, endpo
         "tool_plan": tool_plan,
         "capability_snapshot": _capability_snapshot(spec, capabilities),
         "endpoint_snapshot": endpoint.public(),
+        "runtime_binding": {"runtime": _adapter_identity(adapter)},
     }
 
 
@@ -447,6 +454,20 @@ def _require_binding_snapshot(meta, adapter, endpoint) -> None:
         raise SessionSpecInvalid("persisted runtime binding is unavailable")
     if meta["endpoint_snapshot"] != endpoint.public():
         raise SessionSpecInvalid("persisted endpoint binding is unavailable")
+    _require_executable_identity(meta, adapter)
+
+
+def _require_executable_identity(meta, adapter) -> None:
+    expected = meta.get("runtime_binding", {}).get("runtime")
+    actual = _adapter_identity(adapter)
+    if expected != actual:
+        raise SessionSpecInvalid("persisted runtime executable is unavailable")
+
+
+def _adapter_identity(adapter):
+    if isinstance(adapter, CodexRuntimeAdapter):
+        return adapter.provider.executable_identity
+    return None
 
 
 def _same_runtime(expected, actual) -> bool:
@@ -560,12 +581,16 @@ def _provider_context(meta, events):
 
 
 def _provider_session(events):
+    completed = _completed_turns(events)
     for event in reversed(events):
-        if event["type"] == "model_response" and event["data"].get(
-            "provider_session_id"
-        ):
-            return event["data"]["provider_session_id"]
+        if event.get("turn_id") in completed and event["type"] == "model_response":
+            if value := event["data"].get("provider_session_id"):
+                return value
     return None
+
+
+def _completed_turns(events) -> set[str]:
+    return {event["turn_id"] for event in events if event["type"] == "turn_end" and event["data"]["status"] in {"completed", "limit"}}
 
 
 def _add_usage(total, current):

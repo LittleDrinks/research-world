@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 Emit = Callable[[str], Awaitable[None]]
@@ -16,6 +16,7 @@ class ModelResult:
     message: dict[str, Any]
     usage: dict[str, int]
     provider_session_id: str | None = None
+    provider_items: list[dict[str, Any]] = field(default_factory=list)
 
 
 class Provider(Protocol):
