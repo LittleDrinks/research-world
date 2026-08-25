@@ -35,7 +35,7 @@ status: accepted
 | 反馈修正 | 有序 Pipeline run 的研究版本投影 | V1 / V2 差异绑定证据、评价或人工反馈 |
 Auto 由 Research Kernel 持有。启动时冻结最大 Pipeline run 数、token、墙钟时间、并发和无改进轮数；支持暂停、恢复和停止。每次执行只记录一个终止原因：`completed`、`run_budget`、`token_budget`、`time_budget`、`no_improvement`、`waiting_human`、`stopped` 或 `failed`。冲突证据、湿实验、伦理约束和授权缺失进入人工 Gate，不能由 Auto 批准。现有无界 reflect 级联删除。
 Agent Runtime 继续通过 ACP 对外，内部按产品稳定接口实现 Adapter：Codex 使用 `codex exec --json`，Claude 使用 print / stream-json，Pi 使用 RPC / JSON，Kimi 使用原生 ACP。AgentSpec 显式保存 `runtime: {id, realm}`；Runtime、Endpoint 与模型互相独立，不从 Endpoint 推断 Runtime，不做跨 Adapter fallback。Instructions、Skills、Tools 与 Runtime readiness 在 Launch 前冻结，缺失即失败。
-报告和 Project export 都从 Kernel 投影。报告 Agent 只能组织 admitted Claim、Source、Artifact、Pipeline run 与 Trace 摘要；导出包增加 manifest 与 checksum，但不能引入新科学事实。凭证、绝对路径和临时文件不进入任何投影。
+报告和 Project export 都从 Kernel 投影。报告 Agent 只能组织 admitted Claim、Source 与关联 Artifact；Pipeline run 只用于版本次序和反馈来源，不把 Runtime Trace 当作科学事实或报告内容。导出包增加 manifest、checksum 与 Kernel 持有的 Session 引用；Runtime Trace 作为独立运行审计文件交付，不参与报告事实投影。凭证、绝对路径和临时文件不进入任何投影。
 ## 案例策略
 Q001–Q125 全部运行轻量闭环并保留 `completed`、`partial`、`failed`、`waiting_human`。深度案例采用 1 个旗舰加 4 个差异化验证：q049 完整覆盖六阶段、报告与导出；q089 验证计算材料和正负路径；q021 验证文献冲突与恢复；q112 验证湿实验人工 Gate；q098 验证时序数据与人体数据边界。完成依据是 V1→反馈→V2、证据完整性、Trace 与终止原因，不是节点数量。
 ## 实现顺序
