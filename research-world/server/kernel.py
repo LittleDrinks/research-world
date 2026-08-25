@@ -20,6 +20,7 @@ from .artifacts import ArtifactStore
 from .observations import observation_submission
 from .presets import agent_draft, require_tools_ready
 from .reporting import assess_delivery
+from .report_delivery import render_html
 from .world import World, node_text
 
 
@@ -160,6 +161,29 @@ class ResearchKernel:
         artifacts = ArtifactStore(self._world.artifacts_root, project_id)
         record = artifacts.add(value["content"], value["media_type"].strip())
         return _artifact_view(record)
+
+    async def _command_publish_report(self, command: KernelCommand) -> dict:
+        values, project_id = command.values, _project_id(command)
+        _validate_fields(values, {"title", "facts"}, {"title", "facts"})
+        projection = await self._query_report_projection(KernelQuery("report_projection", project_id))
+        projection["facts"] = values["facts"]
+        assessment = assess_delivery(projection)
+        if not assessment["valid"]:
+            return {"status": "failed", "assessment": assessment}
+        title = _report_title(values["title"])
+        content = render_html(title, projection, assessment)
+        artifact = ArtifactStore(self._world.artifacts_root, project_id).add(content, "text/html")
+        self._world.publish_report(project_id, artifact["id"])
+        return {"status": "published", "title": title, "artifact": _artifact_view(artifact), "assessment": assessment}
+
+    def _command_save_report(self, command: KernelCommand) -> dict:
+        values, project_id = command.values, _project_id(command)
+        _validate_fields(values, {"title", "artifact_id"}, {"title", "artifact_id"})
+        title = _report_title(values["title"])
+        store = ArtifactStore(self._world.artifacts_root, project_id)
+        if store.get(values["artifact_id"])["media_type"] != "text/html" or not self._world.is_published_report(project_id, values["artifact_id"]):
+            raise ValueError("report artifact must be text/html")
+        return self._world.save_report(project_id, title, values["artifact_id"])
 
     def _command_claim(self, _command: KernelCommand) -> RunLease | None:
         run = self._world.claim_run()
@@ -325,6 +349,17 @@ class ResearchKernel:
             ArtifactStore(self._world.artifacts_root, project_id), artifact_id
         )
         return {"id": artifact_id, "content": content}
+
+    def _query_report_content(self, query: KernelQuery) -> bytes:
+        values, project_id = query.values, _project_id(query)
+        _validate_fields(values, {"artifact_id"}, {"artifact_id"})
+        if not self._world.is_published_report(project_id, values["artifact_id"]):
+            raise PermissionError("artifact is not a published report")
+        return ArtifactStore(self._world.artifacts_root, project_id).read(values["artifact_id"])
+
+    def _query_report(self, query: KernelQuery) -> dict:
+        _validate_fields(query.values, {"report_id"}, {"report_id"})
+        return self._world.report(_project_id(query), query.values["report_id"])
 
     def _submit_node(self, project_id: str, value: dict) -> dict:
         _validate_fields(value, {"kind", "payload", "parent_id"}, {"kind", "payload"})
@@ -499,6 +534,12 @@ def _project_id(value) -> str:
     if not value.project_id:
         raise ValueError("kernel operation requires project_id")
     return value.project_id
+
+
+def _report_title(value) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("report title must be non-empty text")
+    return value.strip()
 
 
 def _validate_project(value: dict) -> None:

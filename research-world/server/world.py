@@ -342,6 +342,23 @@ class World:
         sql = "SELECT n.* FROM thread_nodes t JOIN nodes n ON n.id=t.node_id WHERE t.thread_id=? ORDER BY t.pinned_at"
         return self._many(sql, (thread_id,))
 
+    def save_report(self, project_id: str, title: str, artifact_id: str) -> dict:
+        report_id, timestamp = f"report:{secrets.token_hex(12)}", now()
+        values = (report_id, project_id, title, artifact_id, timestamp)
+        with self.db.connect() as connection:
+            connection.execute("INSERT INTO reports VALUES(?,?,?,?,?)", values)
+        return self.report(project_id, report_id)
+
+    def publish_report(self, project_id: str, artifact_id: str) -> None:
+        with self.db.connect() as connection:
+            connection.execute("INSERT OR IGNORE INTO published_reports VALUES(?,?)", (artifact_id, project_id))
+
+    def is_published_report(self, project_id: str, artifact_id: str) -> bool:
+        return bool(self._rows("SELECT 1 FROM published_reports WHERE project_id=? AND artifact_id=?", (project_id, artifact_id)))
+
+    def report(self, project_id: str, report_id: str) -> dict:
+        return self._one("SELECT * FROM reports WHERE id=? AND project_id=?", (report_id, project_id))
+
     def _validate_thread_node(self, thread_id: str, node_id: str) -> None:
         thread, node = self.thread(thread_id), self.node(node_id)
         if thread["project_id"] != node["project_id"]:

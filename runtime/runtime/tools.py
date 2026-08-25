@@ -117,6 +117,19 @@ REPORT_PROJECTION = {
         },
     },
 }
+PUBLISH_REPORT = {
+    "type": "function",
+    "function": {
+        "name": "publish_report",
+        "description": "Publish a validated report through Research Kernel.",
+        "parameters": {
+            "type": "object",
+            "properties": {"title": {"type": "string"}, "facts": {"type": "array"}},
+            "required": ["title", "facts"],
+            "additionalProperties": False,
+        },
+    },
+}
 SUBMIT_OBSERVATION = {
     "type": "function",
     "function": {
@@ -175,6 +188,7 @@ BUILTINS = {
     "read_resource": READ_RESOURCE,
     "graph_query": GRAPH_QUERY,
     "report_projection": REPORT_PROJECTION,
+    "publish_report": PUBLISH_REPORT,
     "report_validate": REPORT_VALIDATE,
     "export_bibtex": EXPORT_BIBTEX,
     "submit_observation": SUBMIT_OBSERVATION,
@@ -186,6 +200,7 @@ BUILTIN_NAMES = {
     "read_resource": "读取引用节点",
     "graph_query": "查询研究图谱",
     "report_projection": "读取报告投影",
+    "publish_report": "发布科研报告",
     "report_validate": "校验科研报告",
     "export_bibtex": "导出 BibTeX",
     "submit_observation": "提交人工观测",
@@ -372,6 +387,15 @@ async def _report_projection(bound, session_id, values):
     return json.dumps(result, ensure_ascii=False)
 
 
+async def _publish_report(bound, session_id, values):
+    if bound.client is None:
+        raise RuntimeError("client does not provide report publication")
+    if set(values) != {"title", "facts"}:
+        raise ValueError("unexpected report publication fields")
+    result = await bound.client.ext_method("research/publish_report", values)
+    return json.dumps(result, ensure_ascii=False)
+
+
 async def _submit_observation(bound, session_id, values):
     if bound.client is None:
         raise RuntimeError("client does not provide observation submission")
@@ -397,6 +421,7 @@ _HANDLERS = {
     "report_validate": _report_validate,
     "export_bibtex": _export_bibtex,
     "report_projection": _report_projection,
+    "publish_report": _publish_report,
     "submit_observation": _submit_observation,
     "read_file": _read_file,
     "write_file": _write_file,

@@ -19,6 +19,9 @@ export const createThread = (projectId, body) => fetch(`/api/v1/projects/${enc(p
 export const getThread = (threadId) => fetch(`/api/v1/threads/${enc(threadId)}`).then(decode);
 export const restartThread = (threadId) => fetch(`/api/v1/threads/${enc(threadId)}/restart`, { method: "POST" }).then(decode);
 export const pinNode = (threadId, nodeId) => fetch(`/api/v1/threads/${enc(threadId)}/nodes`, json("POST", { node_id: nodeId })).then(decode);
+export const getReportProjection = (projectId) => fetch(`/api/v1/projects/${enc(projectId)}/report/projection`).then(decode);
+export const publishReport = (projectId, body) => fetch(`/api/v1/projects/${enc(projectId)}/report/publish`, json("POST", body)).then(decode);
+export const saveReport = (projectId, body) => fetch(`/api/v1/projects/${enc(projectId)}/report/save`, json("POST", body)).then(decode);
 
 export async function sendPrompt(threadId, message, onEvent) {
   const response = await fetch(`/api/v1/threads/${enc(threadId)}/prompts`, json("POST", { message }));

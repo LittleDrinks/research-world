@@ -7,6 +7,7 @@ import { Composer } from "../components/chat/Composer";
 import { MessageList } from "../components/chat/MessageList";
 import { ProfileDraftButton, ProfileDraftCard } from "../components/chat/ProfileDraft";
 import { ResearchControls } from "../components/chat/ResearchControls";
+import { ReportCard } from "../components/chat/ReportCard";
 import { useWorld } from "../context/WorldContext";
 import "../chat.css";
 
@@ -132,7 +133,7 @@ function ThreadView({ threadId }) {
   if (pending) messages.push({ role: "user", content: pending });
   return <section className="chat-page">
     <ThreadHeader detail={detail} sending={sending} onRestart={restart} />
-    <div className="chat-scroll"><MessageList messages={messages} streaming={sending ? streaming : ""} /></div>
+    <div className="chat-scroll"><MessageList messages={messages} streaming={sending ? streaming : ""} /><div className="chat-report"><ReportCard projectId={data.active_project_id} title={data.projects.find((item) => item.id === data.active_project_id)?.name || "Research report"} /></div></div>
     {specInvalid && <SpecInvalidNotice onRestart={restart} />}
     {draft && <ProfileDraftCard key={draft.nonce} draft={draft} onCancel={() => setDraft(null)} />}
     <Composer pinnedNodes={detail.nodes} sending={sending} onSend={send} onPin={pin}

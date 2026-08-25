@@ -5,7 +5,7 @@ from base64 import b64decode
 from binascii import Error as Base64Error
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response, StreamingResponse
 
 from .config import ROOT
 from .kernel import KernelCommand, KernelQuery, ResearchKernel, default_kernel
@@ -293,6 +293,27 @@ def report_routes(app, kernel) -> None:
     async def export_bibtex(project_id: str, artifact_id: str):
         values = {"artifact_id": artifact_id}
         return await kernel.query(KernelQuery("report_bibtex", project_id, values))
+
+    @app.post("/api/v1/projects/{project_id}/report/publish", status_code=201)
+    async def publish_report(project_id: str, request: Request):
+        return await kernel.command(KernelCommand("publish_report", project_id, await request.json()))
+
+    @app.post("/api/v1/projects/{project_id}/report/save", status_code=201)
+    async def save_report(project_id: str, request: Request):
+        return await kernel.command(KernelCommand("save_report", project_id, await request.json()))
+
+    @app.get("/api/v1/projects/{project_id}/report/content/{artifact_id}")
+    async def report_preview(project_id: str, artifact_id: str, download: bool = False):
+        content = await kernel.query(KernelQuery("report_content", project_id, {"artifact_id": artifact_id}))
+        headers = {"Content-Security-Policy": "sandbox; default-src 'none'; style-src 'unsafe-inline'"}
+        if download:
+            headers["Content-Disposition"] = 'attachment; filename="report.html"'
+            return Response(content, media_type="text/html", headers=headers)
+        return HTMLResponse(content, headers=headers)
+
+    @app.get("/api/v1/projects/{project_id}/report/{report_id}")
+    async def read_report(project_id: str, report_id: str):
+        return await kernel.query(KernelQuery("report", project_id, {"report_id": report_id}))
 
 
 def _artifact_values(value: dict) -> dict:

@@ -29,6 +29,35 @@ test("renders project thread messages and sends via the prompts stream", async (
 });
 
 
+test("publishes a validated report card, previews, downloads and saves a version", async ({ page }) => {
+  await mockChat(page);
+  await page.route(/\/report\/projection$/, (route) => route.fulfill({ json: { facts: [{ text: "42 K", claim_id: "claim:1", source_ids: ["node:s"] }] } }));
+  await page.route(/\/report\/publish$/, (route) => route.fulfill({ status: 201, json: { status: "published", title: "测试项目", artifact: { id: "artifact:html", created_at: "2026-08-26T00:00:00Z" }, assessment: { delivery_level: 4, minimum_source_level: "published" } } }));
+  await page.route(/\/report\/save$/, (route) => route.fulfill({ status: 201, json: { id: "report:v1" } }));
+  await page.goto("/chat/thread%3At1");
+  await page.getByRole("button", { name: "生成报告" }).click();
+  await expect(page.getByText("已校验")).toBeVisible();
+  await expect(page.getByTitle("报告预览")).toHaveAttribute("sandbox", "");
+  await expect(page.getByRole("link", { name: /下载 HTML/ })).toHaveAttribute("download", "");
+  await page.getByLabel("报告名称").fill("V1");
+  await page.getByRole("button", { name: "保存" }).click();
+  await expect(page.getByText("已保存版本 report:v1")).toBeVisible();
+});
+
+
+test("keeps failed citation reports retryable without preview links on mobile", async ({ page }) => {
+  await mockChat(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route(/\/report\/projection$/, (route) => route.fulfill({ json: { facts: [] } }));
+  await page.route(/\/report\/publish$/, (route) => route.fulfill({ status: 201, json: { status: "failed", assessment: { gaps: [{ code: "source_missing", path: "facts[0]" }] } } }));
+  await page.goto("/chat/thread%3At1");
+  await page.getByRole("button", { name: "生成报告" }).click();
+  await expect(page.getByRole("alert")).toContainText("source_missing: facts[0]");
+  await expect(page.getByRole("link", { name: /下载 HTML/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "重试" })).toBeVisible();
+});
+
+
 test("keeps the composer IME-safe", async ({ page }) => {
   let sends = 0;
   await mockChat(page);

@@ -196,6 +196,8 @@ class KernelClient:
             return await self._report_validate(params)
         if extension == "research/report_projection":
             return await self._report_projection(params)
+        if extension == "research/publish_report":
+            return await self._publish_report(params)
         if extension == "research/export_bibtex":
             return await self._export_bibtex(params)
         if extension != "research/graph_query":
@@ -237,6 +239,13 @@ class KernelClient:
 
         return await self.kernel.query(
             KernelQuery("report_projection", self.project_id)
+        )
+
+    async def _publish_report(self, params: dict) -> dict:
+        from .kernel import KernelCommand
+
+        return await self.kernel.command(
+            KernelCommand("publish_report", self.project_id, params)
         )
 
     async def _export_bibtex(self, params: dict) -> dict:

@@ -149,6 +149,17 @@ async def test_report_projection_crosses_the_client_boundary(tmp_path):
     assert client.calls == [("research/report_projection", {})]
 
 
+async def test_publish_report_crosses_the_client_boundary(tmp_path):
+    client = KernelClient()
+    values = {"title": "Orbit", "facts": []}
+    async with ToolBox(tmp_path, {}, ("publish_report",), {}, client) as tools:
+        content, failed = await tools.call("session", "publish_report", json.dumps(values))
+
+    assert failed is False
+    assert json.loads(content)["status"] == "failed"
+    assert client.calls == [("research/publish_report", values)]
+
+
 async def test_submit_observation_crosses_the_client_boundary(tmp_path):
     client = KernelClient()
     value = observation()
@@ -164,13 +175,14 @@ async def test_submit_observation_crosses_the_client_boundary(tmp_path):
 
 async def test_kernel_tools_are_exposed_only_when_selected(tmp_path):
     async with ToolBox(
-        tmp_path, {}, ("report_projection", "report_validate", "submit_observation"), {}, None
+        tmp_path, {}, ("report_projection", "report_validate", "publish_report", "submit_observation"), {}, None
     ) as selected:
         selected_names = tool_names(selected)
     async with ToolBox(tmp_path, {}, (), {}, None) as omitted:
         omitted_names = tool_names(omitted)
 
     assert "report_projection" in selected_names
+    assert "publish_report" in selected_names
     assert "report_validate" in selected_names
     assert "submit_observation" in selected_names
     assert "report_projection" not in omitted_names
@@ -286,6 +298,8 @@ class KernelClient:
             return {"facts": [], "claims": [], "sources": []}
         if method == "research/report_validate":
             return {"valid": True, "delivery_level": 4}
+        if method == "research/publish_report":
+            return {"status": "failed", "assessment": {"gaps": []}}
         if method == "research/export_bibtex":
             return {"id": params["artifact_id"], "content": "@article{x}"}
         if method == "research/submit_observation":
