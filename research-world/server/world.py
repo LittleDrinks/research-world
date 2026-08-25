@@ -47,6 +47,7 @@ class World:
     def create_project(
         self, name: str, root: Path, title: str, question: str, assembly: list[str] | None = None
     ) -> dict:
+        title = validate_title(title)
         project_id = f"project:{secrets.token_hex(12)}"
         names = json.dumps(assembly_names(assembly))
         values = (project_id, name, str(root.resolve()), question, 0, names, now())

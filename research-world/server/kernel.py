@@ -20,6 +20,7 @@ from .artifacts import ArtifactStore
 from .observations import observation_submission
 from .presets import agent_draft, require_tools_ready
 from .reporting import assess_delivery
+from .titles import validate_title
 from .world import World, node_text
 
 
@@ -391,7 +392,7 @@ class ResearchKernel:
         active = {"queued", "running", "waiting_human"}
         return {
             **project,
-            "title": project["name"],
+            "title": self._world.nodes(project["id"])[0]["payload"]["title"],
             "node_count": len(self._world.nodes(project["id"])),
             "run_count": len(runs),
             "active_run_count": sum(run["status"] in active for run in runs),
@@ -505,6 +506,7 @@ def _validate_project(value: dict) -> None:
     _validate_fields(value, {"name", "title", "question"}, {"name", "title", "question"})
     if not all(isinstance(value[key], str) and value[key].strip() for key in value):
         raise ValueError("project name, title and question cannot be empty")
+    validate_title(value["title"])
 
 
 def _allocate_workspace(projects_root: Path) -> Path:

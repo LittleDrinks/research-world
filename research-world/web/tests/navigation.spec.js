@@ -76,10 +76,11 @@ test("creates a project posting the explicit question title", async ({ page }) =
   });
   await page.goto("/projects");
   await page.locator(".projects-bar").getByRole("button", { name: "新建项目" }).click();
-  await page.getByLabel("项目名称").fill("新课题");
+  await page.getByLabel("项目名称").fill("new-study");
+  await page.getByLabel("问题标题").fill("新课题");
   await page.getByLabel("研究问题").fill("验证假设 X");
   await page.getByRole("button", { name: "创建项目" }).click();
-  await expect.poll(() => body).toEqual({ name: "新课题", title: "新课题", question: "验证假设 X" });
+  await expect.poll(() => body).toEqual({ name: "new-study", title: "新课题", question: "验证假设 X" });
   await expect(page).toHaveURL(/\/map$/);
 });
 
@@ -95,7 +96,8 @@ test("stays on project selection when the created project cannot load", async ({
     json: { id: "project:new", name: "新课题", question: "验证假设 X" } }));
   await page.goto("/projects");
   await page.getByRole("button", { name: "新建项目" }).first().click();
-  await page.getByLabel("项目名称").fill("新课题");
+  await page.getByLabel("项目名称").fill("new-study");
+  await page.getByLabel("问题标题").fill("新课题");
   await page.getByLabel("研究问题").fill("验证假设 X");
   await page.getByRole("button", { name: "创建项目" }).click();
   await expect(page).toHaveURL(/\/projects$/);

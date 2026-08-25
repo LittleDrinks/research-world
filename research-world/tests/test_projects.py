@@ -35,6 +35,17 @@ def test_project_api_rejects_browser_supplied_root(world, tmp_path):
     assert world.projects() == []
 
 
+def test_project_api_rejects_title_longer_than_twelve_tokens(world, tmp_path):
+    api, _ = client(world, tmp_path)
+    response = api.post("/api/v1/projects", json={
+        "name": "study", "title": "a b c d e f g h i j k l m", "question": "Why?"
+    })
+
+    assert response.status_code == 400
+    assert "12-token" in response.json()["detail"]
+    assert world.projects() == []
+
+
 def test_cli_imports_q049_with_its_explicit_title(world, tmp_path):
     kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
     source = Path(__file__).parents[1] / "projects/q049/project.json"

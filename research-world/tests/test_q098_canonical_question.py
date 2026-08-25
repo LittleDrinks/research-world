@@ -19,7 +19,7 @@ def create_project(kernel, seed) -> dict:
         kernel.command(
             KernelCommand(
                 "create_project",
-                values={key: seed[key] for key in ("name", "question")},
+                values={key: seed[key] for key in ("name", "title", "question")},
             )
         )
     )
