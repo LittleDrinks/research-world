@@ -3,16 +3,14 @@ from __future__ import annotations
 import json
 import os
 import re
-import tomllib
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from .config import codex_config_path
-from .providers import CodexProvider, OpenAIProvider
-from .providers.base import Emit, EndpointUnavailable, ModelResult, Provider
+from .providers import OpenAIProvider
+from .providers.base import Provider
 from .types import CapabilityNotFound
 
 ENDPOINT_ID = re.compile(r"^[a-z][a-z0-9-]*$")
@@ -49,7 +47,7 @@ class Endpoint:
             "models": list(self.models),
             "embedding_models": list(self.embedding_models),
             "priority": self.priority,
-            "available": self.provider is not None,
+            "available": self.provider is not None or self.adapter == "codex",
         }
 
 
@@ -70,13 +68,7 @@ class EndpointPool:
         return self._require(endpoint_id, model, "models", "model")
 
     def require_embedding(self, endpoint_id: str, model: str) -> Endpoint:
-        return self._require(
-            endpoint_id, model, "embedding_models", "embedding model"
-        )
-
-    def candidates(self, endpoint_id: str, model: str) -> list[Endpoint]:
-        endpoint = self.require(endpoint_id, model)
-        return self._candidates(endpoint, model, "models")
+        return self._require(endpoint_id, model, "embedding_models", "embedding model")
 
     def _require(self, endpoint_id, model, field, capability) -> Endpoint:
         endpoint = self._values.get(endpoint_id)
@@ -86,7 +78,7 @@ class EndpointPool:
             raise CapabilityNotFound(
                 f"{capability} is not available on endpoint: {model}"
             )
-        if not self._candidates(endpoint, model, field):
+        if endpoint.provider is None and endpoint.adapter != "codex":
             raise CapabilityNotFound(f"endpoint is not available: {endpoint_id}")
         return endpoint
 
@@ -100,67 +92,25 @@ class EndpointPool:
 
     def default_for(self, adapter: str) -> Endpoint:
         endpoint = next(
-            (item for item in self._ordered() if item.adapter == adapter and item.provider and item.models),
+            (
+                item
+                for item in self._ordered()
+                if item.adapter == adapter
+                and item.public()["available"]
+                and item.models
+            ),
             None,
         )
         if endpoint is None:
             raise CapabilityNotFound("no model endpoint is available for runtime")
         return endpoint
 
-    async def generate(
-        self, endpoint_id, model, messages, tools, emit: Emit, context
-    ) -> tuple[str, ModelResult]:
-        endpoint = self.require(endpoint_id, model)
-        last_error = None
-        for candidate in self._candidates(endpoint, model, "models"):
-            relay = _Emission(emit)
-            try:
-                result = await candidate.provider.generate(
-                    model, messages, tools, relay, context
-                )
-                return candidate.id, result
-            except EndpointUnavailable as error:
-                if relay.sent:
-                    raise
-                last_error = error
-        raise last_error or CapabilityNotFound(
-            f"endpoint is not available: {endpoint_id}"
-        )
-
     async def embed(self, endpoint_id: str, model: str, texts: list[str]):
         endpoint = self.require_embedding(endpoint_id, model)
-        last_error = None
-        for candidate in self._candidates(endpoint, model, "embedding_models"):
-            try:
-                return await candidate.provider.embed(model, texts)
-            except EndpointUnavailable as error:
-                last_error = error
-        raise last_error or CapabilityNotFound(
-            f"endpoint is not available: {endpoint_id}"
-        )
+        return await endpoint.provider.embed(model, texts)
 
     def _ordered(self) -> list[Endpoint]:
         return sorted(self._values.values(), key=lambda item: (item.priority, item.id))
-
-    def _candidates(self, endpoint: Endpoint, model: str, field: str) -> list[Endpoint]:
-        values = [
-            item
-            for item in self._ordered()
-            if item.adapter == endpoint.adapter
-            and model in getattr(item, field)
-            and item.provider
-        ]
-        return sorted(values, key=lambda item: item.id != endpoint.id)
-
-
-class _Emission:
-    def __init__(self, emit: Emit):
-        self.emit = emit
-        self.sent = False
-
-    async def __call__(self, text: str) -> None:
-        self.sent = True
-        await self.emit(text)
 
 
 def provider_endpoint(
@@ -177,9 +127,7 @@ def provider_endpoint(
 
 
 def load_endpoints() -> list[Endpoint]:
-    values = [_openai_endpoint(row) for row in _endpoint_rows()]
-    codex = _codex_endpoint()
-    return [*values, *([codex] if codex else [])]
+    return [_openai_endpoint(row) for row in _endpoint_rows()]
 
 
 def _endpoint_rows() -> list[dict[str, Any]]:
@@ -276,18 +224,3 @@ def _models(value) -> bool:
         and all(isinstance(item, str) and item for item in value)
         and len(set(value)) == len(value)
     )
-
-
-def _codex_endpoint() -> Endpoint | None:
-    provider = CodexProvider.detected()
-    if provider is None:
-        return None
-    model = os.getenv("CODEX_MODEL") or _codex_model() or "gpt-5.6-sol"
-    return Endpoint("codex", "Codex CLI", "codex", (model,), (), 200, provider)
-
-
-def _codex_model() -> str | None:
-    path = codex_config_path()
-    if not Path(path).is_file():
-        return None
-    return tomllib.loads(Path(path).read_text(encoding="utf-8")).get("model")

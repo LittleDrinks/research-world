@@ -14,7 +14,13 @@ from acp.interfaces import Client
 from . import catalog
 from .adapters import ToolDefinition, discover_adapters
 from .endpoints import Endpoint, EndpointPool, load_endpoints
-from .runtimes import RuntimeAdapter, RuntimePool, load_runtimes
+from .runtimes import (
+    CodexRuntimeAdapter,
+    RuntimeAdapter,
+    RuntimePool,
+    codex_endpoint,
+    load_runtimes,
+)
 from .skills import Skill, discover_skills, skill_index
 from .tools import ToolBox
 from .trace import TraceStore, inspect_trace
@@ -39,10 +45,10 @@ class Runtime:
     ):
         root = Path(data_root or os.getenv("RUNTIME_DATA", "./data"))
         self.trace = TraceStore(root / "sessions")
-        values = endpoints if endpoints is not None else load_endpoints()
-        self.endpoints = EndpointPool(values)
         adapters = runtimes if runtimes is not None else load_runtimes()
         self.runtimes = RuntimePool(adapters)
+        values = endpoints if endpoints is not None else load_endpoints()
+        self.endpoints = EndpointPool(_runtime_endpoints(values, adapters))
         self.tool_definitions = tuple(tool_definitions)
         self._locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._cancelled: set[str] = set()
@@ -109,9 +115,9 @@ class Runtime:
     def cancel(self, session_id: str) -> None:
         meta = self._events(session_id)[0]["data"]
         self._cancelled.add(session_id)
-        self.runtimes.require(
-            AgentSpec.parse(meta["agent_spec"]).runtime
-        ).cancel(session_id)
+        self.runtimes.require(AgentSpec.parse(meta["agent_spec"]).runtime).cancel(
+            session_id
+        )
 
     async def _prompt(self, session_id, blocks, client, emit):
         events = self._events(session_id)
@@ -178,9 +184,9 @@ class Runtime:
 
     async def _generate(self, session_id, spec, meta, messages, tools, emit):
         context = _provider_context(meta, self._events(session_id))
-        candidates = self.endpoints.candidates(spec.endpoint, spec.model)
+        endpoint = self.endpoints.require(spec.endpoint, spec.model)
         endpoint_id, result = await self.runtimes.require(spec.runtime).generate(
-            session_id, candidates, spec.model, messages, tools, emit, context
+            session_id, endpoint, spec.model, messages, tools, emit, context
         )
         return endpoint_id, result
 
@@ -243,6 +249,23 @@ def _workspace(value: str) -> Path:
     return path
 
 
+def _codex_endpoints(adapters: list[RuntimeAdapter]) -> list[Endpoint]:
+    values = [item for item in adapters if isinstance(item, CodexRuntimeAdapter)]
+    return [codex_endpoint(_codex_model()) for _ in values]
+
+
+def _runtime_endpoints(values, adapters) -> list[Endpoint]:
+    existing = {item.id for item in values}
+    return [
+        *values,
+        *(item for item in _codex_endpoints(adapters) if item.id not in existing),
+    ]
+
+
+def _codex_model() -> str:
+    return os.getenv("CODEX_MODEL", "gpt-5.6-sol")
+
+
 def _session_id(value: str | None) -> str:
     session_id = value or f"s-{uuid.uuid4().hex}"
     if not re.fullmatch(r"s-[A-Za-z0-9_-]{1,64}", session_id):
@@ -277,7 +300,9 @@ def _validate_spec(spec: AgentSpec, recognized: dict) -> None:
     endpoint_ids = {item["id"] for item in recognized["endpoints"] if item["available"]}
     model_pairs = {(item["endpoint"], item["id"]) for item in recognized["models"]}
     _require(spec.endpoint, endpoint_ids, "endpoint")
-    endpoint = next(item for item in recognized["endpoints"] if item["id"] == spec.endpoint)
+    endpoint = next(
+        item for item in recognized["endpoints"] if item["id"] == spec.endpoint
+    )
     if endpoint["adapter"] != spec.runtime.id:
         raise CapabilityNotFound("endpoint is not available for runtime")
     _require((spec.endpoint, spec.model), model_pairs, "model")
@@ -308,7 +333,8 @@ def _session_meta(spec, workspace, value, skills, tool_plan, capabilities):
 
 def _capability_snapshot(spec, recognized):
     runtime = next(
-        item for item in recognized["runtimes"]
+        item
+        for item in recognized["runtimes"]
         if (item["id"], item["realm"]) == (spec.runtime.id, spec.runtime.realm)
     )
     return {"runtime": runtime}

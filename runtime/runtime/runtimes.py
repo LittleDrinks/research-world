@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from .providers.base import Emit, EndpointUnavailable
+from .endpoints import Endpoint
 from .providers.codex import CodexProvider
 from .types import CapabilityNotFound
 
@@ -33,47 +33,49 @@ class RuntimeDescriptor:
 class RuntimeAdapter:
     def __init__(self, descriptor: RuntimeDescriptor):
         self.descriptor = descriptor
-        self._sessions: dict[str, object] = {}
-        self._cancelled: set[str] = set()
 
     def accepts(self, endpoint) -> bool:
         return endpoint.adapter == self.descriptor.id
 
     async def generate(
-        self, session_id, endpoints, model, messages, tools, emit, context
+        self, session_id, endpoint, model, messages, tools, emit, context
     ):
-        if not all(self.accepts(endpoint) for endpoint in endpoints):
+        if not self.accepts(endpoint) or endpoint.provider is None:
             raise CapabilityNotFound("endpoint is not available for runtime")
-        return await self._generate(
-            session_id, endpoints, model, messages, tools, emit, context
-        )
+        result = await endpoint.provider.generate(model, messages, tools, emit, context)
+        return endpoint.id, result
 
-    async def _generate(
-        self, session_id, endpoints, model, messages, tools, emit, context
+    def cancel(self, session_id: str) -> None:
+        return None
+
+
+class CodexRuntimeAdapter(RuntimeAdapter):
+    def __init__(self, provider: CodexProvider):
+        super().__init__(_codex_descriptor(provider))
+        self.provider = provider
+        self._processes: dict[str, object] = {}
+        self._cancelled: set[str] = set()
+
+    async def generate(
+        self, session_id, endpoint, model, messages, tools, emit, context
     ):
-        last_error = None
-        for endpoint in endpoints:
-            self._sessions[session_id] = endpoint.provider
-            relay = _Emission(emit)
-            try:
-                result = await endpoint.provider.generate(
-                    model, messages, tools, relay, context
-                )
-                return endpoint.id, result
-            except EndpointUnavailable as error:
-                if relay.sent:
-                    raise
-                last_error = error
-            finally:
-                self._sessions.pop(session_id, None)
-        self._cancelled.discard(session_id)
-        raise last_error
+        if not self.accepts(endpoint):
+            raise CapabilityNotFound("endpoint is not available for runtime")
+        process = await self.provider.start(model, context)
+        self._processes[session_id] = process
+        if session_id in self._cancelled:
+            self.provider.cancel(process)
+        try:
+            result = await self.provider.collect(process, messages, emit)
+            return endpoint.id, result
+        finally:
+            self._processes.pop(session_id, None)
+            self._cancelled.discard(session_id)
 
     def cancel(self, session_id: str) -> None:
         self._cancelled.add(session_id)
-        cancel = getattr(self._sessions.get(session_id), "cancel", None)
-        if cancel:
-            cancel(session_id)
+        if process := self._processes.get(session_id):
+            self.provider.cancel(process)
 
 
 class RuntimePool:
@@ -101,22 +103,19 @@ class RuntimePool:
 def load_runtimes() -> list[RuntimeAdapter]:
     values = [RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM))]
     if provider := CodexProvider.detected():
-        values.append(RuntimeAdapter(_codex_descriptor(provider)))
+        values.append(CodexRuntimeAdapter(provider))
     return values
 
 
 def _codex_descriptor(provider: CodexProvider) -> RuntimeDescriptor:
     return RuntimeDescriptor(
-        "codex", REALM, provider.executable, provider.version,
-        capabilities=("non-interactive", "streaming", "resume"),
+        "codex",
+        REALM,
+        provider.executable,
+        provider.version,
+        capabilities=("non-interactive", "resume"),
     )
 
 
-class _Emission:
-    def __init__(self, emit: Emit):
-        self.emit = emit
-        self.sent = False
-
-    async def __call__(self, text: str) -> None:
-        self.sent = True
-        await self.emit(text)
+def codex_endpoint(model: str) -> Endpoint:
+    return Endpoint("codex", "Codex CLI", "codex", (model,), (), 200, None)

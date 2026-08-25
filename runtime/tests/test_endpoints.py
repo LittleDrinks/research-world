@@ -59,19 +59,18 @@ def configured_row(**values):
     return row
 
 
-async def test_fails_over_to_prioritized_endpoint_for_same_model(tmp_path):
+async def test_selected_endpoint_does_not_fall_back_for_same_model(tmp_path):
     primary = FakeProvider([EndpointUnavailable("primary unavailable")])
     backup = FakeProvider([{"role": "assistant", "content": "recovered"}])
     runtime = failover_runtime(tmp_path, primary, backup)
 
-    result, view = await prompt(runtime, tmp_path)
+    with pytest.raises(EndpointUnavailable, match="primary unavailable"):
+        await prompt(runtime, tmp_path)
+    assert len(primary.requests) == 1
+    assert not backup.requests
 
-    assert result["result_text"] == "recovered"
-    assert response_endpoint(view) == "backup"
-    assert len(primary.requests) == len(backup.requests) == 1
 
-
-async def test_orders_fallback_endpoints_by_priority(tmp_path):
+async def test_selected_endpoint_ignores_priority_of_other_endpoints(tmp_path):
     primary = FakeProvider([EndpointUnavailable("primary unavailable")])
     early = FakeProvider([{"role": "assistant", "content": "early"}])
     late = FakeProvider([{"role": "assistant", "content": "late"}])
@@ -82,10 +81,10 @@ async def test_orders_fallback_endpoints_by_priority(tmp_path):
         endpoint(early, "early", ("shared-model",), 20),
     )
 
-    result, view = await prompt(runtime, tmp_path)
-
-    assert result["result_text"] == "early"
-    assert response_endpoint(view) == "early"
+    with pytest.raises(EndpointUnavailable, match="primary unavailable"):
+        await prompt(runtime, tmp_path)
+    assert len(primary.requests) == 1
+    assert not early.requests
     assert not late.requests
 
 
@@ -172,7 +171,7 @@ async def test_embedding_requires_an_endpoint_id(tmp_path):
     assert vectors == [[0.0], [1.0]]
 
 
-async def test_embedding_fails_over_for_same_model(tmp_path):
+async def test_embedding_uses_selected_endpoint_only(tmp_path):
     primary = FailedEmbeddingProvider([])
     backup = FakeProvider([])
     runtime = runtime_with(
@@ -181,20 +180,21 @@ async def test_embedding_fails_over_for_same_model(tmp_path):
         endpoint(backup, "backup", ("backup-chat",), 20, ("embed-model",)),
     )
 
-    vectors = await runtime.embed("primary", "embed-model", ["proof"])
+    with pytest.raises(EndpointUnavailable, match="embedding unavailable"):
+        await runtime.embed("primary", "embed-model", ["proof"])
+    assert len(primary.embedding_requests) == 1
+    assert not backup.embedding_requests
 
-    assert vectors == [[0.0]]
-    assert len(primary.embedding_requests) == len(backup.embedding_requests) == 1
 
-
-async def test_generation_rejects_embedding_only_model():
+async def test_generation_rejects_embedding_only_model(tmp_path):
     provider = FakeProvider([{"role": "assistant", "content": "wrong"}])
-    pool = EndpointPool(
-        [endpoint(provider, "primary", ("chat-model",), 10, ("embed-model",))]
+    runtime = runtime_with(
+        tmp_path, endpoint(provider, "primary", ("chat-model",), 10, ("embed-model",))
     )
-
     with pytest.raises(CapabilityNotFound, match="model is not available"):
-        await pool.generate("primary", "embed-model", [], [], Collector(), {})
+        await runtime.launch(
+            {"workspace": str(tmp_path), "agent_spec": spec("primary", "embed-model")}
+        )
 
     assert not provider.requests
 
