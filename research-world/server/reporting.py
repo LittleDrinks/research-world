@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime
 
-
 SOURCE_LEVELS = {"preprint": 1, "conference": 2, "published": 3, "primary_data": 4}
 
 
@@ -54,7 +53,18 @@ def _fact_gap(index: int, fact: dict, claims: dict, sources: dict) -> list[dict]
 
 def _claim_match_gaps(fact: dict, claim: dict, path: str) -> list[dict]:
     checks = (("text", "fact_text_mismatch"), ("source_ids", "claim_source_mismatch"))
-    return [_gap(code, f"{path}.{field}", fact.get(field)) for field, code in checks if fact.get(field) != claim.get(field)]
+    gaps = [_gap(code, f"{path}.{field}", fact.get(field)) for field, code in checks if fact.get(field) != claim.get(field)]
+    return gaps + _claim_evidence_gaps(claim, path)
+
+
+def _claim_evidence_gaps(claim: dict, path: str) -> list[dict]:
+    checks = (("life_state", "claim_not_admitted", "admitted"), ("verdict", "claim_not_supported", "supported"))
+    gaps = [_gap(code, f"{path}.claim_id", claim.get(field)) for field, code, expected in checks if claim.get(field) != expected]
+    if not _string_list(claim.get("source_ids")):
+        gaps.append(_gap("claim_sources_missing", f"{path}.source_ids", claim.get("source_ids")))
+    if not _string_list(claim.get("evidence_ids")):
+        gaps.append(_gap("claim_evidence_missing", f"{path}.claim_id", claim.get("id")))
+    return gaps
 
 
 def _source_gaps(fact: dict, sources: dict, path: str) -> list[dict]:
@@ -115,3 +125,7 @@ def _gap(code: str, path: str, value=None) -> dict:
 
 def _text(value) -> bool:
     return isinstance(value, str) and bool(value.strip())
+
+
+def _string_list(value) -> bool:
+    return isinstance(value, list) and bool(value) and all(_text(item) for item in value)

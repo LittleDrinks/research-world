@@ -32,7 +32,8 @@ test("renders project thread messages and sends via the prompts stream", async (
 test("publishes a validated report card, previews, downloads and saves a version", async ({ page }) => {
   await mockChat(page);
   const publication = { id: "publication:p1", thread_id: "thread:t1", created_at: "2026-08-26T00:00:00Z" };
-  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 201, json: { status: "published", title: "测试项目", publication, assessment: { delivery_level: 4, minimum_source_level: "published" } } }));
+  const stages = ["projection", "citation_validation", "rendering", "output_validation", "persistence"].map((name) => ({ name, status: "completed" }));
+  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 201, json: { status: "published", title: "测试项目", publication, stages, assessment: { delivery_level: 4, minimum_source_level: "published" } } }));
   await page.route(/\/threads\/thread%3At1\/report\/save$/, (route) => route.fulfill({ status: 201, json: { id: "report:v1" } }));
   await page.goto("/chat/thread%3At1");
   await page.getByRole("button", { name: "生成报告" }).click();
@@ -48,7 +49,7 @@ test("publishes a validated report card, previews, downloads and saves a version
 test("keeps failed citation reports retryable without preview links on mobile", async ({ page }) => {
   await mockChat(page);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 201, json: { status: "failed", assessment: { gaps: [{ code: "source_missing", path: "facts[0]", value: "node:s" }] } } }));
+  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 201, json: { status: "failed", stages: [{ name: "projection", status: "completed" }], assessment: { gaps: [{ code: "source_missing", path: "facts[0]", value: "node:s" }] } } }));
   await page.goto("/chat/thread%3At1");
   await page.getByRole("button", { name: "生成报告" }).click();
   await expect(page.getByRole("alert")).toContainText("source_missing: facts[0] = \"node:s\"");

@@ -250,7 +250,7 @@ class ToolBox:
         try:
             for tool_id in self.selected:
                 await self._open(tool_id)
-        except BaseException:  # noqa: BLE001 - open failure rolls back opened tools
+        except BaseException:
             await self._rollback()
             raise
         return self
@@ -374,7 +374,9 @@ async def _publish_report(bound, session_id, values):
         raise RuntimeError("client does not provide report publication")
     if set(values) != {"title"}:
         raise ValueError("unexpected report publication fields")
-    result = await bound.client.ext_method("research/publish_report", values)
+    result = await bound.client.ext_method(
+        "research/publish_report", {**values, "_session_id": session_id}
+    )
     return json.dumps(result, ensure_ascii=False)
 
 

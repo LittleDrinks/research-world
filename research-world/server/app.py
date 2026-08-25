@@ -5,7 +5,13 @@ from base64 import b64decode
 from binascii import Error as Base64Error
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response, StreamingResponse
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+    JSONResponse,
+    Response,
+    StreamingResponse,
+)
 
 from .config import ROOT
 from .kernel import KernelCommand, KernelQuery, ResearchKernel, default_kernel
@@ -37,7 +43,6 @@ def register_routes(app, kernel) -> None:
     pipeline_control_routes(app, kernel)
     library_routes(app)
     graph_tool_routes(app, kernel)
-    report_routes(app, kernel)
     frontend_routes(app)
 
 
@@ -180,12 +185,12 @@ def thread_pin_routes(app, kernel) -> None:
 def thread_report_routes(app, kernel) -> None:
     @app.post("/api/v1/threads/{thread_id}/report/publish", status_code=201)
     async def publish_thread_report(thread_id: str, request: Request):
-        values = {"thread_id": thread_id, **await request.json()}
+        values = {"thread_id": thread_id, **_report_fields(await request.json(), {"title"})}
         return await kernel.command(KernelCommand("thread_publish_report", values=values))
 
     @app.post("/api/v1/threads/{thread_id}/report/save", status_code=201)
     async def save_thread_report(thread_id: str, request: Request):
-        values = {"thread_id": thread_id, **await request.json()}
+        values = {"thread_id": thread_id, **_report_fields(await request.json(), {"title", "publication_id"})}
         return await kernel.command(KernelCommand("save_report", values=values))
 
     @app.get("/api/v1/threads/{thread_id}/report/{publication_id}/content")
@@ -303,27 +308,19 @@ def graph_tool_routes(app, kernel) -> None:
         raise HTTPException(400, "unknown action")
 
 
-def report_routes(app, kernel) -> None:
-    @app.get("/api/v1/projects/{project_id}/report/projection")
-    async def report_projection(project_id: str):
-        return await kernel.query(KernelQuery("report_projection", project_id))
-
-    @app.get("/api/v1/projects/{project_id}/report/bibtex")
-    async def export_bibtex(project_id: str, artifact_id: str):
-        values = {"artifact_id": artifact_id}
-        return await kernel.query(KernelQuery("report_bibtex", project_id, values))
-
-    @app.get("/api/v1/projects/{project_id}/report/{report_id}")
-    async def read_report(project_id: str, report_id: str):
-        return await kernel.query(KernelQuery("report", project_id, {"report_id": report_id}))
-
-
 def report_response(content: bytes, download: bool):
     headers = {"Content-Security-Policy": "sandbox; default-src 'none'; style-src 'unsafe-inline'"}
     if download:
         headers["Content-Disposition"] = 'attachment; filename="report.html"'
         return Response(content, media_type="text/html", headers=headers)
     return HTMLResponse(content, headers=headers)
+
+
+def _report_fields(value: object, fields: set[str]) -> dict:
+    if not isinstance(value, dict) or set(value) != fields:
+        names = ", ".join(sorted(fields))
+        raise ValueError(f"report request requires only: {names}")
+    return value
 
 
 def _artifact_values(value: dict) -> dict:
@@ -362,6 +359,8 @@ def sse_frame(event: str, data) -> str:
 def frontend_routes(app: FastAPI) -> None:
     @app.get("/{path:path}", include_in_schema=False)
     async def frontend(path: str):
+        if path.startswith("api/"):
+            raise HTTPException(404, "not found")
         dist = ROOT / "web" / "dist"
         asset = dist / path
         if path and asset.is_file():

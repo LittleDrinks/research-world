@@ -25,7 +25,7 @@ async function publishReport(threadId, title, setState) {
 
 function publishResult(result, setState) {
   if (result.status === "failed") return setState((value) => ({ ...value, error: result.assessment.gaps }));
-  setState((value) => ({ ...value, stage: 4, result }));
+  setState((value) => ({ ...value, stage: result.stages.length - 1, result }));
 }
 
 

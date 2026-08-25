@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from html import escape
+import re
+from html import escape, unescape
+
+SENSITIVE_RENDERED = (
+    ("runtime_trace_exposed", r'(?s)"(?:session_meta|turn_start|model_request|model_response|tool_call|tool_result|turn_end|error|thread\.started)"\s*:|"(?:type|event_type)"\s*:\s*"(?:session_meta|turn_start|model_request|model_response|tool_call|tool_result|turn_end|error|thread\.started)"|"(?:type|event_type)"\s*:\s*"[^"]+"\s*,(?=[^{}]{0,256}"(?:session_id|thread_id|turn_id|seq|data)"\s*:)'),
+    ("credential_exposed", r"(?:\bbearer\s+[^\s<>\"']+|\b(?:api[\s_-]?key|authorization)\b\s*[:=]\s*['\"]?[^\s<>\"']+)"),
+    ("local_path_exposed", r"(?<![\w.-])(?:/home/[^\s<>\"']+|/Users/[^\s<>\"']+|/etc/[^\s<>\"']+|[A-Za-z]:\\Users\\[^\s<>\"']+)"),
+)
 
 
 def render_html(title: str, projection: dict, assessment: dict) -> bytes:
@@ -10,6 +17,16 @@ def render_html(title: str, projection: dict, assessment: dict) -> bytes:
     body += _evidence(assessment["accepted_facts"], sources)
     body += _evidence_sections(assessment["accepted_facts"], artifacts)
     return _document(title, body).encode("utf-8")
+
+
+def validate_html(content: bytes) -> list[dict]:
+    text = unescape(content.decode("utf-8", errors="replace"))
+    gaps = [_html_gap("rendered_content_invalid") for value in ("<!doctype html>", "</body></html>") if value not in text.lower()]
+    return gaps + [_html_gap(code) for code, pattern in SENSITIVE_RENDERED if re.search(pattern, text, re.IGNORECASE)]
+
+
+def _html_gap(code: str) -> dict:
+    return {"code": code, "path": "html", "value": None}
 
 
 def _document(title: str, body: str) -> str:
@@ -54,8 +71,13 @@ def _section(name: str, artifacts: list[dict], predicate) -> str:
     items = [artifact for artifact in artifacts if predicate(artifact["media_type"])]
     if not items:
         return f"<h2>{name}</h2><p>No validated {name.lower()} evidence.</p>"
-    rows = "".join(f"<li>{escape(item['id'])} ({escape(item['media_type'])})</li>" for item in items)
+    rows = "".join(_artifact_row(item) for item in items)
     return f"<h2>{name}</h2><ul>{rows}</ul>"
+
+
+def _artifact_row(item: dict) -> str:
+    artifact_id, media_type = escape(item["id"]), escape(item["media_type"])
+    return f'<li id="{escape(item["anchor"])}"><a href="#{escape(item["anchor"])}">{artifact_id}</a> ({media_type})</li>'
 
 
 def _is_code(media_type: str) -> bool:

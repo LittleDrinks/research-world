@@ -82,7 +82,7 @@ class RuntimeClient:
         project_id: str | None = None,
         node_ids: list[str] | None = None,
     ):
-        client = KernelClient(self._kernel(), project_id or self.project_id)
+        client = KernelClient(self._kernel(), project_id or self.project_id, session_id)
         async with self._connect(client) as connection:
             blocks = _prompt_blocks(message, node_ids or [])
             task = asyncio.create_task(connection.prompt(session_id, blocks))
@@ -174,9 +174,10 @@ class RuntimeClient:
 
 
 class KernelClient:
-    def __init__(self, kernel, project_id):
+    def __init__(self, kernel, project_id, session_id: str | None = None):
         self.kernel = kernel
         self.project_id = project_id
+        self.session_id = session_id
         self.updates: asyncio.Queue = asyncio.Queue()
 
     async def session_update(self, session_id, update, **kwargs):
@@ -245,8 +246,10 @@ class KernelClient:
     async def _publish_report(self, params: dict) -> dict:
         from .kernel import KernelCommand
 
+        title = _runtime_report_title(params, self.session_id)
+        thread = self.kernel._world.thread_for_session(self.session_id)
         return await self.kernel.command(
-            KernelCommand("publish_report", self.project_id, params)
+            KernelCommand("thread_publish_report", thread["project_id"], {"thread_id": thread["id"], "title": title})
         )
 
     async def _export_bibtex(self, params: dict) -> dict:
@@ -321,6 +324,14 @@ def _websocket_url(value: str) -> str:
 def _canonical_node_id(value: str) -> str:
     node_id = value.lstrip("@")
     return node_id if node_id.startswith("node:") else f"node:{node_id}"
+
+
+def _runtime_report_title(params: dict, session_id: str | None) -> str:
+    if not session_id or set(params) != {"title", "_session_id"}:
+        raise ValueError("runtime report publication requires a trusted session")
+    if params["_session_id"] != session_id:
+        raise PermissionError("runtime session does not own report publication")
+    return params["title"]
 
 
 def _prompt_blocks(message: str, node_ids: list[str]) -> list:

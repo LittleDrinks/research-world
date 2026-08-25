@@ -346,12 +346,15 @@ class World:
         sql = "SELECT n.* FROM thread_nodes t JOIN nodes n ON n.id=t.node_id WHERE t.thread_id=? ORDER BY t.pinned_at"
         return self._many(sql, (thread_id,))
 
-    def publish_report(self, project_id: str, title: str, artifact_id: str, thread_id: str | None = None) -> dict:
+    def publish_report(self, project_id: str, thread_id: str, title: str, artifact_id: str) -> dict:
         publication_id, timestamp = f"publication:{secrets.token_hex(12)}", now()
         values = (publication_id, project_id, thread_id, title, artifact_id, timestamp)
         with self.db.connect() as connection:
             connection.execute("INSERT INTO report_publications VALUES(?,?,?,?,?,?)", values)
         return self.publication(project_id, publication_id, thread_id)
+
+    def thread_for_session(self, session_id: str) -> dict:
+        return self._one("SELECT * FROM threads WHERE session_id=?", (session_id,))
 
     def save_report(self, project_id: str, thread_id: str, title: str, publication_id: str) -> dict:
         publication = self.publication(project_id, publication_id, thread_id)

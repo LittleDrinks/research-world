@@ -19,8 +19,8 @@ from .admission import (
 from .artifacts import ArtifactStore
 from .observations import observation_submission
 from .presets import agent_draft, require_tools_ready
+from .report_delivery import render_html, validate_html
 from .reporting import assess_delivery
-from .report_delivery import render_html
 from .world import World, node_text
 
 
@@ -162,28 +162,33 @@ class ResearchKernel:
         record = artifacts.add(value["content"], value["media_type"].strip())
         return _artifact_view(record)
 
-    async def _command_publish_report(self, command: KernelCommand) -> dict:
-        values, project_id = command.values, _project_id(command)
-        _validate_fields(values, {"title"}, {"title"})
-        return self._publish_report(project_id, values["title"])
-
     def _command_thread_publish_report(self, command: KernelCommand) -> dict:
         values = command.values
         _validate_fields(values, {"thread_id", "title"}, {"thread_id", "title"})
         thread = self._thread_project(command)
         project_id = thread["project_id"]
-        return self._publish_report(project_id, values["title"], thread["id"])
+        return self._publish_report(project_id, thread["id"], values["title"])
 
-    def _publish_report(self, project_id: str, title: str, thread_id: str | None = None) -> dict:
+    def _publish_report(self, project_id: str, thread_id: str, title: str) -> dict:
         projection = self._report_projection(project_id)
+        stages = [{"name": "projection", "status": "completed"}]
         assessment = assess_delivery(projection)
         if not assessment["valid"]:
-            return {"status": "failed", "assessment": assessment}
-        title = _report_title(title)
-        content = render_html(title, projection, assessment)
+            return _publication_failure(stages, assessment)
+        stages.append({"name": "citation_validation", "status": "completed"})
+        return self._render_publication(project_id, thread_id, title, projection, assessment, stages)
+
+    def _render_publication(self, project_id, thread_id, title, projection, assessment, stages):
+        title, content = _report_title(title), render_html(title, projection, assessment)
+        stages.append({"name": "rendering", "status": "completed"})
+        gaps = validate_html(content)
+        if gaps:
+            return _publication_failure(stages, {**assessment, "valid": False, "gaps": gaps})
+        stages.append({"name": "output_validation", "status": "completed"})
         artifact = ArtifactStore(self._world.artifacts_root, project_id).add(content, "text/html")
-        publication = self._world.publish_report(project_id, title, artifact["id"], thread_id)
-        return {"status": "published", "title": title, "publication": publication, "artifact": _artifact_view(artifact), "assessment": assessment}
+        publication = self._world.publish_report(project_id, thread_id, title, artifact["id"])
+        stages.append({"name": "persistence", "status": "completed"})
+        return {"status": "published", "title": title, "publication": publication, "artifact": _artifact_view(artifact), "assessment": assessment, "stages": stages}
 
     def _command_save_report(self, command: KernelCommand) -> dict:
         values = command.values
@@ -659,7 +664,9 @@ def _claim_record(node: dict, ordinal: int, claim: dict, index: dict) -> dict:
     return {
         "id": claim_id(node, ordinal, claim),
         "text": claim["text"],
+        "life_state": node["life_state"],
         "verdict": claim["verdict"],
+        "evidence_ids": [item["id"] for item in evidence],
         "source_ids": [item["id"] for item in evidence if item["kind"] == "source"],
         "artifact_ids": sorted({artifact for item in evidence for artifact in _direct_artifact_ids(item)}),
     }
@@ -689,11 +696,16 @@ def _artifact_links(facts: list[dict]) -> dict[str, dict]:
     for fact in facts:
         for artifact in fact["artifact_ids"]:
             links.setdefault(artifact, {"claim_ids": [], "source_ids": []})["claim_ids"].append(fact["claim_id"])
+            links[artifact]["source_ids"].extend(fact["source_ids"])
     return links
 
 
 def _report_artifact(record: dict, links: dict) -> dict:
-    return {"id": record["id"], "media_type": record["media_type"], "size": record["size"], **links}
+    return {"id": record["id"], "media_type": record["media_type"], "size": record["size"], "anchor": f"artifact-{record['id']}", **links}
+
+
+def _publication_failure(stages: list[dict], assessment: dict) -> dict:
+    return {"status": "failed", "assessment": assessment, "stages": stages}
 
 
 def _direct_artifact_ids(node: dict) -> list[str]:

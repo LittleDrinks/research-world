@@ -152,7 +152,7 @@ async def test_publish_report_crosses_the_client_boundary(tmp_path):
 
     assert failed is False
     assert json.loads(content)["status"] == "failed"
-    assert client.calls == [("research/publish_report", values)]
+    assert client.calls == [("research/publish_report", {**values, "_session_id": "session"})]
 
 
 async def test_submit_observation_crosses_the_client_boundary(tmp_path):

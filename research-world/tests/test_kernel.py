@@ -3,7 +3,6 @@ from base64 import b64encode
 
 import pytest
 from fastapi.testclient import TestClient
-
 from server.admission import AdmissionVerdict
 from server.app import create_app
 from server.kernel import KernelCommand, KernelQuery, ResearchKernel
@@ -167,7 +166,7 @@ def test_admission_rejects_malformed_claims(world, project, tmp_path, claims):
 
     assert admitted.status_code == 400
     assert world.node(created["id"])["life_state"] == "pending"
-    assert projection.status_code == 200
+    assert projection.status_code == 404
 
 
 def test_admission_rejects_duplicate_project_claim_ids(world, project, tmp_path):
@@ -321,51 +320,37 @@ def test_report_projection_exposes_only_safe_cited_source_fields(world, project,
 
 
 def test_bibtex_export_reads_only_admitted_source_artifact(world, project, tmp_path):
-    client = TestClient(
-        create_app(ResearchKernel(world, projects_root=tmp_path / "projects"))
-    )
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
+    client = TestClient(create_app(kernel))
     artifact, source = create_bibtex_source(client, project, valid_bibtex())
     admit(client, project, source)
-    response = client.get(
-        f"/api/v1/projects/{project['id']}/report/bibtex",
-        params={"artifact_id": artifact["id"]},
-    )
-    assert response.status_code == 200
-    assert response.json() == {"id": artifact["id"], "content": valid_bibtex()}
+    query = KernelQuery("report_bibtex", project["id"], {"artifact_id": artifact["id"]})
+    assert inspect(kernel, query) == {"id": artifact["id"], "content": valid_bibtex()}
 
 
 def test_bibtex_export_rejects_malformed_content(world, project, tmp_path):
-    client = TestClient(
-        create_app(ResearchKernel(world, projects_root=tmp_path / "projects"))
-    )
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
+    client = TestClient(create_app(kernel))
     artifact, source = create_bibtex_source(client, project, "not bibtex")
     admit(client, project, source)
-    response = client.get(
-        f"/api/v1/projects/{project['id']}/report/bibtex",
-        params={"artifact_id": artifact["id"]},
-    )
-    assert response.status_code == 400
-    assert "BibTeX" in response.json()["detail"]
+    query = KernelQuery("report_bibtex", project["id"], {"artifact_id": artifact["id"]})
+    with pytest.raises(ValueError, match="BibTeX"):
+        inspect(kernel, query)
 
 
 def test_bibtex_export_hides_unadmitted_and_cross_project_artifacts(
     world, project, tmp_path
 ):
-    client = TestClient(
-        create_app(ResearchKernel(world, projects_root=tmp_path / "projects"))
-    )
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
+    client = TestClient(create_app(kernel))
     artifact, _source = create_bibtex_source(client, project, valid_bibtex())
     other = world.create_project("other-bib", tmp_path / "other-bib", "Other?")
-    pending = client.get(
-        f"/api/v1/projects/{project['id']}/report/bibtex",
-        params={"artifact_id": artifact["id"]},
-    )
-    foreign = client.get(
-        f"/api/v1/projects/{other['id']}/report/bibtex",
-        params={"artifact_id": artifact["id"]},
-    )
-    assert pending.status_code == 404
-    assert foreign.status_code == 404
+    pending = KernelQuery("report_bibtex", project["id"], {"artifact_id": artifact["id"]})
+    foreign = KernelQuery("report_bibtex", other["id"], {"artifact_id": artifact["id"]})
+    with pytest.raises(PermissionError):
+        inspect(kernel, pending)
+    with pytest.raises(PermissionError):
+        inspect(kernel, foreign)
 
 
 def observation_record(artifact_id):
