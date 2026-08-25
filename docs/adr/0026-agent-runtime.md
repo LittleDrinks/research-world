@@ -23,7 +23,7 @@ sources:
 | 向量化 | endpoint、texts | vectors | `runtime/embed` extension |
 ACP Python SDK 负责连接、schema 与 HTTP/WebSocket 传输。Web 通过 Research Kernel 使用同一 ACP Client；Runtime 不暴露第二套 REST 会话协议。
 ## 内部所有权
-`runtimes` 识别 Codex、Claude、Pi、Kimi 产品 Adapter 与 execution realm；`endpoints` 只识别模型服务；`skills` 解析 `SKILL.md`；`tools` 识别、准备、绑定并执行全部模型能力；`trace` 写入并重放 Session；`acp` 只翻译外部协议。Runtime 不从 Endpoint 推断，不跨产品 Adapter 或 Endpoint fallback。外部调用方不感知这些目录。
+`runtimes`、`endpoints`、`skills`、`tools`、`trace` 分别管理对应 catalog、生命周期与事实；`acp` 只翻译外部协议。外部调用方不感知这些目录。
 `2026-08-24T14:23:05Z` 只读 probe 的本机 Codex 0.149.1 没有 ACP 子命令，作为 Runtime 内部 CLI adapter 使用 `codex exec --json`；该版本是点时事实，不是产品固定版本，它也不是新的外部边界。
 ## Tool Runtime
 Tool Runtime 是 Agent Runtime 内部深模块。AgentSpec、Preset、设置页与 orchestrator 只理解稳定 Tool id；Adapter kind、operation 名称、MCP、HTTP、SSE、stdio、CLI、数据库驱动、位置、进程生命周期、凭证与依赖配方全部隐藏。
