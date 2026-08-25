@@ -1,0 +1,13 @@
+.git
+.venv
+.pytest_cache
+.ruff_cache
+__pycache__
+*.pyc
+node_modules
+research-world/data
+research-world/projects/*/research-runs
+prototype
+benchmarks
+datasets
+docs

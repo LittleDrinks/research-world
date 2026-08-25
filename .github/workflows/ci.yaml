@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: research-world/web/package-lock.json
+      - name: Test research world
+        working-directory: research-world
+        run: |
+          uv sync --frozen --dev
+          uv run pytest -q
+      - name: Test agent runtime
+        working-directory: runtime
+        run: |
+          uv sync --frozen --dev
+          uv run pytest -q
+      - name: Build web
+        working-directory: research-world/web
+        run: |
+          npm ci
+          npm run build
+      - name: Validate Compose
+        working-directory: research-world
+        run: |
+          docker compose config -q
+          docker compose -f compose.release.yaml config -q

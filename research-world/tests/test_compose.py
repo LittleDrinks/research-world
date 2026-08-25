@@ -3,10 +3,15 @@ from pathlib import Path
 import yaml
 
 COMPOSE = Path(__file__).parents[1] / "compose.yaml"
+RELEASE_COMPOSE = Path(__file__).parents[1] / "compose.release.yaml"
 
 
 def compose():
     return yaml.safe_load(COMPOSE.read_text(encoding="utf-8"))
+
+
+def release_compose():
+    return yaml.safe_load(RELEASE_COMPOSE.read_text(encoding="utf-8"))
 
 
 def test_only_runtime_receives_model_credentials():
@@ -45,3 +50,16 @@ def test_runtime_delegates_lean_execution_to_runner_controller():
     service = compose()["services"]["runtime"]
 
     assert service["environment"]["RUNNER_CONTROLLER_URL"].startswith("http://runner-controller")
+
+
+def test_release_compose_uses_only_ghcr_images():
+    services = release_compose()["services"]
+    assert all("build" not in service for service in services.values())
+    assert all("ghcr.io" in service["image"] for service in services.values())
+
+
+def test_release_compose_preserves_credential_boundary():
+    services = release_compose()["services"]
+    assert services["runtime"]["env_file"] == ["../.env"]
+    for name in ("control", "worker", "runner-controller"):
+        assert "env_file" not in services[name]
