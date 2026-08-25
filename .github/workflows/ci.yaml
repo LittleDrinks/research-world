@@ -40,5 +40,6 @@ jobs:
       - name: Validate Compose
         working-directory: research-world
         run: |
+          touch .env
           docker compose config -q
           docker compose -f compose.release.yaml config -q
