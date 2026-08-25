@@ -50,13 +50,21 @@ class ArtifactStore:
             raise ArtifactIntegrityError("size_mismatch", artifact_id)
         return content
 
-    def all(self) -> list[dict]:
+    def all(self, limit: int | None = None) -> list[dict]:
         if not self.root.is_dir():
             return []
         records = []
-        for metadata in sorted(self.root.rglob("*.json")):
+        for metadata in self._metadata_files(limit):
             records.append(self.get(f"artifact:{metadata.stem}"))
         return records
+
+    def _metadata_files(self, limit: int | None):
+        paths = []
+        for path in self.root.rglob("*.json"):
+            paths.append(path)
+            if limit is not None and len(paths) > limit:
+                raise ValueError("artifact inventory exceeds export limit")
+        return sorted(paths)
 
     def _register(self, artifact_id: str, media_type: str, size: int) -> dict:
         digest = self._digest(artifact_id)

@@ -123,7 +123,7 @@ def test_export_redacts_all_structured_string_positions_and_url_credentials():
 
     data = members(files)
     assert b"private" not in data and b"value" not in data and b"user:pass" not in data
-    assert b"https://[REDACTED]@example.org/a?API---KEY=[REDACTED]&client%20secret=[REDACTED]&ok=yes" in data
+    assert b"user:pass" not in data and b"API---KEY=value" not in data
 
 
 def test_export_member_names_and_metadata_do_not_expose_untrusted_values():
@@ -147,14 +147,14 @@ def test_safe_transform_bounds_deep_and_cyclic_runtime_values():
 
     assert b"secret" not in members(files)
     assert json.loads(files.read("traces.json"))["tuple"] == ["[REDACTED]", "[REDACTED]"]
-    assert json.loads(files.read("traces.json"))["mapping"] == {"ok": 1}
+    assert json.loads(files.read("traces.json"))["mapping"] == "[REDACTED]"
 
 
 def test_safe_transform_bounds_direct_wide_values():
     values = list(range(10_001))
     files = archive(package({"id": "project:test", "direct": values}, {}, [], {}, []))
 
-    assert json.loads(files.read("project.json")) == "[REDACTED]"
+    assert json.loads(files.read("project.json"))["project"]["direct"] == "[REDACTED]"
 
 
 def test_safe_transform_bounds_serialized_wide_values():
@@ -213,7 +213,7 @@ def test_export_rejects_foreign_artifact_in_runtime_tuple(world, project, tmp_pa
     foreign = ArtifactStore(world.artifacts_root, other["id"]).add(b"foreign", "text/plain")
     runtime = TraceRuntime()
     async def inspected(_session):
-        return {"nested": (foreign["id"],)}
+        return {"session": {"workspace": project["root"]}, "nested": (foreign["id"],)}
     runtime.inspect = inspected
     world.create_thread(project["id"], "Discussion", "session:thread", "research-assistant")
 
@@ -236,3 +236,56 @@ def test_project_export_downloads_zip(world, project, tmp_path):
 
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/zip"
+    files = archive(response.content)
+    manifest = json.loads(files.read("manifest.json"))
+    assert {"project.json", "artifacts.json", "traces.json"} <= set(files.namelist())
+    assert all(record["path"] in files.namelist() for record in manifest["files"])
+
+
+def test_invalid_artifact_identity_has_no_synthetic_member():
+    artifact = item(b"body")
+    artifact["sha256"] = "not-a-digest"
+    files = archive(package({"id": "project:test"}, {}, [], {}, [artifact]))
+
+    assert not any(name.startswith("artifacts/") for name in files.namelist())
+    assert json.loads(files.read("artifacts.json")) == [{"omitted": "invalid_artifact_identity"}]
+
+
+def test_artifact_like_prose_is_not_a_reference(world, project, tmp_path):
+    project["question"] = "artifact:not-a-hash remains prose"
+    content = inspect(ResearchKernel(world, projects_root=tmp_path / "projects"), project["id"])
+
+    assert archive(content).testzip() is None
+
+
+def test_export_redacts_all_uri_schemes_and_serialized_input_limit():
+    text = "git+ssh://user:pass@host/x?apikey=value&ok=yes"
+    huge = '{"token":"' + "x" * 1_000_000 + '"}'
+    files = archive(package({"id": "project:test", "uri": text, "serialized": huge}, {}, [], {}, []))
+    record = files.read("project.json")
+
+    assert b"user:pass" not in record and b"apikey=value" not in record
+    assert json.loads(record)["project"]["serialized"] == "[REDACTED]"
+
+
+def test_export_rejects_cross_project_trace_session(world, project, tmp_path):
+    other = world.create_project("other", tmp_path / "other", "Other question")
+    world.create_thread(project["id"], "Discussion", "session:foreign", "agent")
+
+    class ForeignRuntime:
+        def bind_kernel(self, _kernel):
+            pass
+
+        async def inspect(self, _session):
+            return {"session": {"workspace": other["root"]}}
+
+    with pytest.raises(ValueError, match="another workspace"):
+        inspect(ResearchKernel(world, projects_root=tmp_path / "projects", runtime=ForeignRuntime()), project["id"])
+
+
+def test_baseurl_is_redacted_in_keys_plain_text_and_serialized_json():
+    value = "https://api.example.test/v1?authorization=secret"
+    project = {"id": "project:test", "baseurl": value, "note": f"baseurl={value}", "json": json.dumps({"baseurl": value})}
+    record = archive(package(project, {}, [], {}, [])).read("project.json")
+
+    assert b"baseurl" not in record and b"api.example" not in record and b"secret" not in record

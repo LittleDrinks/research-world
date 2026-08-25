@@ -6,33 +6,37 @@ import json
 import math
 import re
 import zipfile
-from collections.abc import Mapping
 from urllib.parse import unquote_plus, urlsplit, urlunsplit
 
-_SECRET = {"apikey", "authorization", "clientsecret", "credential", "credentials", "password", "secret", "token", "tokens", "accesstoken", "refreshtoken", "idtoken", "bearertoken"}
-_SECRET_TEXT = re.compile(r"(?ix)(?P<label>\b(?:api[^a-z0-9\r\n]*key|authorization|client[^a-z0-9\r\n]*secret|credentials?|password|secrets?|tokens?|access[^a-z0-9\r\n]*token|refresh[^a-z0-9\r\n]*token|id[^a-z0-9\r\n]*token|bearer[^a-z0-9\r\n]*token)\b[^a-z0-9\r\n]*[:=]\s*)[^\r\n]*")
-_JSON_TOKEN = re.compile(r'\s+|[,:}\]]|[{\[]|"(?:\\.|[^"\\])*"|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null')
-_URL = re.compile(r"(https?://[^\s\"'<>]+)", re.I)
-_PATH = re.compile(r"(?i)(?<![:\w/])/(?:[^/\r\n]+/)*[^/\r\n]+|\b[a-z]:[\\/][^\r\n]*")
+_ARTIFACT = re.compile(r"artifact:([0-9a-f]{64})\Z")
+_DRIVE = re.compile(r"(?i)\b[a-z]:[\\/][^\r\n]*")
+_PATH = re.compile(r"(?<![:\w/])/(?:[^/\r\n]+/)*[^/\r\n]+")
+_SECRET = re.compile(r"(?ix)\b(api[^a-z0-9]*key|base[^a-z0-9]*url|authorization|client[^a-z0-9]*secret|credentials?|password|secrets?|tokens?|access[^a-z0-9]*token|refresh[^a-z0-9]*token|id[^a-z0-9]*token|bearer[^a-z0-9]*token)\b[^\r\n:=]*[:=]\s*[^\r\n]*")
+_URI = re.compile(r"(?i)\b[a-z][a-z0-9+.-]*:[^\s\"'<>]*")
 _MARK = "[REDACTED]"
+_MAX_BYTES = 1_000_000
 _MAX_DEPTH = 64
 _MAX_ITEMS = 10_000
 
 
 def package(project, graph, runs, traces, artifacts) -> bytes:
+    artifacts = _artifact_list(artifacts)
     files = _records(project, graph, runs, traces, artifacts)
-    files["manifest.json"] = _json(_manifest(project["id"], files))
+    files["manifest.json"] = _json(_manifest(project.get("id"), files))
     return _archive(files)
 
 
 def _records(project, graph, runs, traces, artifacts) -> dict[str, bytes]:
     files = _facts(project, graph, runs, traces, artifacts)
     for artifact in artifacts:
-        digest = _member_digest(artifact)
-        files[f"artifacts/{digest}"] = _json(_omission(artifact))
-        if _bibtex(artifact):
-            files[f"bibtex/{digest}.bib"] = _bibtex_record(digest)
+        digest = _identity(artifact)
+        if digest:
+            _artifact_records(files, artifact, digest)
     return files
+
+
+def _artifact_list(value):
+    return value if isinstance(value, (list, tuple)) and len(value) <= _MAX_ITEMS else ()
 
 
 def _facts(project, graph, runs, traces, artifacts) -> dict[str, bytes]:
@@ -44,9 +48,26 @@ def _facts(project, graph, runs, traces, artifacts) -> dict[str, bytes]:
     }
 
 
+def _artifact_records(files, artifact, digest) -> None:
+    files[f"artifacts/{digest}"] = _json(_safe(_omission(artifact)))
+    if _bibtex(artifact):
+        files[f"bibtex/{digest}.bib"] = _bibtex_record(digest)
+
+
 def _metadata(artifact) -> dict:
+    digest = _identity(artifact)
+    if not digest:
+        return {"omitted": "invalid_artifact_identity"}
     keys = ("id", "sha256", "media_type", "size", "created_at")
-    return {key: _safe(artifact[key], key) for key in keys}
+    return {key: artifact[key] for key in keys}
+
+
+def _identity(artifact) -> str | None:
+    if not isinstance(artifact, dict):
+        return None
+    match = _ARTIFACT.fullmatch(artifact.get("id", ""))
+    digest = artifact.get("sha256")
+    return match.group(1) if match and digest == match.group(1) else None
 
 
 def _omission(artifact) -> dict:
@@ -54,17 +75,12 @@ def _omission(artifact) -> dict:
 
 
 def _bibtex(artifact) -> bool:
-    value = artifact["media_type"]
+    value = artifact.get("media_type") if isinstance(artifact, dict) else None
     return isinstance(value, str) and value.split(";", 1)[0].strip().lower() in {"application/x-bibtex", "text/x-bibtex"}
 
 
 def _bibtex_record(digest) -> bytes:
-    return f"@comment{{artifact_sha256={digest}}}\n".encode()
-
-
-def _member_digest(artifact) -> str:
-    digest = artifact.get("sha256")
-    return digest if isinstance(digest, str) and re.fullmatch(r"[0-9a-f]{64}", digest) else _sha256(_json(_metadata(artifact)))
+    return f"@comment{{artifact_sha256={digest}}}\\n".encode()
 
 
 def _safe(value, key=""):
@@ -73,26 +89,52 @@ def _safe(value, key=""):
 
 
 def _walk(parent, slot, value, key):
-    stack = [(parent, slot, value, key, 0, ())]
-    count = 0
+    stack, seen, count = [(parent, slot, value, key, 0)], set(), 0
     while stack:
         count += 1
-        if count > _MAX_ITEMS: return False
-        target, name, item, label, depth, ancestors = stack.pop()
+        if count > _MAX_ITEMS:
+            return False
+        target, name, item, label, depth = stack.pop()
         if _scalar(target, name, item, label):
             continue
-        children = _children(item) if depth < _MAX_DEPTH and id(item) not in ancestors else None
-        if children is None:
+        if not _container(target, name, item, stack, seen, depth):
             _put(target, name, _MARK)
-            continue
-        result, values = children
-        _put(target, name, result)
-        lineage = ancestors + (id(item),)
-        stack.extend((result, index, child, child_key, depth + 1, lineage) for index, child, child_key in reversed(values))
     return True
 
 
-def _put(parent, slot, value):
+def _container(parent, slot, value, stack, seen, depth) -> bool:
+    if depth >= _MAX_DEPTH or not isinstance(value, (dict, list, tuple)):
+        return False
+    if id(value) in seen or len(value) > _MAX_ITEMS:
+        return False
+    seen.add(id(value))
+    if isinstance(value, dict):
+        return _mapping(parent, slot, value, stack, depth)
+    _put(parent, slot, [])
+    _sequence(parent[slot], value, stack, depth)
+    return True
+
+
+def _mapping(parent, slot, value, stack, depth) -> bool:
+    keys = sorted(value)
+    if not all(isinstance(key, str) for key in keys):
+        return False
+    cleaned = [_clean_key(key) for key in keys]
+    if len(set(cleaned)) != len(cleaned):
+        return False
+    result = {}
+    _put(parent, slot, result)
+    for index in range(len(keys) - 1, -1, -1):
+        stack.append((result, cleaned[index], value[keys[index]], keys[index], depth + 1))
+    return True
+
+
+def _sequence(parent, value, stack, depth) -> None:
+    for index in range(len(value) - 1, -1, -1):
+        stack.append((parent, index, value[index], "", depth + 1))
+
+
+def _put(parent, slot, value) -> None:
     if isinstance(parent, list):
         parent.append(value)
     else:
@@ -100,7 +142,7 @@ def _put(parent, slot, value):
 
 
 def _scalar(parent, slot, value, key) -> bool:
-    if _secret_key(key):
+    if _secret_key(key) or (isinstance(key, str) and _clean_key(key) == _MARK):
         _put(parent, slot, _MARK)
     elif isinstance(value, str):
         _put(parent, slot, _text(value))
@@ -113,81 +155,41 @@ def _scalar(parent, slot, value, key) -> bool:
     return True
 
 
-def _children(value):
-    if isinstance(value, Mapping):
-        return _map_children(value)
-    if isinstance(value, (list, tuple)):
-        return [], [(index, item, "") for index, item in enumerate(value)]
-    return None
-
-
-def _map_children(value):
-    try:
-        values = [(_text(key), key, item) for key, item in value.items()]
-    except (AttributeError, TypeError, ValueError):
-        return None
-    if any(not isinstance(key, str) or cleaned == _MARK for cleaned, key, _ in values):
-        return None
-    if len({cleaned for cleaned, _, _ in values}) != len(values):
-        return None
-    return {}, [(cleaned, item, key) for cleaned, key, item in sorted(values)]
-
-
 def _text(value: str) -> str:
-    if _absolute(value):
+    if len(value.encode()) > _MAX_BYTES or _absolute(value):
         return _MARK
     if value.lstrip().startswith(("{", "[")):
         return _serialized(value)
-    return "".join(_fragment(part) for part in _URL.split(value))
+    value = _SECRET.sub(_MARK, _uris(value))
+    return _PATH.sub(_MARK, _DRIVE.sub(_MARK, value))
 
 
-def _fragment(value: str) -> str:
-    if _URL.fullmatch(value):
-        return _url(value)
-    return _PATH.sub(_MARK, _SECRET_TEXT.sub(r"\g<label>[REDACTED]", value))
-
-
-def _serialized(value):
-    if not _serialized_limit(value):
-        return _MARK
+def _serialized(value: str) -> str:
     try:
-        return _json(_safe(json.loads(value))).decode().rstrip()
-    except (json.JSONDecodeError, RecursionError, TypeError, ValueError):
+        parsed = json.loads(value)
+    except (json.JSONDecodeError, RecursionError):
         return _MARK
+    safe = _safe(parsed)
+    return _MARK if safe == _MARK else _json(safe).decode().rstrip()
 
 
-def _serialized_limit(value):
-    count = index = 0
-    while index < len(value):
-        token = _JSON_TOKEN.match(value, index)
-        if token is None:
-            return True
-        text = token.group()
-        count += text[0] not in " \t\r\n,:}]"
-        if count > _MAX_ITEMS:
-            return False
-        index = token.end()
-    return True
+def _uris(value: str) -> str:
+    return _URI.sub(lambda match: _uri(match.group()), value)
 
 
-def _url(value):
+def _uri(value: str) -> str:
     parts = urlsplit(value)
-    query = _query(parts.query)
-    user, mark, host = parts.netloc.rpartition("@")
-    if not mark and query == parts.query:
-        return value
-    netloc = f"{_MARK}@{host}" if mark else parts.netloc
-    return urlunsplit((parts.scheme, netloc, parts.path, query, parts.fragment))
+    netloc = _MARK if parts.username or parts.password else parts.netloc
+    return urlunsplit((parts.scheme, netloc, parts.path, _query(parts.query), parts.fragment))
 
 
-def _query(value):
-    parts = re.split(r"([&;])", value)
-    return "".join(_query_part(part) if index % 2 == 0 else part for index, part in enumerate(parts))
+def _query(value: str) -> str:
+    return re.sub(r"[^&;]+", lambda match: _query_part(match.group()), value)
 
 
-def _query_part(value):
-    key, separator, _value = value.partition("=")
-    return f"{key}{separator}{_MARK}" if separator and _secret_key(unquote_plus(key)) else value
+def _query_part(value: str) -> str:
+    key, mark, _content = value.partition("=")
+    return f"{key}{mark}{_MARK}" if mark and _secret_key(unquote_plus(key)) else value
 
 
 def _absolute(value: str) -> bool:
@@ -195,11 +197,16 @@ def _absolute(value: str) -> bool:
 
 
 def _secret_key(key: str) -> bool:
-    return isinstance(key, str) and re.sub(r"[^a-z0-9]", "", key.lower()) in _SECRET
+    cleaned = re.sub(r"[^a-z0-9]", "", key.lower()) if isinstance(key, str) else ""
+    return cleaned in {"apikey", "baseurl", "authorization", "clientsecret", "credential", "credentials", "password", "secret", "token", "tokens", "accesstoken", "refreshtoken", "idtoken", "bearertoken"}
+
+
+def _clean_key(key: str) -> str:
+    return _MARK if _secret_key(key) else _text(key)
 
 
 def _manifest(project_id, files) -> dict:
-    return {"schema_version": 3, "project_id": _safe(project_id), "files": _checksums(files)}
+    return {"schema_version": 4, "project_id": _safe(project_id), "files": _checksums(files)}
 
 
 def _checksums(files) -> list[dict]:

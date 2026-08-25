@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import secrets
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -458,15 +459,13 @@ class ResearchKernel:
             if session_ids:
                 raise ValueError("project export requires Runtime Trace access")
             return {}
-        return {
-            session_id: await _export_trace(self._runtime, session_id)
-            for session_id in session_ids
-        }
+        workspace = self._world.project(project_id)["root"]
+        return {session_id: await _export_trace(self._runtime, session_id, workspace) for session_id in session_ids}
 
     def _export_artifacts(self, project_id, graph, runs, traces) -> list[dict]:
         artifact_ids = _export_artifact_ids(graph, runs, traces)
         store = ArtifactStore(self._world.artifacts_root, project_id)
-        saved = {record["id"] for record in store.all()}
+        saved = {record["id"] for record in store.all(limit=10_000)}
         if missing := artifact_ids - saved:
             raise ValueError(f"export artifact is outside project scope: {min(missing)}")
         return [_export_artifact(store, item) for item in sorted(saved)]
@@ -579,11 +578,23 @@ def _export_artifact_ids(graph: dict, runs: list[dict], traces: dict) -> set[str
     return _artifact_ids([*admitted, runs, traces])
 
 
-async def _export_trace(runtime, session_id: str) -> dict:
+async def _export_trace(runtime, session_id: str, workspace: str) -> dict:
     try:
-        return await runtime.inspect(session_id)
+        trace = await runtime.inspect(session_id)
     except Exception as error:
         raise ValueError(f"project export cannot read Runtime Trace: {session_id}") from error
+    if not _trace_workspace(trace, workspace):
+        raise ValueError(f"project export Runtime Trace belongs to another workspace: {session_id}")
+    return trace
+
+
+def _trace_workspace(trace, workspace) -> bool:
+    session = trace.get("session") if isinstance(trace, dict) else None
+    value = session.get("workspace") if isinstance(session, dict) else None
+    try:
+        return isinstance(value, str) and Path(value).resolve() == Path(workspace).resolve()
+    except OSError:
+        return False
 
 
 def _artifact_ids(value) -> set[str]:
@@ -594,15 +605,36 @@ def _artifact_ids(value) -> set[str]:
             raise ValueError("export artifact traversal exceeds limit")
         item = stack.pop()
         if isinstance(item, str):
-            found.update((item,) if item.startswith("artifact:") else ())
-        elif isinstance(item, Mapping):
-            if id(item) not in seen:
-                seen.add(id(item))
-                stack.extend((*item.keys(), *item.values()))
-        elif isinstance(item, (list, tuple, set, frozenset)) and id(item) not in seen:
-            seen.add(id(item))
-            stack.extend(item)
+            found.update((item,) if _artifact_id(item) else ())
+        elif isinstance(item, dict) and _unseen(item, seen):
+            _push_mapping(stack, item)
+        elif isinstance(item, (list, tuple)) and _unseen(item, seen):
+            _bounded_push(stack, item)
     return found
+
+
+def _artifact_id(value) -> bool:
+    return isinstance(value, str) and re.fullmatch(r"artifact:[0-9a-f]{64}", value) is not None
+
+
+def _unseen(value, seen) -> bool:
+    if id(value) in seen or len(value) > 10_000:
+        return False
+    seen.add(id(value))
+    return True
+
+
+def _bounded_push(stack, values) -> None:
+    for index in range(len(values) - 1, -1, -1):
+        stack.append(values[index])
+
+
+def _push_mapping(stack, value) -> None:
+    keys = list(value)
+    if len(keys) > 10_000:
+        return
+    for key in reversed(keys):
+        stack.append(value[key])
 
 
 def _validate_fields(value: dict, allowed: set[str], required: set[str]) -> None:
