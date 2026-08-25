@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import secrets
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from inspect import isawaitable
 from pathlib import Path
@@ -586,13 +587,22 @@ async def _export_trace(runtime, session_id: str) -> dict:
 
 
 def _artifact_ids(value) -> set[str]:
-    if isinstance(value, str):
-        return {value} if value.startswith("artifact:") else set()
-    if isinstance(value, dict):
-        return {item for child in value.values() for item in _artifact_ids(child)}
-    if isinstance(value, list):
-        return {item for child in value for item in _artifact_ids(child)}
-    return set()
+    found, seen, stack, count = set(), set(), [value], 0
+    while stack:
+        count += 1
+        if count > 10_000:
+            raise ValueError("export artifact traversal exceeds limit")
+        item = stack.pop()
+        if isinstance(item, str):
+            found.update((item,) if item.startswith("artifact:") else ())
+        elif isinstance(item, Mapping):
+            if id(item) not in seen:
+                seen.add(id(item))
+                stack.extend((*item.keys(), *item.values()))
+        elif isinstance(item, (list, tuple, set, frozenset)) and id(item) not in seen:
+            seen.add(id(item))
+            stack.extend(item)
+    return found
 
 
 def _validate_fields(value: dict, allowed: set[str], required: set[str]) -> None:

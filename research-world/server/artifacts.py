@@ -22,7 +22,6 @@ class ArtifactStore:
         scope = hashlib.sha256(project_id.encode("utf-8")).hexdigest()
         self.project_id = project_id
         self.root = root / scope
-        self.root.mkdir(parents=True, exist_ok=True)
 
     def add(self, content: bytes, media_type: str) -> dict:
         digest = hashlib.sha256(content).hexdigest()
@@ -52,6 +51,8 @@ class ArtifactStore:
         return content
 
     def all(self) -> list[dict]:
+        if not self.root.is_dir():
+            return []
         records = []
         for metadata in sorted(self.root.rglob("*.json")):
             records.append(self.get(f"artifact:{metadata.stem}"))

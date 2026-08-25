@@ -3,6 +3,7 @@ import hashlib
 import io
 import json
 import zipfile
+from types import MappingProxyType
 
 import pytest
 from fastapi.testclient import TestClient
@@ -95,6 +96,39 @@ def test_safe_transform_marks_unsafe_structures_and_nan():
     assert json.loads(files.read("pipeline-runs.json"))[0]["nan"] == "[REDACTED]"
 
 
+def test_export_redacts_all_structured_string_positions_and_url_credentials():
+    project = {"id": "project:test", "path": "path: /private/data", "API Key": "value", "json": '{"TOKEN":"value"}', "url": "https://user:pass@example.org/a?API---KEY=value&client%20secret=value&ok=yes"}
+    files = archive(package(project, {"unsafe": {"C:/private": "value"}}, [], {}, []))
+
+    data = members(files)
+    assert b"private" not in data and b"value" not in data and b"user:pass" not in data
+    assert b"https://[REDACTED]@example.org/a?API---KEY=[REDACTED]&client%20secret=[REDACTED]&ok=yes" in data
+
+
+def test_export_member_names_and_metadata_do_not_expose_untrusted_values():
+    artifact = item(b"body", "text/plain; TOKEN = secret")
+    artifact["sha256"] = "C:/private/token=secret"
+    files = archive(package({"id": "project:test"}, {}, [], {}, [artifact]))
+
+    assert all(b"private" not in name.encode() and b"secret" not in name.encode() for name in files.namelist())
+    assert b"private" not in members(files) and b"secret" not in members(files)
+
+
+def test_safe_transform_bounds_deep_and_cyclic_runtime_values():
+    deep = value = []
+    for _ in range(100):
+        child = []
+        value.append(child)
+        value = child
+    value.append(deep)
+    trace = {"tuple": (b"secret", {"x"}), "mapping": MappingProxyType({"ok": 1}), "deep": deep}
+    files = archive(package({"id": "project:test"}, {}, [], trace, []))
+
+    assert b"secret" not in members(files)
+    assert json.loads(files.read("traces.json"))["tuple"] == ["[REDACTED]", "[REDACTED]"]
+    assert json.loads(files.read("traces.json"))["mapping"] == {"ok": 1}
+
+
 def test_package_is_deterministic_with_valid_manifest():
     first, artifact = exported("raw artifact", "application/octet-stream")
     second, _ = exported("raw artifact", "application/octet-stream")
@@ -136,6 +170,28 @@ def test_export_rejects_artifacts_outside_project_scope(world, project, tmp_path
 
     with pytest.raises(ValueError, match="outside project scope"):
         inspect(kernel, project["id"])
+
+
+def test_export_rejects_foreign_artifact_in_runtime_tuple(world, project, tmp_path):
+    other = world.create_project("other", tmp_path / "other", "Other question")
+    foreign = ArtifactStore(world.artifacts_root, other["id"]).add(b"foreign", "text/plain")
+    runtime = TraceRuntime()
+    async def inspected(_session):
+        return {"nested": (foreign["id"],)}
+    runtime.inspect = inspected
+    world.create_thread(project["id"], "Discussion", "session:thread", "research-assistant")
+
+    with pytest.raises(ValueError, match="outside project scope"):
+        inspect(ResearchKernel(world, projects_root=tmp_path / "projects", runtime=runtime), project["id"])
+
+
+def test_empty_export_does_not_create_artifact_scope(world, project, tmp_path):
+    store = ArtifactStore(world.artifacts_root, project["id"])
+    assert not store.root.exists()
+
+    inspect(ResearchKernel(world, projects_root=tmp_path / "projects"), project["id"])
+
+    assert not store.root.exists()
 
 
 def test_project_export_downloads_zip(world, project, tmp_path):
