@@ -213,6 +213,7 @@ def _report_agent():
     return {
         "id": "reporter",
         "name": "Reporter",
+        "runtime": {"id": "openai-compatible", "realm": "container:runtime"},
         "endpoint": "openai-compatible",
         "model": "qwen-test",
         "instructions": "Publish the report.",
