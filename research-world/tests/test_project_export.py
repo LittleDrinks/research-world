@@ -115,7 +115,9 @@ def test_kernel_export_is_deterministic_and_complete(world, project, tmp_path):
     first, second = export_archive(kernel, project), export_archive(kernel, project)
     files = archive_files(first)
     assert first == second
+    assert manifest(first)["format"] == "research-world-project-export/v1"
     assert manifest(first)["project_id"] == project["id"]
+    assert json.loads(files["project.json"])["project"]["question"] == project["question"]
     assert json.loads(files["pipeline-runs.json"])[0]["id"] == state["run"]["id"]
     assert any(name.startswith("traces/") for name in files)
     assert any(name.startswith("artifacts/") for name in files)
