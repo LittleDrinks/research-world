@@ -78,6 +78,11 @@ def test_rendered_report_rejects_non_chart_data_uri():
     assert validate_html(content) == [{"code": "data_uri_exposed", "path": "html", "value": None}]
 
 
+def test_rendered_report_rejects_entity_encoded_active_uri():
+    content = report_fixture("Validated").replace(b"</body>", b'<a href="java&#x73;cript:alert(1)">x</a></body>')
+    assert validate_html(content) == [{"code": "active_content_exposed", "path": "html", "value": None}]
+
+
 def test_rendered_report_rejects_garbage_without_semantic_structure():
     content = b"<!doctype html><html><body>report</body></html>"
     assert validate_html(content) == [{"code": "rendered_content_invalid", "path": "html", "value": None}]
