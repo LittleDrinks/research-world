@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from runtime.endpoints import Endpoint, load_endpoints
 from runtime.providers.codex import (
-    CodexProvider, _collect, _environment, _freeze_executable, _probe,
+    PROBE_CANDIDATE_TIMEOUT, CodexProvider, _collect, _environment, _freeze_executable, _probe,
     _sealed_snapshot, _taskkill,
 )
 from runtime.runtimes import CodexRuntimeAdapter, REALM, load_runtimes
@@ -77,6 +77,30 @@ def _popen(calls, values):
     return create
 
 
+def _budgeted_popen(clock, waits, values):
+    def create(*_args, **_kwargs):
+        process = values.pop(0)
+
+        def wait(timeout):
+            waits.append(timeout)
+            clock[0] += min(timeout, 2.0)
+            if timeout < 2.0:
+                raise subprocess.TimeoutExpired([], timeout)
+            return process.returncode
+
+        process.wait = wait
+        return process
+    return create
+
+
+def _cleanup_cost(clock):
+    def cleanup(process, stdout, stderr, _deadline):
+        stdout.value, stderr.value = process.output, ""
+        clock[0] += 2.0
+        return False
+    return cleanup
+
+
 def _linux_x64():
     return sys.platform == "linux" and platform.machine() in {"x86_64", "AMD64"}
 
@@ -94,6 +118,19 @@ def test_readiness_checks_version_without_exposing_probe_output(monkeypatch):
     assert set(calls[0][1]["env"]) == {"LANG", "PATH"}
     assert calls[1][0] == ([provider.executable, "login", "status"],)
     assert set(calls[1][1]["env"]) == {"CODEX_HOME", "HOME", "LANG", "PATH"}
+
+
+def test_detection_shares_candidate_deadline_across_probes(monkeypatch):
+    clock, waits = [0.0], []
+    values = [_probe_result("codex-cli 0.149.1"), _probe_result()]
+    monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: sys.executable)
+    monkeypatch.setattr("runtime.providers.codex.time.monotonic", lambda: clock[0])
+    monkeypatch.setattr("runtime.providers.codex.subprocess.Popen", _budgeted_popen(clock, waits, values))
+    monkeypatch.setattr("runtime.providers.codex._reader_cleanup_failed", _cleanup_cost(clock))
+    provider = CodexProvider.detected()
+    assert waits == [2.0, 1.0]
+    assert provider.reason == {"code": "probe_timeout", "probe": "login status"}
+    assert provider.status == "error" and "secret" not in str(provider.reason)
 
 
 @pytest.mark.parametrize("session_id", [None, "thread-1"])
@@ -184,7 +221,7 @@ def test_readiness_uses_only_safe_login_status(monkeypatch, result, status, code
 
 def test_probe_caps_noisy_stdout_before_buffering(monkeypatch):
     monkeypatch.setattr("runtime.providers.codex.PROBE_OUTPUT_LIMIT", 128)
-    result = _probe([sys.executable, "-c", "import sys;sys.stdout.write('x'*1000000)"], "test")
+    result = _probe([sys.executable, "-c", "import sys;sys.stdout.write('x'*1000000)"], "test", deadline=time.monotonic() + PROBE_CANDIDATE_TIMEOUT)
     assert len(result.stdout) == 128
     assert result.stderr == ""
 
@@ -195,7 +232,7 @@ def test_probe_kills_same_group_reader_child_and_returns_error(monkeypatch, tmp_
     pid_file = tmp_path / "pid"
     child = f"import os,time;open({str(pid_file)!r},'w').write(str(os.getpid()));time.sleep(10)"
     parent = f"import pathlib,subprocess,sys,time;subprocess.Popen([sys.executable,'-c',{child!r}]);p=pathlib.Path({str(pid_file)!r});exec('while not p.exists(): time.sleep(.001)')"
-    result = _probe([sys.executable, "-c", parent], "test")
+    result = _probe([sys.executable, "-c", parent], "test", deadline=time.monotonic() + PROBE_CANDIDATE_TIMEOUT)
     assert result[2]["code"] == "probe_timeout"
     assert not _pid_exists(int(pid_file.read_text()))
 
