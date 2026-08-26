@@ -73,6 +73,11 @@ def test_rendered_report_allows_normal_trace_language_and_web_paths():
     assert validate_html(content) == []
 
 
+def test_rendered_report_rejects_non_chart_data_uri():
+    content = report_fixture("Validated").replace(b"</body>", b'<a href="data:text/html,%3Cscript%3E">x</a></body>')
+    assert validate_html(content) == [{"code": "data_uri_exposed", "path": "html", "value": None}]
+
+
 def test_rendered_report_rejects_garbage_without_semantic_structure():
     content = b"<!doctype html><html><body>report</body></html>"
     assert validate_html(content) == [{"code": "rendered_content_invalid", "path": "html", "value": None}]
@@ -188,9 +193,12 @@ def test_output_validation_accepts_only_sanitized_static_charts(media_type):
     assert validate_html(render_html("Orbit", value, assessment)) == []
 
 
-@pytest.mark.parametrize("text", ["data:image/jpeg;base64,sk-abcdefghijklmnopqrstuvwxyz", "https://credentials.example"])
-def test_output_validation_scans_untrusted_data_and_urls(text):
-    assert validate_html(report_fixture(text)) == [{"code": "sensitive_data_exposed", "path": "html", "value": None}]
+@pytest.mark.parametrize(("text", "codes"), [
+    ("data:image/jpeg;base64,sk-abcdefghijklmnopqrstuvwxyz", ["data_uri_exposed", "sensitive_data_exposed"]),
+    ("https://credentials.example", ["sensitive_data_exposed"]),
+])
+def test_output_validation_scans_untrusted_data_and_urls(text, codes):
+    assert [gap["code"] for gap in validate_html(report_fixture(text))] == codes
 
 
 def test_delivery_rejects_unsafe_narrative_without_returning_its_value():

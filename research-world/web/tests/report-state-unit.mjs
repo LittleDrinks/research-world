@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { replaceTrace, replacementsForThread } from "../src/components/chat/reportState.js";
+import { createReportRequests, replaceTrace, replacementsForThread } from "../src/components/chat/reportState.js";
 
 
 function memoryStorage() {
@@ -18,4 +18,17 @@ test("keeps trace replacements scoped to their Thread", () => {
   const visible = replacementsForThread("thread:b", { threadId: "thread:a", replacements: a });
   assert.deepEqual(a, { "report-turn:1-2": "publication:a" });
   assert.deepEqual(visible, { "report-turn:1-2": "publication:b" });
+});
+
+
+test("keeps report request freshness scoped to each card operation", () => {
+  const requests = createReportRequests();
+  const retryB = requests.next("retry:report-turn:b-2");
+  const saveA = requests.next("save:publication:a");
+  assert.equal(requests.latest(retryB), true);
+  assert.equal(requests.latest(saveA), true);
+  const newerRetryB = requests.next("retry:report-turn:b-2");
+  assert.equal(requests.latest(retryB), false);
+  assert.equal(requests.latest(newerRetryB), true);
+  assert.equal(requests.latest(saveA), true);
 });
