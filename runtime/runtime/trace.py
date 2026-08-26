@@ -18,6 +18,7 @@ URI = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s'\"]+")
 UNIX_PATH = re.compile(r"(?<![\w:])/(?:[^\s'\"]+)")
 WINDOWS_PATH = re.compile(r"(?i)\b[A-Z]:\\(?:[^\s'\"]+)")
 RELATIVE_PATH = re.compile(r"(?<!\w)(?:\.{1,2}/|[\w.-]+/)[^\s'\"]+")
+BARE_PATH = re.compile(r"(?<![\w.-])[\w-]+\.[A-Za-z][\w-]*(?![\w.-])")
 CREDENTIAL_FIELDS = {
     "apikey", "apikeys", "xapikey", "authorization", "authorizations",
     "password", "credential", "credentials", "secret", "secrets",
@@ -84,12 +85,12 @@ def _public_event(event):
 
 
 def _public_data(data):
-    hidden = {"runtime_binding", "codex_home", "workspace"}
+    hidden = {"runtime_binding", "codex_home", "workspace", "provider_session_id"}
     return _redact(redact_trace_data(data), hidden, ())
 
 
 def redact_trace_data(data):
-    return _redact(data, {"workspace", "codex_home", "runtime_binding"}, ())
+    return _redact(data, {"workspace", "codex_home", "runtime_binding", "provider_session_id"}, ())
 
 
 def _redact(value, hidden, path, preserved=()):
@@ -103,15 +104,15 @@ def _redact(value, hidden, path, preserved=()):
 def _redact_field(key, value, hidden, path, preserved):
     if key in preserved:
         return value
-    if _sensitive_field(key) and not _logical_endpoint(key, path):
+    if _sensitive_field(key) and not _logical_reference(key, path):
         return "<redacted>"
     if _path_field(key):
         return "<path>"
     return _redact(value, hidden, (*path, key), preserved)
 
 
-def _logical_endpoint(key, path):
-    return key == "endpoint" and path[-1:] == ("agent_spec",)
+def _logical_reference(key, path):
+    return key in {"endpoint", "model"} and path[-1:] == ("agent_spec",)
 
 
 def _credential_field(key):
@@ -145,7 +146,8 @@ def _redact_credentials(value):
 def _redact_paths(value):
     value = UNIX_PATH.sub("<path>", value)
     value = WINDOWS_PATH.sub("<path>", value)
-    return RELATIVE_PATH.sub("<path>", value)
+    value = RELATIVE_PATH.sub("<path>", value)
+    return BARE_PATH.sub("<path>", value)
 
 
 def _event(session_id, seq, event_type, data, turn_id):

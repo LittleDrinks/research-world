@@ -86,7 +86,7 @@ class Runtime:
         recognized = await self.recognize(str(workspace))
         adapter = self.runtimes.require(spec.runtime)
         _validate_spec(spec, recognized, adapter)
-        endpoint = self.endpoints.require(spec.endpoint, spec.model)
+        endpoint = _launch_endpoint(self.endpoints, spec, adapter)
         snapshots = _skill_snapshots(spec, workspace)
         plan = await self._tool_plan(spec, workspace, snapshots)
         meta = _session_meta(spec, value, snapshots, plan, recognized, endpoint)
@@ -181,20 +181,20 @@ class Runtime:
     async def _rounds(self, session_id, turn_id, binding, meta, tools, emit):
         spec = binding.spec
         usage = {"prompt_tokens": 0, "completion_tokens": 0}
-        result = ""
+        result, provider_session_id = "", None
         for _ in range(spec.options.max_rounds):
             if (session_id, turn_id) in self._cancelled:
                 return self._finish(session_id, turn_id, "cancelled", result, usage)
-            done, result = await self._round(
+            done, result, provider_session_id = await self._round(
                 session_id, turn_id, binding, meta, tools, emit, usage
             )
             if (session_id, turn_id) in self._cancelled:
                 return self._finish(session_id, turn_id, "cancelled", result, usage)
             if done:
-                return self._finish(session_id, turn_id, "completed", result, usage)
+                return self._finish(session_id, turn_id, "completed", result, usage, provider_session_id)
             if sum(usage.values()) >= spec.options.token_budget:
                 break
-        return self._finish(session_id, turn_id, "limit", result, usage)
+        return self._finish(session_id, turn_id, "limit", result, usage, provider_session_id)
 
     async def _round(self, session_id, turn_id, binding, meta, tools, emit, usage):
         spec = binding.spec
@@ -213,7 +213,7 @@ class Runtime:
         content = result.message.get("content") or ""
         if not calls and not content.strip():
             raise RuntimeError("model returned an empty assistant response")
-        return not calls, content
+        return not calls, content, result.provider_session_id
 
     def _record_request(self, session_id, turn_id, model, messages, tools):
         data = {"model": model, "messages": messages, "tools": tools}
@@ -235,7 +235,6 @@ class Runtime:
             "endpoint": endpoint_id,
             "message": result.message,
             "usage": result.usage,
-            "provider_session_id": result.provider_session_id,
         }
         self.trace.append(session_id, "model_response", data, turn_id)
         for item in result.provider_items:
@@ -256,7 +255,9 @@ class Runtime:
             result = {**data, "content": content, "is_error": failed}
             self.trace.append(session_id, "tool_result", result, turn_id)
 
-    def _finish(self, session_id, turn_id, status, result, usage):
+    def _finish(self, session_id, turn_id, status, result, usage, provider_session_id=None):
+        if (session_id, turn_id) in self._cancelled:
+            status = "cancelled"
         self._cancelled.discard((session_id, turn_id))
         self.trace.append(
             session_id,
@@ -264,6 +265,8 @@ class Runtime:
             {"status": status, "result_text": result, "usage": usage},
             turn_id,
         )
+        if status in {"completed", "limit"} and provider_session_id:
+            self.state.update(session_id, {"provider_session_id": provider_session_id})
         return {"status": status, "result_text": result, "usage": usage}
 
     def _fail(self, session_id, turn_id, error):
@@ -347,7 +350,7 @@ def _launch_identity(spec, workspace, value) -> dict:
 
 def _validate_spec(spec: AgentSpec, recognized: dict, runtime) -> None:
     _validate_runtime(spec, recognized)
-    endpoint = _validate_endpoint(spec, recognized)
+    endpoint = _validate_endpoint(spec, recognized, not runtime.owns_process)
     if not runtime.accepts(endpoint):
         raise CapabilityNotFound("endpoint is not available for runtime")
     if runtime.owns_process and spec.tools:
@@ -364,15 +367,21 @@ def _validate_runtime(spec, recognized) -> None:
     _require((spec.runtime.id, spec.runtime.realm), runtimes, "runtime")
 
 
-def _validate_endpoint(spec, recognized) -> dict:
-    endpoint_ids = {item["id"] for item in recognized["endpoints"] if item["available"]}
-    model_pairs = {(item["endpoint"], item["id"]) for item in recognized["models"]}
+def _validate_endpoint(spec, recognized, require_ready) -> dict:
+    endpoint_ids = {item["id"] for item in recognized["endpoints"] if item["available"] or not require_ready}
+    model_pairs = _model_pairs(recognized, require_ready)
     _require(spec.endpoint, endpoint_ids, "endpoint")
     endpoint = next(
         item for item in recognized["endpoints"] if item["id"] == spec.endpoint
     )
     _require((spec.endpoint, spec.model), model_pairs, "model")
     return endpoint
+
+
+def _model_pairs(recognized, require_ready):
+    if require_ready:
+        return {(item["endpoint"], item["id"]) for item in recognized["models"]}
+    return {(item["id"], model) for item in recognized["endpoints"] for model in item["models"]}
 
 
 def _validate_dependencies(spec, recognized) -> None:
@@ -430,14 +439,18 @@ def _restore_binding(events, state, runtimes, endpoints):
     _, meta = _session_spec(events)
     spec = AgentSpec.parse(meta["agent_spec"])
     adapter = runtimes.require(spec.runtime)
-    endpoint = _persisted_endpoint(endpoints, spec)
+    endpoint = _persisted_endpoint(endpoints, spec, adapter)
     _require_binding_snapshot(meta, state, adapter, endpoint)
     return _LaunchBinding(adapter, endpoint, spec)
 
 
-def _persisted_endpoint(endpoints, spec):
+def _launch_endpoint(endpoints, spec, adapter):
+    return endpoints.resolve(spec.endpoint, spec.model) if adapter.owns_process else endpoints.require(spec.endpoint, spec.model)
+
+
+def _persisted_endpoint(endpoints, spec, adapter):
     try:
-        return endpoints.require(spec.endpoint, spec.model)
+        return _launch_endpoint(endpoints, spec, adapter)
     except CapabilityNotFound as error:
         raise SessionSpecInvalid("persisted endpoint binding is unavailable") from error
 
@@ -572,22 +585,9 @@ def _provider_context(meta, state, events):
         "sandbox": options.get("sandbox", "read-only"),
         "reasoning_effort": options.get("reasoning_effort", "medium"),
         "runtime_session_id": events[0]["session_id"],
-        "provider_session_id": _provider_session(events),
+        "provider_session_id": state.get("provider_session_id"),
         "codex_home": state.get("codex_home", ""),
     }
-
-
-def _provider_session(events):
-    completed = _completed_turns(events)
-    for event in reversed(events):
-        if event.get("turn_id") in completed and event["type"] == "model_response":
-            if value := event["data"].get("provider_session_id"):
-                return value
-    return None
-
-
-def _completed_turns(events) -> set[str]:
-    return {event["turn_id"] for event in events if event["type"] == "turn_end" and event["data"]["status"] in {"completed", "limit"}}
 
 
 def _add_usage(total, current):

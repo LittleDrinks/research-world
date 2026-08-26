@@ -64,6 +64,12 @@ class EndpointPool:
         return self._ordered()
 
     def require(self, endpoint_id: str, model: str) -> Endpoint:
+        endpoint = self.resolve(endpoint_id, model)
+        if endpoint.provider is None and not endpoint.available:
+            raise CapabilityNotFound(f"endpoint is not available: {endpoint_id}")
+        return endpoint
+
+    def resolve(self, endpoint_id: str, model: str) -> Endpoint:
         return self._require(endpoint_id, model, "models", "model")
 
     def require_embedding(self, endpoint_id: str, model: str) -> Endpoint:
@@ -77,8 +83,6 @@ class EndpointPool:
             raise CapabilityNotFound(
                 f"{capability} is not available on endpoint: {model}"
             )
-        if endpoint.provider is None and not endpoint.available:
-            raise CapabilityNotFound(f"endpoint is not available: {endpoint_id}")
         return endpoint
 
     def default(self) -> Endpoint:

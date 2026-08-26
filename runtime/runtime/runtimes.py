@@ -70,13 +70,11 @@ class CodexRuntimeAdapter(RuntimeAdapter):
         return True
 
     def accepts(self, endpoint) -> bool:
-        return endpoint["available"] if isinstance(endpoint, dict) else endpoint.public()["available"]
+        return True
 
     async def generate(
         self, session_id, endpoint, model, messages, tools, emit, context
     ):
-        if not self.accepts(endpoint):
-            raise CapabilityNotFound("endpoint is not available for runtime")
         process = None
         try:
             process = await self._start(session_id, model, context)
