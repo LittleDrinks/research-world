@@ -79,10 +79,10 @@ def test_readiness_checks_version_without_exposing_probe_output(monkeypatch):
     provider = CodexProvider.detected()
     assert provider is not None
     assert provider.version == "0.149.1"
-    assert calls[0][0] == (["/bin/codex", "--version"],)
+    assert calls[0][0] == ([os.path.realpath("/bin/codex"), "--version"],)
     assert calls[0][1]["start_new_session"] is True
     assert set(calls[0][1]["env"]) == {"LANG", "PATH"}
-    assert calls[1][0] == (["/bin/codex", "login", "status"],)
+    assert calls[1][0] == ([os.path.realpath("/bin/codex"), "login", "status"],)
     assert set(calls[1][1]["env"]) == {"CODEX_HOME", "HOME", "LANG", "PATH"}
 
 
@@ -767,11 +767,11 @@ async def test_completed_stream_redacts_nested_continuation_key_everywhere(tmp_p
 
 
 async def test_official_collab_child_continuations_are_private_at_every_boundary(tmp_path, monkeypatch):
-    values = ["parent", "sender-child", "receiver-child", "state-key-child", "state-value-child"]
+    values = ["thread-parent-opaque", "thread-sender-opaque", "thread-receiver-opaque", "thread-state-key-opaque", "thread-state-value-opaque"]
     emitted, provider = [], ready_provider()
     stream = _collab_continuation_stream()
     collected = await provider.collect(Process(stream), [{"role": "user", "content": "p"}], _capture(emitted), ("parent",))
-    assert collected.continuation_id == "parent"
+    assert collected.continuation_id == "thread-parent-opaque"
     assert all(value not in str(item) for value in values for item in [collected.result, emitted])
     monkeypatch.setattr(provider, "start", lambda *_: _process(Process(stream)))
     runtime = codex_runtime(tmp_path, provider)
@@ -779,7 +779,7 @@ async def test_official_collab_child_continuations_are_private_at_every_boundary
     result = await runtime.prompt(session, [{"type": "text", "text": "one"}], emit=_capture(emitted))
     raw, public = runtime.trace.path(session).read_text(), runtime.inspect(session)
     assert all(value not in str(item) for value in values for item in [result, emitted, raw, public])
-    assert runtime.state.read(session)["provider_session_id"] == "parent"
+    assert runtime.state.read(session)["provider_session_id"] == "thread-parent-opaque"
 
 
 async def test_collect_keeps_assistant_text_for_short_thread_id():
@@ -885,12 +885,12 @@ def _continuation_key_stream():
 def _collab_continuation_stream():
     item = {
         "id": "collab", "type": "collab_tool_call", "tool": "wait",
-        "sender_thread_id": "sender-child", "receiver_thread_ids": ["receiver-child"],
-        "prompt": "parent sender-child receiver-child state-key-child state-value-child",
-        "agents_states": {"state-key-child": {"status": "running", "message": "state-value-child"}},
+        "sender_thread_id": "thread-sender-opaque", "receiver_thread_ids": ["thread-receiver-opaque"],
+        "prompt": "thread-parent-opaque thread-sender-opaque thread-receiver-opaque thread-state-key-opaque thread-state-value-opaque",
+        "agents_states": {"thread-state-key-opaque": {"status": "running", "message": "thread-state-value-opaque"}},
         "status": "completed",
     }
-    return _stream([{"type": "item.started", "item": {**item, "status": "in_progress"}}, {"type": "item.completed", "item": item}, {"type": "item.completed", "item": _agent()}], thread_id="parent")
+    return _stream([{"type": "item.started", "item": {**item, "status": "in_progress"}}, {"type": "item.completed", "item": item}, {"type": "item.completed", "item": _agent()}], thread_id="thread-parent-opaque")
 
 
 def _short_thread_stream():
