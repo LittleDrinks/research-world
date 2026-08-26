@@ -14,6 +14,11 @@ export function createReportRequests() {
 }
 
 
+export function reportOperationScope(card, operation) {
+  return `${card}:${operation}`;
+}
+
+
 export function traceReportKey(report) {
   return `report-${report.turn_id || "untraced"}-${report.seq ?? "unsequenced"}`;
 }

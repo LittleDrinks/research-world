@@ -1,7 +1,7 @@
 import { Download, Eye, FileText, Save } from "lucide-react";
 import { useState } from "react";
 import { publishThreadReport, saveThreadReport } from "../../api";
-import { traceReportKey } from "./reportState";
+import { reportOperationScope, traceReportKey } from "./reportState";
 
 
 const stageLabels = { projection: "读取投影", citation_validation: "引用校验", rendering: "生成", output_validation: "最终校验", persistence: "发布" };
@@ -10,9 +10,10 @@ const stageLabels = { projection: "读取投影", citation_validation: "引用�
 export function ReportCard({ threadId, title, reports = [], onRefresh, requests }) {
   const [state, setState] = useState(emptyState());
   const scope = `report-card:${threadId}`;
-  const publish = () => publishReport(threadId, title, setState, onRefresh, requests, scope);
+  const publish = () => publishReport(threadId, title, setState, onRefresh, requests, reportOperationScope(scope, "publish"));
+  const retry = () => publishReport(threadId, title, setState, onRefresh, requests, reportOperationScope(scope, "retry"));
   return <section className="report-workflow" aria-label="报告发布"><ReportHeader onPublish={publish} />
-    <ReportProgress state={state} setState={setState} onRetry={publish} onRefresh={onRefresh} requests={requests} scope={scope} />
+    <ReportProgress state={state} setState={setState} onRetry={retry} onRefresh={onRefresh} requests={requests} scope={reportOperationScope(scope, "save")} />
     <ReportHistory threadId={threadId} reports={reports} />
   </section>;
 }
@@ -21,10 +22,10 @@ export function ReportCard({ threadId, title, reports = [], onRefresh, requests 
 export function ReportMessage({ threadId, result, title, onPublished, onRefresh, requests }) {
   const [state, setState] = useState(resultState(result));
   const scope = traceReportKey(result);
-  const retry = () => retryReport(threadId, result.title || title, state, setState, onRefresh, requests, scope, result, onPublished);
+  const retry = () => retryReport(threadId, result.title || title, state, setState, onRefresh, requests, reportOperationScope(scope, "retry"), result, onPublished);
   return <article className="message assistant report-message"><span>助手</span><section className="report-workflow">
     <ReportMessageHeader failed={state.error !== null} />
-    <ReportProgress state={state} setState={setState} onRetry={retry} onRefresh={onRefresh} requests={requests} scope={scope} />
+    <ReportProgress state={state} setState={setState} onRetry={retry} onRefresh={onRefresh} requests={requests} scope={reportOperationScope(scope, "save")} />
   </section></article>;
 }
 
