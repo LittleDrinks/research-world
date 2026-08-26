@@ -2,6 +2,8 @@ import asyncio
 import io
 import json
 import os
+import platform
+import shlex
 import subprocess
 import sys
 import time
@@ -12,7 +14,7 @@ from runtime.endpoints import Endpoint, load_endpoints
 from runtime.providers.codex import CodexProvider, _collect, _environment, _probe, _taskkill
 from runtime.runtimes import CodexRuntimeAdapter, REALM, load_runtimes
 from runtime.service import Runtime, _messages, _provider_context
-from runtime.types import CapabilityNotFound
+from runtime.types import CapabilityNotFound, TraceError
 
 
 @pytest.fixture(autouse=True)
@@ -71,23 +73,47 @@ def _popen(calls, values):
     return create
 
 
+def _linux_x64():
+    return sys.platform == "linux" and platform.machine() in {"x86_64", "AMD64"}
+
+
 def test_readiness_checks_version_without_exposing_probe_output(monkeypatch):
     calls = []
-    monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: "/bin/codex")
+    monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: sys.executable)
     values = [_probe_result("codex-cli 0.149.1"), _probe_result()]
     monkeypatch.setattr("runtime.providers.codex.subprocess.Popen", _popen(calls, values))
     provider = CodexProvider.detected()
     assert provider is not None
     assert provider.version == "0.149.1"
-    assert calls[0][0] == ([os.path.realpath("/bin/codex"), "--version"],)
+    assert calls[0][0] == ([provider.executable, "--version"],)
     assert calls[0][1]["start_new_session"] is True
     assert set(calls[0][1]["env"]) == {"LANG", "PATH"}
-    assert calls[1][0] == ([os.path.realpath("/bin/codex"), "login", "status"],)
+    assert calls[1][0] == ([provider.executable, "login", "status"],)
     assert set(calls[1][1]["env"]) == {"CODEX_HOME", "HOME", "LANG", "PATH"}
 
 
+@pytest.mark.parametrize("session_id", [None, "thread-1"])
+async def test_snapshot_failure_skips_probes_and_hides_source(monkeypatch, session_id):
+    source = "/private/codex-source"
+    monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: source)
+    monkeypatch.setattr("runtime.providers.codex._freeze_executable", lambda _: None)
+    monkeypatch.setattr("runtime.providers.codex.subprocess.Popen", _unexpected_probe)
+    provider = CodexProvider.detected()
+
+    assert provider.status == "error"
+    assert provider.reason == {"code": "snapshot_unavailable", "probe": "snapshot"}
+    assert provider.executable is None
+    with pytest.raises(TraceError) as raised:
+        await provider.start("gpt", _context(session_id))
+    assert source not in str(raised.value)
+
+
+def _unexpected_probe(*_args, **_kwargs):
+    raise AssertionError("snapshot failure must not probe the source")
+
+
 def test_readiness_keeps_invalid_version_candidate(monkeypatch):
-    monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: "/bin/codex")
+    monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: sys.executable)
     monkeypatch.setattr("runtime.providers.codex.subprocess.Popen", _popen([], [_probe_result("unknown")]))
     descriptor = load_runtimes()[1].descriptor.public()
     assert descriptor["status"] == "error"
@@ -95,7 +121,7 @@ def test_readiness_keeps_invalid_version_candidate(monkeypatch):
 
 
 def test_readiness_rejects_parseable_incompatible_version(monkeypatch):
-    monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: "/bin/codex")
+    monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: sys.executable)
     monkeypatch.setattr("runtime.providers.codex.subprocess.Popen", _popen([], [_probe_result("codex-cli 0.149.2")]))
     provider = CodexProvider.detected()
     assert provider.status == "unsupported"
@@ -111,7 +137,7 @@ def test_readiness_rejects_parseable_incompatible_version(monkeypatch):
     ],
 )
 def test_readiness_uses_only_safe_login_status(monkeypatch, result, status, code):
-    monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: "/bin/codex")
+    monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: sys.executable)
     values = [_probe_result("codex-cli 0.149.1"), _probe_from(result)]
     monkeypatch.setattr("runtime.providers.codex.subprocess.Popen", _popen([], values))
     provider = CodexProvider.detected()
@@ -642,7 +668,7 @@ async def test_loaded_catalog_codex_rejects_missing_declarations(tmp_path, monke
 
 @pytest.mark.parametrize("path, result, status, code", [
     (None, None, "missing", "not_on_path"),
-    ("/bin/codex", subprocess.TimeoutExpired([], 2), "error", "probe_timeout"),
+    (sys.executable, subprocess.TimeoutExpired([], 2), "error", "probe_timeout"),
 ])
 def test_discovery_keeps_unready_codex_descriptor(monkeypatch, path, result, status, code):
     monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: path)
@@ -824,9 +850,142 @@ async def test_codex_identity_check_cannot_race_frozen_execution(tmp_path, sessi
     assert stdout == b"verified"
 
 
+@pytest.mark.skipif(not _linux_x64(), reason="sealed snapshots require Linux/x64")
+def test_detection_probes_only_the_private_snapshot(monkeypatch, tmp_path):
+    executable = tmp_path / "codex"
+    _probe_mutating_script(executable)
+    monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: str(executable))
+
+    provider = CodexProvider.detected()
+
+    assert provider.status == "ready"
+    _close_provider(provider)
+
+
+@pytest.mark.skipif(not _linux_x64(), reason="sealed snapshots require Linux/x64")
+@pytest.mark.parametrize("mutation", ["replace", "overwrite"])
+@pytest.mark.parametrize("session_id", [None, "thread-1"])
+async def test_detected_snapshot_survives_source_mutation(tmp_path, monkeypatch, mutation, session_id):
+    executable = tmp_path / "codex"
+    _codex_script(executable, "snapshot")
+    monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: str(executable))
+    provider = CodexProvider.detected()
+    _mutate_source(executable, mutation)
+
+    process = await provider.start("gpt", _context(session_id))
+    stdout, _ = await process.communicate()
+
+    assert provider.status == "ready"
+    assert stdout == b"snapshot"
+    _close_provider(provider)
+
+
+@pytest.mark.skipif(not _linux_x64(), reason="sealed snapshots require Linux/x64")
+def test_provider_close_releases_all_snapshot_fds(tmp_path):
+    executable = tmp_path / "codex"
+    _codex_script(executable, "snapshot")
+    baseline = _fd_count()
+    providers = [CodexProvider(str(executable)) for _ in range(4)]
+
+    assert _fd_count() >= baseline + len(providers)
+    for provider in providers:
+        provider.close()
+    assert _fd_count() == baseline
+
+
+@pytest.mark.skipif(not _linux_x64(), reason="sealed snapshots require Linux/x64")
+async def test_runtime_close_releases_provider_snapshot(tmp_path):
+    provider = ready_provider()
+    descriptor = provider._fd
+    runtime = codex_runtime(tmp_path, provider)
+
+    await runtime.close()
+
+    assert descriptor is not None
+    assert not os.path.exists(f"/proc/self/fd/{descriptor}")
+
+
+async def test_os_exec_failure_hides_runtime_execution_details(monkeypatch, tmp_path):
+    executable = tmp_path / "codex"
+    _codex_script(executable, "snapshot")
+    provider = ready_provider(str(executable))
+    leaked = f"/proc/self/fd/{provider._fd} {executable} transport-private config-private"
+    monkeypatch.setattr("runtime.providers.codex.asyncio.create_subprocess_exec", _os_exec_failure(leaked))
+    runtime = codex_runtime(tmp_path, provider)
+    session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
+
+    with pytest.raises(RuntimeError) as raised:
+        await runtime.prompt(session, [{"type": "text", "text": "one"}])
+    raw, public = runtime.trace.path(session).read_text(), runtime.inspect(session)
+    assert all(value not in str((raised.value, raw, public)) for value in leaked.split())
+    await _close_runtime(runtime, provider)
+
+
 def _native_script(path, output):
     path.write_text(f"#!/bin/sh\nprintf {output}")
     path.chmod(0o755)
+
+
+def _probe_mutating_script(path):
+    source, replacement = shlex.quote(str(path)), shlex.quote("#!/bin/sh\nexit 7\n")
+    path.write_text(f'''#!/bin/sh
+if [ "$1" = "--version" ]; then
+  printf %s {replacement} > {source}
+  chmod 755 {source}
+  printf 'codex-cli 0.149.1'
+  exit 0
+elif [ "$1" = "login" ]; then
+  exit 0
+fi
+printf snapshot
+''')
+    path.chmod(0o755)
+
+
+def _codex_script(path, output):
+    path.write_text(f'''#!/bin/sh
+if [ "$1" = "--version" ]; then
+  printf 'codex-cli 0.149.1'
+  exit 0
+elif [ "$1" = "login" ]; then
+  exit 0
+fi
+printf %s {shlex.quote(output)}
+''')
+    path.chmod(0o755)
+
+
+def _mutate_source(path, mutation):
+    if mutation == "replace":
+        replacement = path.with_name("replacement")
+        _codex_script(replacement, "replaced")
+        replacement.replace(path)
+        return
+    _codex_script(path, "overwritten")
+
+
+def _fd_count():
+    return len(os.listdir("/proc/self/fd"))
+
+
+def _close_provider(provider):
+    close = getattr(provider, "close", None)
+    if close is not None:
+        close()
+
+
+def _os_exec_failure(leaked):
+    async def fail(*_args, **_kwargs):
+        raise OSError(f"unable to exec {leaked}")
+    return fail
+
+
+async def _close_runtime(runtime, provider):
+    close = getattr(runtime, "close", None)
+    if close is not None:
+        await close()
+    elif provider._fd is not None:
+        os.close(provider._fd)
 
 
 @pytest.mark.parametrize("item", [
