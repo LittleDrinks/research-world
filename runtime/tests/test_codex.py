@@ -737,6 +737,21 @@ async def test_failed_stream_redacts_current_and_result_continuations(tmp_path, 
     assert "unrelated fact" in raw and "unrelated fact" in str(public)
 
 
+async def test_completed_resumed_stream_redacts_current_and_result_continuations(tmp_path, monkeypatch):
+    provider, contexts, emitted = ready_provider(), [], []
+    monkeypatch.setattr(provider, "start", _resuming_continuation_start(contexts))
+    runtime = codex_runtime(tmp_path, provider)
+    session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
+    runtime.state.update(session, {"provider_session_id": "current-continuation"})
+
+    result = await runtime.prompt(session, [{"type": "text", "text": "one"}], emit=_capture(emitted))
+    raw, public = runtime.trace.path(session).read_text(), runtime.inspect(session)
+
+    assert contexts[0]["provider_session_id"] == "current-continuation"
+    assert all(value not in str(item) for value in ["current-continuation", "result-continuation"] for item in [emitted, result, raw, public])
+    assert "unrelated fact" in str((emitted, result, raw, public))
+
+
 @pytest.mark.parametrize("item", [
     {"id": "x", "type": "future_item"},
     {"id": "x", "type": "agent_message", "text": "x", "extra": True},
@@ -787,13 +802,18 @@ def _continuation_failure_stream():
     return b"\n".join(json.dumps(row).encode() for row in rows) + b"\n"
 
 
+def _continuation_completed_stream():
+    text = "current-continuation result-continuation unrelated fact"
+    return _stream([{"type": "item.completed", "item": {"id": "answer", "type": "agent_message", "text": text}}], thread_id="result-continuation")
+
+
 def _query_only_web_events():
     item = {"id": "web", "type": "web_search", "query": "q", "action": {"type": "search", "query": "q"}}
     return [{"type": "item.started", "item": item}, {"type": "item.completed", "item": item}, {"type": "item.completed", "item": _agent()}]
 
 
-def _stream(events, failed=False):
-    rows = [{"type": "thread.started", "thread_id": "one"}, {"type": "turn.started"}, *events]
+def _stream(events, failed=False, thread_id="one"):
+    rows = [{"type": "thread.started", "thread_id": thread_id}, {"type": "turn.started"}, *events]
     rows.append({"type": "turn.failed", "error": {"message": "fatal"}} if failed else _usage())
     return b"\n".join(json.dumps(row, separators=(",", ":")).encode() for row in rows) + b"\n"
 
@@ -1014,6 +1034,19 @@ def _resuming_start(contexts):
         contexts.append(context)
         return _completed_process()
     return start
+
+
+def _resuming_continuation_start(contexts):
+    async def start(_, context):
+        contexts.append(context)
+        return Process(_continuation_completed_stream())
+    return start
+
+
+def _capture(values):
+    async def emit(text):
+        values.append(text)
+    return emit
 
 
 def _record_launches(calls):
