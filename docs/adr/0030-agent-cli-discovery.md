@@ -32,7 +32,7 @@ OpenCLI 是浏览器自动化 Tool Adapter，只能以 `browser.opencli` 进入 
 | `capabilities` | string[] | Adapter 已确认的能力 id；缺省为空，不从产品名推断 |
 同一产品在不同 realm 返回独立 descriptor，以 `(id, realm)` 唯一标识。UI 使用 `runtimeKey(id, realm) = JSON.stringify([id, realm])` 作为 option value、React key 与选择回读 key；选择和 Profile snapshot 始终同时保存 `id`、`realm`，不按 `id` 回退查找。路径与最终 executable 仅保留在 Runtime probe/launch 内部；catalog、Agent API 与 capability snapshot 只包含安全 readiness 字段。`source` 只表示发现来源，不编码 realm、文件类型或 readiness。
 `capabilities` 使用 Runtime 内置词表：`interactive`、`non-interactive`、`streaming`、`resume`、`model-select`、`reasoning-select`、`workspace`、`auth-probe`。Profile 选择的 Skill、Tool 与 MCP 来源不进入该数组。
-每个内置 Runtime 候选始终进入 inventory；缺失、无效版本或 probe 超时只改变该候选的 `status` 与 `reason`。Runtime、Endpoint 与 Model 是 AgentSpec 的独立引用；Catalog 不由 Runtime 合成、保留或推断 Endpoint id。Launch 对 process-owned Codex 以 Runtime/Codex auth readiness 作为执行条件，Endpoint 与 Model 只检查已声明 catalog 项、模型归属和 Runtime 显式兼容性；其他 Runtime 分别检查三者 readiness。缺失或不兼容直接失败，不 fallback。
+每个内置 Runtime 候选始终进入 inventory；缺失、无效版本或 probe 超时只改变该候选的 `status` 与 `reason`。Runtime、Endpoint 与 Model 是 AgentSpec 的独立引用；Catalog 不由 Runtime 合成、保留或推断 Endpoint id。Launch 对 process-owned Codex 以 Runtime/Codex auth readiness 作为执行条件，Endpoint 与 Model 只检查已声明 catalog 项、模型归属和 Runtime 显式兼容性；其他 Runtime 分别检查三者 readiness 与 Endpoint adapter 兼容性。缺失或不兼容直接失败，不 fallback。
 对 process-owned Codex，显式声明的 Endpoint 仅在 adapter 为 `openai-compatible`、含 chat model 时兼容；它不表示 Codex transport 或其凭证就绪。
 ## 状态与错误
 | 状态 | 判定 |
