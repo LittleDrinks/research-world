@@ -26,14 +26,15 @@ OpenCLI 是浏览器自动化 Tool Adapter，只能以 `browser.opencli` 进入 
 | `executable` | string | 固定 probe 使用的命令名 |
 | `version` | string/null | 固定 version probe 解析后的版本 |
 | `source` | enum | 发现机制：`path`、`win_get`、`npm`、`installer`、`explicit`、`container_image` |
-| `path` | string/null | 发现入口；PATH 命中的 shim、symlink、`.cmd` 或 executable 路径 |
-| `resolved_path` | string/null | 在该 realm 内解析后的最终 executable；缺失项为 null |
 | `status` | enum | `found`、`ready`、`auth-required`、`missing`、`error`、`unsupported` |
 | `reason` | object/null | `code`、可展示 `message` 与失败 `probe`；不含 stdout、stderr、环境值或凭证 |
 | `last_checked_at` | RFC 3339 | 该 descriptor 最近完成探测的时间 |
 | `capabilities` | string[] | Adapter 已确认的能力 id；缺省为空，不从产品名推断 |
-同一产品在不同 realm 返回独立 descriptor，以 `(id, realm)` 唯一标识。UI 使用 `runtimeKey(id, realm) = JSON.stringify([id, realm])` 作为 option value、React key 与选择回读 key；选择和 Profile snapshot 始终同时保存 `id`、`realm`，不按 `id` 回退查找。`path` 不跟随 symlink、shim 或 wrapper；`resolved_path` 完成 realm 内解析。`source` 只表示发现来源，不编码 realm、文件类型或 readiness。
+同一产品在不同 realm 返回独立 descriptor，以 `(id, realm)` 唯一标识。UI 使用 `runtimeKey(id, realm) = JSON.stringify([id, realm])` 作为 option value、React key 与选择回读 key；选择和 Profile snapshot 始终同时保存 `id`、`realm`，不按 `id` 回退查找。路径与最终 executable 仅保留在 Runtime probe/launch 内部；catalog、Agent API 与 capability snapshot 只包含安全 readiness 字段。`source` 只表示发现来源，不编码 realm、文件类型或 readiness。
 `capabilities` 使用 Runtime 内置词表：`interactive`、`non-interactive`、`streaming`、`resume`、`model-select`、`reasoning-select`、`workspace`、`auth-probe`。Profile 选择的 Skill、Tool 与 MCP 来源不进入该数组。
+每个内置 Runtime 候选始终进入 inventory；缺失、无效版本或 probe 超时只改变该候选的 `status` 与 `reason`。Runtime、Endpoint 与 Model 是 AgentSpec 的独立引用；Catalog 不由 Runtime 合成、保留或推断 Endpoint id。Launch 对 process-owned Codex 以 Runtime/Codex auth readiness 作为执行条件，Endpoint 与 Model 只检查已声明 catalog 项、模型归属和 Runtime 显式兼容性；其他 Runtime 分别检查三者 readiness 与 Endpoint adapter 兼容性。缺失或不兼容直接失败，不 fallback。
+对 process-owned Codex，显式声明的 Endpoint 仅在 adapter 为 `openai-compatible`、含 chat model 时兼容；它不表示 Codex transport 或其凭证就绪。
+每个 Runtime 声明非空兼容 adapter 集合；空声明不从 Runtime id 推断兼容性。Endpoint adapter 为必填非空字段，缺失或空值拒绝，不存在 `openai-compatible` 兼容别名。
 ## 状态与错误
 | 状态 | 判定 |
 |---|---|
@@ -41,13 +42,14 @@ OpenCLI 是浏览器自动化 Tool Adapter，只能以 `browser.opencli` 进入 
 | `ready` | executable、兼容版本、Adapter 与必需认证全部确认；不表示 Profile 已启用 |
 | `auth-required` | executable、版本与 Adapter 可用，安全认证 probe 明确报告未登录、过期或缺凭证 |
 | `missing` | 固定候选在目标 realm 的 PATH 与显式位置均不存在 |
-| `error` | executable 存在，但固定 probe 超时、崩溃或返回不可解析结果 |
+| `error` | executable 存在，但私有快照不可用，或固定 probe 超时、崩溃或返回不可解析结果 |
 | `unsupported` | executable 存在，但平台、版本或 Runtime Adapter 明确不兼容 |
-稳定 reason code 为 `not_on_path`、`auth_missing`、`auth_expired`、`auth_probe_unavailable`、`probe_timeout`、`probe_failed`、`probe_invalid_output`、`version_incompatible`、`adapter_unavailable`、`realm_mismatch`、`unsupported_platform`。`missing` 不伪造 `path`；wrapper 无法解析时返回 `error/probe_invalid_output`；跨 realm descriptor 只能是 `found/realm_mismatch`，不能参与当前 realm readiness。
+稳定 reason code 为 `not_on_path`、`snapshot_unavailable`、`auth_missing`、`auth_expired`、`auth_probe_unavailable`、`probe_timeout`、`probe_failed`、`probe_invalid_output`、`version_incompatible`、`adapter_unavailable`、`realm_mismatch`、`unsupported_platform`。`missing` 不伪造 `path`；wrapper 无法解析时返回 `error/probe_invalid_output`；跨 realm descriptor 只能是 `found/realm_mismatch`，不能参与当前 realm readiness。
 ## Probe
 Runtime 对每个内置候选执行固定 argv allowlist，不经过 shell。定位、路径解析、版本与认证 probe 分进程运行；单步 2 秒、单候选累计 5 秒，stdout 与 stderr 各截断到 16 KiB，解析后丢弃。进程组超时终止；一个候选失败不改变其他结果。
 固定 version argv 包含 Codex `['codex', '--version']` 与 Kimi Code `['kimi', '--version']`。Kimi 不登记认证 argv；version probe 不运行 `doctor`、读取配置或访问 secret。
-认证只使用官方、非交互、无敏感输出的状态命令。没有这种命令时返回 `found/auth_probe_unavailable`，不得读取配置文件、环境变量值或 token。配置语法有效不等于已认证；Kimi `doctor config` 成功仍保持认证 unknown。probe 不执行 install、update、login、token refresh、doctor 修复、付费模型调用或任意用户命令。
+Codex 只支持 Linux/x64 官方 native executable。定位后解析 symlink，复制已打开对象到不可命名的私有 memfd，并在写入完成后 seal；version/login probe、fresh launch、resume 与 identity recheck 都只使用该快照，目录项替换和原 inode 覆写均不能穿透。创建或 seal 失败立即返回 `error/snapshot_unavailable`，不执行 probe，也不将源路径用于 launch 或 resume。快照 FD 归 Provider 所有，`close` 和 Runtime `close` 释放它；启动 OS 错误只投影受控 `cli_unavailable`，不暴露 FD、路径、transport 或配置。child environment 使用固定 locale 和受信任系统 PATH，不支持 Node entrypoint。
+认证只使用官方、非交互、无敏感输出的状态命令。Codex 固定执行 `['codex', 'login', 'status']`：退出码 0 为 `ready`，非 0 为 `auth-required/auth_missing`；命令不可用为 `found/auth_probe_unavailable`。不得读取配置文件、环境变量值或 token。配置语法有效不等于已认证；Kimi `doctor config` 成功仍保持认证 unknown。probe 不执行 install、update、login、token refresh、doctor 修复、付费模型调用或任意用户命令。
 ## Realm 与缓存
 `wsl`、`windows` 与 `container` 是独立 execution realm。Runtime 只把当前 launch realm 的 descriptor 用于 AgentSpec readiness；其他 realm 仅作为 inventory 事实展示。
 结果按 `(workspace_id, realm, runtime_build)` 缓存 60 秒；key 不含 host path、Profile id 或认证值。页面进入读取缓存；手动刷新绕过缓存。首次无缓存为 `loading`，刷新时旧 snapshot 保持可读并标记 `refreshing`，候选 catalog 为空为 `empty`。刷新失败返回本次各 descriptor 的稳定错误并保留上次 snapshot 供对照，不把旧结果标记为本次成功。
@@ -65,12 +67,10 @@ CLI 缺失或不兼容时，UI 可请求 `runtime/prepare/plan` 生成 CLI-only 
     "executable": "codex",
     "version": "0.149.1",
     "source": "installer",
-    "path": "~/.local/bin/codex",
-    "resolved_path": "~/.codex/packages/standalone/releases/0.149.1-x86_64-unknown-linux-musl/bin/codex",
     "status": "ready",
     "reason": null,
     "last_checked_at": "2026-08-24T14:23:05Z",
-    "capabilities": ["non-interactive", "streaming", "resume", "model-select", "reasoning-select", "workspace", "auth-probe"]
+    "capabilities": ["non-interactive", "resume", "model-select", "reasoning-select", "workspace", "auth-probe"]
   }],
   "cache": {"realm": "wsl:ubuntu", "runtime_build": "0.1.0", "ttl_seconds": 60, "stale": false}
 }
