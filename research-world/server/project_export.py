@@ -32,7 +32,8 @@ _PATH_KEYS = {"path", "root", "workspace", "cwd", "home", "codex_home", "runtime
 
 async def export_project(world, runtime, project_id: str) -> bytes:
     project = world.project(project_id)
-    nodes, threads = world.nodes(project_id), world.project_threads(project_id)
+    nodes = sorted(world.nodes(project_id), key=lambda item: item["id"])
+    threads = sorted(world.project_threads(project_id), key=lambda item: item["id"])
     store = ArtifactStore(world.artifacts_root, project_id)
     artifacts = store.records()
     traces = await _traces(runtime, threads)
@@ -51,11 +52,16 @@ def package(project_id, snapshot, artifacts, report_files, bibtex) -> bytes:
 
 def _snapshot(world, project, nodes, traces, reports):
     return {
-        "project": _clean({"project": project, "nodes": nodes, "edges": world.edges(project["id"])}),
+        "project": _clean({"project": project, "nodes": nodes, "edges": _edges(world, project)}),
         "runs": _runs(world, project["id"]),
         "traces": traces,
         "reports": reports,
     }
+
+
+def _edges(world, project):
+    fields = ("source", "target", "polarity", "created_at")
+    return sorted(world.edges(project["id"]), key=lambda item: tuple(item[field] for field in fields))
 
 
 def _runs(world, project_id):
@@ -82,7 +88,9 @@ async def _trace(runtime, thread):
 
 def _thread(value):
     fields = ("id", "title", "agent_id", "archived", "created_at", "updated_at", "nodes")
-    return _clean({field: value.get(field) for field in fields})
+    record = {field: value.get(field) for field in fields}
+    record["nodes"] = sorted(value.get("nodes", []), key=lambda item: item["id"])
+    return _clean(record)
 
 
 def _reports(world, threads, store):
