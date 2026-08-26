@@ -43,6 +43,7 @@ USAGE_FIELDS = {
 }
 PROBE_OUTPUT_LIMIT = 16 * 1024
 TERMINATE_TIMEOUT = 2.0
+PROBE_STEP_TIMEOUT = 2.0
 PROBE_CANDIDATE_TIMEOUT = 5.0
 PROBE_CLEANUP_SLICE = 0.1
 CHILD_PATH = "/usr/local/bin:/usr/bin:/bin"
@@ -83,9 +84,14 @@ class CodexProvider:
             return provider
         if provider._fd is None:
             return provider
-        provider.version, provider.status, provider.reason = _version(provider.executable, provider._fd)
+        deadline = _candidate_deadline()
+        provider.version, provider.status, provider.reason = _version(
+            provider.executable, provider._fd, deadline
+        )
         if provider.status == "found":
-            provider.status, provider.reason = _readiness(provider.executable, provider._fd)
+            provider.status, provider.reason = _readiness(
+                provider.executable, provider._fd, deadline
+            )
         return provider
 
     def close(self) -> None:
@@ -157,8 +163,14 @@ def _probe_environment() -> dict[str, str]:
     return {"LANG": "C.UTF-8", "PATH": CHILD_PATH}
 
 
-def _version(executable: str, fd: int | None) -> tuple[str | None, str, dict[str, str] | None]:
-    result = _version_probe(executable, fd)
+def _candidate_deadline() -> float:
+    return time.monotonic() + PROBE_CANDIDATE_TIMEOUT
+
+
+def _version(
+    executable: str, fd: int | None, deadline: float
+) -> tuple[str | None, str, dict[str, str] | None]:
+    result = _version_probe(executable, fd, deadline)
     if isinstance(result, tuple):
         return result
     if result.returncode != 0:
@@ -169,12 +181,16 @@ def _version(executable: str, fd: int | None) -> tuple[str | None, str, dict[str
     return _version_status(match.group(1))
 
 
-def _version_probe(executable: str, fd: int | None):
-    return _probe([executable, "--version"], "version", _probe_environment(), fd)
+def _version_probe(executable: str, fd: int | None, deadline: float):
+    return _probe(
+        [executable, "--version"], "version", _probe_environment(), fd,
+        deadline=deadline,
+    )
 
 
-def _probe(argv: list[str], name: str, environment=None, fd: int | None = None):
-    deadline = time.monotonic() + PROBE_CANDIDATE_TIMEOUT
+def _probe(argv: list[str], name: str, environment=None, fd: int | None = None, *, deadline: float):
+    if _step_timeout(deadline) <= 0:
+        return None, "error", _reason("probe_timeout", name)
     process = _start_probe(argv, name, environment, fd)
     if isinstance(process, tuple):
         return process
@@ -194,16 +210,16 @@ def _start_probe(argv, name, environment, fd):
 
 def _complete_probe(process, stdout, stderr, deadline, name, argv):
     try:
-        process.wait(timeout=_remaining(deadline))
+        process.wait(timeout=_step_timeout(deadline))
     except subprocess.TimeoutExpired:
-        _stop_probe(process, deadline)
-        _join_probe_readers(stdout, stderr, deadline=deadline)
-        return None, "error", _reason("probe_timeout", name)
+        return _timed_out_probe(process, stdout, stderr, deadline, name)
     except OSError:
         _join_probe_readers(stdout, stderr, deadline=deadline)
         return None, "error", _reason("probe_failed", name)
     if _reader_cleanup_failed(process, stdout, stderr, deadline):
         return None, "error", _reason("probe_timeout", name)
+    if _remaining(deadline) <= 0:
+        return _timed_out_probe(process, stdout, stderr, deadline, name)
     return subprocess.CompletedProcess(argv, process.returncode, stdout.value, stderr.value)
 
 
@@ -246,6 +262,12 @@ def _stop_probe(process, deadline) -> None:
     _wait_probe(process, deadline)
 
 
+def _timed_out_probe(process, stdout, stderr, deadline, name):
+    _stop_probe(process, deadline)
+    _join_probe_readers(stdout, stderr, deadline=deadline)
+    return None, "error", _reason("probe_timeout", name)
+
+
 def _reader_cleanup_failed(process, stdout, stderr, deadline) -> bool:
     short_deadline = min(deadline, time.monotonic() + PROBE_CLEANUP_SLICE)
     if _join_probe_readers(stdout, stderr, deadline=short_deadline):
@@ -256,6 +278,8 @@ def _reader_cleanup_failed(process, stdout, stderr, deadline) -> bool:
 
 
 def _wait_probe(process, deadline) -> bool:
+    if _remaining(deadline) == 0:
+        return False
     try:
         process.wait(timeout=min(PROBE_CLEANUP_SLICE, _remaining(deadline)))
     except subprocess.TimeoutExpired:
@@ -265,6 +289,10 @@ def _wait_probe(process, deadline) -> bool:
 
 def _remaining(deadline) -> float:
     return max(0.0, deadline - time.monotonic())
+
+
+def _step_timeout(deadline) -> float:
+    return min(PROBE_STEP_TIMEOUT, _remaining(deadline))
 
 
 def _version_status(version: str) -> tuple[str, str, dict[str, str] | None]:
@@ -960,13 +988,18 @@ def _usage(events: list[dict]) -> dict[str, int]:
     return usage
 
 
-def _readiness(executable: str, fd: int | None) -> tuple[str, dict[str, str] | None]:
+def _readiness(executable: str, fd: int | None, deadline: float) -> tuple[str, dict[str, str] | None]:
+    if _remaining(deadline) <= 0:
+        return "error", _reason("probe_timeout", "login status")
     with tempfile.TemporaryDirectory() as home:
         try:
             prepare_session_auth(Path(home))
         except RuntimeError:
             return "auth-required", {"code": "auth_missing", "probe": "login status"}
-        result = _probe([executable, "login", "status"], "login status", _environment({"codex_home": home}), fd)
+        result = _probe(
+            [executable, "login", "status"], "login status",
+            _environment({"codex_home": home}), fd, deadline=deadline,
+        )
     if isinstance(result, tuple):
         _, status, reason = result
         return ("found", _reason("auth_probe_unavailable", "login status")) if reason["code"] == "probe_failed" else (status, reason)
