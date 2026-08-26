@@ -108,7 +108,7 @@ async def test_prompt_rejects_an_empty_final_response(tmp_path, monkeypatch):
 
 async def test_agent_spec_exposes_only_selected_builtin_tools(tmp_path, monkeypatch):
     runtime, provider = configured_runtime(tmp_path, monkeypatch)
-    selected_tools = ["report_projection", "report_validate"]
+    selected_tools = ["report_projection", "publish_report"]
     selected = await launch(runtime, tmp_path, spec(tools=selected_tools))
     omitted = await launch(runtime, tmp_path, spec(id="without-report"))
 

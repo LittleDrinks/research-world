@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from server.artifacts import ArtifactStore
 from server.app import create_app
 from server.kernel import KernelCommand, KernelQuery, ResearchKernel
+from server.report_delivery import validate_html
 from server.reporting import REPORT_INPUT_TOKEN_BUDGET
 from server.runtime_client import KernelClient
 
@@ -97,16 +98,6 @@ def test_projection_filters_unsafe_fields_and_unlinked_artifacts(world, project,
     assert [item["id"] for item in projection["artifacts"]] == [linked["id"]]
     assert "secret" not in str(projection)
     assert all(field not in str(envelope) for field in ("apikey", "baseurl", "config_path", "raw"))
-
-
-def test_report_validate_assesses_a_ready_private_projection(world, project, tmp_path):
-    value = kernel(world, tmp_path)
-    admitted_evidence(world, project)
-
-    assessment = asyncio.run(value.query(KernelQuery("report_validate", project["id"])))
-
-    assert assessment["valid"] is True
-    assert assessment["accepted_facts"][0]["text"] == "Measured at 42 K."
 
 
 def test_publication_renders_typed_evidence_with_exact_source_links(world, project, tmp_path):
@@ -241,6 +232,14 @@ def test_publication_anchors_experiment_owned_artifacts_to_the_exact_claim(world
     assert link == {"claim_id": projection["facts"][0]["claim_id"], "evidence_id": experiment["id"]}
     assert f'id="evidence-{experiment["id"]}"' in content
     assert f'href="#evidence-{experiment["id"]}"' in content
+
+
+def test_publication_saved_content_passes_the_actual_output_validator(world, project, tmp_path):
+    value = kernel(world, tmp_path)
+    admitted_evidence(world, project)
+    thread = report_thread(world, project)
+    publication = publish(value, project, thread)["publication"]
+    assert validate_html(read(value, project, thread, publication)) == []
 
 
 def test_identical_bytes_publish_independently_per_project(world, project, tmp_path):

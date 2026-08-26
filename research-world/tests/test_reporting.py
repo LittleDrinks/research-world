@@ -1,4 +1,10 @@
-from server.report_delivery import render_html, validate_html
+from io import BytesIO
+
+import pytest
+from PIL import Image
+from latex2mathml import exceptions as latex_errors
+
+from server.report_delivery import artifact_display, render_html, validate_html
 from server.reporting import assess_delivery, projection_envelope
 
 
@@ -70,6 +76,15 @@ def test_rendered_report_rejects_garbage_without_semantic_structure():
     assert validate_html(content) == [{"code": "rendered_content_invalid", "path": "html", "value": None}]
 
 
+@pytest.mark.parametrize("content", [
+    b"<!doctype html><html><head><title>Orbit</title></head><body></body></html>",
+    b"<!doctype html><html><head><title>Orbit</title></head><body></body></html>x",
+    b"<!doctype html><html><head><title>Orbit</title></head><body></body></html><html></html>",
+])
+def test_rendered_report_rejects_incomplete_or_trailing_documents(content):
+    assert validate_html(content)[0]["code"] == "rendered_content_invalid"
+
+
 def report_fixture(text):
     value = projection()
     assessment = assess_delivery(value)
@@ -84,6 +99,25 @@ def test_formula_evidence_is_renderable_mathml():
     value["artifacts"][0]["display"] = {"kind": "formula", "mathml": "<math><mi>E</mi></math>"}
     html = render_html("Orbit", value, assess_delivery(value)).decode()
     assert "<math" in html and "<mtext>" not in html
+
+
+@pytest.mark.parametrize("error", [value for value in vars(latex_errors).values() if isinstance(value, type) and issubclass(value, Exception)])
+def test_formula_conversion_errors_are_controlled(monkeypatch, error):
+    monkeypatch.setattr("server.report_delivery.convert", lambda _text: (_ for _ in ()).throw(error()))
+    assert artifact_display({"media_type": "application/x-latex"}, b"x") == {"kind": "invalid"}
+
+
+def test_chart_display_decodes_pixels_and_rejects_tiny_malformed_fixtures(monkeypatch):
+    content = image_bytes((2, 2))
+    assert artifact_display({"media_type": "image/png"}, content)["kind"] == "chart"
+    assert artifact_display({"media_type": "image/png"}, content[:-8]) == {"kind": "invalid"}
+    monkeypatch.setattr("server.report_delivery.MAX_IMAGE_PIXELS", 1)
+    assert artifact_display({"media_type": "image/png"}, content) == {"kind": "invalid"}
+
+
+def test_chart_display_rejects_pillow_decompression_bombs(monkeypatch):
+    monkeypatch.setattr("server.report_delivery.Image.open", lambda _data: (_ for _ in ()).throw(Image.DecompressionBombError("bomb")))
+    assert artifact_display({"media_type": "image/png"}, b"png") == {"kind": "invalid"}
 
 
 def test_delivery_rejects_unsafe_narrative_without_returning_its_value():
@@ -130,3 +164,9 @@ def test_public_envelope_blocks_invalid_narrative_without_projection_payload():
     assert envelope["status"] == "blocked"
     assert "projection" not in envelope
     assert secret not in str(envelope)
+
+
+def image_bytes(size):
+    stream = BytesIO()
+    Image.new("RGB", size).save(stream, "PNG")
+    return stream.getvalue()

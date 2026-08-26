@@ -32,7 +32,7 @@ class FakeRuntime:
         return self.sessions[session_id]
 
     async def recognize(self, workspace):
-        tools = ["read_resource", "graph_query", "report_projection", "report_validate",
+        tools = ["read_resource", "graph_query", "report_projection", "publish_report",
                  "export_bibtex", "submit_observation"]
         return {
             "workspace": workspace,

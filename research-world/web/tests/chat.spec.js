@@ -71,6 +71,16 @@ test("interleaves a report event at its trace turn and sequence", async ({ page 
   const text = await page.locator(".message-list").innerText();
   expect(text.indexOf("报告已发布")).toBeGreaterThan(text.indexOf("先发布"));
   expect(text.indexOf("报告已发布")).toBeLessThan(text.indexOf("报告之后"));
+  await expect(page.locator(".report-message")).toHaveCount(1);
+});
+
+
+test("renders a failed traced report without a publication key", async ({ page }) => {
+  const runtime = { ...threadDetail().runtime, reports: [{ ...failedCitationReport(), turn_id: "t1", seq: 2 }], turns: [{ id: "t1", input: [], output: "失败后继续", events: [] }] };
+  await mockChat(page, threadDetail({ runtime }));
+  await page.goto("/chat/thread%3At1");
+  await expect(page.locator(".report-message")).toHaveCount(1);
+  await expect(page.getByRole("alert")).toContainText("source_missing");
 });
 
 
@@ -93,11 +103,15 @@ test("keeps failed citation reports retryable without preview links on mobile", 
 test("restores named thread report cards after reload", async ({ page }) => {
   const reports = [{ id: "report:v1", title: "V1", publication_id: "publication:p1" }];
   await mockChat(page, threadDetail({ reports }));
+  await page.route(/\/report\/publication%3Ap1\/content/, (route) => route.fulfill({ contentType: "text/html", body: "<!doctype html><html><body>Immutable saved version</body></html>" }));
   await page.goto("/chat/thread%3At1");
   await expect(page.getByText("V1")).toBeVisible();
   await page.reload();
   await expect(page.getByText("V1")).toBeVisible();
   await expect(page.getByRole("link", { name: "下载" })).toHaveAttribute("download", "");
+  const opened = page.waitForEvent("popup");
+  await page.getByRole("link", { name: "预览" }).click();
+  await expect(await opened).toHaveText("Immutable saved version");
 });
 
 

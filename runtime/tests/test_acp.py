@@ -111,29 +111,6 @@ async def test_graph_query_crosses_the_client_boundary(tmp_path):
     assert json.loads(content) == {"id": "D-008", "life_state": "admitted"}
 
 
-async def test_report_validate_crosses_the_client_boundary(tmp_path):
-    client = KernelClient()
-    async with ToolBox(tmp_path, {}, ("report_validate",), {}, client) as tools:
-        content, failed = await tools.call("session", "report_validate", "{}")
-
-    assert failed is False
-    assert json.loads(content) == {"valid": True, "delivery_level": 4}
-    assert client.calls == [("research/report_validate", {})]
-
-
-async def test_report_validate_rejects_caller_readiness(tmp_path):
-    client = KernelClient()
-    values = {"facts": [], "endpoint_ready": True}
-    async with ToolBox(tmp_path, {}, ("report_validate",), {}, client) as tools:
-        content, failed = await tools.call(
-            "session", "report_validate", json.dumps(values)
-        )
-
-    assert failed is True
-    assert "unexpected report validation fields" in content
-    assert client.calls == []
-
-
 async def test_export_bibtex_crosses_the_client_boundary(tmp_path):
     client = KernelClient()
     artifact_id = "artifact:" + "a" * 64
@@ -229,7 +206,7 @@ async def test_submit_observation_crosses_the_client_boundary(tmp_path):
 
 async def test_kernel_tools_are_exposed_only_when_selected(tmp_path):
     async with ToolBox(
-        tmp_path, {}, ("report_projection", "report_validate", "publish_report", "submit_observation"), {}, None
+        tmp_path, {}, ("report_projection", "publish_report", "submit_observation"), {}, None
     ) as selected:
         selected_names = tool_names(selected)
     async with ToolBox(tmp_path, {}, (), {}, None) as omitted:
@@ -237,10 +214,8 @@ async def test_kernel_tools_are_exposed_only_when_selected(tmp_path):
 
     assert "report_projection" in selected_names
     assert "publish_report" in selected_names
-    assert "report_validate" in selected_names
     assert "submit_observation" in selected_names
     assert "report_projection" not in omitted_names
-    assert "report_validate" not in omitted_names
     assert "submit_observation" not in omitted_names
 
 
@@ -350,8 +325,6 @@ class KernelClient:
         self.calls.append((method, params))
         if method == "research/report_projection":
             return {"facts": [], "claims": [], "sources": []}
-        if method == "research/report_validate":
-            return {"valid": True, "delivery_level": 4}
         if method == "research/publish_report":
             return {"status": "failed", "assessment": {"gaps": []}}
         if method == "research/export_bibtex":

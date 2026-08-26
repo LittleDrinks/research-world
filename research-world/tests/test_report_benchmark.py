@@ -2,7 +2,7 @@ import asyncio
 
 from server.kernel import KernelQuery, ResearchKernel
 from server.report_delivery import render_html
-from server.reporting import REPORT_INPUT_TOKEN_BUDGET, REPORT_SECTIONS, assess_delivery
+from server.reporting import REPORT_INPUT_TOKEN_BUDGET, REPORT_SECTIONS, assess_delivery, input_tokens
 
 
 SOURCE = "node:" + "a" * 24
@@ -48,12 +48,12 @@ def test_report_skill_benchmark_blocks_kernel_before_public_projection(world, pr
 
 def test_report_skill_benchmark_keeps_the_exact_budget_boundary(world, project, tmp_path, monkeypatch):
     kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
-    monkeypatch.setattr("server.kernel._report_input_upper_bound", lambda *_: REPORT_INPUT_TOKEN_BUDGET)
-    ready = asyncio.run(kernel.query(KernelQuery("report_projection", project["id"])))
-    monkeypatch.setattr("server.kernel._report_input_upper_bound", lambda *_: REPORT_INPUT_TOKEN_BUDGET + 1)
-    blocked = asyncio.run(kernel.query(KernelQuery("report_projection", project["id"])))
-    assert ready["status"] != "blocked" or ready["gaps"][0]["code"] != "projection_budget_exceeded"
-    assert blocked["gaps"][0]["code"] == "projection_budget_exceeded"
+    ready, blocked = boundary_projection(2048), boundary_projection(2049)
+    monkeypatch.setattr(kernel, "_report_view", lambda *_: ready)
+    assert asyncio.run(kernel.query(KernelQuery("report_projection", project["id"]))) ["status"] == "ready"
+    monkeypatch.setattr(kernel, "_report_view", lambda *_: blocked)
+    result = asyncio.run(kernel.query(KernelQuery("report_projection", project["id"])))
+    assert result["gaps"] == [{"code": "projection_budget_exceeded", "path": "projection", "value": 2049}]
 
 
 def test_report_skill_benchmark_excludes_trace_payload(world, project, tmp_path):
@@ -62,3 +62,11 @@ def test_report_skill_benchmark_excludes_trace_payload(world, project, tmp_path)
     kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
     envelope = asyncio.run(kernel.query(KernelQuery("report_projection", project["id"])))
     assert marker not in str(envelope)
+
+
+def boundary_projection(tokens):
+    value = projection()
+    value["question"] += "x" * (4 * (tokens - input_tokens(value)))
+    while input_tokens(value) < tokens:
+        value["question"] += "x"
+    return value
