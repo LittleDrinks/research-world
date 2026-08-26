@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { bootstrap, mockBase, project, threadDetail } from "./fixtures";
 
+const MAIN_BRAND = "“强国有我”思政案例库";
+
 
 async function mockShell(page) {
   await mockBase(page);
@@ -17,7 +19,6 @@ test("keeps project selection outside the application shell", async ({ page }) =
   await page.locator(".project-list > button").click();
   await expect(page).toHaveURL(/\/map$/);
   await expect(page.locator(".module-nav a")).toHaveCount(5);
-  await expect(page.locator(".brand")).toContainText("Research World");
   const dock = page.locator(".project-dock");
   await expect(dock.getByRole("link")).toHaveCount(2);
   await expect(dock).not.toContainText("测试项目");
@@ -25,6 +26,16 @@ test("keeps project selection outside the application shell", async ({ page }) =
   await expect(dock.getByRole("link", { name: "项目设置" })).toHaveAttribute("title", "项目设置");
   await dock.getByRole("link", { name: "切换项目" }).click();
   await expect(page).toHaveURL(/\/projects$/);
+});
+
+
+test("uses the main brand on project selection and sidebar", async ({ page }) => {
+  await mockShell(page);
+  await page.goto("/projects");
+  await expect(page.locator(".projects-brand b")).toHaveText(MAIN_BRAND);
+  await page.locator(".project-list > button").click();
+  await expect(page).toHaveURL(/\/map$/);
+  await expect(page.locator(".brand b")).toHaveText(MAIN_BRAND);
 });
 
 
