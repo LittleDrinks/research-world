@@ -17,13 +17,14 @@ sources:
 ## 决策
 Agent Runtime 在实际启动 Agent 的进程与 execution realm 内只读识别 Agent CLI。浏览器、Research Kernel 与 Tool Adapter 不探测可执行文件。`runtime/discover` 返回 inventory；发现结果不写 AgentSpec、Profile 或 Preset，不安装、不登录、不启用、不调用模型。
 OpenCLI 是浏览器自动化 Tool Adapter，只能以 `browser.opencli` 进入 Tool catalog 或驱动 WebUI QA；不属于 Agent CLI、execution runtime、认证来源或 prepare 目标。
+本阶段的 AgentSpec `runtime` 只有两个键：`{id: "codex", realm}`。Runtime、Endpoint、Model 是三个独立引用；Endpoint 不推断 Runtime，缺失或不兼容的引用直接失败，不替换为其他引用。
 ## Descriptor
 | 字段 | 类型 | 语义 |
 |---|---|---|
 | `id` | stable string | Runtime 内置产品 id，如 `codex`、`claude`、`pi`、`kimi-code`；不由路径生成 |
 | `realm` | stable string | 执行边界 id，如 `wsl:ubuntu`、`windows:host`、`container:runtime` |
 | `display_name` | string | 产品展示名 |
-| `executable` | string | 固定 probe 使用的命令名 |
+| `executable` | string | Runtime probe/launch 私有的固定命令名，不进入公共 catalog |
 | `version` | string/null | 固定 version probe 解析后的版本 |
 | `source` | enum | 发现机制：`path`、`win_get`、`npm`、`installer`、`explicit`、`container_image` |
 | `status` | enum | `found`、`ready`、`auth-required`、`missing`、`error`、`unsupported` |
@@ -31,10 +32,12 @@ OpenCLI 是浏览器自动化 Tool Adapter，只能以 `browser.opencli` 进入 
 | `last_checked_at` | RFC 3339 | 该 descriptor 最近完成探测的时间 |
 | `capabilities` | string[] | Adapter 已确认的能力 id；缺省为空，不从产品名推断 |
 同一产品在不同 realm 返回独立 descriptor，以 `(id, realm)` 唯一标识。UI 使用 `runtimeKey(id, realm) = JSON.stringify([id, realm])` 作为 option value、React key 与选择回读 key；选择和 Profile snapshot 始终同时保存 `id`、`realm`，不按 `id` 回退查找。路径与最终 executable 仅保留在 Runtime probe/launch 内部；catalog、Agent API 与 capability snapshot 只包含安全 readiness 字段。`source` 只表示发现来源，不编码 realm、文件类型或 readiness。
+公共 Runtime descriptor 只投影 `id`、`realm`、`display_name`、`version`、`source`、`status`、`reason`、`last_checked_at` 与 `capabilities`；`executable`、path、配置路径、环境值、凭证与 transport 永不出现在 `runtime/discover`、Agent API、Profile 或 capability snapshot。Endpoint 的兼容性只在 Runtime 内部校验，页面不展示 transport 细节。
 `capabilities` 使用 Runtime 内置词表：`interactive`、`non-interactive`、`streaming`、`resume`、`model-select`、`reasoning-select`、`workspace`、`auth-probe`。Profile 选择的 Skill、Tool 与 MCP 来源不进入该数组。
 每个内置 Runtime 候选始终进入 inventory；缺失、无效版本或 probe 超时只改变该候选的 `status` 与 `reason`。Runtime、Endpoint 与 Model 是 AgentSpec 的独立引用；Catalog 不由 Runtime 合成、保留或推断 Endpoint id。Launch 对 process-owned Codex 以 Runtime/Codex auth readiness 作为执行条件，Endpoint 与 Model 只检查已声明 catalog 项、模型归属和 Runtime 显式兼容性；其他 Runtime 分别检查三者 readiness 与 Endpoint adapter 兼容性。缺失或不兼容直接失败，不 fallback。
 对 process-owned Codex，显式声明的 Endpoint 仅在 adapter 为 `openai-compatible`、含 chat model 时兼容；它不表示 Codex transport 或其凭证就绪。
 每个 Runtime 声明非空兼容 adapter 集合；空声明不从 Runtime id 推断兼容性。Endpoint adapter 为必填非空字段，缺失或空值拒绝，不存在 `openai-compatible` 兼容别名。
+本阶段 inventory 只包含 Codex descriptor；默认 Agent 也只从 ready Codex descriptor 与已声明兼容 Endpoint/Model 的可用组合选择。没有合格组合时直接失败，不生成 synthetic ready Runtime、推断 Endpoint/Model 或跨 Adapter fallback。
 ## 状态与错误
 | 状态 | 判定 |
 |---|---|
@@ -55,6 +58,8 @@ Codex 只支持 Linux/x64 官方 native executable。定位后解析 symlink，�
 结果按 `(workspace_id, realm, runtime_build)` 缓存 60 秒；key 不含 host path、Profile id 或认证值。页面进入读取缓存；手动刷新绕过缓存。首次无缓存为 `loading`，刷新时旧 snapshot 保持可读并标记 `refreshing`，候选 catalog 为空为 `empty`。刷新失败返回本次各 descriptor 的稳定错误并保留上次 snapshot 供对照，不把旧结果标记为本次成功。
 ## Readiness 与准备
 `found != ready != enabled`。Profile readiness 由已选 catalog 项、workspace 与 secret status 联合投影。secret `configured`、`not-required` 投影为 `ready`，`missing`、`invalid` 投影为 `blocked`，只有 `unknown` 投影为 `unknown`；`missing`、`invalid` 的 reason code 可见并阻止保存与 Launch。inventory 不嵌入 Profile snapshot，刷新不得改变 Profile/Preset。
+Agent API create/save 与 Runtime Launch 使用同一份精确 Runtime/Endpoint/Model/Tool readiness 校验；缺 Runtime、Runtime 非 ready、Endpoint 缺失或不可用、Model 不属于 Endpoint、Runtime/Endpoint 不兼容，以及 Codex 选择了不支持的 Tool，均在持久化或进程创建前失败。Catalog 中不存在的已保存 Runtime 保留原 `{id, realm}` 作为 disabled 选项，禁止替换。
+Launch snapshot 固定 Runtime、Endpoint、Model、Instructions、Skills 与 Tools；后续 catalog 刷新、Profile 修改或能力定义漂移不改变已启动 Session，漂移直接拒绝继续运行。
 Profile 编辑使用与最后保存 snapshot 分离的工作副本。dirty 由两者显式深比较得出；仅 dirty 时显示 Cancel/Save，Cancel 恢复最后保存 snapshot，Save 写入新的独立 snapshot 后清除 dirty。
 CLI 缺失或不兼容时，UI 可请求 `runtime/prepare/plan` 生成 CLI-only 计划；二次确认后才执行。Tool provision 始终由 #43 Tool catalog/Provisioner 负责，Discovery 不调用 Tool prepare。保存 Profile、页面进入与 Chat 草稿均不得触发 CLI prepare。
 ## API 投影
@@ -64,7 +69,6 @@ CLI 缺失或不兼容时，UI 可请求 `runtime/prepare/plan` 生成 CLI-only 
     "id": "codex",
     "realm": "wsl:ubuntu",
     "display_name": "Codex CLI",
-    "executable": "codex",
     "version": "0.149.1",
     "source": "installer",
     "status": "ready",

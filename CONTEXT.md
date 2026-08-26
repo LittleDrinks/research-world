@@ -51,7 +51,7 @@ _Avoid_: 裸路径、覆盖写
 _Avoid_: 跨表拼装、Agent 自报事实
 **执行凭据**：step 的完整执行描述与结果：image、command、files、seed、limits、退出码、输出哈希。
 _Avoid_: 日志片段、口头复现
-**AgentSpec**：Runtime、Endpoint、模型、Instructions、Skills、Tool id 与执行参数的声明；启动时编译并快照。
+**AgentSpec**：Runtime、Endpoint、模型、Instructions、Skills、Tool id 与执行参数的声明；`runtime` 精确为 `{id: "codex", realm}`，不把 Endpoint 或模型当作 Runtime；启动时编译并快照全部声明。
 _Avoid_: 能力装配模块、动态挂载
 **Tool**：科研人员为 Agent 选择的稳定能力；一个 Tool 可向模型展开多个 operation，AgentSpec 只保存 Tool id。
 _Avoid_: Connector、MCP server、transport、模型函数名
@@ -59,12 +59,12 @@ _Avoid_: Connector、MCP server、transport、模型函数名
 _Avoid_: Kernel 专用后端、Pipeline 特判、前端 transport 表单
 **Preset**：可复用的 AgentSpec 草稿；引用 Tool id，不拥有安装、配置或执行逻辑，保存后不随 Preset 漂移。
 _Avoid_: 第二套 Agent 配置、隐式安装
-**识别**：Runtime 枚举工作区当前可选择的 Endpoint、Skill 与 Tool；AgentSpec 只能引用识别结果，缺失或未就绪能力阻止 Launch。
+**识别**：Runtime 枚举工作区当前可选择的 Codex Runtime、Endpoint、Skill 与 Tool；公共结果只含安全状态、版本、来源与不可用原因，AgentSpec 只能精确引用识别结果，缺失或未就绪能力阻止保存与 Launch。
 _Avoid_: 手填 Endpoint、手填 Skill、手填 transport
 **渐进披露**：Skill 与节点正文默认不进入模型请求；模型调用读取工具后才进入 Trace。
 _Avoid_: 全量投喂、字符串拼接钉入
 ## Agent Runtime
-**Runtime**：执行 AgentSpec 的产品 Adapter 与 execution realm 稳定引用；Codex、Claude、Pi、Kimi 是不同 Runtime，协议细节不越过 Agent Runtime seam。
+**Runtime**：执行 AgentSpec 的产品 Adapter 与 execution realm 稳定引用；本阶段只有 Codex Runtime，协议细节不越过 Agent Runtime seam。
 _Avoid_: Endpoint、模型服务、传输协议
 **Session**：AgentSpec 的一次运行实例；Trace 是其唯一事实源。
 _Avoid_: 消息数据库、Thread
