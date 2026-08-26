@@ -144,10 +144,11 @@ async def _async_value(value):
 
 
 def _default_spec(runtime: Runtime):
-    endpoint = runtime.endpoints.default()
+    selected, endpoint = runtime.default_agent()
     return {
         "id": "default",
         "name": "Research Assistant",
+        "runtime": {"id": selected.id, "realm": selected.realm},
         "endpoint": endpoint.id,
         "model": endpoint.models[0],
         "instructions": "Assist with scientific research.",

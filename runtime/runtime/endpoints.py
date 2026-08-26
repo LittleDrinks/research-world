@@ -3,16 +3,14 @@ from __future__ import annotations
 import json
 import os
 import re
-import tomllib
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from .config import codex_config_path
-from .providers import CodexProvider, OpenAIProvider
-from .providers.base import Emit, EndpointUnavailable, ModelResult, Provider
+from .providers import OpenAIProvider
+from .providers.base import Provider
 from .types import CapabilityNotFound
 
 ENDPOINT_ID = re.compile(r"^[a-z][a-z0-9-]*$")
@@ -27,8 +25,6 @@ ENDPOINT_FIELDS = {
     "api_key_env",
     "priority",
 }
-
-
 @dataclass(frozen=True)
 class Endpoint:
     id: str
@@ -40,6 +36,7 @@ class Endpoint:
     provider: Provider | None
     base_url_env: str | None = None
     api_key_env: str | None = None
+    available: bool = False
 
     def public(self) -> dict[str, Any]:
         return {
@@ -49,7 +46,7 @@ class Endpoint:
             "models": list(self.models),
             "embedding_models": list(self.embedding_models),
             "priority": self.priority,
-            "available": self.provider is not None,
+            "available": self.provider is not None or self.available,
         }
 
 
@@ -67,12 +64,16 @@ class EndpointPool:
         return self._ordered()
 
     def require(self, endpoint_id: str, model: str) -> Endpoint:
+        endpoint = self.resolve(endpoint_id, model)
+        if endpoint.provider is None and not endpoint.available:
+            raise CapabilityNotFound(f"endpoint is not available: {endpoint_id}")
+        return endpoint
+
+    def resolve(self, endpoint_id: str, model: str) -> Endpoint:
         return self._require(endpoint_id, model, "models", "model")
 
     def require_embedding(self, endpoint_id: str, model: str) -> Endpoint:
-        return self._require(
-            endpoint_id, model, "embedding_models", "embedding model"
-        )
+        return self._require(endpoint_id, model, "embedding_models", "embedding model")
 
     def _require(self, endpoint_id, model, field, capability) -> Endpoint:
         endpoint = self._values.get(endpoint_id)
@@ -82,72 +83,16 @@ class EndpointPool:
             raise CapabilityNotFound(
                 f"{capability} is not available on endpoint: {model}"
             )
-        if not self._candidates(endpoint, model, field):
-            raise CapabilityNotFound(f"endpoint is not available: {endpoint_id}")
         return endpoint
-
-    def default(self) -> Endpoint:
-        endpoint = next(
-            (item for item in self._ordered() if item.provider and item.models), None
-        )
-        if endpoint is None:
-            raise CapabilityNotFound("no model endpoint is available")
-        return endpoint
-
-    async def generate(
-        self, endpoint_id, model, messages, tools, emit: Emit, context
-    ) -> tuple[str, ModelResult]:
-        endpoint = self.require(endpoint_id, model)
-        last_error = None
-        for candidate in self._candidates(endpoint, model, "models"):
-            relay = _Emission(emit)
-            try:
-                result = await candidate.provider.generate(
-                    model, messages, tools, relay, context
-                )
-                return candidate.id, result
-            except EndpointUnavailable as error:
-                if relay.sent:
-                    raise
-                last_error = error
-        raise last_error or CapabilityNotFound(
-            f"endpoint is not available: {endpoint_id}"
-        )
 
     async def embed(self, endpoint_id: str, model: str, texts: list[str]):
         endpoint = self.require_embedding(endpoint_id, model)
-        last_error = None
-        for candidate in self._candidates(endpoint, model, "embedding_models"):
-            try:
-                return await candidate.provider.embed(model, texts)
-            except EndpointUnavailable as error:
-                last_error = error
-        raise last_error or CapabilityNotFound(
-            f"endpoint is not available: {endpoint_id}"
-        )
+        if endpoint.provider is None:
+            raise CapabilityNotFound(f"endpoint is not available: {endpoint_id}")
+        return await endpoint.provider.embed(model, texts)
 
     def _ordered(self) -> list[Endpoint]:
         return sorted(self._values.values(), key=lambda item: (item.priority, item.id))
-
-    def _candidates(self, endpoint: Endpoint, model: str, field: str) -> list[Endpoint]:
-        values = [
-            item
-            for item in self._ordered()
-            if item.adapter == endpoint.adapter
-            and model in getattr(item, field)
-            and item.provider
-        ]
-        return sorted(values, key=lambda item: item.id != endpoint.id)
-
-
-class _Emission:
-    def __init__(self, emit: Emit):
-        self.emit = emit
-        self.sent = False
-
-    async def __call__(self, text: str) -> None:
-        self.sent = True
-        await self.emit(text)
 
 
 def provider_endpoint(
@@ -164,9 +109,7 @@ def provider_endpoint(
 
 
 def load_endpoints() -> list[Endpoint]:
-    values = [_openai_endpoint(row) for row in _endpoint_rows()]
-    codex = _codex_endpoint()
-    return [*values, *([codex] if codex else [])]
+    return [_openai_endpoint(row) for row in _endpoint_rows()]
 
 
 def _endpoint_rows() -> list[dict[str, Any]]:
@@ -196,7 +139,7 @@ def _default_openai_row() -> dict[str, Any]:
 
 def _openai_endpoint(row: dict[str, Any]) -> Endpoint:
     _validate_endpoint_row(row)
-    adapter = row.get("adapter", "openai-compatible")
+    adapter = row["adapter"]
     if adapter != "openai-compatible":
         raise ValueError(f"unsupported endpoint adapter: {adapter}")
     provider = _openai_provider(row)
@@ -226,6 +169,8 @@ def _validate_endpoint_row(row: dict[str, Any]) -> None:
     if not isinstance(row, dict) or set(row) - ENDPOINT_FIELDS:
         raise ValueError("invalid endpoint definition")
     _validate_endpoint_id(row.get("id"))
+    if not isinstance(row.get("adapter"), str) or not row["adapter"]:
+        raise ValueError("invalid endpoint adapter")
     models = row.get("models", [])
     embedding_models = row.get("embedding_models", [])
     if not _models(models):
@@ -263,18 +208,3 @@ def _models(value) -> bool:
         and all(isinstance(item, str) and item for item in value)
         and len(set(value)) == len(value)
     )
-
-
-def _codex_endpoint() -> Endpoint | None:
-    provider = CodexProvider.detected()
-    if provider is None:
-        return None
-    model = os.getenv("CODEX_MODEL") or _codex_model() or "gpt-5.6-sol"
-    return Endpoint("codex", "Codex CLI", "codex", (model,), (), 200, provider)
-
-
-def _codex_model() -> str | None:
-    path = codex_config_path()
-    if not Path(path).is_file():
-        return None
-    return tomllib.loads(Path(path).read_text(encoding="utf-8")).get("model")
