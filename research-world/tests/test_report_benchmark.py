@@ -66,7 +66,10 @@ def test_report_skill_benchmark_excludes_trace_payload(world, project, tmp_path)
 
 def boundary_projection(tokens):
     value = projection()
-    value["question"] += "x" * (4 * (tokens - input_tokens(value)))
+    source, question = value["sources"][0], value["question"]
     while input_tokens(value) < tokens:
-        value["question"] += "x"
+        if len(source["title"]) < 4096:
+            source["title"] += "x"
+        else:
+            value["question"] = question + "x" * (len(value["question"]) - len(question) + 1)
     return value

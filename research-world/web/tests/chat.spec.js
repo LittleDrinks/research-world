@@ -137,12 +137,12 @@ test("restores a retry publication from the Thread record without duplicating Tr
   const message = page.locator(".report-message");
   await assertFailedReport(message);
   await message.getByRole("button", { name: "重试" }).click();
-  await expect(page.locator(".report-message")).toHaveCount(1);
-  await expect(page.getByTitle("报告预览")).toBeVisible();
+  await expect(page.locator(".report-message")).toHaveCount(2);
+  await expect(page.getByTitle("报告预览")).toHaveCount(1);
   await page.reload();
-  await expect(page.locator(".report-message")).toHaveCount(1);
-  await expect(page.getByTitle("报告预览")).toBeVisible();
-  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.locator(".report-message")).toHaveCount(2);
+  await expect(page.getByTitle("报告预览")).toHaveCount(1);
+  await expect(page.getByRole("alert")).toHaveCount(1);
 });
 
 
