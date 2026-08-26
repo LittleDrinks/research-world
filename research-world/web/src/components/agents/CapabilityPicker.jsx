@@ -2,11 +2,11 @@ import { X } from "lucide-react";
 import { useState } from "react";
 
 
-export function CapabilityPicker({ label, options, selected, onChange }) {
+export function CapabilityPicker({ id, label, options, selected, onChange }) {
   const [query, setQuery] = useState("");
   const available = options.filter((item) => item.available !== false && !selected.includes(item.id) && matches(item, query));
   const add = (id) => { onChange([...selected, id]); setQuery(""); };
-  return <section className="capability-picker"><h2>{label}</h2>
+  return <section id={id} className="capability-picker"><h2>{label}</h2>
     {selected.length > 0 && <div className="capability-chips">{selected.map((id) => {
       const item = options.find((option) => option.id === id);
       const missing = !item || item.available === false;

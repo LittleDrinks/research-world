@@ -7,6 +7,8 @@ import yaml
 from jsonschema import Draft202012Validator
 
 PRIMITIVES = {
+    "collect-sources": ("prompt", (), ("source_candidates",), None, 1),
+    "submit-sources": ("tool", ("source_candidates",), ("sources",), None, 1),
     "generate-directions": ("prompt", (), ("origin", "candidates"), None, 1),
     "deduplicate-directions": (
         "tool",

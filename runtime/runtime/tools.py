@@ -7,6 +7,7 @@ from typing import Self
 
 from acp.interfaces import Client
 
+from . import literature
 from .skills import Skill
 
 
@@ -170,6 +171,92 @@ WRITE_FILE = {
         },
     },
 }
+CROSSREF = {
+    "type": "function",
+    "function": {
+        "name": "crossref",
+        "description": "Search Crossref or verify one DOI metadata record.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "action": {"type": "string", "enum": ["search", "get"]},
+                "query": {"type": "string"},
+                "doi": {"type": "string"},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 10},
+            },
+            "required": ["action"],
+        },
+    },
+}
+OPENALEX = {
+    "type": "function",
+    "function": {
+        "name": "openalex",
+        "description": "Search OpenAlex or read one work and its open-access locations.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "action": {"type": "string", "enum": ["search", "get"]},
+                "query": {"type": "string"},
+                "id": {"type": "string"},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 10},
+            },
+            "required": ["action"],
+        },
+    },
+}
+ARXIV = {
+    "type": "function",
+    "function": {
+        "name": "arxiv",
+        "description": "Search arXiv primary records or read one record by arXiv id.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "action": {"type": "string", "enum": ["search", "get"]},
+                "query": {"type": "string"},
+                "id": {"type": "string"},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 10},
+            },
+            "required": ["action"],
+        },
+    },
+}
+PUBMED = {
+    "type": "function",
+    "function": {
+        "name": "pubmed",
+        "description": "Search PubMed, verify PubMed metadata, or retrieve PMC full-text XML.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "action": {"type": "string", "enum": ["search", "metadata", "full_text"]},
+                "query": {"type": "string"},
+                "id": {"type": "string"},
+                "pmcid": {"type": "string"},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 10},
+            },
+            "required": ["action"],
+        },
+    },
+}
+PROJECT_FILES = {
+    "type": "function",
+    "function": {
+        "name": "project_files",
+        "description": "Read a Project File or store complete source text as a Project File and immutable Artifact.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "action": {"type": "string", "enum": ["store", "read"]},
+                "path": {"type": "string"},
+                "content": {"type": "string"},
+                "media_type": {"type": "string"},
+            },
+            "required": ["action", "path"],
+        },
+    },
+}
 BUILTINS = {
     "read_skill": READ_SKILL,
     "read_resource": READ_RESOURCE,
@@ -180,6 +267,11 @@ BUILTINS = {
     "submit_observation": SUBMIT_OBSERVATION,
     "read_file": READ_FILE,
     "write_file": WRITE_FILE,
+    "crossref": CROSSREF,
+    "openalex": OPENALEX,
+    "arxiv": ARXIV,
+    "pubmed": PUBMED,
+    "project_files": PROJECT_FILES,
 }
 BUILTIN_NAMES = {
     "read_skill": "读取 Skill",
@@ -191,6 +283,11 @@ BUILTIN_NAMES = {
     "submit_observation": "提交人工观测",
     "read_file": "读取工作区文件",
     "write_file": "写入工作区文件",
+    "crossref": "Crossref",
+    "openalex": "OpenAlex",
+    "arxiv": "arXiv",
+    "pubmed": "PubMed / PMC",
+    "project_files": "Project Files",
 }
 
 
@@ -390,6 +487,26 @@ async def _write_file(bound, session_id, values):
     return str(path.relative_to(bound.workspace))
 
 
+async def _crossref(bound, session_id, values):
+    return await literature.crossref(values)
+
+
+async def _openalex(bound, session_id, values):
+    return await literature.openalex(values)
+
+
+async def _arxiv(bound, session_id, values):
+    return await literature.arxiv(values)
+
+
+async def _pubmed(bound, session_id, values):
+    return await literature.pubmed(values)
+
+
+async def _project_files(bound, session_id, values):
+    return await literature.project_files(bound, values)
+
+
 _HANDLERS = {
     "read_skill": _read_skill,
     "read_resource": _read_resource,
@@ -400,6 +517,11 @@ _HANDLERS = {
     "submit_observation": _submit_observation,
     "read_file": _read_file,
     "write_file": _write_file,
+    "crossref": _crossref,
+    "openalex": _openalex,
+    "arxiv": _arxiv,
+    "pubmed": _pubmed,
+    "project_files": _project_files,
 }
 
 

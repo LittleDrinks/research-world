@@ -57,6 +57,27 @@ def _agent(tools):
     }
 
 
+def source_catalog(skill_status="ready"):
+    ids = ("crossref", "openalex", "arxiv", "pubmed", "project_files")
+    tools = [{"id": item, "status": "ready", "recommendation": f"use {item}"}
+             for item in ids]
+    skill = {"id": "source-research", "status": skill_status,
+             "recommendation": "verify evidence"}
+    if skill_status != "ready":
+        skill["reason"] = "not_recognized"
+    value = _agent([item["id"] for item in tools])
+    value.update({"id": "source-researcher", "name": "文献研究员",
+                  "instructions": "Return SourceCandidate only.", "skills": ["source-research"]})
+    return {
+        "endpoints": catalog()["endpoints"], "models": catalog()["models"],
+        "skills": [] if skill_status != "ready" else [{"id": "source-research"}],
+        "tools": tools,
+        "presets": [{"id": "source-researcher", "name": "文献研究员",
+                     "description": "检索并核验一手来源", "spec": value,
+                     "tools": tools, "skills": [skill]}],
+    }
+
+
 def make_client(world, project, tmp_path, lean4_status="ready", lean4_reason=None):
     runtime = FakeRuntime(catalog(lean4_status, lean4_reason))
     kernel = ResearchKernel(
@@ -101,6 +122,42 @@ def test_draft_marks_unavailable_tool_as_blocking(world, project, tmp_path):
     assert draft["issues"] == ["tool unavailable: lean4 (unavailable / not_installed)"]
 
 
+def test_source_researcher_draft_exposes_recommendations_and_editable_spec(
+    world, project, tmp_path
+):
+    runtime = FakeRuntime(source_catalog())
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects", runtime=runtime,
+                            agents=AgentRegistry(tmp_path / "agents"))
+    client = TestClient(create_app(kernel))
+
+    draft = client.post(draft_url(project), json={"preset_id": "source-researcher"}).json()
+
+    assert draft["confirmable"] is True
+    assert draft["spec"]["skills"] == ["source-research"]
+    assert draft["spec"]["tools"] == ["crossref", "openalex", "arxiv", "pubmed", "project_files"]
+    assert all(item["recommendation"] for item in draft["tools"] + draft["skills"])
+    draft["spec"]["instructions"] = "Edited snapshot"
+    assert runtime.catalog["presets"][0]["spec"]["instructions"] != "Edited snapshot"
+
+
+def test_source_researcher_missing_skill_blocks_create_without_writing(
+    world, project, tmp_path
+):
+    runtime = FakeRuntime(source_catalog("unavailable"))
+    registry = AgentRegistry(tmp_path / "agents")
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects", runtime=runtime,
+                            agents=registry)
+    client = TestClient(create_app(kernel))
+    value = source_catalog("unavailable")["presets"][0]["spec"]
+
+    response = client.post("/api/v1/agents", params={"project_id": project["id"]}, json=value)
+
+    assert response.status_code == 400
+    assert "skill unavailable: source-research (unavailable / not_recognized)" in response.json()["detail"]
+    with pytest.raises(KeyError):
+        registry.get("source-researcher")
+
+
 def test_draft_rejects_unknown_preset(world, project, tmp_path):
     client, _runtime = make_client(world, project, tmp_path)
 
@@ -123,7 +180,7 @@ def test_create_blocks_unavailable_tool_without_writing(world, project, tmp_path
     assert response.status_code == 400
     assert "tool unavailable: lean4 (unavailable / not_installed)" in response.json()["detail"]
     assert runtime.validated == [value]
-    assert runtime.recognized == [project["root"]]
+    assert runtime.recognized == [str(tmp_path / "projects" / "project")]
     with pytest.raises(KeyError):
         AgentRegistry(tmp_path / "agents").get("math-proof")
 
@@ -185,7 +242,7 @@ def test_update_blocks_unavailable_tool_without_writing(world, project, tmp_path
 
     assert response.status_code == 400
     assert "tool unavailable: lean4 (unavailable / not_installed)" in response.json()["detail"]
-    assert runtime.recognized == [project["root"]]
+    assert runtime.recognized == [str(tmp_path / "projects" / "project")]
     assert registry.get("math-proof")["tools"] == []
 
 

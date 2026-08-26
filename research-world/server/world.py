@@ -27,6 +27,24 @@ def decode(row: sqlite3.Row) -> dict:
     return value
 
 
+def _admission_update(connection, node_id: str, verdict: AdmissionVerdict):
+    life_state = "admitted" if verdict.decision == "approve" else "ghost"
+    rejection = None if verdict.decision == "approve" else verdict.reason.strip()
+    rebuttal = json.dumps(verdict.rebuttal) if verdict.rebuttal is not None else None
+    return connection.execute(
+        "UPDATE nodes SET life_state=?,working=0,rejection_reason=?,rebuttal=?,updated_at=? "
+        "WHERE id=? AND life_state='pending'",
+        (life_state, rejection, rebuttal, now(), node_id),
+    )
+
+
+def _require_pending(cursor, node_id: str, world) -> None:
+    if cursor.rowcount == 1:
+        return
+    world.node(node_id)
+    raise ValueError("only pending nodes can receive an admission verdict")
+
+
 def node_text(payload: dict) -> str:
     return " ".join(
         str(payload.get(key, ""))
@@ -215,19 +233,24 @@ class World:
             raise TypeError("admission requires an AdmissionVerdict")
         return self._apply_pending_admission(node_id, verdict)
 
-    def _apply_pending_admission(self, node_id, verdict) -> dict:
-        life_state = "admitted" if verdict.decision == "approve" else "ghost"
-        rejection = None if verdict.decision == "approve" else verdict.reason.strip()
-        encoded = json.dumps(verdict.rebuttal) if verdict.rebuttal is not None else None
+    def apply_source_admission(
+        self, node_id: str, verdict: AdmissionVerdict, target_id: str, polarity: str
+    ) -> dict:
+        if verdict.decision != "approve" or polarity not in EDGE_POLARITIES:
+            raise ValueError("source evidence edge requires approval and a valid polarity")
+        self._validate_edge_nodes(node_id, target_id)
         with self.db.connect() as connection:
-            cursor = connection.execute(
-                "UPDATE nodes SET life_state=?,working=0,rejection_reason=?,rebuttal=?,updated_at=? "
-                "WHERE id=? AND life_state='pending'",
-                (life_state, rejection, encoded, now(), node_id),
+            cursor = _admission_update(connection, node_id, verdict)
+            _require_pending(cursor, node_id, self)
+            connection.execute(
+                "INSERT INTO edges VALUES(?,?,?,?)", (node_id, target_id, polarity, now())
             )
-        if cursor.rowcount != 1:
-            self.node(node_id)
-            raise ValueError("only pending nodes can receive an admission verdict")
+        return self.node(node_id)
+
+    def _apply_pending_admission(self, node_id, verdict) -> dict:
+        with self.db.connect() as connection:
+            cursor = _admission_update(connection, node_id, verdict)
+        _require_pending(cursor, node_id, self)
         return self.node(node_id)
 
     def set_working(self, node_id: str, working: bool) -> dict:

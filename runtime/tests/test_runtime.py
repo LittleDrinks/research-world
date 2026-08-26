@@ -56,6 +56,21 @@ async def test_launch_rejects_unrecognized_capability(tmp_path, monkeypatch):
         )
 
 
+async def test_launch_reports_missing_capability_status_and_reason(tmp_path, monkeypatch):
+    monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
+    monkeypatch.setenv("RUNTIME_API_KEY", "secret")
+    monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
+    runtime = Runtime(tmp_path / "data", [endpoint(FakeProvider([]))])
+
+    with pytest.raises(
+        CapabilityNotFound,
+        match=r"tool is not available: absent \(missing / not_recognized\)",
+    ):
+        await runtime.launch(
+            {"workspace": str(tmp_path), "agent_spec": spec(tools=["absent"])}
+        )
+
+
 async def test_prompt_and_resume_are_derived_from_trace(tmp_path, monkeypatch):
     monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
     monkeypatch.setenv("RUNTIME_API_KEY", "secret")

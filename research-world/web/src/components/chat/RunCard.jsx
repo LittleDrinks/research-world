@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RUN_STATUS, shortId } from "../../utils/labels";
 import { StatusPill } from "../bits";
+import { AdmissionControl } from "../AdmissionControl";
 
 
 export function RunCard({ run, threadId, onDismiss }) {
@@ -22,11 +23,55 @@ export function RunCard({ run, threadId, onDismiss }) {
 
 function RunBody({ run, sessions, threadId }) {
   return <div className="run-card-body">
+    <SourceProjection run={run} />
     {run.steps.length > 0 && <ul className="run-steps">{run.steps.map((step) =>
       <li key={step.id}><span className="mono">#{step.ordinal}</span><span>{stepSummary(step)}</span><StatusPill status={step.status} label={step.status} /></li>)}</ul>}
     {sessions.map((event) => <SessionRow key={event.id} event={event} runId={run.id} threadId={threadId} />)}
     {!sessions.length && !run.steps.length && <p className="record-empty">等待执行记录</p>}
   </div>;
+}
+
+
+function SourceProjection({ run }) {
+  const values = run.payload?._pipeline?.values || {};
+  const candidates = values.source_candidates || [];
+  const sources = values.sources || [];
+  if (!candidates.length) return null;
+  return <section className="source-projection"><h3>Source 候选</h3><ol>{candidates.map((candidate, index) =>
+    <SourceCandidate key={`${candidate.title}:${index}`} candidate={candidate} source={sources[index]} />)}</ol></section>;
+}
+
+
+function SourceCandidate({ candidate, source }) {
+  const navigate = useNavigate();
+  const relation = candidate.relationship;
+  const artifact = candidate.artifact;
+  const open = (id) => navigate(`/map?node=${encodeURIComponent(id)}`);
+  return <li><header>{source ? <button className="text-link" onClick={() => open(source.id)}>{candidate.title}</button>
+    : <b>{candidate.title}</b>}<span data-status={source?.life_state || "candidate"}>
+    {sourceState(source)}</span></header><dl>
+    <Row label="书目" value={`${candidate.authors.join("、")} · ${candidate.year} · ${candidate.venue}`} />
+    <Row label="用途" value={`${relation.use} · ${relation.relevance}`} />
+    <NodeRow label="Direction" id={relation.direction_id} onOpen={open} />
+    <Row label="核验" value={`${candidate.retrieval.database} · ${candidate.retrieval.verified_at}`} />
+    <Row label="Artifact" value={artifact ? `${artifact.id} · ${artifact.media_type} · ${artifact.sha256}` : "全文不可得"} />
+    {source?.rejection_reason && <Row label="驳回理由" value={source.rejection_reason} />}
+  </dl>{source && <AdmissionControl node={source} />}</li>;
+}
+
+
+function Row({ label, value }) {
+  return <div><dt>{label}</dt><dd>{value}</dd></div>;
+}
+
+
+function NodeRow({ label, id, onOpen }) {
+  return <div><dt>{label}</dt><dd><button className="text-link" onClick={() => onOpen(id)}>{id}</button></dd></div>;
+}
+
+
+function sourceState(source) {
+  return { pending: "待 Admission", admitted: "已准入", ghost: "已驳回" }[source?.life_state] || "候选";
 }
 
 

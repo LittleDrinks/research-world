@@ -99,7 +99,7 @@ def test_kernel_rejection_records_reason_and_rebuttal(world, project, tmp_path):
         KernelCommand(
             "submit_node",
             project["id"],
-            {"kind": "source", "payload": {"title": "Unverified"}},
+            {"kind": "direction", "payload": {"title": "Unverified"}},
         ),
     )
     rejected = execute(
@@ -510,7 +510,7 @@ def test_node_submission_rejects_cross_project_parent(world, project, tmp_path):
     response = client.post(
         f"/api/v1/projects/{project['id']}/nodes",
         json={
-            "kind": "source",
+            "kind": "direction",
             "payload": {"title": "Paper"},
             "parent_id": parent["id"],
         },
@@ -530,13 +530,25 @@ def test_node_submission_requires_admitted_parent(world, project, tmp_path, life
     ).post(
         f"/api/v1/projects/{project['id']}/nodes",
         json={
-            "kind": "source",
+            "kind": "direction",
             "payload": {"title": "Paper"},
             "parent_id": parent["id"],
         },
     )
     assert response.status_code == 400
     assert world.nodes(project["id"])[-1]["id"] == parent["id"]
+
+
+def test_node_submission_rejects_source_outside_pipeline(world, project, tmp_path):
+    response = TestClient(
+        create_app(ResearchKernel(world, projects_root=tmp_path))
+    ).post(
+        f"/api/v1/projects/{project['id']}/nodes",
+        json={"kind": "source", "payload": {"title": "Paper"}},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "source nodes must be submitted by a Pipeline"
 
 
 @pytest.mark.parametrize("field", ["life_state", "direction_status", "working"])

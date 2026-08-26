@@ -2,6 +2,7 @@ import { Activity, Check, Copy, GitBranch, Play } from "lucide-react";
 import { useState } from "react";
 import { useWorld } from "../context/WorldContext";
 import { nodeText, RUN_STATUS } from "../utils/labels";
+import { AdmissionControl } from "../components/AdmissionControl";
 
 
 const LABELS = { question: "问题", source: "来源", direction: "方向", experiment: "实验",
@@ -12,7 +13,8 @@ const LABELS = { question: "问题", source: "来源", direction: "方向", expe
 export function Inspector({ node, nodes, edges, run, onSelect, onStart, onOpen }) {
   if (!node) return <aside className="inspector inspector-empty">选择节点查看上下文。</aside>;
   return <aside className="inspector"><div className="inspector-scroll"><NodeHeader node={node} run={run} onStart={onStart} onOpen={onOpen} />
-    <NodeRecord node={node} /><Relations node={node} nodes={nodes} edges={edges} onSelect={onSelect} />
+    {node.kind === "source" ? <SourceRecord node={node} onSelect={onSelect} /> : <NodeRecord node={node} />}
+    <Relations node={node} nodes={nodes} edges={edges} onSelect={onSelect} />
     <Claims node={node} /><Reviews node={node} />{node.life_state === "admitted" && <NodeIdEntry node={node} />}</div></aside>;
 }
 
@@ -21,6 +23,7 @@ function NodeHeader({ node, run, onStart, onOpen }) {
   const title = nodeText(node);
   return <header className="inspector-header"><div className="eyebrow"><span>{LABELS[node.kind]}</span><span>{LABELS[node.life_state]}</span>{node.direction_status && <span>{LABELS[node.direction_status]}</span>}</div>
     <h1>{title}</h1>{node.rejection_reason && <p className="rejection-reason">{node.rejection_reason}</p>}
+    <AdmissionControl node={node} />
     {run && <button className="button primary workflow-start" onClick={() => onOpen(run)}><Activity size={16} />{RUN_STATUS[run.status] || run.status} · 查看轨迹</button>}
     {!run && node.life_state === "admitted" && <PipelineLauncher node={node} onStart={onStart} />}</header>;
 }
@@ -44,6 +47,56 @@ function PipelineLauncher({ node, onStart }) {
 function NodeRecord({ node }) {
   const entries = Object.entries(node.payload || {}).filter(([, value]) => value !== null && typeof value !== "object");
   return <section className="inspector-section"><h2>节点记录</h2><dl className="node-record">{entries.map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{String(value)}</dd></div>)}</dl></section>;
+}
+
+
+function SourceRecord({ node, onSelect }) {
+  const value = node.payload || {};
+  const relation = value.relationship || {};
+  return <><section className="inspector-section"><h2>书目元数据</h2><dl className="node-record">
+    <Record label="作者" value={(value.authors || []).join("、")} />
+    <Record label="年份 / Venue" value={[value.year, value.venue].filter(Boolean).join(" · ")} />
+    <Record label="DOI / URL" value={value.doi || value.url} />
+    <Record label="类型 / 许可" value={[value.source_type, value.license].filter(Boolean).join(" · ")} />
+    <Record label="访问状态" value={value.access_status} /></dl></section>
+    <ArtifactRecord artifact={value.artifact} />
+    <RelationshipRecord relation={relation} onSelect={onSelect} />
+    <RetrievalRecord retrieval={value.retrieval} /></>;
+}
+
+
+function ArtifactRecord({ artifact }) {
+  return <section className="inspector-section"><h2>全文 Artifact</h2>{artifact ? <dl className="node-record">
+    <Record label="Artifact" value={artifact.id} /><Record label="Project File" value={artifact.project_file} />
+    <Record label="Media type" value={artifact.media_type} /><Record label="SHA-256" value={artifact.sha256} /></dl>
+    : <p className="muted">全文不可得</p>}</section>;
+}
+
+
+function RelationshipRecord({ relation, onSelect }) {
+  return <section className="inspector-section"><h2>Admission / Direction</h2><dl className="node-record">
+    <Record label="用途" value={relation.use} /><Record label="相关性" value={relation.relevance} />
+    <div><dt>Direction</dt><dd><button className="text-link" onClick={() => onSelect(relation.direction_id)}>
+      {relation.direction_id}</button></dd></div>
+    <Record label="Claims" value={(relation.claims || []).join("；") || "无"} />
+    <Record label="原文定位" value={(relation.locations || []).map(locationText).join("；") || "无"} /></dl></section>;
+}
+
+
+function RetrievalRecord({ retrieval = {} }) {
+  return <section className="inspector-section"><h2>检索核验</h2><dl className="node-record">
+    <Record label="Query" value={retrieval.query} /><Record label="Database" value={retrieval.database} />
+    <Record label="核验时间" value={retrieval.verified_at} /></dl></section>;
+}
+
+
+function Record({ label, value }) {
+  return <div><dt>{label}</dt><dd>{String(value ?? "")}</dd></div>;
+}
+
+
+function locationText(location) {
+  return `${location.locator}：${location.quote}`;
 }
 
 

@@ -2,9 +2,20 @@ export const AGENT_OPTION_DEFAULTS = { reasoning_effort: "medium", sandbox: "rea
 
 
 export function blockedTools(selected, ...groups) {
-  const states = toolStates(groups.flat());
-  return selected.map((id) => states.get(id) || { id, status: "missing" })
-    .filter((tool) => tool.status !== "ready");
+  return blocked(selected, groups.flat());
+}
+
+
+export function blockedSkills(selected, ...groups) {
+  return blocked(selected, groups.flat().map((item) => ({ status: "ready", ...item })));
+}
+
+
+export function blockedCapabilities(spec, preset, catalog) {
+  return {
+    tools: blockedTools(spec.tools, preset?.tools || [], catalog.tools),
+    skills: blockedSkills(spec.skills, preset?.skills || [], catalog.skills),
+  };
 }
 
 
@@ -14,10 +25,17 @@ export function toolStatus(tool) {
 }
 
 
-function toolStates(tools) {
+function capabilityStates(items) {
   const states = new Map();
-  tools.forEach((tool) => states.set(tool.id, { ...states.get(tool.id), ...tool }));
+  items.forEach((item) => states.set(item.id, { ...states.get(item.id), ...item }));
   return states;
+}
+
+
+function blocked(selected, items) {
+  const states = capabilityStates(items);
+  return selected.map((id) => states.get(id) || { id, status: "missing" })
+    .filter((item) => item.status !== "ready");
 }
 
 

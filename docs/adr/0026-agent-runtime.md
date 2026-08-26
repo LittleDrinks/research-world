@@ -37,6 +37,7 @@ Trace 是 Session 的唯一事实源，不建消息数据库。凡进入模型�
 每条事件编码成单行 JSON 后一次写入；读取时丢弃断裂尾行并截断到最后一条完整记录。Session 恢复与 UI 投影只重放 Trace。
 Thread 只在 Research Kernel 保存 `project_id + session_id` 指针。新建 Thread 启动新 Session；归档 Thread 不删除 Trace。
 Project 创建只接收名称与研究问题；Research Kernel 在受控 projects 根目录内分配 workspace，Web 不提交文件系统路径。
+Project 记录只持有 opaque workspace key；Research Kernel 将 key 投影到当前服务的 canonical projects root，再把同一容器内路径交给 Runtime。Compose 以独立持久卷在 control、worker 与 runtime 的 `/projects` 提供同一存储视图，worktree 路径与宿主绝对路径不进入 Project contract。
 ## Pipeline Run
 PipelineSpec 由 Research Kernel 从 YAML 识别并校验。数据库只保存 `pipeline_id + definition_snapshot`，没有固定 kind；模板修改不影响在途 run。AgentSpec Instructions 只保存跨任务稳定的角色约束，prompt stage 保存本次操作契约；prompt stage 的 `agent` 引用已保存 AgentSpec，Research Kernel 不临时改写 Runtime、Endpoint、模型、Skill 或 Tool。启动时将完整 AgentSpec 交给 Runtime 快照。run event 只记录 stage、gate、人工决策与 session_id，模型消息和工具细节留在 Runtime Trace。
 ## 渐进披露
