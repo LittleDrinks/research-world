@@ -110,7 +110,7 @@ test("restores named thread report cards after reload", async ({ page }) => {
   await expect(page.getByRole("link", { name: "下载" })).toHaveAttribute("download", "");
   const opened = page.waitForEvent("popup");
   await page.getByRole("link", { name: "预览" }).click();
-  await expect(await opened).toHaveText("Immutable saved version");
+  await expect((await opened).locator("body")).toHaveText("Immutable saved version");
 });
 
 
