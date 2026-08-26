@@ -6,22 +6,22 @@ import { publishThreadReport, saveThreadReport } from "../../api";
 const stageLabels = { projection: "读取投影", citation_validation: "引用校验", rendering: "生成", output_validation: "最终校验", persistence: "发布" };
 
 
-export function ReportCard({ threadId, title, reports = [], onRefresh }) {
+export function ReportCard({ threadId, title, reports = [], onRefresh, requests }) {
   const [state, setState] = useState(emptyState());
-  const publish = () => publishReport(threadId, title, setState, onRefresh);
+  const publish = () => publishReport(threadId, title, setState, onRefresh, requests);
   return <section className="report-workflow" aria-label="报告发布"><ReportHeader onPublish={publish} />
-    <ReportProgress state={state} setState={setState} onRetry={publish} onRefresh={onRefresh} />
+    <ReportProgress state={state} setState={setState} onRetry={publish} onRefresh={onRefresh} requests={requests} />
     <ReportHistory threadId={threadId} reports={reports} />
   </section>;
 }
 
 
-export function ReportMessage({ threadId, result, title, onRefresh }) {
+export function ReportMessage({ threadId, result, title, onPublished, onRefresh, requests }) {
   const [state, setState] = useState(resultState(result));
-  const retry = () => retryReport(threadId, result.title || title, state, setState, onRefresh);
+  const retry = () => retryReport(threadId, result.title || title, state, setState, onRefresh, requests, result, onPublished);
   return <article className="message assistant report-message"><span>助手</span><section className="report-workflow">
     <ReportMessageHeader failed={state.error !== null} />
-    <ReportProgress state={state} setState={setState} onRetry={retry} onRefresh={onRefresh} />
+    <ReportProgress state={state} setState={setState} onRetry={retry} onRefresh={onRefresh} requests={requests} />
   </section></article>;
 }
 
@@ -50,32 +50,42 @@ function resultState(result) {
 }
 
 
-async function publishReport(threadId, title, setState, onRefresh) {
+async function publishReport(threadId, title, setState, onRefresh, requests) {
+  const request = requests.next();
   setState(emptyState());
   try {
     const result = await publishThreadReport(threadId, { title });
+    if (!requests.latest(request)) return;
     setState(resultState(result));
-    if (result.status === "published") await refreshQuietly(onRefresh, setState);
+    if (result.status === "published") await refreshQuietly(onRefresh, setState, requests, request);
   } catch (error) {
-    setState({ ...emptyState(), error: [failureGap(error)] });
+    if (requests.latest(request)) setState({ ...emptyState(), error: [failureGap(error)] });
   }
 }
 
 
-async function retryReport(threadId, title, previous, setState, onRefresh) {
+async function retryReport(threadId, title, previous, setState, onRefresh, requests, source, onPublished) {
+  const request = requests.next();
   try {
     const result = await publishThreadReport(threadId, { title });
+    if (!requests.latest(request)) return;
     setState(resultState(result));
-    if (result.status === "published") await refreshQuietly(onRefresh, setState);
+    if (result.status !== "published") return;
+    onPublished?.(source, result);
+    await refreshQuietly(onRefresh, setState, requests, request);
   } catch (error) {
-    setState({ ...previous, error: [failureGap(error)] });
+    if (requests.latest(request)) setState({ ...previous, error: [failureGap(error)] });
   }
 }
 
 
-async function refreshQuietly(onRefresh, setState) {
-  try { await onRefresh?.(); }
-  catch { setState((value) => ({ ...value, refresh: "failed" })); }
+async function refreshQuietly(onRefresh, setState, requests, request) {
+  try {
+    const refreshed = await onRefresh?.(request);
+    if (refreshed !== false && requests.latest(request)) return;
+  } catch {
+    if (requests.latest(request)) setState((value) => ({ ...value, refresh: "failed" }));
+  }
 }
 
 
@@ -94,10 +104,10 @@ function ReportMessageHeader({ failed }) {
 }
 
 
-function ReportProgress({ state, setState, onRetry, onRefresh }) {
+function ReportProgress({ state, setState, onRetry, onRefresh, requests }) {
   return <>{state.stages.length > 0 && <ReportStages rows={state.stages} />}
     {state.error && <ReportFailure gaps={state.error} onRetry={onRetry} />}
-    {state.result && <ReportResult result={state.result} saved={state.saved} onSaved={(saved) => setState((value) => ({ ...value, saved }))} onRefresh={onRefresh} />}
+    {state.result && <ReportResult result={state.result} saved={state.saved} onSaved={(saved) => setState((value) => ({ ...value, saved }))} onRefresh={onRefresh} requests={requests} />}
     {state.refresh === "failed" && <p role="status">报告已发布，刷新失败。</p>}</>;
 }
 
@@ -123,21 +133,24 @@ function safeGapValue(value) {
 }
 
 
-function ReportResult({ result, saved, onSaved, onRefresh }) {
+function ReportResult({ result, saved, onSaved, onRefresh, requests }) {
   const [name, setName] = useState("");
   const [error, setError] = useState(null);
-  const save = () => saveReport(result, name, onSaved, onRefresh, setError);
+  const save = () => saveReport(result, name, onSaved, onRefresh, setError, requests);
   return <div className="report-result"><ReportDetails result={result} /><ReportLinks publication={result.publication} />
     {saved ? <p className="report-saved">已保存版本 {saved.id}</p> : <ReportSave name={name} onName={setName} onSave={save} error={error} />}</div>;
 }
 
 
-async function saveReport(result, name, onSaved, onRefresh, setError) {
+async function saveReport(result, name, onSaved, onRefresh, setError, requests) {
+  const request = requests.next();
   try {
     const saved = await saveThreadReport(result.publication.thread_id, { title: name, publication_id: result.publication.id });
+    if (!requests.latest(request)) return;
     onSaved(saved);
-    try { await onRefresh?.(); } catch { /* The saved version remains visible. */ }
-  } catch (failure) { setError(failure.code || "request_failed"); }
+    try { await onRefresh?.(request); } catch {}
+    if (!requests.latest(request)) return;
+  } catch (failure) { if (requests.latest(request)) setError(failure.code || "request_failed"); }
 }
 
 

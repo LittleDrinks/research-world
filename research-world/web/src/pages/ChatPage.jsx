@@ -1,5 +1,5 @@
 import { MessagesSquare, Plus, RotateCcw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { createThread, getThread, pinNode, restartThread, sendPrompt } from "../api";
 import { EmptyState } from "../components/bits";
@@ -8,6 +8,7 @@ import { MessageList } from "../components/chat/MessageList";
 import { ProfileDraftButton, ProfileDraftCard } from "../components/chat/ProfileDraft";
 import { ResearchControls } from "../components/chat/ResearchControls";
 import { ReportCard } from "../components/chat/ReportCard";
+import { loadReportReplacements, replaceTrace, replacementsForThread } from "../components/chat/reportState";
 import { useWorld } from "../context/WorldContext";
 import "../chat.css";
 
@@ -53,6 +54,30 @@ function useThreadDetail(threadId) {
   const retry = () => setState({ detail: null, failed: false, epoch: state.epoch + 1 });
   const setDetail = (value) => setState((s) => ({ ...s, detail: typeof value === "function" ? value(s.detail) : value }));
   return { ...state, retry, setDetail };
+}
+
+
+function useReportRequests() {
+  const sequence = useRef(0);
+  return { next: () => ++sequence.current, latest: (request) => request === sequence.current };
+}
+
+
+function useReportReplacements(threadId) {
+  const [state, setState] = useState(() => replacementState(threadId));
+  const replacements = replacementsForThread(threadId, state);
+  useEffect(() => {
+    if (state.threadId !== threadId) setState(replacementState(threadId));
+  }, [state.threadId, threadId]);
+  const replace = (trace, result) => {
+    setState({ threadId, replacements: replaceTrace(threadId, replacements, trace, result.publication.id) });
+  };
+  return { replacements, replace };
+}
+
+
+function replacementState(threadId) {
+  return { threadId, replacements: loadReportReplacements(threadId) };
 }
 
 
@@ -133,30 +158,44 @@ function useRestart(threadId, setDetail) {
 }
 
 
-function useReportRefresh(threadId, setDetail) {
-  return async () => setDetail(await getThread(threadId));
+function useReportRefresh(threadId, setDetail, requests) {
+  const sequence = useRef(0);
+  return async (request) => {
+    const refresh = ++sequence.current;
+    try {
+      const detail = await getThread(threadId);
+      if (refresh !== sequence.current || !requests.latest(request)) return false;
+      setDetail(detail);
+      return true;
+    } catch (error) {
+      if (refresh !== sequence.current || !requests.latest(request)) return false;
+      throw error;
+    }
+  };
 }
 
 
 function ThreadView({ threadId }) {
   const { data } = useWorld();
   const { detail, failed, retry, setDetail } = useThreadDetail(threadId);
+  const reportRequests = useReportRequests();
+  const reportState = useReportReplacements(threadId);
   const { specInvalid, flagSpecInvalid, restart } = useRestart(threadId, setDetail);
   const { sending, streaming, pending, reportProgress, send } = useSend(threadId, setDetail, flagSpecInvalid);
   const pin = usePin(threadId, setDetail);
-  const refreshReports = useReportRefresh(threadId, setDetail);
+  const refreshReports = useReportRefresh(threadId, setDetail, reportRequests);
   const [draft, setDraft] = useState(null);
   if (failed) return <ThreadFailed onRetry={retry} />; if (!detail) return <div className="page-loading">正在载入 Thread...</div>;
-  return <ThreadContent data={data} detail={detail} draft={draft} pending={pending} pin={pin} reportProgress={reportProgress} sending={sending} setDraft={setDraft} onRefresh={refreshReports} onRestart={restart} onSend={send} specInvalid={specInvalid} streaming={streaming} />;
+  return <ThreadContent data={data} detail={detail} draft={draft} pending={pending} pin={pin} reportProgress={reportProgress} reportRequests={reportRequests} reportState={reportState} sending={sending} setDraft={setDraft} onRefresh={refreshReports} onRestart={restart} onSend={send} specInvalid={specInvalid} streaming={streaming} />;
 }
 
 
-function ThreadContent({ data, detail, draft, pending, pin, reportProgress, sending, setDraft, onRefresh, onRestart, onSend, specInvalid, streaming }) {
+function ThreadContent({ data, detail, draft, pending, pin, reportProgress, reportRequests, reportState, sending, setDraft, onRefresh, onRestart, onSend, specInvalid, streaming }) {
   const messages = threadMessages(detail, pending);
   const reportTitle = data.projects.find((item) => item.id === data.active_project_id)?.name || "Research report";
   return <section className="chat-page">
     <ThreadHeader detail={detail} sending={sending} onRestart={onRestart} />
-    <div className="chat-scroll"><MessageList messages={messages} streaming={sending ? streaming : ""} reports={detail.runtime?.reports || []} publications={detail.report_publications || []} reportProgress={reportProgress} threadId={detail.id} reportTitle={reportTitle} onReportRefresh={onRefresh} turns={detail.runtime?.turns || []} /><div className="chat-report"><ReportCard threadId={detail.id} reports={detail.reports || []} title={reportTitle} onRefresh={onRefresh} /></div></div>
+    <div className="chat-scroll"><MessageList messages={messages} streaming={sending ? streaming : ""} reports={detail.runtime?.reports || []} publications={detail.report_publications || []} reportProgress={reportProgress} replacements={reportState.replacements} requests={reportRequests} threadId={detail.id} reportTitle={reportTitle} onReportPublished={reportState.replace} onReportRefresh={onRefresh} turns={detail.runtime?.turns || []} /><div className="chat-report"><ReportCard threadId={detail.id} reports={detail.reports || []} title={reportTitle} onRefresh={onRefresh} requests={reportRequests} /></div></div>
     {specInvalid && <SpecInvalidNotice onRestart={onRestart} />}
     {draft && <ProfileDraftCard key={draft.nonce} draft={draft} onCancel={() => setDraft(null)} />}
     <Composer pinnedNodes={detail.nodes} sending={sending} onSend={onSend} onPin={pin}

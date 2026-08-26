@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import re
 import warnings
+from binascii import Error as Base64Error
 from xml.etree import ElementTree
 from io import BytesIO
 from html import escape, unescape
@@ -67,8 +68,11 @@ def _chart_display(media_type: str, content: bytes) -> dict:
     image = _decoded_image(media_type, content)
     if image is None:
         return {"kind": "invalid"}
-    encoded = base64.b64encode(_encode_image(image, media_type)).decode("ascii")
-    return {"kind": "chart", "src": f"data:{media_type};base64,{encoded}"}
+    encoded = _encode_image(image)
+    if encoded is None:
+        return {"kind": "invalid"}
+    source = base64.b64encode(encoded).decode("ascii")
+    return {"kind": "chart", "src": f"data:image/png;base64,{source}"}
 
 
 def _decoded_image(media_type: str, content: bytes):
@@ -91,15 +95,15 @@ def _image_valid(image, media_type: str) -> bool:
 
 
 def _image_pixels(image):
-    pixels = image.copy()
-    pixels.info.clear()
-    return pixels
+    pixels = image.convert("RGBA").tobytes()
+    return Image.frombytes("RGBA", image.size, pixels)
 
 
-def _encode_image(image, media_type: str) -> bytes:
+def _encode_image(image) -> bytes | None:
     output = BytesIO()
-    image.save(output, format=_image_formats[media_type])
-    return output.getvalue()
+    image.save(output, format="PNG", compress_level=9)
+    content = output.getvalue()
+    return content if len(content) <= MAX_EVIDENCE_BYTES else None
 
 
 def _image_size_valid(image) -> bool:
@@ -125,7 +129,28 @@ def validate_html(content: bytes) -> list[dict]:
 
 
 def _html_safety_text(text: str) -> str:
-    return unescape(text).replace('xmlns="http://www.w3.org/1998/Math/MathML"', "")
+    sanitized = _strip_static_chart_payloads(text)
+    return unescape(sanitized).replace('xmlns="http://www.w3.org/1998/Math/MathML"', "")
+
+
+def _strip_static_chart_payloads(text: str) -> str:
+    return _static_chart_source.sub(_strip_static_chart, text)
+
+
+def _strip_static_chart(match) -> str:
+    source = match.group(2)
+    payload = "data:image/png;base64," if _is_static_chart(source) else source
+    return f"{match.group(1)}{payload}{match.group(3)}"
+
+
+def _is_static_chart(source: str) -> bool:
+    try:
+        content = base64.b64decode(source.removeprefix("data:image/png;base64,"), validate=True)
+    except (Base64Error, ValueError):
+        return False
+    image = _decoded_image("image/png", content) if len(content) <= MAX_EVIDENCE_BYTES else None
+    encoded = _encode_image(image) if image is not None else None
+    return encoded == content
 
 
 def _semantic_html(text: str) -> bool:
@@ -248,6 +273,7 @@ def _limitations(gaps: list[dict]) -> str:
 
 _artifact_html = {"code": _code, "formula": _formula, "chart": _chart}
 _image_formats = {"image/png": "PNG", "image/jpeg": "JPEG", "image/gif": "GIF", "image/webp": "WEBP"}
+_static_chart_source = re.compile(r'(<img\b[^>]*\bsrc=")(?P<source>data:image/png;base64,[A-Za-z0-9+/=]+)(")', re.IGNORECASE)
 
 
 class _ReportStructure(HTMLParser):
@@ -318,6 +344,7 @@ _void_tags = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link"
 _MATHML = "http://www.w3.org/1998/Math/MathML"
 _MATH_ELEMENTS = {"math", "mrow", "mi", "mn", "mo", "mtext", "mspace", "mphantom", "msup", "msub", "msubsup", "mfrac", "msqrt", "mroot", "mover", "munder", "munderover", "mtable", "mtr", "mtd", "mstyle", "mpadded", "menclose"}
 _MATH_ATTRIBUTES = {"display", "mathvariant", "mathsize", "mathcolor", "mathbackground", "scriptlevel", "displaystyle", "accent", "accentunder", "stretchy", "fence", "form", "separator", "lspace", "rspace", "symmetric", "largeop", "movablelimits", "minsize", "maxsize", "width", "height", "depth", "voffset", "linethickness", "bevelled", "numalign", "denomalign", "columnalign", "rowalign", "columnspacing", "rowspacing", "columnlines", "rowlines", "framespacing", "equalrows", "equalcolumns", "side", "minlabelspacing", "notation", "open", "close", "separators", "linebreak"}
+_MATH_URI = re.compile(r"(?i)\b(?:data|javascript|vbscript|file|mailto):|\b[a-z][a-z0-9+.-]{1,31}://|\bwww\.|url\(")
 
 
 def _safe_mathml(value: str) -> bool:
@@ -341,7 +368,7 @@ def _math_attribute_safe(key: str, value: str) -> bool:
 
 
 def _unsafe_math_text(value: str) -> bool:
-    return not isinstance(value, str) or re.search(r"(?i)\b[a-z][a-z0-9+.-]{1,31}://|\bwww\.|url\(", value) is not None
+    return not isinstance(value, str) or _MATH_URI.search(value) is not None
 
 
 def _unsafe_math_attribute(value: str) -> bool:

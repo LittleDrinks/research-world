@@ -218,7 +218,7 @@ def _mathml(value) -> bool:
 
 
 def _chart_source(value) -> bool:
-    return isinstance(value, str) and re.fullmatch(r"data:image/(?:png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+", value) is not None
+    return isinstance(value, str) and re.fullmatch(r"data:image/png;base64,[A-Za-z0-9+/=]+", value) is not None
 
 
 def _fact_gaps(facts, claims, sources, artifacts) -> list[dict]:

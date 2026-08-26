@@ -39,6 +39,14 @@ def node_text(payload: dict) -> str:
     )
 
 
+def _publication_record(publication_id, project_id, thread_id, title, artifact_id, created_at):
+    return {"id": publication_id, "project_id": project_id, "thread_id": thread_id, "title": title, "artifact_id": artifact_id, "created_at": created_at}
+
+
+def _report_record(report_id, project_id, thread_id, publication_id, title, artifact_id, created_at):
+    return {"id": report_id, "project_id": project_id, "thread_id": thread_id, "publication_id": publication_id, "title": title, "artifact_id": artifact_id, "created_at": created_at}
+
+
 class World:
     def __init__(
         self, database: Path, artifacts: Path, embedding: Callable | None = None
@@ -348,10 +356,10 @@ class World:
 
     def publish_report(self, project_id: str, thread_id: str, title: str, artifact_id: str) -> dict:
         publication_id, timestamp = f"publication:{secrets.token_hex(12)}", now()
-        values = (publication_id, project_id, thread_id, title, artifact_id, timestamp)
+        record = _publication_record(publication_id, project_id, thread_id, title, artifact_id, timestamp)
         with self.db.connect() as connection:
-            connection.execute("INSERT INTO report_publications VALUES(?,?,?,?,?,?)", values)
-        return self.publication(project_id, publication_id, thread_id)
+            connection.execute("INSERT INTO report_publications VALUES(?,?,?,?,?,?)", tuple(record.values()))
+        return record
 
     def thread_for_session(self, session_id: str) -> dict:
         return self._one("SELECT * FROM threads WHERE session_id=?", (session_id,))
@@ -359,13 +367,13 @@ class World:
     def save_report(self, project_id: str, thread_id: str, title: str, publication_id: str) -> dict:
         publication = self.publication(project_id, publication_id, thread_id)
         report_id, timestamp = f"report:{secrets.token_hex(12)}", now()
-        values = (report_id, project_id, thread_id, publication_id, title, publication["artifact_id"], timestamp)
+        record = _report_record(report_id, project_id, thread_id, publication_id, title, publication["artifact_id"], timestamp)
         try:
             with self.db.connect() as connection:
-                connection.execute("INSERT INTO reports VALUES(?,?,?,?,?,?,?)", values)
+                connection.execute("INSERT INTO reports VALUES(?,?,?,?,?,?,?)", tuple(record.values()))
         except sqlite3.IntegrityError as error:
             raise ReportNameTaken("report_name_taken") from error
-        return self.report(project_id, report_id)
+        return record
 
     def publication(self, project_id: str, publication_id: str, thread_id: str | None = None) -> dict:
         sql = "SELECT * FROM report_publications WHERE id=? AND project_id=?"
