@@ -36,7 +36,6 @@ test("renders project thread messages and sends via the prompts stream", async (
   await expect(page.locator(".pin-strip")).toHaveCount(0);
   const composer = await page.locator(".composer-wrap").boundingBox();
   expect(composer.y + composer.height).toBe(await page.evaluate(() => innerHeight));
-  await page.screenshot({ path: "test-results/chat-desktop.png" });
   await page.getByLabel("消息").fill("下一步做什么？");
   await page.getByRole("button", { name: "发送" }).click();
   await expect(page.getByText("先生成并筛选多个研究方向。")).toBeVisible();
@@ -138,11 +137,12 @@ test("restores a retry publication from the Thread record without duplicating Tr
   const message = page.locator(".report-message");
   await assertFailedReport(message);
   await message.getByRole("button", { name: "重试" }).click();
-  await expect(page.locator(".report-message")).toHaveCount(2);
+  await expect(page.locator(".report-message")).toHaveCount(1);
   await expect(page.getByTitle("报告预览")).toBeVisible();
   await page.reload();
-  await expect(page.locator(".report-message")).toHaveCount(2);
+  await expect(page.locator(".report-message")).toHaveCount(1);
   await expect(page.getByTitle("报告预览")).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveCount(0);
 });
 
 
@@ -178,10 +178,23 @@ test("keeps a published preview and saved version when refresh fails", async ({ 
   await page.getByLabel("报告名称").fill("V2");
   await page.getByRole("button", { name: "保存" }).click();
   await expect(page.getByText("已保存版本 report:v2")).toBeVisible();
+  await expect(page.getByTitle("报告预览")).toHaveCount(1);
 });
 
 
-test("shows only the controlled runtime report progress until Thread restoration", async ({ page }) => {
+test("renders the actual Kernel failed stage sequence", async ({ page }) => {
+  const failed = { status: "failed", stages: [{ name: "projection", status: "completed" }, { name: "citation_validation", status: "completed" }, { name: "rendering", status: "failed" }], assessment: { gaps: [{ code: "rendering_invalid", path: "html", value: null }] } };
+  await mockChat(page);
+  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 201, json: failed }));
+  await page.goto("/chat/thread%3At1");
+  await page.getByRole("button", { name: "生成报告" }).click();
+  await expect(page.locator(".report-stages .completed")).toHaveCount(2);
+  await expect(page.locator(".report-stages .failed")).toHaveCount(1);
+  await expect(page.locator(".report-stages")).not.toContainText("最终校验");
+});
+
+
+test("shows the ACP report tool progress until Thread restoration", async ({ page }) => {
   let release;
   let blockRefresh = false;
   const gate = new Promise((resolve) => { release = resolve; });
