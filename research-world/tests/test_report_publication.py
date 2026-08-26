@@ -331,7 +331,8 @@ def test_http_failed_publication_is_not_created(world, project, tmp_path):
 def test_concurrent_same_content_failure_keeps_successful_publication_artifact(world, project, tmp_path, monkeypatch):
     value = kernel(world, tmp_path)
     admitted_evidence(world, project)
-    first, second = report_thread(world, project), report_thread(world, project)
+    first = report_thread(world, project)
+    second = world.create_thread(project["id"], "chat", "s-second", "research-assistant")
     entered, release = Event(), Event()
     original = world.publish_report
 
