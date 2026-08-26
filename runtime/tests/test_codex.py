@@ -773,7 +773,7 @@ async def test_collect_keeps_assistant_text_for_short_thread_id():
 
     assert emitted == ["an answer"]
     assert result.message["content"] == "an answer"
-    assert "a" not in str(result.provider_items)
+    assert result.provider_items[1]["item"]["arguments"]["thread"] == "<redacted>"
 
 
 @pytest.mark.parametrize("item", [
@@ -837,7 +837,8 @@ def _continuation_key_stream():
 
 
 def _short_thread_stream():
-    return _stream([{"type": "item.completed", "item": {"id": "one", "type": "agent_message", "text": "an answer"}}], thread_id="a")
+    item = {**_mcp("completed"), "arguments": {"thread": "a"}}
+    return _stream([{"type": "item.started", "item": {**item, "status": "in_progress"}}, {"type": "item.completed", "item": item}, {"type": "item.completed", "item": {"id": "one", "type": "agent_message", "text": "an answer"}}], thread_id="a")
 
 
 def _query_only_web_events():
