@@ -12,9 +12,12 @@ from acp._transport import memory_transport_pair
 from acp.agent import AgentSideConnection
 from acp.schema import ClientCapabilities, Implementation
 from runtime.acp_agent import RuntimeAgent
+from runtime.endpoints import Endpoint
+from runtime.runtimes import CodexRuntimeAdapter
 from runtime.service import Runtime
 from runtime.tools import ToolBox
 from tests.helpers import FakeProvider, endpoint
+from tests.test_codex import ready_provider
 
 
 class ProjectClient:
@@ -43,6 +46,19 @@ async def test_acp_is_the_runtime_transport(tmp_path, monkeypatch):
 
     assert inspected["messages"][-1]["content"] == "verified"
     assert project.updates
+
+
+async def test_acp_default_codex_uses_declared_credentialless_endpoint(tmp_path, monkeypatch):
+    home = tmp_path / "codex"
+    home.mkdir()
+    (home / "auth.json").write_text('{"token":"test"}')
+    monkeypatch.setenv("CODEX_HOME", str(home))
+    endpoint = Endpoint("chat", "Chat", "openai-compatible", ("gpt",), (), 1, None)
+    runtime = Runtime(tmp_path / "data", [endpoint], [CodexRuntimeAdapter(ready_provider())])
+
+    response = await RuntimeAgent(runtime).new_session(str(tmp_path))
+
+    assert runtime.state.read(response.session_id)["agent_spec"]["endpoint"] == "chat"
 
 
 def _resource_runtime(path, monkeypatch):

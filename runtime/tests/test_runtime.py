@@ -93,11 +93,20 @@ def test_default_spec_selects_runtime_before_endpoint(tmp_path):
     assert _default_spec(runtime)["endpoint"] == "openai-compatible"
 
 
-def test_default_spec_uses_ready_chat_endpoint_for_codex(tmp_path):
+def test_default_spec_uses_declared_chat_endpoint_for_codex(tmp_path):
     endpoints = [Endpoint("embed", "Embed", "openai-compatible", (), ("embed",), 1, None, available=True), Endpoint("down", "Down", "openai-compatible", ("down",), (), 2, None), Endpoint("chat", "Chat", "openai-compatible", ("gpt",), (), 3, None, available=True)]
     runtime = Runtime(tmp_path / "data", endpoints, [CodexRuntimeAdapter(ready_provider())])
 
-    assert _default_spec(runtime)["endpoint"] == "chat"
+    assert _default_spec(runtime)["endpoint"] == "down"
+
+
+def test_default_spec_rejects_unavailable_endpoint_for_non_codex(tmp_path):
+    endpoints = [Endpoint("down", "Down", "openai-compatible", ("gpt",), (), 1, None)]
+    adapter = RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM), ("down",))
+    runtime = Runtime(tmp_path / "data", endpoints, [adapter])
+
+    with pytest.raises(CapabilityNotFound, match="no model endpoint"):
+        _default_spec(runtime)
 
 
 async def test_codex_rejects_incompatible_declared_endpoint_adapter(tmp_path):
