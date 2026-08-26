@@ -947,7 +947,7 @@ def _usage_stream():
 
 
 def _codex_endpoint(model):
-    return Endpoint("primary", "Primary", "test", (model,), (), 1, None, available=True)
+    return Endpoint("primary", "Primary", "openai-compatible", (model,), (), 1, None, available=True)
 
 
 def _catalog_endpoint(monkeypatch):
