@@ -211,10 +211,10 @@ class Runtime:
             tools.specs() if not binding.adapter.owns_process else []
         )
         self._record_request(session_id, turn_id, spec.model, messages, specs)
-        endpoint_id, result = await self._generate(
+        endpoint_id, result, continuation_id = await self._generate(
             session_id, binding, meta, messages, specs, emit
         )
-        self.trace.remember_continuations(session_id, result.provider_session_id)
+        self.trace.remember_continuations(session_id, continuation_id)
         _add_usage(usage, result.usage)
         self._record_response(session_id, turn_id, endpoint_id, result)
         calls = result.message.get("tool_calls") or []
@@ -222,7 +222,7 @@ class Runtime:
         content = result.message.get("content") or ""
         if not calls and not content.strip():
             raise RuntimeError("model returned an empty assistant response")
-        return not calls, content, result.provider_session_id
+        return not calls, content, continuation_id
 
     def _record_request(self, session_id, turn_id, model, messages, tools):
         data = {"model": model, "messages": messages, "tools": tools}
@@ -237,7 +237,7 @@ class Runtime:
             )
         return endpoint.id, await endpoint.provider.generate(
             spec.model, messages, tools, emit, context
-        )
+        ), None
 
     def _record_response(self, session_id, turn_id, endpoint_id, result):
         data = {
@@ -282,7 +282,9 @@ class Runtime:
         return {"status": status, "result_text": result, "usage": usage}
 
     def _fail(self, session_id, turn_id, error):
-        self.trace.remember_continuations(session_id, getattr(error, "provider_session_id", None))
+        self.trace.remember_continuations(
+            session_id, *getattr(error, "continuation_ids", ())
+        )
         for item in getattr(error, "provider_items", []):
             self.trace.append(session_id, "provider_item", item, turn_id)
         if terminal := getattr(error, "provider_terminal", None):

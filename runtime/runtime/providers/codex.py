@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from .base import Emit, ModelResult
+from .base import CollectedResult, Emit, ModelResult
 from ..config import prepare_session_auth
 from ..types import TraceError
 
@@ -37,6 +37,7 @@ PROBE_OUTPUT_LIMIT = 16 * 1024
 TERMINATE_TIMEOUT = 2.0
 PROBE_CANDIDATE_TIMEOUT = 5.0
 PROBE_CLEANUP_SLICE = 0.1
+CHILD_PATH = "/usr/local/bin:/usr/bin:/bin"
 
 
 class CodexProvider:
@@ -44,9 +45,9 @@ class CodexProvider:
 
     def __init__(self, executable: str = "codex", timeout: float = 300.0):
         resolved = shutil.which(executable)
-        self.executable = resolved or executable
-        self.path = resolved
         self.resolved_path = os.path.realpath(resolved) if resolved else None
+        self.executable = self.resolved_path or executable
+        self.path = self.resolved_path
         self.timeout = timeout
         self.version: str | None = None
         self.status = "found" if resolved else "missing"
@@ -90,10 +91,13 @@ class CodexProvider:
 
     async def collect(
         self, process, messages: list[dict], emit: Emit, continuations=()
-    ) -> ModelResult:
-        return await _collect(
-            process, _latest_user(messages), emit, self.timeout, continuations
+    ) -> CollectedResult:
+        values: list[str] = []
+        result = await _collect(
+            process, _latest_user(messages), emit, self.timeout, continuations,
+            values.append,
         )
+        return CollectedResult(result, values[0] if values else None)
 
     async def stop(self, process) -> None:
         await _bounded_stop(process)
@@ -117,7 +121,7 @@ def _environment(context: dict[str, Any]) -> dict[str, str]:
 
 
 def _probe_environment() -> dict[str, str]:
-    return {"LANG": "C.UTF-8", "PATH": os.defpath}
+    return {"LANG": "C.UTF-8", "PATH": CHILD_PATH}
 
 
 def _version(executable: str) -> tuple[str | None, str, dict[str, str] | None]:
@@ -235,17 +239,53 @@ def _version_status(version: str) -> tuple[str, str, dict[str, str] | None]:
 
 
 async def _collect(
-    process, prompt: str, emit: Emit, timeout: float, continuations=()
+    process, prompt: str, emit: Emit, timeout: float, continuations=(), on_continuation=None
 ) -> ModelResult:
-    stdout = await _stdout(process, prompt, timeout)
-    events = _events(stdout)
+    try:
+        stdout = await _stdout(process, prompt, timeout)
+        events = _events(stdout)
+    except TraceError as error:
+        _redact_failed_stream(error, continuations)
+        raise
     thread_id = _thread_id(events)
-    events = _redact_threads(events, (*continuations, thread_id))
+    ids = _continuation_ids(events, continuations)
+    events = _redact_threads(events, ids)
     text = _agent_text(events)
     if text:
         await emit(text)
+    if on_continuation is not None and thread_id:
+        on_continuation(thread_id)
     return ModelResult({"role": "assistant", "content": text}, _usage(events),
-                       thread_id, _trace_items(events))
+                       _trace_items(events))
+
+
+def _redact_failed_stream(error, continuations) -> None:
+    items = getattr(error, "provider_items", [])
+    ids = _continuation_ids(items, continuations, getattr(error, "continuation_id", None))
+    error.provider_items = _redact_threads(items, ids)
+    if terminal := getattr(error, "provider_terminal", None):
+        error.provider_terminal = _redact_threads(terminal, ids)
+    error.continuation_ids = ids
+
+
+def _continuation_ids(events, known=(), thread_id=None) -> tuple[str, ...]:
+    values = [value for value in (*known, thread_id) if value]
+    for event in events:
+        item = event.get("item", event) if isinstance(event, dict) else {}
+        if isinstance(event, dict) and event.get("type") == "thread.started":
+            values.append(event["thread_id"])
+        if isinstance(item, dict) and item.get("type") == "collab_tool_call":
+            values.extend(_collab_continuations(item))
+    return tuple(dict.fromkeys(values))
+
+
+def _collab_continuations(item) -> list[str]:
+    values = [item["sender_thread_id"], *item["receiver_thread_ids"]]
+    for key, state in item["agents_states"].items():
+        values.append(key)
+        if message := state.get("message"):
+            values.append(message)
+    return values
 
 
 def _redact_threads(value, thread_ids):
@@ -396,7 +436,7 @@ def _validate_stream(events: list[dict]) -> None:
     if terminal == "turn.failed":
         error = TraceError("cli_stream_failed", "codex returned a failed terminal stream")
         error.provider_items, error.provider_terminal = _trace_items(events), _terminal(events)
-        error.provider_session_id = _thread_id(events)
+        error.continuation_id = _thread_id(events)
         raise error
     raise TraceError(
         "cli_incomplete_stream", "codex returned an incomplete terminal stream"

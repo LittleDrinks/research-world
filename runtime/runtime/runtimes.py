@@ -45,7 +45,7 @@ class RuntimeAdapter:
         self, descriptor: RuntimeDescriptor, endpoint_adapters: tuple[str, ...] = ()
     ):
         self.descriptor = descriptor
-        self.endpoint_adapters = endpoint_adapters or (descriptor.id,)
+        self.endpoint_adapters = endpoint_adapters
 
     def accepts(self, endpoint) -> bool:
         adapter = endpoint["adapter"] if isinstance(endpoint, dict) else endpoint.adapter
@@ -61,7 +61,7 @@ class RuntimeAdapter:
 
 class CodexRuntimeAdapter(RuntimeAdapter):
     def __init__(self, provider: CodexProvider):
-        super().__init__(_codex_descriptor(provider))
+        super().__init__(_codex_descriptor(provider), ("openai-compatible",))
         self.provider = provider
         self._processes: dict[str, object] = {}
         self._cancelled: set[str] = set()
@@ -71,20 +71,16 @@ class CodexRuntimeAdapter(RuntimeAdapter):
     def owns_process(self) -> bool:
         return True
 
-    def accepts(self, endpoint) -> bool:
-        adapter = endpoint["adapter"] if isinstance(endpoint, dict) else endpoint.adapter
-        return adapter == "openai-compatible"
-
     async def generate(
         self, session_id, endpoint, model, messages, tools, emit, context
     ):
         process = None
         try:
             process = await self._start(session_id, model, context)
-            result = await self.provider.collect(
+            collected = await self.provider.collect(
                 process, messages, emit, (context.get("provider_session_id"),)
             )
-            return endpoint.id, result
+            return endpoint.id, collected.result, collected.continuation_id
         except BaseException:
             if process is not None:
                 await _cleanup(self.provider, process)
@@ -143,7 +139,7 @@ class RuntimePool:
 
 
 def load_runtimes() -> list[RuntimeAdapter]:
-    values = [RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM), ())]
+    values = [RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM), ("openai-compatible",))]
     values.append(CodexRuntimeAdapter(CodexProvider.detected()))
     return values
 

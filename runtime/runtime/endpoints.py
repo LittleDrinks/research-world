@@ -85,16 +85,10 @@ class EndpointPool:
             )
         return endpoint
 
-    def default(self) -> Endpoint:
-        endpoint = next(
-            (item for item in self._ordered() if item.provider and item.models), None
-        )
-        if endpoint is None:
-            raise CapabilityNotFound("no model endpoint is available")
-        return endpoint
-
     async def embed(self, endpoint_id: str, model: str, texts: list[str]):
         endpoint = self.require_embedding(endpoint_id, model)
+        if endpoint.provider is None:
+            raise CapabilityNotFound(f"endpoint is not available: {endpoint_id}")
         return await endpoint.provider.embed(model, texts)
 
     def _ordered(self) -> list[Endpoint]:
@@ -145,7 +139,7 @@ def _default_openai_row() -> dict[str, Any]:
 
 def _openai_endpoint(row: dict[str, Any]) -> Endpoint:
     _validate_endpoint_row(row)
-    adapter = row.get("adapter", "openai-compatible")
+    adapter = row["adapter"]
     if adapter != "openai-compatible":
         raise ValueError(f"unsupported endpoint adapter: {adapter}")
     provider = _openai_provider(row)
@@ -175,6 +169,8 @@ def _validate_endpoint_row(row: dict[str, Any]) -> None:
     if not isinstance(row, dict) or set(row) - ENDPOINT_FIELDS:
         raise ValueError("invalid endpoint definition")
     _validate_endpoint_id(row.get("id"))
+    if not isinstance(row.get("adapter"), str) or not row["adapter"]:
+        raise ValueError("invalid endpoint adapter")
     models = row.get("models", [])
     embedding_models = row.get("embedding_models", [])
     if not _models(models):

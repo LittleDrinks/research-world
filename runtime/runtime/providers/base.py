@@ -15,8 +15,13 @@ class EndpointUnavailable(RuntimeError):
 class ModelResult:
     message: dict[str, Any]
     usage: dict[str, int]
-    provider_session_id: str | None = None
     provider_items: list[dict[str, Any]] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class CollectedResult:
+    result: ModelResult
+    continuation_id: str | None
 
 
 class Provider(Protocol):
