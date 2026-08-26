@@ -51,6 +51,10 @@ class ArtifactStore:
             raise ArtifactIntegrityError("size_mismatch", artifact_id)
         return content
 
+    def records(self) -> list[dict]:
+        paths = sorted(self.root.glob("*/*.json"))
+        return [self.get(f"artifact:{path.stem}") for path in paths]
+
     @staticmethod
     def identifier(content: bytes) -> str:
         return f"artifact:{hashlib.sha256(content).hexdigest()}"

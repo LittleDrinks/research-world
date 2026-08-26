@@ -318,6 +318,14 @@ class World:
             item["nodes"] = self.thread_nodes(item["id"])
         return rows
 
+    def project_threads(self, project_id: str) -> list[dict]:
+        rows = self._many(
+            "SELECT * FROM threads WHERE project_id=? ORDER BY created_at,id", (project_id,)
+        )
+        for item in rows:
+            item["nodes"] = self.thread_nodes(item["id"])
+        return rows
+
     def update_thread_session(self, thread_id: str, session_id: str) -> dict:
         with self.db.connect() as connection:
             connection.execute(
