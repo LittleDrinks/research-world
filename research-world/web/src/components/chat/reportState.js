@@ -1,6 +1,19 @@
 const replacementKey = (threadId) => `report-replacements:${threadId}`;
 
 
+export function createReportRequests() {
+  const sequences = new Map();
+  return {
+    next(scope) {
+      const sequence = (sequences.get(scope) || 0) + 1;
+      sequences.set(scope, sequence);
+      return { scope, sequence };
+    },
+    latest(request) { return sequences.get(request.scope) === request.sequence; },
+  };
+}
+
+
 export function traceReportKey(report) {
   return `report-${report.turn_id || "untraced"}-${report.seq ?? "unsequenced"}`;
 }

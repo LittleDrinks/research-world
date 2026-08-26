@@ -32,6 +32,7 @@ MAX_EVIDENCE_BYTES = 262144
 MAX_IMAGE_DIMENSION = 8192
 MAX_IMAGE_PIXELS = 16_777_216
 _ACTIVE_CONTENT = r"<\s*(?:script|iframe|object|embed)\b|\son[a-z]+\s*=|\b(?:javascript|vbscript):"
+_DATA_URI = re.compile(r"\bdata:", re.IGNORECASE)
 _TEX_ERRORS = (NumeratorNotFoundError, DenominatorNotFoundError, ExtraLeftOrMissingRightError, MissingSuperScriptOrSubscriptError, DoubleSubscriptsError, DoubleSuperscriptsError, NoAvailableTokensError, InvalidStyleForGenfracError, MissingEndError, InvalidAlignmentError, InvalidWidthError, LimitsMustFollowMathOperatorError, RecursionError)
 
 
@@ -122,10 +123,13 @@ def render_html(title: str, projection: dict, assessment: dict) -> bytes:
 
 def validate_html(content: bytes) -> list[dict]:
     text = content.decode("utf-8", errors="replace")
+    safety_text = _html_safety_text(text)
     gaps = [] if _semantic_html(text) else [_html_gap("rendered_content_invalid")]
     if re.search(_ACTIVE_CONTENT, text, re.IGNORECASE):
         gaps.append(_html_gap("active_content_exposed"))
-    return gaps + ([_html_gap("sensitive_data_exposed")] if contains_restricted_data(_html_safety_text(text), opaque=False) else [])
+    if _DATA_URI.search(safety_text):
+        gaps.append(_html_gap("data_uri_exposed"))
+    return gaps + ([_html_gap("sensitive_data_exposed")] if contains_restricted_data(safety_text, opaque=False) else [])
 
 
 def _html_safety_text(text: str) -> str:
@@ -139,7 +143,7 @@ def _strip_static_chart_payloads(text: str) -> str:
 
 def _strip_static_chart(match) -> str:
     source = match.group(2)
-    payload = "data:image/png;base64," if _is_static_chart(source) else source
+    payload = "static-chart" if _is_static_chart(source) else source
     return f"{match.group(1)}{payload}{match.group(3)}"
 
 

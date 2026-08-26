@@ -8,7 +8,7 @@ import { MessageList } from "../components/chat/MessageList";
 import { ProfileDraftButton, ProfileDraftCard } from "../components/chat/ProfileDraft";
 import { ResearchControls } from "../components/chat/ResearchControls";
 import { ReportCard } from "../components/chat/ReportCard";
-import { loadReportReplacements, replaceTrace, replacementsForThread } from "../components/chat/reportState";
+import { createReportRequests, loadReportReplacements, replaceTrace, replacementsForThread } from "../components/chat/reportState";
 import { useWorld } from "../context/WorldContext";
 import "../chat.css";
 
@@ -58,8 +58,9 @@ function useThreadDetail(threadId) {
 
 
 function useReportRequests() {
-  const sequence = useRef(0);
-  return { next: () => ++sequence.current, latest: (request) => request === sequence.current };
+  const requests = useRef(null);
+  if (!requests.current) requests.current = createReportRequests();
+  return requests.current;
 }
 
 
@@ -70,7 +71,7 @@ function useReportReplacements(threadId) {
     if (state.threadId !== threadId) setState(replacementState(threadId));
   }, [state.threadId, threadId]);
   const replace = (trace, result) => {
-    setState({ threadId, replacements: replaceTrace(threadId, replacements, trace, result.publication.id) });
+    setState((value) => ({ threadId, replacements: replaceTrace(threadId, value.replacements, trace, result.publication.id) }));
   };
   return { replacements, replace };
 }

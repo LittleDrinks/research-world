@@ -1,6 +1,7 @@
 import { Download, Eye, FileText, Save } from "lucide-react";
 import { useState } from "react";
 import { publishThreadReport, saveThreadReport } from "../../api";
+import { traceReportKey } from "./reportState";
 
 
 const stageLabels = { projection: "读取投影", citation_validation: "引用校验", rendering: "生成", output_validation: "最终校验", persistence: "发布" };
@@ -8,9 +9,10 @@ const stageLabels = { projection: "读取投影", citation_validation: "引用�
 
 export function ReportCard({ threadId, title, reports = [], onRefresh, requests }) {
   const [state, setState] = useState(emptyState());
-  const publish = () => publishReport(threadId, title, setState, onRefresh, requests);
+  const scope = `report-card:${threadId}`;
+  const publish = () => publishReport(threadId, title, setState, onRefresh, requests, scope);
   return <section className="report-workflow" aria-label="报告发布"><ReportHeader onPublish={publish} />
-    <ReportProgress state={state} setState={setState} onRetry={publish} onRefresh={onRefresh} requests={requests} />
+    <ReportProgress state={state} setState={setState} onRetry={publish} onRefresh={onRefresh} requests={requests} scope={scope} />
     <ReportHistory threadId={threadId} reports={reports} />
   </section>;
 }
@@ -18,10 +20,11 @@ export function ReportCard({ threadId, title, reports = [], onRefresh, requests 
 
 export function ReportMessage({ threadId, result, title, onPublished, onRefresh, requests }) {
   const [state, setState] = useState(resultState(result));
-  const retry = () => retryReport(threadId, result.title || title, state, setState, onRefresh, requests, result, onPublished);
+  const scope = traceReportKey(result);
+  const retry = () => retryReport(threadId, result.title || title, state, setState, onRefresh, requests, scope, result, onPublished);
   return <article className="message assistant report-message"><span>助手</span><section className="report-workflow">
     <ReportMessageHeader failed={state.error !== null} />
-    <ReportProgress state={state} setState={setState} onRetry={retry} onRefresh={onRefresh} requests={requests} />
+    <ReportProgress state={state} setState={setState} onRetry={retry} onRefresh={onRefresh} requests={requests} scope={scope} />
   </section></article>;
 }
 
@@ -50,8 +53,8 @@ function resultState(result) {
 }
 
 
-async function publishReport(threadId, title, setState, onRefresh, requests) {
-  const request = requests.next();
+async function publishReport(threadId, title, setState, onRefresh, requests, scope) {
+  const request = requests.next(scope);
   setState(emptyState());
   try {
     const result = await publishThreadReport(threadId, { title });
@@ -64,8 +67,8 @@ async function publishReport(threadId, title, setState, onRefresh, requests) {
 }
 
 
-async function retryReport(threadId, title, previous, setState, onRefresh, requests, source, onPublished) {
-  const request = requests.next();
+async function retryReport(threadId, title, previous, setState, onRefresh, requests, scope, source, onPublished) {
+  const request = requests.next(scope);
   try {
     const result = await publishThreadReport(threadId, { title });
     if (!requests.latest(request)) return;
@@ -104,10 +107,10 @@ function ReportMessageHeader({ failed }) {
 }
 
 
-function ReportProgress({ state, setState, onRetry, onRefresh, requests }) {
+function ReportProgress({ state, setState, onRetry, onRefresh, requests, scope }) {
   return <>{state.stages.length > 0 && <ReportStages rows={state.stages} />}
     {state.error && <ReportFailure gaps={state.error} onRetry={onRetry} />}
-    {state.result && <ReportResult result={state.result} saved={state.saved} onSaved={(saved) => setState((value) => ({ ...value, saved }))} onRefresh={onRefresh} requests={requests} />}
+    {state.result && <ReportResult result={state.result} saved={state.saved} onSaved={(saved) => setState((value) => ({ ...value, saved }))} onRefresh={onRefresh} requests={requests} scope={scope} />}
     {state.refresh === "failed" && <p role="status">报告已发布，刷新失败。</p>}</>;
 }
 
@@ -133,17 +136,17 @@ function safeGapValue(value) {
 }
 
 
-function ReportResult({ result, saved, onSaved, onRefresh, requests }) {
+function ReportResult({ result, saved, onSaved, onRefresh, requests, scope }) {
   const [name, setName] = useState("");
   const [error, setError] = useState(null);
-  const save = () => saveReport(result, name, onSaved, onRefresh, setError, requests);
+  const save = () => saveReport(result, name, onSaved, onRefresh, setError, requests, scope);
   return <div className="report-result"><ReportDetails result={result} /><ReportLinks publication={result.publication} />
     {saved ? <p className="report-saved">已保存版本 {saved.id}</p> : <ReportSave name={name} onName={setName} onSave={save} error={error} />}</div>;
 }
 
 
-async function saveReport(result, name, onSaved, onRefresh, setError, requests) {
-  const request = requests.next();
+async function saveReport(result, name, onSaved, onRefresh, setError, requests, scope) {
+  const request = requests.next(scope);
   try {
     const saved = await saveThreadReport(result.publication.thread_id, { title: name, publication_id: result.publication.id });
     if (!requests.latest(request)) return;
