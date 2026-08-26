@@ -87,7 +87,7 @@ test("keeps failed citation reports retryable without preview links on mobile", 
   await mockChat(page);
   await page.setViewportSize({ width: 390, height: 844 });
   const failed = failedCitationReport();
-  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 201, json: failed }));
+  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 422, json: failed }));
   await page.goto("/chat/thread%3At1");
   await page.getByRole("button", { name: "生成报告" }).click();
   await expect(page.getByRole("alert")).toContainText("source_missing: facts[0] = null");
@@ -185,7 +185,7 @@ test("keeps a published preview and saved version when refresh fails", async ({ 
 test("renders the actual Kernel failed stage sequence", async ({ page }) => {
   const failed = { status: "failed", stages: [{ name: "projection", status: "completed" }, { name: "citation_validation", status: "completed" }, { name: "rendering", status: "failed" }], assessment: { gaps: [{ code: "rendering_invalid", path: "html", value: null }] } };
   await mockChat(page);
-  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 201, json: failed }));
+  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 422, json: failed }));
   await page.goto("/chat/thread%3At1");
   await page.getByRole("button", { name: "生成报告" }).click();
   await expect(page.locator(".report-stages .completed")).toHaveCount(2);
@@ -211,6 +211,19 @@ test("shows the ACP report tool progress until Thread restoration", async ({ pag
   await expect(page.getByRole("status")).toContainText("发布科研报告");
   release();
   await expect(page.getByText("正在生成报告")).toHaveCount(0);
+});
+
+
+test("keeps ACP report progress visible when Thread refresh fails", async ({ page }) => {
+  const start = { sessionUpdate: "tool_call", title: "发布科研报告", kind: "other", status: "in_progress" };
+  let refreshed = false;
+  await mockChat(page);
+  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill(refreshed ? { status: 500, json: { detail: "reload failed" } } : { json: threadDetail() }));
+  await page.route(/\/threads\/thread%3At1\/prompts/, (route) => { refreshed = true; return route.fulfill(sse([["tool", { update: start }], ["done", { stop_reason: "end_turn" }]])); });
+  await page.goto("/chat/thread%3At1");
+  await page.getByLabel("消息").fill("生成报告");
+  await page.getByRole("button", { name: "发送" }).click();
+  await expect(page.getByRole("status")).toContainText("发布科研报告");
 });
 
 

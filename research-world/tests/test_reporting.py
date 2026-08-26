@@ -85,6 +85,11 @@ def test_rendered_report_rejects_incomplete_or_trailing_documents(content):
     assert validate_html(content)[0]["code"] == "rendered_content_invalid"
 
 
+@pytest.mark.parametrize("suffix", [b"<!--tail-->", b"<?tail?>", b"<!unknown>", b"<![CDATA[tail]]>"])
+def test_rendered_report_rejects_non_data_after_document(suffix):
+    assert validate_html(report_fixture("Validated") + suffix)[0]["code"] == "rendered_content_invalid"
+
+
 def report_fixture(text):
     value = projection()
     assessment = assess_delivery(value)
@@ -101,6 +106,15 @@ def test_formula_evidence_is_renderable_mathml():
     assert "<math" in html and "<mtext>" not in html
 
 
+def test_formula_display_accepts_converter_mathml():
+    assert artifact_display({"media_type": "application/x-latex"}, b"x^2")["kind"] == "formula"
+
+
+def test_formula_display_rejects_foreign_converter_markup(monkeypatch):
+    monkeypatch.setattr("server.report_delivery.convert", lambda _text: '<math xmlns="http://www.w3.org/1998/Math/MathML"><script/></math>')
+    assert artifact_display({"media_type": "application/x-latex"}, b"x") == {"kind": "invalid"}
+
+
 @pytest.mark.parametrize("error", [value for value in vars(latex_errors).values() if isinstance(value, type) and issubclass(value, Exception)])
 def test_formula_conversion_errors_are_controlled(monkeypatch, error):
     monkeypatch.setattr("server.report_delivery.convert", lambda _text: (_ for _ in ()).throw(error()))
@@ -113,6 +127,13 @@ def test_chart_display_decodes_pixels_and_rejects_tiny_malformed_fixtures(monkey
     assert artifact_display({"media_type": "image/png"}, content[:-8]) == {"kind": "invalid"}
     monkeypatch.setattr("server.report_delivery.MAX_IMAGE_PIXELS", 1)
     assert artifact_display({"media_type": "image/png"}, content) == {"kind": "invalid"}
+
+
+def test_chart_display_rejects_animated_gif():
+    first, second = Image.new("RGB", (2, 2)), Image.new("RGB", (2, 2), "white")
+    content = BytesIO()
+    first.save(content, format="GIF", save_all=True, append_images=[second])
+    assert artifact_display({"media_type": "image/gif"}, content.getvalue()) == {"kind": "invalid"}
 
 
 def test_chart_display_rejects_pillow_decompression_bombs(monkeypatch):

@@ -1,5 +1,7 @@
 import asyncio
 from base64 import b64decode
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event
 
 import pytest
 from fastapi.testclient import TestClient
@@ -314,6 +316,43 @@ def test_http_thread_publication_save_and_scoped_download(world, project, tmp_pa
     assert "sandbox" in client.get(path).headers["content-security-policy"]
     assert download.headers["content-disposition"].startswith("attachment")
     assert client.post(f"/api/v1/threads/{thread['id']}/report/save", json={"title": "V1", "publication_id": publication["id"]}).status_code == 409
+
+
+def test_http_failed_publication_is_not_created(world, project, tmp_path):
+    value = kernel(world, tmp_path)
+    thread = report_thread(world, project)
+    response = TestClient(create_app(value)).post(f"/api/v1/threads/{thread['id']}/report/publish", json={"title": "Orbit"})
+    assert response.status_code == 422
+    assert response.json()["status"] == "failed"
+    assert response.json()["stages"] == [{"name": "projection", "status": "failed"}]
+    assert "publication" not in response.json()
+
+
+def test_concurrent_same_content_failure_keeps_successful_publication_artifact(world, project, tmp_path, monkeypatch):
+    value = kernel(world, tmp_path)
+    admitted_evidence(world, project)
+    first, second = report_thread(world, project), report_thread(world, project)
+    entered, release = Event(), Event()
+    original = world.publish_report
+
+    def fail_first(*args):
+        if not entered.is_set():
+            entered.set()
+            release.wait(timeout=2)
+            raise OSError("first insert fails")
+        return original(*args)
+
+    monkeypatch.setattr(world, "publish_report", fail_first)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        failed = executor.submit(publish, value, project, first)
+        assert entered.wait(timeout=2)
+        succeeded = executor.submit(publish, value, project, second)
+        release.set()
+        failed_result, success_result = failed.result(timeout=2), succeeded.result(timeout=2)
+    assert failed_result["status"] == "failed"
+    assert success_result["status"] == "published"
+    artifact = ArtifactStore(world.artifacts_root, project["id"]).get(success_result["artifact"]["id"])
+    assert artifact["id"] == success_result["artifact"]["id"]
 
 
 def test_http_rejects_body_thread_and_cross_thread_save(world, project, tmp_path):

@@ -46,12 +46,15 @@ def test_report_skill_benchmark_ignores_unprojected_admitted_payload(world, proj
     assert envelope["gaps"][0]["code"] == "facts_missing"
 
 
-def test_report_skill_benchmark_keeps_the_exact_budget_boundary(world, project, tmp_path, monkeypatch):
+def test_report_skill_benchmark_keeps_the_exact_budget_boundary(world, project, tmp_path):
     kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
-    ready, blocked = boundary_projection(2048), boundary_projection(2049)
-    monkeypatch.setattr(kernel, "_report_view", lambda *_: ready)
+    source = world.create_node(project["id"], "source", {"title": "Source", "source_level": "published", "checked_at": "2026-08-26T00:00:00+00:00"})
+    world.admit_node(source["id"])
+    direction = world.create_node(project["id"], "direction", {"claims": [{"text": "Finding", "verdict": "supported", "evidence": [source["id"]]}]})
+    world.admit_node(direction["id"])
+    set_admitted_input_tokens(world, kernel, project, source, direction, 2048)
     assert asyncio.run(kernel.query(KernelQuery("report_projection", project["id"]))) ["status"] == "ready"
-    monkeypatch.setattr(kernel, "_report_view", lambda *_: blocked)
+    set_admitted_input_tokens(world, kernel, project, source, direction, 2049)
     result = asyncio.run(kernel.query(KernelQuery("report_projection", project["id"])))
     assert result["gaps"] == [{"code": "projection_budget_exceeded", "path": "projection", "value": 2049}]
 
@@ -64,13 +67,12 @@ def test_report_skill_benchmark_excludes_trace_payload(world, project, tmp_path)
     assert marker not in str(envelope)
 
 
-def boundary_projection(tokens):
-    value = projection()
-    del value["artifacts"][0]["display"]
-    source, question = value["sources"][0], value["question"]
-    while input_tokens(value) < tokens:
-        if len(source["title"]) < 4096:
-            source["title"] += "x"
-        else:
-            value["question"] = question + "x" * (len(value["question"]) - len(question) + 1)
-    return value
+def set_admitted_input_tokens(world, kernel, project, source, direction, target):
+    for words in range(1, 4097):
+        text = "word " * words
+        world.update_node(source["id"], {**source["payload"], "title": text})
+        world.update_node(direction["id"], {"claims": [{"text": text, "verdict": "supported", "evidence": [source["id"]]}]})
+        nodes = [world.node(source["id"]), world.node(direction["id"])]
+        if input_tokens(kernel._report_view(project, nodes)) == target:
+            return
+    raise AssertionError(f"cannot create {target} admitted input tokens")
