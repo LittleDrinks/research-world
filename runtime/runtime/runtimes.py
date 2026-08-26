@@ -58,6 +58,12 @@ class RuntimeAdapter:
     def cancel(self, session_id: str) -> None:
         return None
 
+    async def close(self) -> None:
+        return None
+
+    def release(self) -> None:
+        return None
+
 
 class CodexRuntimeAdapter(RuntimeAdapter):
     def __init__(self, provider: CodexProvider):
@@ -111,6 +117,21 @@ class CodexRuntimeAdapter(RuntimeAdapter):
                 self._stop_registered(session_id, process)
             )
 
+    async def close(self) -> None:
+        self._cancelled.update(self._processes)
+        for session_id, process in tuple(self._processes.items()):
+            self._schedule_stop(session_id, process)
+        try:
+            await asyncio.gather(*tuple(self._stops.values()))
+        finally:
+            self.release()
+
+    def release(self) -> None:
+        self.provider.close()
+
+    def __del__(self):
+        self.release()
+
     async def _stop_registered(self, session_id, process) -> None:
         try:
             await _cleanup(self.provider, process)
@@ -136,6 +157,14 @@ class RuntimePool:
 
     def values(self) -> list[RuntimeAdapter]:
         return list(self._values.values())
+
+    async def close(self) -> None:
+        for adapter in self._values.values():
+            await adapter.close()
+
+    def release(self) -> None:
+        for adapter in self._values.values():
+            adapter.release()
 
 
 def load_runtimes() -> list[RuntimeAdapter]:

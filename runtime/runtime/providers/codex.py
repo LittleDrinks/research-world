@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import asyncio
+import ctypes
 import hashlib
 import json
 import os
+import platform
 import re
 import shutil
 import signal
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -18,6 +21,11 @@ from typing import Any
 from .base import CollectedResult, Emit, ModelResult
 from ..config import prepare_session_auth
 from ..types import TraceError
+
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
 
 VERSION = re.compile(r"codex-cli\s+(\S+)")
 COMPATIBLE_VERSION = "0.149.1"
@@ -38,6 +46,14 @@ TERMINATE_TIMEOUT = 2.0
 PROBE_CANDIDATE_TIMEOUT = 5.0
 PROBE_CLEANUP_SLICE = 0.1
 CHILD_PATH = "/usr/local/bin:/usr/bin:/bin"
+# Linux UAPI values for Python builds that omit memfd/seal constant exports.
+MEMFD_CLOEXEC = 0x0001
+MEMFD_ALLOW_SEALING = 0x0002
+F_ADD_SEALS = 1033
+F_SEAL_SEAL = 0x0001
+F_SEAL_SHRINK = 0x0002
+F_SEAL_GROW = 0x0004
+F_SEAL_WRITE = 0x0008
 
 
 class CodexProvider:
@@ -47,12 +63,12 @@ class CodexProvider:
         resolved = shutil.which(executable)
         self.resolved_path = os.path.realpath(resolved) if resolved else None
         self._fd = _freeze_executable(self.resolved_path)
-        self.executable = _fd_path(self._fd) or self.resolved_path or executable
+        self.executable = _fd_path(self._fd)
         self.path = self.resolved_path
         self.timeout = timeout
         self.version: str | None = None
-        self.status = "found" if resolved else "missing"
-        self.reason: dict[str, str] | None = None
+        self.status = _initial_status(resolved, self._fd)
+        self.reason = _initial_reason(resolved, self._fd)
         self.last_checked_at = _checked_at()
 
     @property
@@ -60,15 +76,28 @@ class CodexProvider:
         return _executable_identity(self._fd)
 
     @classmethod
-    def detected(cls) -> CodexProvider:
-        provider = cls()
+    def detected(cls, executable: str = "codex") -> CodexProvider:
+        provider = cls(executable)
         if provider.path is None:
             provider.reason = {"code": "not_on_path", "probe": "path"}
+            return provider
+        if provider._fd is None:
             return provider
         provider.version, provider.status, provider.reason = _version(provider.executable, provider._fd)
         if provider.status == "found":
             provider.status, provider.reason = _readiness(provider.executable, provider._fd)
         return provider
+
+    def close(self) -> None:
+        fd, self._fd = self._fd, None
+        self.executable = None
+        _close_fd(fd)
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            return
 
     async def start(self, model: str, context: dict[str, Any]):
         task = asyncio.create_task(self._start(model, context))
@@ -80,18 +109,17 @@ class CodexProvider:
             raise
 
     async def _start(self, model: str, context: dict[str, Any]):
-        if self._fd is None:
+        if self._fd is None or self.executable is None:
             raise TraceError("cli_unavailable", "frozen codex executable is unavailable")
-        return await asyncio.create_subprocess_exec(
-            *self._command(model, context),
-            cwd=context["workspace"],
-            env=_environment(context),
-            stdin=asyncio.subprocess.PIPE,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            pass_fds=(self._fd,),
-            **_process_group_options(),
-        )
+        try:
+            return await asyncio.create_subprocess_exec(
+                *self._command(model, context), cwd=context["workspace"],
+                env=_environment(context), stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+                pass_fds=(self._fd,), **_process_group_options(),
+            )
+        except OSError as error:
+            raise TraceError("cli_unavailable", "frozen codex executable is unavailable") from error
 
     async def collect(
         self, process, messages: list[dict], emit: Emit, continuations=()
@@ -779,13 +807,105 @@ def _sensitive(key: str) -> bool:
     return any(token in value for token in ("token", "secret", "password", "authorization", "apikey"))
 
 
+def _initial_status(resolved, fd) -> str:
+    if resolved is None:
+        return "missing"
+    if fd is not None:
+        return "found"
+    return "error" if _snapshot_supported() else "unsupported"
+
+
+def _initial_reason(resolved, fd) -> dict[str, str] | None:
+    if resolved is None or fd is not None:
+        return None
+    code = "snapshot_unavailable" if _snapshot_supported() else "unsupported_platform"
+    return _reason(code, "snapshot")
+
+
 def _freeze_executable(path: str | None) -> int | None:
-    if path is None or os.name != "posix":
+    source = _open_source(path)
+    if source is None:
+        return None
+    try:
+        return _sealed_snapshot(source)
+    except OSError:
+        return None
+    finally:
+        os.close(source)
+
+
+def _open_source(path: str | None) -> int | None:
+    if path is None or not _snapshot_supported():
         return None
     try:
         return os.open(path, os.O_RDONLY | os.O_CLOEXEC)
     except OSError:
         return None
+
+
+def _snapshot_supported() -> bool:
+    return (sys.platform == "linux" and platform.machine() in {"x86_64", "amd64", "AMD64"}
+            and fcntl is not None)
+
+
+def _sealed_snapshot(source: int) -> int:
+    snapshot = _memfd_create()
+    try:
+        _copy_fd(source, snapshot)
+        os.fchmod(snapshot, 0o500)
+        _seal_snapshot(snapshot)
+        return snapshot
+    except OSError:
+        os.close(snapshot)
+        raise
+
+
+def _memfd_flags() -> int:
+    return MEMFD_CLOEXEC | MEMFD_ALLOW_SEALING
+
+
+def _memfd_create() -> int:
+    if hasattr(os, "memfd_create"):
+        return os.memfd_create("codex-snapshot", _memfd_flags())
+    return _libc_memfd_create()
+
+
+def _libc_memfd_create() -> int:
+    library = ctypes.CDLL(None, use_errno=True)
+    create = library.memfd_create
+    create.argtypes, create.restype = (ctypes.c_char_p, ctypes.c_uint), ctypes.c_int
+    descriptor = create(b"codex-snapshot", _memfd_flags())
+    if descriptor == -1:
+        raise OSError(ctypes.get_errno(), "memfd_create")
+    return descriptor
+
+
+def _copy_fd(source: int, target: int) -> None:
+    while chunk := os.read(source, 1024 * 1024):
+        _write_fd(target, chunk)
+
+
+def _write_fd(target: int, chunk: bytes) -> None:
+    while chunk:
+        written = os.write(target, chunk)
+        chunk = chunk[written:]
+
+
+def _seal_snapshot(snapshot: int) -> None:
+    fcntl.fcntl(snapshot, F_ADD_SEALS, _seal_flags())
+
+
+def _seal_flags() -> int:
+    return F_SEAL_SEAL | F_SEAL_SHRINK | F_SEAL_GROW | F_SEAL_WRITE
+
+
+def _close_fd(fd: int | None) -> None:
+    if fd is None:
+        return
+    try:
+        os.close(fd)
+    except OSError:
+        return
 
 
 def _fd_path(fd: int | None) -> str | None:

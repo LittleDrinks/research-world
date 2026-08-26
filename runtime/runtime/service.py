@@ -124,6 +124,13 @@ class Runtime:
             for session_id in self.trace.sessions()
         ]
 
+    async def close(self) -> None:
+        await self.runtimes.close()
+
+    def __del__(self):
+        if runtimes := getattr(self, "runtimes", None):
+            runtimes.release()
+
     def default_agent(self) -> tuple:
         pair = next(
             ((adapter.descriptor, endpoint) for adapter in self.runtimes.values()
