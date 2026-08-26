@@ -34,6 +34,7 @@ OpenCLI 是浏览器自动化 Tool Adapter，只能以 `browser.opencli` 进入 
 `capabilities` 使用 Runtime 内置词表：`interactive`、`non-interactive`、`streaming`、`resume`、`model-select`、`reasoning-select`、`workspace`、`auth-probe`。Profile 选择的 Skill、Tool 与 MCP 来源不进入该数组。
 每个内置 Runtime 候选始终进入 inventory；缺失、无效版本或 probe 超时只改变该候选的 `status` 与 `reason`。Runtime、Endpoint 与 Model 是 AgentSpec 的独立引用；Catalog 不由 Runtime 合成、保留或推断 Endpoint id。Launch 对 process-owned Codex 以 Runtime/Codex auth readiness 作为执行条件，Endpoint 与 Model 只检查已声明 catalog 项、模型归属和 Runtime 显式兼容性；其他 Runtime 分别检查三者 readiness 与 Endpoint adapter 兼容性。缺失或不兼容直接失败，不 fallback。
 对 process-owned Codex，显式声明的 Endpoint 仅在 adapter 为 `openai-compatible`、含 chat model 时兼容；它不表示 Codex transport 或其凭证就绪。
+每个 Runtime 声明非空兼容 adapter 集合；空声明不从 Runtime id 推断兼容性。Endpoint adapter 为必填非空字段，缺失或空值拒绝，不存在 `openai-compatible` 兼容别名。
 ## 状态与错误
 | 状态 | 判定 |
 |---|---|
@@ -47,6 +48,7 @@ OpenCLI 是浏览器自动化 Tool Adapter，只能以 `browser.opencli` 进入 
 ## Probe
 Runtime 对每个内置候选执行固定 argv allowlist，不经过 shell。定位、路径解析、版本与认证 probe 分进程运行；单步 2 秒、单候选累计 5 秒，stdout 与 stderr 各截断到 16 KiB，解析后丢弃。进程组超时终止；一个候选失败不改变其他结果。
 固定 version argv 包含 Codex `['codex', '--version']` 与 Kimi Code `['kimi', '--version']`。Kimi 不登记认证 argv；version probe 不运行 `doctor`、读取配置或访问 secret。
+Codex 定位后解析 symlink 并冻结目标；version/login probe、launch 与恢复都执行该目标，identity recheck 比较同一目标。child environment 使用固定 locale 和包含 `/usr/local/bin` 的受信任 PATH，支持镜像内 pinned Node entrypoint。
 认证只使用官方、非交互、无敏感输出的状态命令。Codex 固定执行 `['codex', 'login', 'status']`：退出码 0 为 `ready`，非 0 为 `auth-required/auth_missing`；命令不可用为 `found/auth_probe_unavailable`。不得读取配置文件、环境变量值或 token。配置语法有效不等于已认证；Kimi `doctor config` 成功仍保持认证 unknown。probe 不执行 install、update、login、token refresh、doctor 修复、付费模型调用或任意用户命令。
 ## Realm 与缓存
 `wsl`、`windows` 与 `container` 是独立 execution realm。Runtime 只把当前 launch realm 的 descriptor 用于 AgentSpec readiness；其他 realm 仅作为 inventory 事实展示。
