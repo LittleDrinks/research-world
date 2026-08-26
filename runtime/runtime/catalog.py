@@ -32,7 +32,7 @@ async def discover(
     skill_paths: tuple[Path, ...] = (),
 ) -> dict:
     skills = discover_skills(workspace, skill_paths)
-    values = [item.public() for item in endpoints]
+    values = _endpoints(endpoints, runtimes)
     return {
         "runtimes": runtimes.public(),
         "endpoints": values,
@@ -81,4 +81,19 @@ def _models(endpoints: list[dict]) -> list[dict]:
         for endpoint in endpoints
         if endpoint["available"]
         for model in endpoint["models"]
+    ]
+
+
+def _endpoints(endpoints: list[Endpoint], runtimes: RuntimePool) -> list[dict]:
+    return [
+        {**endpoint.public(), "runtime_refs": _runtime_refs(endpoint, runtimes)}
+        for endpoint in endpoints
+    ]
+
+
+def _runtime_refs(endpoint: Endpoint, runtimes: RuntimePool) -> list[dict]:
+    return [
+        {"id": adapter.descriptor.id, "realm": adapter.descriptor.realm}
+        for adapter in runtimes.values()
+        if adapter.accepts(endpoint)
     ]
