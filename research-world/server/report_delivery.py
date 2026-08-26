@@ -2,17 +2,35 @@ from __future__ import annotations
 
 import base64
 import re
+import warnings
 from io import BytesIO
 from html import escape, unescape
 from html.parser import HTMLParser
 
 from PIL import Image, UnidentifiedImageError
 from latex2mathml.converter import convert
+from latex2mathml.exceptions import (
+    DenominatorNotFoundError,
+    DoubleSubscriptsError,
+    DoubleSuperscriptsError,
+    ExtraLeftOrMissingRightError,
+    InvalidAlignmentError,
+    InvalidStyleForGenfracError,
+    InvalidWidthError,
+    LimitsMustFollowMathOperatorError,
+    MissingEndError,
+    MissingSuperScriptOrSubscriptError,
+    NoAvailableTokensError,
+    NumeratorNotFoundError,
+)
 
 from .reporting import contains_restricted_data, evidence_kind, safe_report_text
 
 MAX_EVIDENCE_BYTES = 262144
+MAX_IMAGE_DIMENSION = 8192
+MAX_IMAGE_PIXELS = 16_777_216
 _ACTIVE_CONTENT = r"<\s*(?:script|iframe|object|embed)\b|\son[a-z]+\s*=|\b(?:javascript|vbscript):"
+_TEX_ERRORS = (NumeratorNotFoundError, DenominatorNotFoundError, ExtraLeftOrMissingRightError, MissingSuperScriptOrSubscriptError, DoubleSubscriptsError, DoubleSuperscriptsError, NoAvailableTokensError, InvalidStyleForGenfracError, MissingEndError, InvalidAlignmentError, InvalidWidthError, LimitsMustFollowMathOperatorError, RecursionError)
 
 
 def artifact_display(record: dict, content: bytes) -> dict:
@@ -39,7 +57,7 @@ def _text_display(kind: str, content: bytes) -> dict:
 def _formula_display(text: str) -> dict:
     try:
         return {"kind": "formula", "mathml": convert(text)}
-    except (ValueError, TypeError):
+    except _TEX_ERRORS:
         return {"kind": "invalid"}
 
 
@@ -52,11 +70,22 @@ def _chart_display(media_type: str, content: bytes) -> dict:
 
 def _decoded_image_matches(media_type: str, content: bytes) -> bool:
     try:
-        with Image.open(BytesIO(content)) as image:
-            image.verify()
-            return image.format == _image_formats[media_type]
-    except (KeyError, UnidentifiedImageError, OSError, SyntaxError):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(BytesIO(content)) as image:
+                if image.format != _image_formats[media_type] or not _image_size_valid(image):
+                    return False
+                image.verify()
+            with Image.open(BytesIO(content)) as image:
+                image.load()
+        return True
+    except (KeyError, UnidentifiedImageError, OSError, SyntaxError, ValueError, Image.DecompressionBombError, Image.DecompressionBombWarning):
         return False
+
+
+def _image_size_valid(image) -> bool:
+    width, height = image.size
+    return 0 < width <= MAX_IMAGE_DIMENSION and 0 < height <= MAX_IMAGE_DIMENSION and width * height <= MAX_IMAGE_PIXELS
 
 
 def render_html(title: str, projection: dict, assessment: dict) -> bytes:
@@ -82,8 +111,12 @@ def _html_safety_text(text: str) -> str:
 
 def _semantic_html(text: str) -> bool:
     parser = _ReportStructure()
-    parser.feed(text)
-    return parser.valid() and "<!doctype html>" in text.lower()
+    try:
+        parser.feed(text)
+        parser.close()
+    except (AssertionError, ValueError):
+        return False
+    return parser.valid()
 
 
 def _html_gap(code: str) -> dict:
@@ -201,21 +234,56 @@ _image_formats = {"image/png": "PNG", "image/jpeg": "JPEG", "image/gif": "GIF", 
 class _ReportStructure(HTMLParser):
     def __init__(self):
         super().__init__()
-        self.tags, self.sections, self.evidence, self.formula = set(), set(), False, False
+        self.tags, self.stack, self.headings = set(), [], []
+        self.doctype, self.evidence, self.formula, self.invalid = 0, False, False, False
+        self.title, self.heading = [], []
+
+    def handle_decl(self, decl):
+        self.doctype += decl.lower() == "doctype html"
+        self.invalid |= self.doctype != 1 or bool(self.stack)
 
     def handle_starttag(self, tag, attrs):
+        self.invalid |= not self._start_allowed(tag)
+        if self.invalid:
+            return
         self.tags.add(tag)
+        if tag not in _void_tags:
+            self.stack.append(tag)
         values = dict(attrs)
         self.evidence |= tag == "a" and values.get("href", "").startswith("#evidence-")
         self.formula |= tag == "div" and values.get("class") == "formula"
+        self.heading = [] if tag == "h2" else self.heading
+
+    def handle_endtag(self, tag):
+        self.invalid |= tag in _void_tags or not self.stack or self.stack[-1] != tag
+        if not self.invalid:
+            self.stack.pop()
+            self.headings += ["".join(self.heading).strip()] if tag == "h2" else []
 
     def handle_data(self, data):
-        if self.lasttag == "h2":
-            self.sections.add(data.strip())
+        self.invalid |= not self.stack and bool(data.strip())
+        if self.stack and self.stack[-1] == "title":
+            self.title.append(data)
+        if self.stack and "h2" in self.stack:
+            self.heading.append(data)
+
+    def _start_allowed(self, tag) -> bool:
+        if tag in _void_tags:
+            return bool(self.stack)
+        if tag == "html":
+            return self.doctype == 1 and not self.stack and "html" not in self.tags
+        if tag == "head":
+            return self.stack == ["html"] and "head" not in self.tags
+        if tag == "body":
+            return self.stack == ["html"] and "head" in self.tags and "body" not in self.tags
+        if tag == "title":
+            return self.stack == ["html", "head"] and "title" not in self.tags
+        return bool(self.stack) and ("body" in self.stack or self.stack == ["html", "head"])
 
     def valid(self) -> bool:
         required = {"html", "head", "title", "body", "h1", "h2", "table", "th", "td"}
-        return required <= self.tags and self.evidence and set(_sections) <= self.sections and (not self.formula or "math" in self.tags)
+        return not self.invalid and self.doctype == 1 and not self.stack and required <= self.tags and self.evidence and self.headings == list(_sections) and bool("".join(self.title).strip()) and (not self.formula or "math" in self.tags)
 
 
 _sections = ("Research question", "Conclusions", "Evidence and methods", "Limitations and gaps")
+_void_tags = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"}

@@ -33,14 +33,14 @@ export function PublicationMessage({ publication }) {
 }
 
 
-export function ReportProgressMessage() {
+export function ReportProgressMessage({ update }) {
   return <article className="message assistant report-message" role="status"><span>助手</span>
-    <section className="report-workflow"><header><FileText size={16} /><b>正在生成报告</b></header></section></article>;
+    <section className="report-workflow"><header><FileText size={16} /><b>{update?.title || "正在生成报告"}</b></header></section></article>;
 }
 
 
 function emptyState() {
-  return { stages: [], result: null, error: null, saved: null };
+  return { stages: [], result: null, error: null, saved: null, refresh: null };
 }
 
 
@@ -55,7 +55,7 @@ async function publishReport(threadId, title, setState, onRefresh) {
   try {
     const result = await publishThreadReport(threadId, { title });
     setState(resultState(result));
-    await refreshQuietly(onRefresh, result);
+    await refreshQuietly(onRefresh, setState);
   } catch (error) {
     setState({ ...emptyState(), error: [failureGap(error)] });
   }
@@ -66,16 +66,17 @@ async function retryReport(threadId, title, previous, setState, onRefresh) {
   try {
     const result = await publishThreadReport(threadId, { title });
     if (!onRefresh) return setState(resultState(result));
-    try { await onRefresh(result); setState(previous); }
-    catch { setState(resultState(result)); }
+    try { await onRefresh(); setState(previous); }
+    catch { setState({ ...resultState(result), refresh: "failed" }); }
   } catch (error) {
     setState({ ...previous, error: [failureGap(error)] });
   }
 }
 
 
-async function refreshQuietly(onRefresh, result) {
-  try { await onRefresh?.(result); } catch { /* The persisted result remains visible. */ }
+async function refreshQuietly(onRefresh, setState) {
+  try { await onRefresh?.(); }
+  catch { setState((value) => ({ ...value, refresh: "failed" })); }
 }
 
 
@@ -97,7 +98,8 @@ function ReportMessageHeader({ failed }) {
 function ReportProgress({ state, setState, onRetry, onRefresh }) {
   return <>{state.stages.length > 0 && <ReportStages rows={state.stages} />}
     {state.error && <ReportFailure gaps={state.error} onRetry={onRetry} />}
-    {state.result && <ReportResult result={state.result} saved={state.saved} onSaved={(saved) => setState((value) => ({ ...value, saved }))} onRefresh={onRefresh} />}</>;
+    {state.result && <ReportResult result={state.result} saved={state.saved} onSaved={(saved) => setState((value) => ({ ...value, saved }))} onRefresh={onRefresh} />}
+    {state.refresh === "failed" && <p role="status">报告已发布，刷新失败。</p>}</>;
 }
 
 
@@ -134,7 +136,8 @@ function ReportResult({ result, saved, onSaved, onRefresh }) {
 async function saveReport(result, name, onSaved, onRefresh, setError) {
   try {
     const saved = await saveThreadReport(result.publication.thread_id, { title: name, publication_id: result.publication.id });
-    onSaved(saved); await refreshQuietly(onRefresh);
+    onSaved(saved);
+    try { await onRefresh?.(); } catch { /* The saved version remains visible. */ }
   } catch (failure) { setError(failure.code || "request_failed"); }
 }
 

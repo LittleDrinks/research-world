@@ -62,18 +62,6 @@ GRAPH_QUERY = {
         },
     },
 }
-REPORT_VALIDATE = {
-    "type": "function",
-    "function": {
-        "name": "report_validate",
-        "description": "Validate the current admitted report projection in Research Kernel.",
-        "parameters": {
-            "type": "object",
-            "properties": {},
-            "additionalProperties": False,
-        },
-    },
-}
 EXPORT_BIBTEX = {
     "type": "function",
     "function": {
@@ -171,7 +159,6 @@ BUILTINS = {
     "graph_query": GRAPH_QUERY,
     "report_projection": REPORT_PROJECTION,
     "publish_report": PUBLISH_REPORT,
-    "report_validate": REPORT_VALIDATE,
     "export_bibtex": EXPORT_BIBTEX,
     "submit_observation": SUBMIT_OBSERVATION,
     "read_file": READ_FILE,
@@ -183,7 +170,6 @@ BUILTIN_NAMES = {
     "graph_query": "查询研究图谱",
     "report_projection": "读取报告投影",
     "publish_report": "发布科研报告",
-    "report_validate": "校验科研报告",
     "export_bibtex": "导出 BibTeX",
     "submit_observation": "提交人工观测",
     "read_file": "读取工作区文件",
@@ -344,15 +330,6 @@ async def _graph_query(bound, session_id, values):
     return json.dumps(result, ensure_ascii=False)
 
 
-async def _report_validate(bound, session_id, values):
-    if bound.client is None:
-        raise RuntimeError("client does not provide report validation")
-    if values:
-        raise ValueError("unexpected report validation fields")
-    result = await bound.client.ext_method("research/report_validate", values)
-    return json.dumps(result, ensure_ascii=False)
-
-
 async def _export_bibtex(bound, session_id, values):
     if bound.client is None:
         raise RuntimeError("client does not provide BibTeX export")
@@ -402,7 +379,6 @@ _HANDLERS = {
     "read_skill": _read_skill,
     "read_resource": _read_resource,
     "graph_query": _graph_query,
-    "report_validate": _report_validate,
     "export_bibtex": _export_bibtex,
     "report_projection": _report_projection,
     "publish_report": _publish_report,

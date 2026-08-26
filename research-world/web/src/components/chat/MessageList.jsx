@@ -15,7 +15,7 @@ export function MessageList({ messages, streaming, reports = [], publications = 
   return <div className="message-list">
     {!messages.length && !entries.length && !reportProgress && !streaming && <p className="message-placeholder">暂无消息。直接提问，或输入 @ 引用节点作为上下文。</p>}
     {entries.map((entry, index) => <ChatEntry key={entryKey(entry, index)} entry={entry} threadId={threadId} title={reportTitle} onRefresh={onReportRefresh} />)}
-    {reportProgress && <ReportProgressMessage />}
+    {reportProgress && <ReportProgressMessage update={reportProgress} />}
     {streaming ? <article className="message assistant"><span>助手</span>
       <div className="markdown streaming"><ReactMarkdown>{streaming}</ReactMarkdown><i className="cursor-block" /></div></article> : null}
     <div ref={end} /></div>;
@@ -31,7 +31,8 @@ function chatEntries(messages, reports, publications, turns, streaming) {
 function turnEntries(reports, publications, turns) {
   const seen = new Set();
   const entries = turns.flatMap((turn) => oneTurn(turn, reports, seen));
-  return [...entries, ...reportEntries(reports.filter((report) => !seen.has(report)), publications)];
+  const published = new Set(reports.filter((report) => seen.has(report)).map((report) => report.publication?.id).filter(Boolean));
+  return [...entries, ...reportEntries(reports.filter((report) => !seen.has(report)), publications, published)];
 }
 
 
@@ -53,14 +54,15 @@ function turnOutput(turn) {
 }
 
 
-function reportEntries(reports, publications) {
-  const known = new Set(reports.map((result) => result.publication?.id).filter(Boolean));
+function reportEntries(reports, publications, known = new Set()) {
+  reports.forEach((result) => { if (result.publication?.id) known.add(result.publication.id); });
   return [...reports.map((result) => ({ result })), ...publications.filter((item) => !known.has(item.id)).map((publication) => ({ publication }))];
 }
 
 
 function entryKey(entry, index) {
-  return entry.result?.publication?.id || entry.publication?.id || `${entry.message.role}-${index}`;
+  if (entry.result?.publication?.id || entry.publication?.id) return entry.result?.publication?.id || entry.publication.id;
+  return entry.result ? `report-${entry.result.turn_id || "untraced"}-${entry.result.seq ?? index}` : `${entry.message?.role || "message"}-${index}`;
 }
 
 

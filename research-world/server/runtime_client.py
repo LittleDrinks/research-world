@@ -192,7 +192,6 @@ class KernelClient:
         handler = {
             "research/capture_artifact": self._capture_artifact,
             "research/submit_observation": self._submit_observation,
-            "research/report_validate": self._report_validate,
             "research/report_projection": self._report_projection,
             "research/publish_report": self._publish_report,
             "research/export_bibtex": self._export_bibtex,
@@ -226,15 +225,6 @@ class KernelClient:
         if params["action"] == "search":
             return await self._search(params.get("query", ""))
         raise ValueError("unknown graph action")
-
-    async def _report_validate(self, params: dict) -> dict:
-        from .kernel import KernelQuery
-
-        if params:
-            raise ValueError("report validation takes no fields")
-        return await self.kernel.query(
-            KernelQuery("report_validate", self.project_id)
-        )
 
     async def _report_projection(self, params: dict) -> dict:
         from .kernel import KernelQuery

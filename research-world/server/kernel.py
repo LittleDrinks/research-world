@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import math
 import secrets
 import sqlite3
 from dataclasses import dataclass, field
@@ -27,6 +26,7 @@ from .reporting import (
     assess_delivery,
     blocked_projection,
     evidence_kind,
+    input_tokens,
     normalized_checked_at,
     projection_envelope,
     safe_artifact_id,
@@ -377,11 +377,6 @@ class ResearchKernel:
         _validate_fields(query.values, set(), set())
         return self._report_projection(_project_id(query))
 
-    def _query_report_validate(self, query: KernelQuery) -> dict:
-        _validate_fields(query.values, set(), set())
-        envelope = self._publication_projection(_project_id(query))
-        return assess_delivery(envelope["projection"]) if envelope["status"] == "ready" else _blocked_assessment(envelope)
-
     def _query_report_bibtex(self, query: KernelQuery) -> dict:
         _validate_fields(query.values, {"artifact_id"}, {"artifact_id"})
         project_id = _project_id(query)
@@ -500,10 +495,9 @@ class ResearchKernel:
         return {**envelope, "projection": {**envelope["projection"], "artifacts": artifacts}}
 
     def _public_report_projection(self, project: dict, nodes: list[dict]) -> dict:
-        tokens = _report_input_upper_bound(project, nodes)
-        if tokens > REPORT_INPUT_TOKEN_BUDGET:
-            return blocked_projection(tokens)
-        return projection_envelope(self._report_view(project, nodes))
+        projection = self._report_view(project, nodes)
+        tokens = input_tokens(projection)
+        return blocked_projection(tokens) if tokens > REPORT_INPUT_TOKEN_BUDGET else projection_envelope(projection)
 
     def _report_inputs(self, project_id: str) -> tuple[dict, list[dict]]:
         nodes = [node for node in self._world.nodes(project_id) if node["life_state"] == "admitted"]
@@ -601,12 +595,6 @@ def _report_title(value) -> str:
     if title is None:
         raise ValueError("report title must be safe non-empty text")
     return title
-
-
-def _report_input_upper_bound(project: dict, nodes: list[dict]) -> int:
-    values = [project.get("question"), *({"id": node["id"], "kind": node["kind"], "payload": node["payload"]} for node in nodes)]
-    size = sum(len(json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")) for value in values)
-    return math.ceil(size / 4)
 
 
 def _validate_project(value: dict) -> None:

@@ -58,11 +58,16 @@ function useThreadDetail(threadId) {
 
 function promptEvent(reply, setStreaming, setReportProgress, event, payload) {
   if (event === "delta") { reply.text += payload.text; setStreaming(reply.text || " "); }
-  if (event === "tool" && reportStarted(payload?.update)) setReportProgress(true);
+  if (event === "tool") updateReportProgress(setReportProgress, payload?.update);
   if (event !== "error") return;
   const failure = new Error(payload.detail || "答复失败");
   failure.code = payload.code;
   throw failure;
+}
+
+
+function updateReportProgress(setReportProgress, update) {
+  if (reportStarted(update)) setReportProgress(update);
 }
 
 
