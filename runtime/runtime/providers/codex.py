@@ -46,7 +46,8 @@ class CodexProvider:
     def __init__(self, executable: str = "codex", timeout: float = 300.0):
         resolved = shutil.which(executable)
         self.resolved_path = os.path.realpath(resolved) if resolved else None
-        self.executable = self.resolved_path or executable
+        self._fd = _freeze_executable(self.resolved_path)
+        self.executable = _fd_path(self._fd) or self.resolved_path or executable
         self.path = self.resolved_path
         self.timeout = timeout
         self.version: str | None = None
@@ -56,7 +57,7 @@ class CodexProvider:
 
     @property
     def executable_identity(self) -> str | None:
-        return _executable_identity(self.resolved_path)
+        return _executable_identity(self._fd)
 
     @classmethod
     def detected(cls) -> CodexProvider:
@@ -64,9 +65,9 @@ class CodexProvider:
         if provider.path is None:
             provider.reason = {"code": "not_on_path", "probe": "path"}
             return provider
-        provider.version, provider.status, provider.reason = _version(provider.path)
+        provider.version, provider.status, provider.reason = _version(provider.executable, provider._fd)
         if provider.status == "found":
-            provider.status, provider.reason = _readiness(provider.path)
+            provider.status, provider.reason = _readiness(provider.executable, provider._fd)
         return provider
 
     async def start(self, model: str, context: dict[str, Any]):
@@ -79,6 +80,8 @@ class CodexProvider:
             raise
 
     async def _start(self, model: str, context: dict[str, Any]):
+        if self._fd is None:
+            raise TraceError("cli_unavailable", "frozen codex executable is unavailable")
         return await asyncio.create_subprocess_exec(
             *self._command(model, context),
             cwd=context["workspace"],
@@ -86,6 +89,7 @@ class CodexProvider:
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            pass_fds=(self._fd,),
             **_process_group_options(),
         )
 
@@ -124,8 +128,8 @@ def _probe_environment() -> dict[str, str]:
     return {"LANG": "C.UTF-8", "PATH": CHILD_PATH}
 
 
-def _version(executable: str) -> tuple[str | None, str, dict[str, str] | None]:
-    result = _version_probe(executable)
+def _version(executable: str, fd: int | None) -> tuple[str | None, str, dict[str, str] | None]:
+    result = _version_probe(executable, fd)
     if isinstance(result, tuple):
         return result
     if result.returncode != 0:
@@ -136,23 +140,25 @@ def _version(executable: str) -> tuple[str | None, str, dict[str, str] | None]:
     return _version_status(match.group(1))
 
 
-def _version_probe(executable: str):
-    return _probe([executable, "--version"], "version", _probe_environment())
+def _version_probe(executable: str, fd: int | None):
+    return _probe([executable, "--version"], "version", _probe_environment(), fd)
 
 
-def _probe(argv: list[str], name: str, environment=None):
+def _probe(argv: list[str], name: str, environment=None, fd: int | None = None):
     deadline = time.monotonic() + PROBE_CANDIDATE_TIMEOUT
-    process = _start_probe(argv, name, environment)
+    process = _start_probe(argv, name, environment, fd)
     if isinstance(process, tuple):
         return process
     stdout, stderr = _bounded_probe_output(process)
     return _complete_probe(process, stdout, stderr, deadline, name, argv)
 
 
-def _start_probe(argv, name, environment):
+def _start_probe(argv, name, environment, fd):
     try:
-        return subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                env=environment, **_process_group_options())
+        options = {**_process_group_options(), "env": environment}
+        if fd is not None:
+            options["pass_fds"] = (fd,)
+        return subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **options)
     except OSError:
         return None, "error", _reason("probe_failed", name)
 
@@ -281,10 +287,8 @@ def _continuation_ids(events, known=(), thread_id=None) -> tuple[str, ...]:
 
 def _collab_continuations(item) -> list[str]:
     values = [item["sender_thread_id"], *item["receiver_thread_ids"]]
-    for key, state in item["agents_states"].items():
+    for key in item["agents_states"]:
         values.append(key)
-        if message := state.get("message"):
-            values.append(message)
     return values
 
 
@@ -775,12 +779,26 @@ def _sensitive(key: str) -> bool:
     return any(token in value for token in ("token", "secret", "password", "authorization", "apikey"))
 
 
-def _executable_identity(path: str | None) -> str | None:
-    if path is None:
+def _freeze_executable(path: str | None) -> int | None:
+    if path is None or os.name != "posix":
         return None
     try:
-        with open(path, "rb") as executable:
-            return hashlib.sha256(executable.read()).hexdigest()
+        return os.open(path, os.O_RDONLY | os.O_CLOEXEC)
+    except OSError:
+        return None
+
+
+def _fd_path(fd: int | None) -> str | None:
+    return f"/proc/self/fd/{fd}" if fd is not None else None
+
+
+def _executable_identity(fd: int | None) -> str | None:
+    if fd is None:
+        return None
+    try:
+        with os.fdopen(os.dup(fd), "rb") as executable:
+            executable.seek(0)
+            return hashlib.file_digest(executable, "sha256").hexdigest()
     except OSError:
         return None
 
@@ -817,13 +835,13 @@ def _usage(events: list[dict]) -> dict[str, int]:
     return usage
 
 
-def _readiness(executable: str) -> tuple[str, dict[str, str] | None]:
+def _readiness(executable: str, fd: int | None) -> tuple[str, dict[str, str] | None]:
     with tempfile.TemporaryDirectory() as home:
         try:
             prepare_session_auth(Path(home))
         except RuntimeError:
             return "auth-required", {"code": "auth_missing", "probe": "login status"}
-        result = _probe([executable, "login", "status"], "login status", _environment({"codex_home": home}))
+        result = _probe([executable, "login", "status"], "login status", _environment({"codex_home": home}), fd)
     if isinstance(result, tuple):
         _, status, reason = result
         return ("found", _reason("auth_probe_unavailable", "login status")) if reason["code"] == "probe_failed" else (status, reason)
