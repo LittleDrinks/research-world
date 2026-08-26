@@ -102,7 +102,7 @@ test("keeps failed citation reports retryable without preview links on mobile", 
 test("restores named thread report cards after reload", async ({ page }) => {
   const reports = [{ id: "report:v1", title: "V1", publication_id: "publication:p1" }];
   await mockChat(page, threadDetail({ reports }));
-  await page.route(/\/report\/publication%3Ap1\/content/, (route) => route.fulfill({ contentType: "text/html", body: "<!doctype html><html><body>Immutable saved version</body></html>" }));
+  await page.context().route(/\/report\/publication%3Ap1\/content/, (route) => route.fulfill({ contentType: "text/html", body: "<!doctype html><html><body>Immutable saved version</body></html>" }));
   await page.goto("/chat/thread%3At1");
   await expect(page.getByText("V1")).toBeVisible();
   await page.reload();
@@ -208,7 +208,7 @@ test("shows the ACP report tool progress until Thread restoration", async ({ pag
   await page.goto("/chat/thread%3At1");
   await page.getByLabel("消息").fill("生成报告");
   await page.getByRole("button", { name: "发送" }).click();
-  await expect(page.getByRole("status")).toContainText("正在生成报告");
+  await expect(page.getByRole("status")).toContainText("发布科研报告");
   release();
   await expect(page.getByText("正在生成报告")).toHaveCount(0);
 });
