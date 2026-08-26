@@ -17,7 +17,7 @@ class FakeProvider:
             raise message
         if message.get("content"):
             await emit(message["content"])
-        return ModelResult(message, {"prompt_tokens": 3, "completion_tokens": 2})
+        return ModelResult(message, _usage())
 
     async def embed(self, model, texts):
         self.embedding_requests.append({"model": model, "texts": texts})
@@ -34,3 +34,7 @@ def endpoint(
     return provider_endpoint(
         provider, models, endpoint_id, priority, embedding_models
     )
+
+
+def _usage():
+    return {"input_tokens": 3, "cached_input_tokens": 0, "cache_write_input_tokens": 0, "output_tokens": 2, "reasoning_output_tokens": 0}
