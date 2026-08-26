@@ -4,6 +4,7 @@ import hashlib
 import json
 import math
 import re
+from html import unescape
 from io import BytesIO
 from urllib.parse import parse_qsl, urlsplit
 from zipfile import ZIP_STORED, ZipFile, ZipInfo
@@ -20,7 +21,7 @@ FORMAT = "research-world-project-export/v1"
 REDACTED = "[redacted]"
 MAX_DEPTH = 16
 MAX_ITEMS = 10000
-_CREDENTIAL = re.compile(r"(?i)\b(?:[a-z][a-z0-9_]*(?:key|token|secret|password|credential|authorization)|api[\W_]*key|client[\W_]*secret|baseurl|endpoint|dsn)\b\s*[:=]\s*(?:bearer|basic)?\s*[^\s,;]+")
+_CREDENTIAL = re.compile(r"(?i)\b(?:key|token|secret|password|credential|authorization|[a-z][a-z0-9_]*(?:key|token|secret|password|credential|authorization)|api[\W_]*key|client[\W_]*secret|baseurl|endpoint|dsn)\b\s*[:=]\s*(?:bearer|basic)?\s*[^\s,;]+")
 _BEARER = re.compile(r"(?i)\b(?:bearer|basic)\s+[^\s,;]+")
 _KNOWN_SECRET = re.compile(r"(?i)\b(?:gh[pousr]_[A-Za-z0-9_]{8,}|AKIA[0-9A-Z]{16}|(?:sk|rk|pk)-[A-Za-z0-9_-]{8,}|xox[baprs]-[A-Za-z0-9-]{8,})\b")
 _UNIX_PATH = re.compile(r"(?<![A-Za-z0-9:<])/(?:[^\s\"']+)")
@@ -29,9 +30,11 @@ _URI = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s\"'<>]+")
 _URI_USERINFO = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s/@]+:[^\s/@]+@")
 _FILE_URI = re.compile(r"(?i)\bfile:(?:/{1,3}|[a-z]:[\\/]|\\\\)")
 _TEMPORARY = re.compile(r"(?i)\b[^\s/\\]+\.(?:tmp|temp|swp)\b")
-_SENSITIVE_KEY = re.compile(r"(?i)(?:api[\W_]*key|secret|token|password|credential|authorization|cookie|dsn|baseurl|endpoint|continuation)")
+_SENSITIVE_KEY = re.compile(r"(?i)(?:\bkey\b|api[\W_]*key|secret|token|password|credential|authorization|cookie|dsn|baseurl|endpoint|continuation)")
 _PATH_KEYS = {"path", "root", "workspace", "cwd", "home", "codex_home", "runtime_binding", "provider_session_id"}
 _QUERY_SECRET_KEYS = {"key", "apikey", "accesskey", "accesstoken", "auth", "authtoken", "authorization", "clientsecret", "credential", "password", "secret", "signature", "sig", "token", "xapikey"}
+_RELATIVE_QUERY = re.compile(r"\?([^\s\"'<>#]+)")
+_SERIALIZED_KEY = re.compile(r"(?i)[\"']?(?:key|token|secret|password|credential|authorization|api[\W_]*key|client[\W_]*secret)[\"']?\s*:")
 
 
 async def export_project(world, runtime, project_id: str) -> bytes:
@@ -128,10 +131,15 @@ def _report_content(store, artifact_id):
 
 def _safe_document(content):
     try:
-        content.decode("utf-8")
+        text = content.decode("utf-8")
     except UnicodeDecodeError:
         return False
-    return not validate_html(content)
+    return not validate_html(content) and not _unsafe_report_data(text)
+
+
+def _unsafe_report_data(value):
+    text = unescape(value)
+    return _relative_query_secret(text) or _serialized_secret(text)
 
 
 def _bibtex(store, nodes):
@@ -164,9 +172,19 @@ def _bibtex_entry(store, artifact_id):
         raise ValueError("project export contains invalid BibTeX") from error
     if not bibliography.entries:
         raise ValueError("project export contains no valid BibTeX entries")
-    if _clean_text(text) != text:
-        raise ValueError("project export contains unsafe BibTeX")
-    return text
+    return text if _clean_text(text) == text else _redact_bibtex(bibliography)
+
+
+def _redact_bibtex(bibliography):
+    for entry in bibliography.entries.values():
+        entry.fields = {key: _bibtex_value(key, value) for key, value in entry.fields.items()}
+    return bibliography.to_string("bibtex")
+
+
+def _bibtex_value(key, value):
+    if _hidden_key(key):
+        return REDACTED
+    return _clean_text(value) if isinstance(value, str) else REDACTED
 
 
 def _files(snapshot, artifacts, report_files, bibtex):
@@ -272,23 +290,38 @@ def _safe_key(key):
 
 
 def _clean_text(value):
-    if _unsafe_text(value):
-        return REDACTED
-    return _clean_serialized(value)
+    return _clean_serialized(value) if _serialized_candidate(value) else REDACTED if _unsafe_text(value) else value
+
+
+def _serialized_candidate(value):
+    stripped = value.lstrip()
+    if stripped.startswith(("{", "[")):
+        return True
+    return stripped.startswith('"') and stripped[1:].lstrip().startswith(("{", "["))
 
 
 def _clean_serialized(value):
-    if not value.lstrip().startswith(("{", "[")):
-        return value
-    try:
-        parsed = json.loads(value)
-    except (json.JSONDecodeError, RecursionError):
-        return value
-    return _json(_clean(parsed)).decode("utf-8")
+    candidate, layers = value, 0
+    for _ in range(MAX_DEPTH):
+        try:
+            parsed = json.loads(candidate)
+        except (json.JSONDecodeError, RecursionError):
+            candidate = candidate.replace(r'\"', '"')
+            if candidate == value:
+                return REDACTED
+            continue
+        if isinstance(parsed, str) and _serialized_candidate(parsed):
+            candidate, layers = parsed, layers + 1
+            continue
+        rendered = _json(_clean(parsed)).decode("utf-8")
+        for _ in range(layers):
+            rendered = _json(rendered).decode("utf-8")
+        return rendered
+    return REDACTED
 
 
 def _unsafe_text(value):
-    return bool(_CREDENTIAL.search(value) or _BEARER.search(value) or _KNOWN_SECRET.search(value) or _FILE_URI.search(value) or _temporary(value) or _absolute_path(value) or _uri_secret(value))
+    return bool(_CREDENTIAL.search(value) or _BEARER.search(value) or _KNOWN_SECRET.search(value) or _FILE_URI.search(value) or _temporary(value) or _absolute_path(value) or _uri_secret(value) or _relative_query_secret(value) or _serialized_secret(value))
 
 
 def _temporary(value):
@@ -321,6 +354,30 @@ def _query_secret(query):
 def _query_key(key):
     normalized = re.sub(r"[^a-z0-9]", "", key.lower())
     return normalized in _QUERY_SECRET_KEYS or _hidden_key(key)
+
+
+def _relative_query_secret(value):
+    return any(_query_secret(query) for query in _RELATIVE_QUERY.findall(unescape(value)))
+
+
+def _serialized_secret(value):
+    return _unsafe_json_fragment(value.replace(r'\"', '"'))
+
+
+def _unsafe_json_fragment(value):
+    decoder = json.JSONDecoder()
+    for index, character in enumerate(value):
+        if character not in "{[":
+            continue
+        try:
+            parsed, _ = decoder.raw_decode(value[index:])
+        except (json.JSONDecodeError, RecursionError):
+            if _SERIALIZED_KEY.search(value[index:]):
+                return True
+            continue
+        if _clean(parsed) != parsed:
+            return True
+    return False
 
 
 def _manifest(project_id, files):

@@ -84,9 +84,9 @@ def add_pipeline_run(world, project, node):
     return run
 
 
-def add_report(world, project):
+def add_report(world, project, content=VALID_REPORT):
     thread = world.create_thread(project["id"], "Trace", "session:export", "agent")
-    artifact = artifact_store(world, project).add(VALID_REPORT, "text/html")
+    artifact = artifact_store(world, project).add(content, "text/html")
     publication = world.publish_report(project["id"], thread["id"], "Report", artifact["id"])
     world.save_report(project["id"], thread["id"], "V1", publication["id"])
     return thread
@@ -198,6 +198,21 @@ def test_kernel_export_rejects_claimed_invalid_published_report(world, project, 
         export_archive(export_kernel(world, tmp_path), project)
 
 
+@pytest.mark.parametrize("payload", [
+    b'<p>{"token":"serialized-secret"}</p>',
+    b'<p>{\\"token\\":\\"escaped-secret\\"}</p>',
+    b"<p>?sig=relative-secret</p>",
+])
+def test_kernel_export_rejects_secret_bearing_published_report(world, project, tmp_path, payload):
+    content = VALID_REPORT.replace(b"</body>", payload + b"</body>")
+    add_report(world, project, content)
+    bibtex = artifact_store(world, project).add(valid_bibtex().encode(), "application/x-bibtex")
+    world.create_node(project["id"], "source", {"artifact_ids": [bibtex["id"]]}, life_state="admitted")
+
+    with pytest.raises(ValueError, match="unsafe published report"):
+        export_archive(export_kernel(world, tmp_path), project)
+
+
 def test_kernel_export_requires_a_valid_bibtex_entry(world, project, tmp_path):
     with pytest.raises(ValueError, match="at least one valid BibTeX entry"):
         export_archive(export_kernel(world, tmp_path), project)
@@ -225,6 +240,43 @@ def test_kernel_export_redacts_secrets_in_serialized_structures(world, project, 
 
     assert b"serialized-secret" not in archive
     assert b'\\"safe\\":\\"kept\\"' in archive
+
+
+def test_kernel_export_redacts_malformed_serialized_json(world, project, tmp_path):
+    seed_export_state(world, project)
+    world.create_node(project["id"], "experiment", {"encoded": '{"token":"malformed-secret"'}, life_state="admitted")
+
+    files = archive_files(export_archive(export_kernel(world, tmp_path), project))
+    project_file = json.loads(files["project.json"])
+    node = next(node for node in project_file["nodes"] if "encoded" in node["payload"])
+
+    assert node["payload"]["encoded"] == "[redacted]"
+    assert all(b"malformed-secret" not in content for content in files.values())
+
+
+def test_kernel_export_redacts_nested_json_and_bibtex_fields(world, project, tmp_path):
+    seed_export_state(world, project)
+    nested = {"token": "nested-token", "key": "nested-key", "secret": "nested-secret", "bibtex": "@article{orbit, key={bib-key}}", "safe": "kept"}
+    world.create_node(project["id"], "experiment", {"encoded": json.dumps({"nested": json.dumps(nested)})}, life_state="admitted")
+
+    files = archive_files(export_archive(export_kernel(world, tmp_path), project))
+
+    assert all(value not in b"".join(files.values()) for value in (b"nested-token", b"nested-key", b"nested-secret", b"bib-key"))
+    assert b"kept" in files["project.json"]
+
+
+def test_kernel_export_redacts_sensitive_bibtex_fields_in_zip_member(world, project, tmp_path):
+    store = artifact_store(world, project)
+    content = "@article{orbit, key={bib-key}, token={bib-token}, secret={bib-secret}, title={kept}}"
+    bibtex = store.add(content.encode(), "application/x-bibtex")
+    world.create_node(project["id"], "source", {"artifact_ids": [bibtex["id"]]}, life_state="admitted")
+
+    files = archive_files(export_archive(export_kernel(world, tmp_path), project))
+
+    assert b"bib-key" not in files["references.bib"]
+    assert b"bib-token" not in files["references.bib"]
+    assert b"bib-secret" not in files["references.bib"]
+    assert b"kept" in files["references.bib"]
 
 
 def test_kernel_export_stays_within_requested_project_scope(world, project, tmp_path):
