@@ -49,19 +49,20 @@ def test_agent_spec_keeps_runtime_and_endpoint_independent(value):
         {"tools": ["graph_query", "graph_query"]},
     ],
 )
-def test_runtime_validates_agent_spec_with_the_canonical_schema(tmp_path, invalid):
-    runtime = Runtime(tmp_path / "data", [endpoint(FakeProvider([]))])
+@pytest.mark.asyncio
+async def test_runtime_validates_agent_spec_with_the_canonical_schema(tmp_path, invalid):
+    runtime = generic_runtime(tmp_path, [endpoint(FakeProvider([]))])
 
-    assert runtime.validate_agent(spec()) == {"valid": True}
+    assert await runtime.validate_agent(spec(), str(tmp_path)) == {"valid": True}
     with pytest.raises(SpecError):
-        runtime.validate_agent({**spec(), **invalid})
+        await runtime.validate_agent({**spec(), **invalid}, str(tmp_path))
 
 
 async def test_launch_rejects_unrecognized_capability(tmp_path, monkeypatch):
     monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
     monkeypatch.setenv("RUNTIME_API_KEY", "secret")
     monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
-    runtime = Runtime(tmp_path / "data", [endpoint(FakeProvider([]))])
+    runtime = generic_runtime(tmp_path, [endpoint(FakeProvider([]))])
 
     with pytest.raises(CapabilityNotFound, match="skill is not available"):
         await runtime.launch(
@@ -83,20 +84,21 @@ def test_duplicate_runtime_identity_is_rejected(tmp_path):
         Runtime(tmp_path / "data", [endpoint(FakeProvider([]))], [adapter, adapter])
 
 
-def test_default_spec_selects_runtime_before_endpoint(tmp_path):
+def test_default_spec_does_not_select_a_synthetic_runtime(tmp_path):
     provider = FakeProvider([])
     runtime = Runtime(
         tmp_path / "data", [endpoint(provider)],
         runtimes=[RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM), ("openai-compatible",))],
     )
-    assert _default_spec(runtime)["endpoint"] == "openai-compatible"
+    with pytest.raises(CapabilityNotFound, match="no model endpoint"):
+        _default_spec(runtime)
 
 
 def test_default_spec_uses_declared_chat_endpoint_for_codex(tmp_path):
     endpoints = [Endpoint("embed", "Embed", "openai-compatible", (), ("embed",), 1, None, available=True), Endpoint("down", "Down", "openai-compatible", ("down",), (), 2, None), Endpoint("chat", "Chat", "openai-compatible", ("gpt",), (), 3, None, available=True)]
     runtime = Runtime(tmp_path / "data", endpoints, [CodexRuntimeAdapter(ready_provider())])
 
-    assert _default_spec(runtime)["endpoint"] == "down"
+    assert _default_spec(runtime)["endpoint"] == "chat"
 
 
 def test_default_spec_rejects_unavailable_endpoint_for_non_codex(tmp_path):
@@ -118,7 +120,7 @@ async def test_codex_rejects_incompatible_declared_endpoint_adapter(tmp_path):
 
 async def test_generic_rejects_foreign_declared_endpoint_adapter(tmp_path):
     foreign = Endpoint("foreign", "Foreign", "foreign", ("gpt",), (), 1, None, available=True)
-    runtime = Runtime(tmp_path / "data", [foreign])
+    runtime = generic_runtime(tmp_path, [foreign])
 
     with pytest.raises(CapabilityNotFound, match="endpoint is not available"):
         await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec(endpoint="foreign", model="gpt")})
@@ -189,7 +191,7 @@ async def test_prompt_and_resume_are_derived_from_trace(tmp_path, monkeypatch):
             {"role": "assistant", "content": "second"},
         ]
     )
-    runtime = Runtime(tmp_path / "data", [endpoint(provider)])
+    runtime = generic_runtime(tmp_path, [endpoint(provider)])
     launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec()})
 
     await runtime.prompt(launched["session_id"], [{"type": "text", "text": "one"}])
@@ -213,9 +215,8 @@ async def test_prompt_rejects_an_empty_final_response(tmp_path, monkeypatch):
     monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
     monkeypatch.setenv("RUNTIME_API_KEY", "secret")
     monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
-    runtime = Runtime(
-        tmp_path / "data",
-        [endpoint(FakeProvider([{"role": "assistant", "content": ""}]))],
+    runtime = generic_runtime(
+        tmp_path, [endpoint(FakeProvider([{"role": "assistant", "content": ""}]))]
     )
     launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec()})
 
@@ -246,7 +247,7 @@ async def test_launch_with_same_session_id_is_idempotent(tmp_path, monkeypatch):
     monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
     monkeypatch.setenv("RUNTIME_API_KEY", "secret")
     monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
-    runtime = Runtime(tmp_path / "data", [endpoint(FakeProvider([]))])
+    runtime = generic_runtime(tmp_path, [endpoint(FakeProvider([]))])
     value = {
         "workspace": str(tmp_path),
         "agent_spec": spec(),
@@ -262,7 +263,7 @@ async def test_launch_rejects_reusing_session_for_other_spec(tmp_path, monkeypat
     monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
     monkeypatch.setenv("RUNTIME_API_KEY", "secret")
     monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
-    runtime = Runtime(tmp_path / "data", [endpoint(FakeProvider([]))])
+    runtime = generic_runtime(tmp_path, [endpoint(FakeProvider([]))])
     value = {"workspace": str(tmp_path), "agent_spec": spec(), "session_id": "s-op"}
     await runtime.launch(value)
 
@@ -293,7 +294,7 @@ async def test_skill_body_is_disclosed_only_after_tool_call(tmp_path, monkeypatc
             {"role": "assistant", "content": "done"},
         ]
     )
-    runtime = Runtime(tmp_path / "data", [endpoint(provider)])
+    runtime = generic_runtime(tmp_path, [endpoint(provider)])
     launched = await runtime.launch(
         {"workspace": str(tmp_path), "agent_spec": spec(skills=["evidence-review"])}
     )
@@ -304,6 +305,52 @@ async def test_skill_body_is_disclosed_only_after_tool_call(tmp_path, monkeypatc
     second_request = provider.requests[1]["messages"]
     assert "SECRET BODY" not in str(first_request)
     assert "SECRET BODY" in str(second_request)
+
+
+@pytest.mark.parametrize(
+    "change, message",
+    [
+        ({"runtime": {"id": "codex", "realm": "legacy:runtime"}}, "runtime is not available"),
+        ({"endpoint": "missing"}, "endpoint is not available"),
+        ({"model": "missing"}, "model is not available"),
+    ],
+)
+async def test_codex_validation_rejects_invalid_bindings(tmp_path, change, message):
+    runtime = codex_runtime_for_test(tmp_path)
+    with pytest.raises(CapabilityNotFound, match=message):
+        await runtime.validate_agent({**codex_spec(), **change}, str(tmp_path))
+
+
+async def test_codex_validation_rejects_incompatible_endpoint_and_tools(tmp_path):
+    foreign = Endpoint("foreign", "Foreign", "foreign", ("gpt",), (), 1, FakeProvider([]), available=True)
+    runtime = Runtime(tmp_path / "data", [foreign], [CodexRuntimeAdapter(ready_provider())])
+    with pytest.raises(CapabilityNotFound, match="endpoint is not available"):
+        await runtime.validate_agent({**codex_spec(), "endpoint": "foreign", "model": "gpt"}, str(tmp_path))
+
+    runtime = codex_runtime_for_test(tmp_path)
+    with pytest.raises(CapabilityNotFound, match="cannot expose selected Tool"):
+        await runtime.validate_agent({**codex_spec(), "tools": ["publish_report"]}, str(tmp_path))
+
+
+async def test_launch_revalidates_existing_session_binding(tmp_path):
+    runtime = codex_runtime_for_test(tmp_path)
+    value = {"workspace": str(tmp_path), "agent_spec": codex_spec(), "session_id": "s-revalidate"}
+    await runtime.launch(value)
+    current = runtime.endpoints._values["openai-compatible"]
+    runtime.endpoints._values["openai-compatible"] = Endpoint(
+        current.id, current.name, current.adapter, current.models, current.embedding_models,
+        current.priority, None, current.base_url_env, current.api_key_env, False,
+    )
+    with pytest.raises(CapabilityNotFound, match="endpoint is not available"):
+        await runtime.launch(value)
+
+
+def codex_spec(**values):
+    return {**spec(runtime={"id": "codex", "realm": REALM}, tools=[]), **values}
+
+
+def codex_runtime_for_test(path):
+    return Runtime(path / "data", [endpoint(FakeProvider([]))], [CodexRuntimeAdapter(ready_provider())])
 
 
 def request_tool_names(request):
@@ -323,11 +370,16 @@ def configured_runtime(tmp_path, monkeypatch):
         {"role": "assistant", "content": "omitted"},
     ]
     provider = FakeProvider(outputs)
-    return Runtime(tmp_path / "data", [endpoint(provider)]), provider
+    return generic_runtime(tmp_path, [endpoint(provider)]), provider
 
 
 def _usage_keys():
     return {"input_tokens", "cached_input_tokens", "cache_write_input_tokens", "output_tokens", "reasoning_output_tokens"}
+
+
+def generic_runtime(path, endpoints):
+    adapter = RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM), ("openai-compatible",))
+    return Runtime(path / "data", endpoints, [adapter])
 
 
 def _independent_runtime(path):

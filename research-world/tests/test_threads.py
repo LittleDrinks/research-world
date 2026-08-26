@@ -41,7 +41,7 @@ class FakeRuntime:
             "tools": [{"id": tool, "status": "ready"} for tool in tools],
         }
 
-    async def validate_agent(self, value):
+    async def validate_agent(self, value, workspace):
         self.validated.append(value)
         if not value.get("name", "").strip():
             raise ValueError("agent name is required")
@@ -73,7 +73,7 @@ def _agents(tmp_path):
     root = tmp_path / "agents"
     root.mkdir()
     (root / "research-assistant.yaml").write_text(
-        "id: research-assistant\nname: 研究助手\nendpoint: codex\n"
+        "id: research-assistant\nname: 研究助手\nruntime:\n  id: codex\n  realm: container:runtime\nendpoint: codex\n"
         "model: test\ninstructions: test\n",
         encoding="utf-8",
     )

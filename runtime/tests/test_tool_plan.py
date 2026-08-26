@@ -1,5 +1,6 @@
 import pytest
 from runtime.service import Runtime
+from runtime.runtimes import REALM, RuntimeAdapter, RuntimeDescriptor
 from runtime.types import SessionSpecInvalid, ToolPlanDrift
 from tests.helpers import FakeProvider, endpoint
 
@@ -60,11 +61,16 @@ def patch_adapters(monkeypatch, adapter):
     )
 
 
+def generic_runtime(path, endpoints):
+    adapter = RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM), ("openai-compatible",))
+    return Runtime(path / "data", endpoints, [adapter])
+
+
 async def test_prompt_fails_when_tool_operations_drift(tmp_path, monkeypatch):
     adapter = DriftAdapter()
     patch_adapters(monkeypatch, adapter)
     provider = FakeProvider([{"role": "assistant", "content": "done"}])
-    runtime = Runtime(tmp_path / "data", [endpoint(provider)])
+    runtime = generic_runtime(tmp_path, [endpoint(provider)])
     launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec()})
 
     adapter.operations = V2
@@ -96,7 +102,7 @@ class FailingAdapter:
 
 async def test_failed_tool_handshake_creates_no_session(tmp_path, monkeypatch):
     patch_adapters(monkeypatch, FailingAdapter())
-    runtime = Runtime(tmp_path / "data", [endpoint(FakeProvider([]))])
+    runtime = generic_runtime(tmp_path, [endpoint(FakeProvider([]))])
 
     with pytest.raises(RuntimeError, match="tool failed to open"):
         await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec()})
