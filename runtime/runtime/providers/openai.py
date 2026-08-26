@@ -62,7 +62,7 @@ class _Accumulator:
     def __init__(self):
         self.text: list[str] = []
         self.calls: dict[int, dict] = defaultdict(_empty_call)
-        self.usage = {"prompt_tokens": 0, "completion_tokens": 0}
+        self.usage = _usage()
 
     def add(self, line: str) -> str | None:
         if not line.startswith("data: ") or line == "data: [DONE]":
@@ -81,8 +81,8 @@ class _Accumulator:
     def _add_usage(self, usage) -> None:
         if not usage:
             return
-        self.usage["prompt_tokens"] = usage.get("prompt_tokens", 0)
-        self.usage["completion_tokens"] = usage.get("completion_tokens", 0)
+        self.usage["input_tokens"] = usage.get("prompt_tokens", 0)
+        self.usage["output_tokens"] = usage.get("completion_tokens", 0)
 
     def _add_delta(self, delta: dict) -> str | None:
         for call in delta.get("tool_calls") or []:
@@ -91,6 +91,10 @@ class _Accumulator:
         if content:
             self.text.append(content)
         return content
+
+
+def _usage():
+    return {"input_tokens": 0, "cached_input_tokens": 0, "cache_write_input_tokens": 0, "output_tokens": 0, "reasoning_output_tokens": 0}
 
 
 def _payload(model, messages, tools):

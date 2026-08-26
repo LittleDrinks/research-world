@@ -351,6 +351,7 @@ def _validate_stream(events: list[dict]) -> None:
     if terminal == "turn.failed":
         error = TraceError("cli_stream_failed", "codex returned a failed terminal stream")
         error.provider_items, error.provider_terminal = _trace_items(events), _terminal(events)
+        error.provider_session_id = _thread_id(events)
         raise error
     raise TraceError(
         "cli_incomplete_stream", "codex returned an incomplete terminal stream"

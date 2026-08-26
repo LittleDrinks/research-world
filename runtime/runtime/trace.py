@@ -32,6 +32,7 @@ class TraceStore:
         self.root = Path(root)
         self.root.mkdir(parents=True, exist_ok=True)
         self._locks: defaultdict[str, threading.Lock] = defaultdict(threading.Lock)
+        self._continuations: defaultdict[str, set[str]] = defaultdict(set)
 
     def create(self, session_id: str, data: dict[str, Any]) -> dict[str, Any]:
         if self.path(session_id).exists():
@@ -47,7 +48,7 @@ class TraceStore:
     ) -> dict[str, Any]:
         with self._locks[session_id]:
             events = self.read(session_id)
-            event = _event(session_id, len(events), event_type, redact_trace_data(data), turn_id)
+            event = _event(session_id, len(events), event_type, redact_trace_data(data, self._continuations[session_id]), turn_id)
             _write_once(self.path(session_id), event)
         return event
 
@@ -63,6 +64,9 @@ class TraceStore:
 
     def path(self, session_id: str) -> Path:
         return self.root / session_id / "trace.jsonl"
+
+    def remember_continuations(self, session_id: str, *values: str | None) -> None:
+        self._continuations[session_id].update(value for value in values if value)
 
 
 def inspect_trace(events: list[dict[str, Any]]) -> dict[str, Any]:
@@ -89,8 +93,22 @@ def _public_data(data):
     return _redact(redact_trace_data(data), hidden, ())
 
 
-def redact_trace_data(data):
-    return _redact(data, {"workspace", "codex_home", "runtime_binding", "provider_session_id"}, ())
+def redact_trace_data(data, continuations=()):
+    return _redact(_redact_continuations(data, continuations), {"workspace", "codex_home", "runtime_binding", "provider_session_id"}, ())
+
+
+def _redact_continuations(value, continuations):
+    if isinstance(value, dict):
+        return {key: _redact_continuations(item, continuations) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_redact_continuations(item, continuations) for item in value]
+    return _redact_continuation_text(value, continuations) if isinstance(value, str) else value
+
+
+def _redact_continuation_text(value, continuations):
+    for continuation in continuations:
+        value = value.replace(continuation, "<redacted>")
+    return value
 
 
 def _redact(value, hidden, path, preserved=()):

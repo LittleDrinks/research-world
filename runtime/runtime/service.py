@@ -128,7 +128,8 @@ class Runtime:
     def default_endpoint(self, descriptor) -> Endpoint:
         adapter = self.runtimes.require(descriptor)
         endpoint = next(
-            (item for item in self.endpoints.values() if adapter.accepts(item)), None
+            (item for item in self.endpoints.values()
+             if item.public()["available"] and item.models and adapter.accepts(item)), None
         )
         if endpoint is None:
             raise CapabilityNotFound("no model endpoint is available for runtime")
@@ -145,6 +146,7 @@ class Runtime:
     async def _prompt(self, session_id, blocks, client, emit):
         events = self._events(session_id)
         _session_spec(events)
+        self.trace.remember_continuations(session_id, self.state.read(session_id).get("provider_session_id"))
         binding = self._binding(session_id)
         spec, meta = binding.spec, events[0]["data"]
         turn_id = f"t-{uuid.uuid4().hex}"
@@ -180,7 +182,7 @@ class Runtime:
 
     async def _rounds(self, session_id, turn_id, binding, meta, tools, emit):
         spec = binding.spec
-        usage = {"prompt_tokens": 0, "completion_tokens": 0}
+        usage = _empty_usage()
         result, provider_session_id = "", None
         for _ in range(spec.options.max_rounds):
             if (session_id, turn_id) in self._cancelled:
@@ -206,6 +208,7 @@ class Runtime:
         endpoint_id, result = await self._generate(
             session_id, binding, meta, messages, specs, emit
         )
+        self.trace.remember_continuations(session_id, result.provider_session_id)
         _add_usage(usage, result.usage)
         self._record_response(session_id, turn_id, endpoint_id, result)
         calls = result.message.get("tool_calls") or []
@@ -270,6 +273,7 @@ class Runtime:
         return {"status": status, "result_text": result, "usage": usage}
 
     def _fail(self, session_id, turn_id, error):
+        self.trace.remember_continuations(session_id, getattr(error, "provider_session_id", None))
         for item in getattr(error, "provider_items", []):
             self.trace.append(session_id, "provider_item", item, turn_id)
         if terminal := getattr(error, "provider_terminal", None):
@@ -591,8 +595,12 @@ def _provider_context(meta, state, events):
 
 
 def _add_usage(total, current):
-    for key, value in current.items():
-        total[key] = total.get(key, 0) + value
+    for key in total:
+        total[key] += current.get(key, 0)
+
+
+def _empty_usage():
+    return {"input_tokens": 0, "cached_input_tokens": 0, "cache_write_input_tokens": 0, "output_tokens": 0, "reasoning_output_tokens": 0}
 
 
 def _error_code(error: Exception) -> str:

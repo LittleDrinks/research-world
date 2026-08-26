@@ -70,7 +70,8 @@ class CodexRuntimeAdapter(RuntimeAdapter):
         return True
 
     def accepts(self, endpoint) -> bool:
-        return True
+        adapter = endpoint["adapter"] if isinstance(endpoint, dict) else endpoint.adapter
+        return adapter == "openai-compatible"
 
     async def generate(
         self, session_id, endpoint, model, messages, tools, emit, context
