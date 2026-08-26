@@ -7,11 +7,15 @@ import shlex
 import subprocess
 import sys
 import time
+import traceback
 from pathlib import Path
 
 import pytest
 from runtime.endpoints import Endpoint, load_endpoints
-from runtime.providers.codex import CodexProvider, _collect, _environment, _probe, _taskkill
+from runtime.providers.codex import (
+    CodexProvider, _collect, _environment, _freeze_executable, _probe,
+    _sealed_snapshot, _taskkill,
+)
 from runtime.runtimes import CodexRuntimeAdapter, REALM, load_runtimes
 from runtime.service import Runtime, _messages, _provider_context
 from runtime.types import CapabilityNotFound, TraceError
@@ -106,6 +110,39 @@ async def test_snapshot_failure_skips_probes_and_hides_source(monkeypatch, sessi
     with pytest.raises(TraceError) as raised:
         await provider.start("gpt", _context(session_id))
     assert source not in str(raised.value)
+
+
+def test_missing_libc_memfd_maps_to_snapshot_unavailable(monkeypatch):
+    source = "/private/codex-source"
+    monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: source)
+    monkeypatch.setattr("runtime.providers.codex._snapshot_supported", lambda: True)
+    monkeypatch.setattr("runtime.providers.codex._open_source", lambda _: 41)
+    monkeypatch.delattr("runtime.providers.codex.os.memfd_create", raising=False)
+    monkeypatch.setattr("runtime.providers.codex.ctypes.CDLL", lambda *_a, **_k: object())
+    monkeypatch.setattr("runtime.providers.codex.os.close", lambda _: None)
+
+    provider = CodexProvider.detected()
+    descriptor = CodexRuntimeAdapter(provider).descriptor.public()
+
+    assert provider.reason == {"code": "snapshot_unavailable", "probe": "snapshot"}
+    assert source not in str(descriptor) and "/proc/self/fd/41" not in str(descriptor)
+
+
+def test_freeze_keeps_snapshot_when_source_close_fails(monkeypatch):
+    monkeypatch.setattr("runtime.providers.codex._open_source", lambda _: 41)
+    monkeypatch.setattr("runtime.providers.codex._sealed_snapshot", lambda _: 42)
+    monkeypatch.setattr("runtime.providers.codex.os.close", _close_failure)
+
+    assert _freeze_executable("/private/codex-source") == 42
+
+
+def test_sealed_snapshot_keeps_copy_failure_when_close_fails(monkeypatch):
+    monkeypatch.setattr("runtime.providers.codex._memfd_create", lambda: 42)
+    monkeypatch.setattr("runtime.providers.codex._copy_fd", _copy_failure)
+    monkeypatch.setattr("runtime.providers.codex.os.close", _close_failure)
+
+    with pytest.raises(OSError, match="copy"):
+        _sealed_snapshot(41)
 
 
 def _unexpected_probe(*_args, **_kwargs):
@@ -693,9 +730,18 @@ async def test_collect_accepts_complete_item_lifecycle():
     assert result.message["content"] == "ok"
 
 
-async def test_collect_accepts_release_completed_only_items_and_updates():
+async def test_collect_accepts_release_completed_only_file_change():
     result = await _collect(Process(_release_valid_stream()), "prompt", _ignore, 1)
     assert result.message["content"] == "answer"
+
+
+async def test_collect_rejects_started_file_change():
+    events = [
+        {"type": "item.started", "item": _file("in_progress")},
+        {"type": "item.completed", "item": _file("completed")},
+    ]
+    with pytest.raises(RuntimeError, match="invalid JSONL"):
+        await _collect(Process(_stream(events)), "prompt", _ignore, 1)
 
 
 async def test_collect_accepts_query_only_web_search():
@@ -905,6 +951,27 @@ async def test_runtime_close_releases_provider_snapshot(tmp_path):
     assert not os.path.exists(f"/proc/self/fd/{descriptor}")
 
 
+async def test_runtime_close_converges_active_and_pending_starts(monkeypatch, tmp_path):
+    active, pending = Process(hang=True, returncode=None), Process(hang=True, returncode=None)
+    active_ready, pending_ready, release = asyncio.Event(), asyncio.Event(), asyncio.Event()
+    active.communicate = _started_communicate(active, active_ready)
+    provider = ready_provider()
+    monkeypatch.setattr(provider, "start", _active_then_pending(active, pending, pending_ready, release))
+    monkeypatch.setattr("runtime.providers.codex.TERMINATE_TIMEOUT", 0.01)
+    runtime = codex_runtime(tmp_path, provider)
+    first = await _prompt_task(runtime, tmp_path, "s-active")
+    await active_ready.wait()
+    second = await _prompt_task(runtime, tmp_path, "s-pending")
+    await pending_ready.wait()
+
+    early, terminated = await _close_race(runtime, active, pending, release)
+    await asyncio.gather(first, second, return_exceptions=True)
+    adapter = runtime.runtimes._values[("codex", REALM)]
+
+    assert not early and terminated
+    assert not adapter._processes and not adapter._starts
+
+
 async def test_os_exec_failure_hides_runtime_execution_details(monkeypatch, tmp_path):
     executable = tmp_path / "codex"
     _codex_script(executable, "snapshot")
@@ -918,6 +985,8 @@ async def test_os_exec_failure_hides_runtime_execution_details(monkeypatch, tmp_
         await runtime.prompt(session, [{"type": "text", "text": "one"}])
     raw, public = runtime.trace.path(session).read_text(), runtime.inspect(session)
     assert all(value not in str((raised.value, raw, public)) for value in leaked.split())
+    assert raised.value.code == "cli_unavailable" and raised.value.__cause__ is None
+    assert all(value not in "".join(traceback.format_exception(raised.value)) for value in leaked.split())
     await _close_runtime(runtime, provider)
 
 
@@ -974,6 +1043,14 @@ def _close_provider(provider):
         close()
 
 
+def _close_failure(*_args):
+    raise OSError("close")
+
+
+def _copy_failure(*_args):
+    raise OSError("copy")
+
+
 def _os_exec_failure(leaked):
     async def fail(*_args, **_kwargs):
         raise OSError(f"unable to exec {leaked}")
@@ -1013,7 +1090,6 @@ def _release_valid_stream():
         b'{"type":"item.completed","item":{"id":"a","type":"agent_message","text":"answer"}}',
         b'{"type":"item.completed","item":{"id":"r","type":"reasoning","text":"summary"}}',
         b'{"type":"item.completed","item":{"id":"w","type":"error","message":"warning"}}',
-        b'{"type":"item.started","item":{"id":"f","type":"file_change","changes":[],"status":"in_progress"}}',
         b'{"type":"item.completed","item":{"id":"f","type":"file_change","changes":[],"status":"completed"}}',
         b'{"type":"item.started","item":{"id":"t","type":"todo_list","items":[]}}',
         b'{"type":"item.updated","item":{"id":"t","type":"todo_list","items":[]}}',
@@ -1079,7 +1155,7 @@ def _official_items():
     return [
         {"type": "item.completed", "item": _reasoning()}, {"type": "item.completed", "item": _error()},
         {"type": "item.started", "item": _command("in_progress")}, {"type": "item.completed", "item": _command("completed")},
-        {"type": "item.started", "item": _file("in_progress")}, {"type": "item.completed", "item": _file("completed")},
+        {"type": "item.completed", "item": _file("completed")},
         {"type": "item.started", "item": _mcp("in_progress")}, {"type": "item.completed", "item": _mcp("completed")},
         {"type": "item.started", "item": _collab("in_progress")}, {"type": "item.completed", "item": _collab("completed")},
         {"type": "item.started", "item": _web()}, {"type": "item.completed", "item": _web()}, *_todos(),
@@ -1331,6 +1407,44 @@ def _created_after(started, ready, process):
         await ready.wait()
         return process
     return start
+
+
+def _active_then_pending(active, pending, started, release):
+    calls = 0
+
+    async def start(*_args):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return active
+        started.set()
+        await release.wait()
+        return pending
+
+    return start
+
+
+async def _prompt_task(runtime, path, session_id):
+    await runtime.launch({"workspace": str(path), "agent_spec": _spec(), "session_id": session_id})
+    return asyncio.create_task(runtime.prompt(session_id, [{"type": "text", "text": "one"}]))
+
+
+async def _close_race(runtime, active, pending, release):
+    closers = [asyncio.create_task(runtime.close()) for _ in range(2)]
+    early = await _finishes(closers[0])
+    release.set()
+    await asyncio.gather(*closers)
+    terminated = active.terminated and pending.terminated
+    pending.terminate()
+    return early, terminated
+
+
+async def _finishes(task):
+    try:
+        await asyncio.wait_for(asyncio.shield(task), 0.1)
+    except TimeoutError:
+        return False
+    return True
 
 
 def _stops_process(process, stopped):
