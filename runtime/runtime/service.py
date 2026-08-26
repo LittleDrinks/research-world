@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import re
 import uuid
@@ -9,6 +10,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
+from acp import start_tool_call, update_tool_call
 from acp.interfaces import Client
 
 from . import catalog
@@ -265,11 +267,13 @@ class Runtime:
                 "arguments": function.get("arguments", ""),
             }
             self.trace.append(session_id, "tool_call", data, turn_id)
+            progress_id = await _report_started(tools.client, session_id, data["name"])
             content, failed = await tools.call(
                 session_id, data["name"], data["arguments"]
             )
             result = {**data, "content": content, "is_error": failed}
             self.trace.append(session_id, "tool_result", result, turn_id)
+            await _report_finished(tools.client, session_id, progress_id, failed, content)
 
     def _finish(self, session_id, turn_id, status, result, usage, provider_session_id=None):
         if (session_id, turn_id) in self._cancelled:
@@ -318,6 +322,35 @@ class Runtime:
 
 async def _ignore(text: str) -> None:
     return None
+
+
+async def _report_started(client, session_id, name):
+    if client is None or name != "publish_report":
+        return None
+    tool_call_id = f"report:{uuid.uuid4().hex}"
+    update = start_tool_call(
+        tool_call_id, "发布科研报告", kind="other", status="in_progress"
+    )
+    await client.session_update(session_id, update)
+    return tool_call_id
+
+
+async def _report_finished(client, session_id, tool_call_id, failed, content):
+    if client is None or tool_call_id is None:
+        return None
+    status = "failed" if _report_failed(failed, content) else "completed"
+    await client.session_update(
+        session_id, update_tool_call(tool_call_id, status=status)
+    )
+
+
+def _report_failed(failed, content) -> bool:
+    if failed:
+        return True
+    try:
+        return json.loads(content).get("status") == "failed"
+    except (AttributeError, TypeError, json.JSONDecodeError):
+        return True
 
 
 def _session_stores(root):

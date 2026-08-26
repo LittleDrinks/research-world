@@ -61,7 +61,7 @@ def _assert_catalog_shape(value):
     tools = {item["id"]: item for item in value["tools"]}
     for tool_id in (
         "report_projection",
-        "report_validate",
+        "publish_report",
         "export_bibtex",
         "submit_observation",
     ):

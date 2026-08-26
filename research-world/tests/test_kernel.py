@@ -3,7 +3,6 @@ from base64 import b64encode
 
 import pytest
 from fastapi.testclient import TestClient
-
 from server.admission import AdmissionVerdict
 from server.app import create_app
 from server.kernel import KernelCommand, KernelQuery, ResearchKernel
@@ -167,7 +166,7 @@ def test_admission_rejects_malformed_claims(world, project, tmp_path, claims):
 
     assert admitted.status_code == 400
     assert world.node(created["id"])["life_state"] == "pending"
-    assert projection.status_code == 200
+    assert projection.status_code == 404
 
 
 def test_admission_rejects_duplicate_project_claim_ids(world, project, tmp_path):
@@ -303,136 +302,57 @@ def test_kernel_confirms_execution_gate(world, project, tmp_path):
     assert confirmed["payload"]["_signal"] == {"kind": "confirm_step"}
 
 
-def test_report_validation_uses_caller_facts_and_admitted_graph(
-    world, project, tmp_path
-):
+def test_report_projection_exposes_only_safe_cited_source_fields(world, project, tmp_path):
     source = world.create_node(
         project["id"],
         "source",
-        {
-            "title": "Paper",
-            "source_level": "published",
-            "checked_at": "2026-08-23T12:00:00+08:00",
-        },
+        {"title": "Paper", "source_level": "published", "checked_at": "2026-08-23T12:00:00+08:00", "apikey": "secret"},
     )
     world.admit_node(source["id"])
-    direction = world.create_node(
-        project["id"],
-        "direction",
-        {
-            "claims": [
-                {
-                    "text": "Stable",
-                    "verdict": "supported",
-                    "evidence": [source["id"]],
-                }
-            ]
-        },
-    )
+    direction = world.create_node(project["id"], "direction", {"claims": [{"text": "Stable", "verdict": "supported", "evidence": [source["id"]]}]})
     world.admit_node(direction["id"])
-    kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
-    client = TestClient(create_app(kernel))
-    facts = [
-        {
-            "text": "Not in graph",
-            "claim_id": "claim:missing",
-            "source_ids": [source["id"]],
-        }
-    ]
-
-    result = client.post(
-        f"/api/v1/projects/{project['id']}/report/validate",
-        json={"facts": facts},
-    ).json()
-
-    assert result["valid"] is False
-    assert result["gaps"][0]["code"] == "claim_missing"
-
-
-def test_report_validation_rejects_caller_endpoint_state(world, project, tmp_path):
-    kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
-    response = TestClient(create_app(kernel)).post(
-        f"/api/v1/projects/{project['id']}/report/validate",
-        json={"facts": [], "endpoint_ready": True},
-    )
-    assert response.status_code == 400
-    assert "endpoint_ready" in response.json()["detail"]
-
-
-def test_report_projection_derives_endpoint_state_from_runtime(
-    world, project, tmp_path
-):
-    runtime = CatalogRuntime(True)
-    kernel = ResearchKernel(world, projects_root=tmp_path / "projects", runtime=runtime)
-    response = TestClient(create_app(kernel)).get(
-        f"/api/v1/projects/{project['id']}/report/projection?endpoint_ready=false"
-    )
-    assert response.status_code == 200
-    assert response.json()["endpoint_ready"] is True
-
-
-def test_source_projection_cannot_override_kernel_fields(world, project, tmp_path):
-    source = world.create_node(
-        project["id"],
-        "source",
-        {"id": "node:forged", "kind": "direction", "life_state": "ghost"},
-    )
-    world.admit_node(source["id"])
-    projection = inspect(
+    envelope = inspect(
         ResearchKernel(world, projects_root=tmp_path / "projects"),
         KernelQuery("report_projection", project["id"]),
     )
+    assert envelope["status"] == "ready"
+    projection = envelope["projection"]
     assert projection["sources"][0]["id"] == source["id"]
-    assert projection["sources"][0]["kind"] == "source"
-    assert projection["sources"][0]["life_state"] == "admitted"
+    assert set(projection["sources"][0]) == {"id", "title", "source_level", "checked_at"}
 
 
 def test_bibtex_export_reads_only_admitted_source_artifact(world, project, tmp_path):
-    client = TestClient(
-        create_app(ResearchKernel(world, projects_root=tmp_path / "projects"))
-    )
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
+    client = TestClient(create_app(kernel))
     artifact, source = create_bibtex_source(client, project, valid_bibtex())
     admit(client, project, source)
-    response = client.get(
-        f"/api/v1/projects/{project['id']}/report/bibtex",
-        params={"artifact_id": artifact["id"]},
-    )
-    assert response.status_code == 200
-    assert response.json() == {"id": artifact["id"], "content": valid_bibtex()}
+    query = KernelQuery("report_bibtex", project["id"], {"artifact_id": artifact["id"]})
+    assert inspect(kernel, query) == {"id": artifact["id"], "content": valid_bibtex()}
 
 
 def test_bibtex_export_rejects_malformed_content(world, project, tmp_path):
-    client = TestClient(
-        create_app(ResearchKernel(world, projects_root=tmp_path / "projects"))
-    )
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
+    client = TestClient(create_app(kernel))
     artifact, source = create_bibtex_source(client, project, "not bibtex")
     admit(client, project, source)
-    response = client.get(
-        f"/api/v1/projects/{project['id']}/report/bibtex",
-        params={"artifact_id": artifact["id"]},
-    )
-    assert response.status_code == 400
-    assert "BibTeX" in response.json()["detail"]
+    query = KernelQuery("report_bibtex", project["id"], {"artifact_id": artifact["id"]})
+    with pytest.raises(ValueError, match="BibTeX"):
+        inspect(kernel, query)
 
 
 def test_bibtex_export_hides_unadmitted_and_cross_project_artifacts(
     world, project, tmp_path
 ):
-    client = TestClient(
-        create_app(ResearchKernel(world, projects_root=tmp_path / "projects"))
-    )
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
+    client = TestClient(create_app(kernel))
     artifact, _source = create_bibtex_source(client, project, valid_bibtex())
     other = world.create_project("other-bib", tmp_path / "other-bib", "Other?")
-    pending = client.get(
-        f"/api/v1/projects/{project['id']}/report/bibtex",
-        params={"artifact_id": artifact["id"]},
-    )
-    foreign = client.get(
-        f"/api/v1/projects/{other['id']}/report/bibtex",
-        params={"artifact_id": artifact["id"]},
-    )
-    assert pending.status_code == 404
-    assert foreign.status_code == 404
+    pending = KernelQuery("report_bibtex", project["id"], {"artifact_id": artifact["id"]})
+    foreign = KernelQuery("report_bibtex", other["id"], {"artifact_id": artifact["id"]})
+    with pytest.raises(PermissionError):
+        inspect(kernel, pending)
+    with pytest.raises(PermissionError):
+        inspect(kernel, foreign)
 
 
 def observation_record(artifact_id):
