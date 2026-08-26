@@ -296,9 +296,11 @@ async def test_runtime_trace_preserves_all_codex_usage_counters(monkeypatch, tmp
     monkeypatch.setattr(provider, "start", lambda *_: _process(Process(_usage_stream())))
     runtime = codex_runtime(tmp_path, provider)
     session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
-    await runtime.prompt(session, [{"type": "text", "text": "one"}])
+    result = await runtime.prompt(session, [{"type": "text", "text": "one"}])
     response = next(event for event in runtime.inspect(session)["events"] if event["type"] == "model_response")
     assert response["data"]["usage"] == _usage_values(3, 2, 1, 4, 5)
+    assert result["usage"] == _usage_values(3, 2, 1, 4, 5)
+    assert runtime.inspect(session)["turns"][0]["events"][-1]["data"]["usage"] == _usage_values(3, 2, 1, 4, 5)
 
 
 @pytest.mark.parametrize(
@@ -679,6 +681,20 @@ async def test_failed_stream_persists_items_and_terminal_error(tmp_path, monkeyp
     assert [event["type"] for event in events][-4:] == ["provider_item", "provider_terminal", "error", "turn_end"]
 
 
+async def test_failed_stream_redacts_current_and_result_continuations(tmp_path, monkeypatch):
+    provider = ready_provider()
+    monkeypatch.setattr(provider, "start", lambda *_: _process(Process(_continuation_failure_stream())))
+    runtime = codex_runtime(tmp_path, provider)
+    session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
+    runtime.state.update(session, {"provider_session_id": "current-continuation"})
+
+    with pytest.raises(RuntimeError, match="failed terminal stream"):
+        await runtime.prompt(session, [{"type": "text", "text": "one"}])
+    raw, public = runtime.trace.path(session).read_text(), runtime.inspect(session)
+    assert all(value not in raw and value not in str(public) for value in ["current-continuation", "result-continuation"])
+    assert "unrelated fact" in raw and "unrelated fact" in str(public)
+
+
 @pytest.mark.parametrize("item", [
     {"id": "x", "type": "future_item"},
     {"id": "x", "type": "agent_message", "text": "x", "extra": True},
@@ -721,6 +737,12 @@ def _all_items_stream():
 
 def _failed_stream():
     return _stream([{"type": "item.completed", "item": _error()}], failed=True)
+
+
+def _continuation_failure_stream():
+    error = {"id": "error", "type": "error", "message": "current-continuation result-continuation unrelated fact"}
+    rows = [{"type": "thread.started", "thread_id": "result-continuation"}, {"type": "turn.started"}, {"type": "item.completed", "item": error}, {"type": "turn.failed", "error": {"message": error["message"]}}]
+    return b"\n".join(json.dumps(row).encode() for row in rows) + b"\n"
 
 
 def _query_only_web_events():

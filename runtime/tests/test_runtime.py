@@ -3,10 +3,12 @@ import json
 import pytest
 from runtime.acp_agent import _default_spec
 from runtime.service import Runtime
-from runtime.runtimes import REALM, RuntimeAdapter, RuntimeDescriptor
+from runtime.endpoints import Endpoint
+from runtime.runtimes import CodexRuntimeAdapter, REALM, RuntimeAdapter, RuntimeDescriptor
 from runtime.types import AgentSpec, CapabilityNotFound
 from runtime.types import RuntimeError as SpecError
 from tests.helpers import FakeProvider, endpoint
+from tests.test_codex import ready_provider
 
 
 def spec(**values):
@@ -89,6 +91,30 @@ def test_default_spec_selects_runtime_before_endpoint(tmp_path):
         runtimes=[RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM))],
     )
     assert _default_spec(runtime)["endpoint"] == "openai-compatible"
+
+
+def test_default_spec_uses_ready_chat_endpoint_for_codex(tmp_path):
+    endpoints = [Endpoint("embed", "Embed", "openai-compatible", (), ("embed",), 1, None, available=True), Endpoint("down", "Down", "openai-compatible", ("down",), (), 2, None), Endpoint("chat", "Chat", "openai-compatible", ("gpt",), (), 3, None, available=True)]
+    runtime = Runtime(tmp_path / "data", endpoints, [CodexRuntimeAdapter(ready_provider())])
+
+    assert _default_spec(runtime)["endpoint"] == "chat"
+
+
+async def test_codex_rejects_incompatible_declared_endpoint_adapter(tmp_path):
+    endpoint = Endpoint("foreign", "Foreign", "foreign", ("gpt",), (), 1, None, available=True)
+    runtime = Runtime(tmp_path / "data", [endpoint], [CodexRuntimeAdapter(ready_provider())])
+
+    with pytest.raises(CapabilityNotFound, match="endpoint is not available"):
+        await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec(runtime={"id": "codex", "realm": REALM}, endpoint="foreign", model="gpt")})
+
+
+async def test_public_usage_has_only_official_counters(tmp_path, monkeypatch):
+    runtime, _ = configured_runtime(tmp_path, monkeypatch)
+    session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec()}))["session_id"]
+
+    result = await runtime.prompt(session, [{"type": "text", "text": "one"}])
+    assert set(result["usage"]) == _usage_keys()
+    assert set(runtime.inspect(session)["turns"][0]["events"][-1]["data"]["usage"]) == _usage_keys()
 
 
 async def test_prompt_and_resume_are_derived_from_trace(tmp_path, monkeypatch):
@@ -236,3 +262,7 @@ def configured_runtime(tmp_path, monkeypatch):
     ]
     provider = FakeProvider(outputs)
     return Runtime(tmp_path / "data", [endpoint(provider)]), provider
+
+
+def _usage_keys():
+    return {"input_tokens", "cached_input_tokens", "cache_write_input_tokens", "output_tokens", "reasoning_output_tokens"}
