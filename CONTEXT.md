@@ -47,6 +47,8 @@ _Avoid_: 节点消息表、草稿区
 _Avoid_: Evidence 节点、Evidence 实体
 **Artifact**：Project 内按 SHA-256 寻址的不可变产物；相同哈希不产生跨 Project 可见性。
 _Avoid_: 裸路径、覆盖写
+**Project export**：Research Kernel 只读生成的单 Project 可复现研究包，含确定性清单与校验和；不定义导入、同步或通用文件管理。
+_Avoid_: Project file、备份格式、双向同步
 **报告投影**：Research Kernel 从 admitted claim、source 与关联 Artifact 确定性生成的交付输入。
 _Avoid_: 跨表拼装、Agent 自报事实
 **执行凭据**：step 的完整执行描述与结果：image、command、files、seed、limits、退出码、输出哈希。
