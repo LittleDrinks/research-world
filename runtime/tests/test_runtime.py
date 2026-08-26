@@ -73,12 +73,12 @@ def test_non_codex_adapter_cannot_register_codex_runtime(tmp_path):
     with pytest.raises(ValueError, match="requires CodexRuntimeAdapter"):
         Runtime(
             tmp_path / "data", [endpoint(FakeProvider([]))],
-            runtimes=[RuntimeAdapter(RuntimeDescriptor("codex", REALM))],
+            runtimes=[RuntimeAdapter(RuntimeDescriptor("codex", REALM), ("openai-compatible",))],
         )
 
 
 def test_duplicate_runtime_identity_is_rejected(tmp_path):
-    adapter = RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM))
+    adapter = RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM), ("openai-compatible",))
     with pytest.raises(ValueError, match="runtime id and realm must be unique"):
         Runtime(tmp_path / "data", [endpoint(FakeProvider([]))], [adapter, adapter])
 
@@ -87,7 +87,7 @@ def test_default_spec_selects_runtime_before_endpoint(tmp_path):
     provider = FakeProvider([])
     runtime = Runtime(
         tmp_path / "data", [endpoint(provider)],
-        runtimes=[RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM))],
+        runtimes=[RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM), ("openai-compatible",))],
     )
     assert _default_spec(runtime)["endpoint"] == "openai-compatible"
 
@@ -101,7 +101,7 @@ def test_default_spec_uses_declared_chat_endpoint_for_codex(tmp_path):
 
 def test_default_spec_rejects_unavailable_endpoint_for_non_codex(tmp_path):
     endpoints = [Endpoint("down", "Down", "openai-compatible", ("gpt",), (), 1, None)]
-    adapter = RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM), ("down",))
+    adapter = RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM), ("openai-compatible",))
     runtime = Runtime(tmp_path / "data", endpoints, [adapter])
 
     with pytest.raises(CapabilityNotFound, match="no model endpoint"):
@@ -122,6 +122,24 @@ async def test_generic_rejects_foreign_declared_endpoint_adapter(tmp_path):
 
     with pytest.raises(CapabilityNotFound, match="endpoint is not available"):
         await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec(endpoint="foreign", model="gpt")})
+
+
+async def test_generic_empty_adapter_declaration_rejects_endpoint(tmp_path):
+    endpoint = Endpoint("primary", "Primary", "openai-compatible", ("gpt",), (), 1, FakeProvider([]))
+    runtime = Runtime(tmp_path / "data", [endpoint], [RuntimeAdapter(RuntimeDescriptor("generic", REALM), ())])
+
+    with pytest.raises(CapabilityNotFound, match="endpoint is not available"):
+        await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec(runtime={"id": "generic", "realm": REALM}, endpoint="primary", model="gpt")})
+
+
+async def test_generic_explicit_adapter_declaration_accepts_endpoint(tmp_path):
+    endpoint = Endpoint("primary", "Primary", "openai-compatible", ("gpt",), (), 1, FakeProvider([]))
+    adapter = RuntimeAdapter(RuntimeDescriptor("generic", REALM), ("openai-compatible",))
+    runtime = Runtime(tmp_path / "data", [endpoint], [adapter])
+
+    launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec(runtime={"id": "generic", "realm": REALM}, endpoint="primary", model="gpt")})
+
+    assert launched["session_id"].startswith("s-")
 
 
 async def test_runtime_accepts_independent_compatible_endpoint_id(tmp_path):

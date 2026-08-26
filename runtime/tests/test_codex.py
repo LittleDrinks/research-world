@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 from runtime.endpoints import Endpoint, load_endpoints
-from runtime.providers.codex import CodexProvider, _collect, _probe, _taskkill
+from runtime.providers.codex import CodexProvider, _collect, _environment, _probe, _taskkill
 from runtime.runtimes import CodexRuntimeAdapter, REALM, load_runtimes
 from runtime.service import Runtime, _messages, _provider_context
 from runtime.types import CapabilityNotFound
@@ -287,7 +287,7 @@ async def test_collect_normalizes_jsonl_into_model_result():
     result = await _collect(process, "prompt", emit, 1)
     assert result.message == {"role": "assistant", "content": "answer"}
     assert result.usage == _usage_values(3, 2)
-    assert result.provider_session_id == "thread-1"
+    assert not hasattr(result, "provider_session_id")
     assert emitted == ["answer"]
 
 
@@ -305,8 +305,7 @@ async def test_collect_redacts_thread_id_before_public_results():
 
     result = await _collect(process, "prompt", emit, 1)
 
-    assert result.provider_session_id == "secret-thread"
-    assert "secret-thread" not in str((result.message, result.provider_items, emitted))
+    assert "secret-thread" not in str(result)
     assert "remains hidden" in result.message["content"]
 
 
@@ -767,6 +766,22 @@ async def test_completed_stream_redacts_nested_continuation_key_everywhere(tmp_p
     assert set(arguments.values()) == {"secret-value", "preserved-value"}
 
 
+async def test_official_collab_child_continuations_are_private_at_every_boundary(tmp_path, monkeypatch):
+    values = ["parent", "sender-child", "receiver-child", "state-key-child", "state-value-child"]
+    emitted, provider = [], ready_provider()
+    stream = _collab_continuation_stream()
+    collected = await provider.collect(Process(stream), [{"role": "user", "content": "p"}], _capture(emitted), ("parent",))
+    assert collected.continuation_id == "parent"
+    assert all(value not in str(item) for value in values for item in [collected.result, emitted])
+    monkeypatch.setattr(provider, "start", lambda *_: _process(Process(stream)))
+    runtime = codex_runtime(tmp_path, provider)
+    session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
+    result = await runtime.prompt(session, [{"type": "text", "text": "one"}], emit=_capture(emitted))
+    raw, public = runtime.trace.path(session).read_text(), runtime.inspect(session)
+    assert all(value not in str(item) for value in values for item in [result, emitted, raw, public])
+    assert runtime.state.read(session)["provider_session_id"] == "parent"
+
+
 async def test_collect_keeps_assistant_text_for_short_thread_id():
     emitted = []
     result = await _collect(Process(_short_thread_stream()), "prompt", _capture(emitted), 1)
@@ -774,6 +789,37 @@ async def test_collect_keeps_assistant_text_for_short_thread_id():
     assert emitted == ["an answer"]
     assert result.message["content"] == "an answer"
     assert result.provider_items[1]["item"]["arguments"]["thread"] == "<redacted>"
+
+
+def test_codex_freezes_resolved_executable_after_symlink_retarget(tmp_path):
+    first, second, launcher = tmp_path / "first", tmp_path / "second", tmp_path / "codex"
+    first.write_text("#!/bin/sh\nexit 0\n")
+    second.write_text("#!/bin/sh\nexit 0\n")
+    first.chmod(0o755)
+    second.chmod(0o755)
+    launcher.symlink_to(first)
+    provider = CodexProvider(str(launcher))
+    launcher.unlink()
+    launcher.symlink_to(second)
+
+    assert provider._command("gpt", _context())[0] == str(first.resolve())
+    assert provider.executable_identity == provider.executable_identity
+
+
+def test_production_child_environment_runs_env_node_entrypoint(tmp_path, monkeypatch):
+    node_dir = tmp_path / "usr" / "local" / "bin"
+    node_dir.mkdir(parents=True)
+    node = node_dir / "node"
+    node.write_text("#!/bin/sh\nprintf ready\n")
+    node.chmod(0o755)
+    entrypoint = tmp_path / "codex"
+    entrypoint.write_text("#!/usr/bin/env node\n")
+    entrypoint.chmod(0o755)
+    monkeypatch.setattr("runtime.providers.codex.CHILD_PATH", f"{node_dir}:/usr/bin:/bin")
+
+    result = subprocess.run([entrypoint], env=_environment({"codex_home": str(tmp_path)}), capture_output=True, text=True, check=True)
+
+    assert result.stdout == "ready"
 
 
 @pytest.mark.parametrize("item", [
@@ -834,6 +880,17 @@ def _continuation_completed_stream():
 def _continuation_key_stream():
     item = {"id": "mcp", "type": "mcp_tool_call", "server": "s", "tool": "t", "arguments": {"result-continuation": "secret-value", "<redacted>": "preserved-value"}, "result": None, "error": None, "status": "completed"}
     return _stream([{"type": "item.started", "item": {**item, "status": "in_progress"}}, {"type": "item.completed", "item": item}, {"type": "item.completed", "item": _agent()}], thread_id="result-continuation")
+
+
+def _collab_continuation_stream():
+    item = {
+        "id": "collab", "type": "collab_tool_call", "tool": "wait",
+        "sender_thread_id": "sender-child", "receiver_thread_ids": ["receiver-child"],
+        "prompt": "parent sender-child receiver-child state-key-child state-value-child",
+        "agents_states": {"state-key-child": {"status": "running", "message": "state-value-child"}},
+        "status": "completed",
+    }
+    return _stream([{"type": "item.started", "item": {**item, "status": "in_progress"}}, {"type": "item.completed", "item": item}, {"type": "item.completed", "item": _agent()}], thread_id="parent")
 
 
 def _short_thread_stream():

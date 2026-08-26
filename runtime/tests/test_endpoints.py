@@ -160,6 +160,19 @@ def test_endpoint_settings_reject_inline_credentials(monkeypatch):
         load_endpoints()
 
 
+@pytest.mark.parametrize("adapter", [None, ""])
+def test_endpoint_settings_require_explicit_adapter(monkeypatch, adapter):
+    row = configured_row()
+    if adapter is None:
+        del row["adapter"]
+    else:
+        row["adapter"] = adapter
+    monkeypatch.setenv("RUNTIME_ENDPOINTS", json.dumps([row]))
+
+    with pytest.raises(ValueError, match="invalid endpoint adapter"):
+        load_endpoints()
+
+
 def test_endpoint_settings_allow_codex_id_without_runtime_inference(monkeypatch, tmp_path):
     monkeypatch.setenv("RUNTIME_ENDPOINTS", json.dumps([configured_row(id="codex")]))
     runtime = Runtime(tmp_path / "data", load_endpoints())
@@ -236,6 +249,17 @@ async def test_embedding_does_not_fail_over_to_chat_model_match():
         await pool.embed("primary", "embed-model", ["proof"])
 
     assert not backup.embedding_requests
+
+
+async def test_embedding_rejects_unavailable_endpoint_before_provider_access():
+    pool = EndpointPool([Endpoint("embedding", "Embedding", "openai-compatible", (), ("embed-model",), 1, None)])
+
+    with pytest.raises(CapabilityNotFound, match="endpoint is not available"):
+        await pool.embed("embedding", "embed-model", ["proof"])
+
+
+def test_endpoint_pool_has_no_default_selection():
+    assert not hasattr(EndpointPool, "default")
 
 
 def test_default_endpoint_has_independent_embedding_model(monkeypatch):
