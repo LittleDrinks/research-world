@@ -42,13 +42,13 @@ OpenCLI 是浏览器自动化 Tool Adapter，只能以 `browser.opencli` 进入 
 | `ready` | executable、兼容版本、Adapter 与必需认证全部确认；不表示 Profile 已启用 |
 | `auth-required` | executable、版本与 Adapter 可用，安全认证 probe 明确报告未登录、过期或缺凭证 |
 | `missing` | 固定候选在目标 realm 的 PATH 与显式位置均不存在 |
-| `error` | executable 存在，但固定 probe 超时、崩溃或返回不可解析结果 |
+| `error` | executable 存在，但私有快照不可用，或固定 probe 超时、崩溃或返回不可解析结果 |
 | `unsupported` | executable 存在，但平台、版本或 Runtime Adapter 明确不兼容 |
-稳定 reason code 为 `not_on_path`、`auth_missing`、`auth_expired`、`auth_probe_unavailable`、`probe_timeout`、`probe_failed`、`probe_invalid_output`、`version_incompatible`、`adapter_unavailable`、`realm_mismatch`、`unsupported_platform`。`missing` 不伪造 `path`；wrapper 无法解析时返回 `error/probe_invalid_output`；跨 realm descriptor 只能是 `found/realm_mismatch`，不能参与当前 realm readiness。
+稳定 reason code 为 `not_on_path`、`snapshot_unavailable`、`auth_missing`、`auth_expired`、`auth_probe_unavailable`、`probe_timeout`、`probe_failed`、`probe_invalid_output`、`version_incompatible`、`adapter_unavailable`、`realm_mismatch`、`unsupported_platform`。`missing` 不伪造 `path`；wrapper 无法解析时返回 `error/probe_invalid_output`；跨 realm descriptor 只能是 `found/realm_mismatch`，不能参与当前 realm readiness。
 ## Probe
 Runtime 对每个内置候选执行固定 argv allowlist，不经过 shell。定位、路径解析、版本与认证 probe 分进程运行；单步 2 秒、单候选累计 5 秒，stdout 与 stderr 各截断到 16 KiB，解析后丢弃。进程组超时终止；一个候选失败不改变其他结果。
 固定 version argv 包含 Codex `['codex', '--version']` 与 Kimi Code `['kimi', '--version']`。Kimi 不登记认证 argv；version probe 不运行 `doctor`、读取配置或访问 secret。
-Codex 定位后解析 symlink 并打开冻结的官方 native executable；version/login probe、launch 与恢复都执行该已打开对象，identity recheck 比较同一对象，路径替换不能穿透。child environment 使用固定 locale 和受信任系统 PATH，不支持 Node entrypoint。
+Codex 只支持 Linux/x64 官方 native executable。定位后解析 symlink，复制已打开对象到不可命名的私有 memfd，并在写入完成后 seal；version/login probe、fresh launch、resume 与 identity recheck 都只使用该快照，目录项替换和原 inode 覆写均不能穿透。创建或 seal 失败立即返回 `error/snapshot_unavailable`，不执行 probe，也不将源路径用于 launch 或 resume。快照 FD 归 Provider 所有，`close` 和 Runtime `close` 释放它；启动 OS 错误只投影受控 `cli_unavailable`，不暴露 FD、路径、transport 或配置。child environment 使用固定 locale 和受信任系统 PATH，不支持 Node entrypoint。
 认证只使用官方、非交互、无敏感输出的状态命令。Codex 固定执行 `['codex', 'login', 'status']`：退出码 0 为 `ready`，非 0 为 `auth-required/auth_missing`；命令不可用为 `found/auth_probe_unavailable`。不得读取配置文件、环境变量值或 token。配置语法有效不等于已认证；Kimi `doctor config` 成功仍保持认证 unknown。probe 不执行 install、update、login、token refresh、doctor 修复、付费模型调用或任意用户命令。
 ## Realm 与缓存
 `wsl`、`windows` 与 `container` 是独立 execution realm。Runtime 只把当前 launch realm 的 descriptor 用于 AgentSpec readiness；其他 realm 仅作为 inventory 事实展示。
