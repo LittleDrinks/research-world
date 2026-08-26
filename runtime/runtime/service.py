@@ -129,7 +129,9 @@ class Runtime:
         adapter = self.runtimes.require(descriptor)
         endpoint = next(
             (item for item in self.endpoints.values()
-             if item.public()["available"] and item.models and adapter.accepts(item)), None
+             if item.models and adapter.accepts(item)
+             and (isinstance(adapter, CodexRuntimeAdapter)
+                  or item.public()["available"])), None
         )
         if endpoint is None:
             raise CapabilityNotFound("no model endpoint is available for runtime")
