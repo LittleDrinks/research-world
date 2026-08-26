@@ -14,8 +14,16 @@ from acp import start_tool_call, update_tool_call
 from acp.interfaces import Client
 
 from . import catalog
+from .config import prepare_session_auth
 from .adapters import ToolDefinition, discover_adapters
 from .endpoints import Endpoint, EndpointPool, load_endpoints
+from .runtimes import (
+    CodexRuntimeAdapter,
+    RuntimeAdapter,
+    RuntimePool,
+    load_runtimes,
+)
+from .session_state import SessionStateStore
 from .skills import Skill, discover_skills, skill_index
 from .tools import ToolBox
 from .trace import TraceStore, inspect_trace
@@ -25,6 +33,7 @@ from .types import (
     SessionNotFound,
     SessionSpecInvalid,
     ToolPlanDrift,
+    TraceError,
 )
 from .types import RuntimeError as RuntimeInputError
 
@@ -34,20 +43,27 @@ class Runtime:
         self,
         data_root: Path | None = None,
         endpoints: list[Endpoint] | None = None,
+        runtimes: list[RuntimeAdapter] | None = None,
         tool_definitions: Iterable[ToolDefinition] = (),
     ):
         root = Path(data_root or os.getenv("RUNTIME_DATA", "./data"))
-        self.trace = TraceStore(root / "sessions")
+        self.trace, self.state = _session_stores(root)
         values = endpoints if endpoints is not None else load_endpoints()
+        adapters = runtimes if runtimes is not None else load_runtimes()
+        self.runtimes = RuntimePool(adapters)
         self.endpoints = EndpointPool(values)
         self.tool_definitions = tuple(tool_definitions)
         self._locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
-        self._cancelled: set[str] = set()
+        self._cancelled: set[tuple[str, str]] = set()
+        self._active_turns: dict[str, tuple[str, RuntimeAdapter]] = {}
+        self._bindings: dict[str, _LaunchBinding] = {}
 
     async def recognize(self, workspace: str) -> dict:
         path = _workspace(workspace)
         adapters = discover_adapters(path, self.tool_definitions)
-        return await catalog.discover(path, self.endpoints.values(), adapters)
+        return await catalog.discover(
+            path, self.endpoints.values(), self.runtimes, adapters
+        )
 
     def validate_agent(self, value: dict[str, Any]) -> dict[str, bool]:
         AgentSpec.parse(value)
@@ -58,18 +74,27 @@ class Runtime:
         spec = AgentSpec.parse(value["agent_spec"])
         session_id = _session_id(value.get("session_id"))
         if self.trace.path(session_id).exists():
-            _validate_existing_session(
-                self.inspect(session_id)["session"],
-                _launch_identity(spec, workspace, value),
-            )
-            return {"session_id": session_id}
+            self._validate_launch(session_id, spec, workspace, value)
+        else:
+            await self._create_session(session_id, spec, workspace, value)
+        return {"session_id": session_id}
+
+    def _validate_launch(self, session_id, spec, workspace, value) -> None:
+        state = self.state.read(session_id)
+        _validate_existing_session(state, _launch_identity(spec, workspace, value))
+
+    async def _create_session(self, session_id, spec, workspace, value) -> None:
         recognized = await self.recognize(str(workspace))
-        _validate_spec(spec, recognized)
+        adapter = self.runtimes.require(spec.runtime)
+        _validate_spec(spec, recognized, adapter)
+        endpoint = _launch_endpoint(self.endpoints, spec, adapter)
         snapshots = _skill_snapshots(spec, workspace)
         plan = await self._tool_plan(spec, workspace, snapshots)
-        meta = _session_meta(spec, workspace, value, snapshots, plan)
+        meta = _session_meta(spec, value, snapshots, plan, recognized, endpoint)
+        state = _session_state(spec, workspace, value, self.trace.path(session_id), adapter)
+        self.state.create(session_id, state)
         self.trace.create(session_id, meta)
-        return {"session_id": session_id}
+        self._bindings[session_id] = _LaunchBinding(adapter, endpoint, spec)
 
     async def _tool_plan(self, spec: AgentSpec, workspace: Path, snapshots) -> list:
         skills = {value["id"]: _SnapshotSkill(value) for value in snapshots}
@@ -101,56 +126,104 @@ class Runtime:
             for session_id in self.trace.sessions()
         ]
 
+    async def close(self) -> None:
+        await self.runtimes.close()
+
+    def __del__(self):
+        if runtimes := getattr(self, "runtimes", None):
+            runtimes.release()
+
+    def default_agent(self) -> tuple:
+        pair = next(
+            ((adapter.descriptor, endpoint) for adapter in self.runtimes.values()
+             if adapter.descriptor.status == "ready"
+             for endpoint in self._eligible_endpoints(adapter)), None
+        )
+        if pair is None:
+            raise CapabilityNotFound("no model endpoint is available for runtime")
+        return pair
+
+    def _eligible_endpoints(self, adapter):
+        return (item for item in self.endpoints.values() if item.models
+                and adapter.accepts(item)
+                and (isinstance(adapter, CodexRuntimeAdapter)
+                     or item.public()["available"]))
+
     def cancel(self, session_id: str) -> None:
-        self._events(session_id)
-        self._cancelled.add(session_id)
+        active = self._active_turns.get(session_id)
+        if active is None:
+            return
+        turn_id, adapter = active
+        self._cancelled.add((session_id, turn_id))
+        adapter.cancel(session_id)
 
     async def _prompt(self, session_id, blocks, client, emit):
         events = self._events(session_id)
-        meta = events[0]["data"]
-        try:
-            spec = AgentSpec.parse(meta["agent_spec"])
-        except RuntimeInputError as error:
-            raise SessionSpecInvalid(str(error)) from error
+        _session_spec(events)
+        self.trace.remember_continuations(session_id, self.state.read(session_id).get("provider_session_id"))
+        binding = self._binding(session_id)
+        _require_executable_identity(self.state.read(session_id), binding.adapter)
+        spec, meta = binding.spec, events[0]["data"]
         turn_id = f"t-{uuid.uuid4().hex}"
-        self.trace.append(session_id, "turn_start", {"prompt": blocks}, turn_id)
+        self._begin_turn(session_id, turn_id, blocks, binding.adapter)
         try:
-            return await self._run_turn(session_id, turn_id, spec, meta, client, emit)
-        except Exception as error:
-            self._fail(session_id, turn_id, error)
+            return await self._run_turn(session_id, turn_id, binding, meta, client, emit)
+        except asyncio.CancelledError:
+            self._finish(session_id, turn_id, "cancelled", "", {})
             raise
+        except Exception as error:
+            return self._handle_turn_error(session_id, turn_id, error)
+        finally:
+            self._active_turns.pop(session_id, None)
 
-    async def _run_turn(self, session_id, turn_id, spec, meta, client, emit):
+    def _begin_turn(self, session_id, turn_id, blocks, adapter) -> None:
+        self.trace.append(session_id, "turn_start", {"prompt": blocks}, turn_id)
+        self._active_turns[session_id] = (turn_id, adapter)
+
+    def _handle_turn_error(self, session_id, turn_id, error):
+        if (session_id, turn_id) in self._cancelled:
+            return self._finish(session_id, turn_id, "cancelled", "", {})
+        self._fail(session_id, turn_id, error)
+        raise error
+
+    async def _run_turn(self, session_id, turn_id, binding, meta, client, emit):
+        spec = binding.spec
         skills = _skills_from_meta(meta)
-        workspace = Path(meta["workspace"])
+        workspace = Path(self.state.read(session_id)["workspace"])
         adapters = discover_adapters(workspace, self.tool_definitions)
         async with ToolBox(workspace, skills, spec.tools, adapters, client) as tools:
             _require_frozen_plan(tools.plan(), meta.get("tool_plan"))
-            return await self._rounds(session_id, turn_id, spec, meta, tools, emit)
+            return await self._rounds(session_id, turn_id, binding, meta, tools, emit)
 
-    async def _rounds(self, session_id, turn_id, spec, meta, tools, emit):
-        usage = {"prompt_tokens": 0, "completion_tokens": 0}
-        result = ""
+    async def _rounds(self, session_id, turn_id, binding, meta, tools, emit):
+        spec = binding.spec
+        usage = _empty_usage()
+        result, provider_session_id = "", None
         for _ in range(spec.options.max_rounds):
-            if session_id in self._cancelled:
+            if (session_id, turn_id) in self._cancelled:
                 return self._finish(session_id, turn_id, "cancelled", result, usage)
-            done, result = await self._round(
-                session_id, turn_id, spec, meta, tools, emit, usage
+            done, result, provider_session_id = await self._round(
+                session_id, turn_id, binding, meta, tools, emit, usage
             )
+            if (session_id, turn_id) in self._cancelled:
+                return self._finish(session_id, turn_id, "cancelled", result, usage)
             if done:
-                return self._finish(session_id, turn_id, "completed", result, usage)
+                return self._finish(session_id, turn_id, "completed", result, usage, provider_session_id)
             if sum(usage.values()) >= spec.options.token_budget:
                 break
-        return self._finish(session_id, turn_id, "limit", result, usage)
+        return self._finish(session_id, turn_id, "limit", result, usage, provider_session_id)
 
-    async def _round(self, session_id, turn_id, spec, meta, tools, emit, usage):
+    async def _round(self, session_id, turn_id, binding, meta, tools, emit, usage):
+        spec = binding.spec
         messages = _messages(self._events(session_id), meta)
-        endpoint = self.endpoints.require(spec.endpoint, spec.model)
-        specs = tools.specs() if endpoint.adapter == "openai-compatible" else []
-        self._record_request(session_id, turn_id, spec.model, messages, specs)
-        endpoint_id, result = await self._generate(
-            session_id, spec, meta, messages, specs, emit
+        specs = (
+            tools.specs() if not binding.adapter.owns_process else []
         )
+        self._record_request(session_id, turn_id, spec.model, messages, specs)
+        endpoint_id, result, continuation_id = await self._generate(
+            session_id, binding, meta, messages, specs, emit
+        )
+        self.trace.remember_continuations(session_id, continuation_id)
         _add_usage(usage, result.usage)
         self._record_response(session_id, turn_id, endpoint_id, result)
         calls = result.message.get("tool_calls") or []
@@ -158,26 +231,32 @@ class Runtime:
         content = result.message.get("content") or ""
         if not calls and not content.strip():
             raise RuntimeError("model returned an empty assistant response")
-        return not calls, content
+        return not calls, content, continuation_id
 
     def _record_request(self, session_id, turn_id, model, messages, tools):
         data = {"model": model, "messages": messages, "tools": tools}
         self.trace.append(session_id, "model_request", data, turn_id)
 
-    async def _generate(self, session_id, spec, meta, messages, tools, emit):
-        context = _provider_context(meta, self._events(session_id))
-        return await self.endpoints.generate(
-            spec.endpoint, spec.model, messages, tools, emit, context
-        )
+    async def _generate(self, session_id, binding, meta, messages, tools, emit):
+        context = _provider_context(meta, self.state.read(session_id), self._events(session_id))
+        endpoint, adapter, spec = binding.endpoint, binding.adapter, binding.spec
+        if adapter.owns_process:
+            return await adapter.generate(
+                session_id, endpoint, spec.model, messages, tools, emit, context
+            )
+        return endpoint.id, await endpoint.provider.generate(
+            spec.model, messages, tools, emit, context
+        ), None
 
     def _record_response(self, session_id, turn_id, endpoint_id, result):
         data = {
             "endpoint": endpoint_id,
             "message": result.message,
             "usage": result.usage,
-            "provider_session_id": result.provider_session_id,
         }
         self.trace.append(session_id, "model_response", data, turn_id)
+        for item in result.provider_items:
+            self.trace.append(session_id, "provider_item", item, turn_id)
 
     async def _tools(self, session_id, turn_id, calls, tools):
         for call in calls:
@@ -196,21 +275,35 @@ class Runtime:
             self.trace.append(session_id, "tool_result", result, turn_id)
             await _report_finished(tools.client, session_id, progress_id, failed, content)
 
-    def _finish(self, session_id, turn_id, status, result, usage):
-        self._cancelled.discard(session_id)
+    def _finish(self, session_id, turn_id, status, result, usage, provider_session_id=None):
+        if (session_id, turn_id) in self._cancelled:
+            status = "cancelled"
+        usage = _empty_usage() if status == "cancelled" else {
+            key: usage.get(key, 0) for key in _empty_usage()
+        }
+        self._cancelled.discard((session_id, turn_id))
         self.trace.append(
             session_id,
             "turn_end",
             {"status": status, "result_text": result, "usage": usage},
             turn_id,
         )
+        if status in {"completed", "limit"} and provider_session_id:
+            self.state.update(session_id, {"provider_session_id": provider_session_id})
         return {"status": status, "result_text": result, "usage": usage}
 
     def _fail(self, session_id, turn_id, error):
-        message = {"error": f"{type(error).__name__}: {error}"}
+        self.trace.remember_continuations(
+            session_id, *getattr(error, "continuation_ids", ())
+        )
+        for item in getattr(error, "provider_items", []):
+            self.trace.append(session_id, "provider_item", item, turn_id)
+        if terminal := getattr(error, "provider_terminal", None):
+            self.trace.append(session_id, "provider_terminal", terminal, turn_id)
+        message = {"code": _error_code(error), "message": str(error)}
         self.trace.append(session_id, "error", message, turn_id)
         self.trace.append(
-            session_id, "turn_end", {"status": "error", "result_text": None}, turn_id
+            session_id, "turn_end", {"status": "error", "result_text": None, "usage": _empty_usage()}, turn_id
         )
 
     def _events(self, session_id):
@@ -218,6 +311,13 @@ class Runtime:
         if not events:
             raise SessionNotFound(session_id)
         return events
+
+    def _binding(self, session_id):
+        binding = self._bindings.get(session_id)
+        if binding is None:
+            binding = _restore_binding(self._events(session_id), self.state.read(session_id), self.runtimes, self.endpoints)
+            self._bindings[session_id] = binding
+        return binding
 
 
 async def _ignore(text: str) -> None:
@@ -253,11 +353,23 @@ def _report_failed(failed, content) -> bool:
         return True
 
 
+def _session_stores(root):
+    return TraceStore(root / "sessions"), SessionStateStore(root / "session-state")
+
+
 def _workspace(value: str) -> Path:
     path = Path(value).expanduser().resolve()
     if not path.is_absolute() or not path.is_dir():
         raise ValueError("workspace must be an existing directory")
     return path
+
+
+def _session_spec(events):
+    meta = events[0]["data"]
+    try:
+        return AgentSpec.parse(meta["agent_spec"]), meta
+    except RuntimeInputError as error:
+        raise SessionSpecInvalid(str(error)) from error
 
 
 def _session_id(value: str | None) -> str:
@@ -284,11 +396,43 @@ def _launch_identity(spec, workspace, value) -> dict:
     }
 
 
-def _validate_spec(spec: AgentSpec, recognized: dict) -> None:
-    endpoint_ids = {item["id"] for item in recognized["endpoints"] if item["available"]}
-    model_pairs = {(item["endpoint"], item["id"]) for item in recognized["models"]}
+def _validate_spec(spec: AgentSpec, recognized: dict, runtime) -> None:
+    _validate_runtime(spec, recognized)
+    endpoint = _validate_endpoint(spec, recognized, not runtime.owns_process)
+    if not runtime.accepts(endpoint):
+        raise CapabilityNotFound("endpoint is not available for runtime")
+    if runtime.owns_process and spec.tools:
+        raise CapabilityNotFound("codex cannot expose selected Tool schemas")
+    _validate_dependencies(spec, recognized)
+
+
+def _validate_runtime(spec, recognized) -> None:
+    runtimes = {
+        (item["id"], item["realm"])
+        for item in recognized["runtimes"]
+        if item["status"] == "ready"
+    }
+    _require((spec.runtime.id, spec.runtime.realm), runtimes, "runtime")
+
+
+def _validate_endpoint(spec, recognized, require_ready) -> dict:
+    endpoint_ids = {item["id"] for item in recognized["endpoints"] if item["available"] or not require_ready}
+    model_pairs = _model_pairs(recognized, require_ready)
     _require(spec.endpoint, endpoint_ids, "endpoint")
+    endpoint = next(
+        item for item in recognized["endpoints"] if item["id"] == spec.endpoint
+    )
     _require((spec.endpoint, spec.model), model_pairs, "model")
+    return endpoint
+
+
+def _model_pairs(recognized, require_ready):
+    if require_ready:
+        return {(item["endpoint"], item["id"]) for item in recognized["models"]}
+    return {(item["id"], model) for item in recognized["endpoints"] for model in item["models"]}
+
+
+def _validate_dependencies(spec, recognized) -> None:
     skills = {item["id"] for item in recognized["skills"]}
     for value in spec.skills:
         _require(value, skills, "skill")
@@ -302,15 +446,92 @@ def _require(value, available, kind):
         raise CapabilityNotFound(f"{kind} is not available: {value}")
 
 
-def _session_meta(spec, workspace, value, skills, tool_plan):
+def _session_meta(spec, value, skills, tool_plan, capabilities, endpoint):
     return {
         "agent_spec": spec.snapshot(),
-        "workspace": str(workspace),
         "parent": value.get("parent"),
         "mode": value.get("mode", "resume"),
         "skills": skills,
         "tool_plan": tool_plan,
+        "capability_snapshot": _capability_snapshot(spec, capabilities),
+        "endpoint_snapshot": endpoint.public(),
     }
+
+
+def _session_state(spec, workspace, value, trace_path, adapter):
+    state = {**_launch_identity(spec, workspace, value), "runtime_binding": _adapter_identity(adapter)}
+    if spec.runtime.id == "codex":
+        home = trace_path.parent / "codex-home"
+        prepare_session_auth(home)
+        state["codex_home"] = str(home)
+    return state
+
+
+def _capability_snapshot(spec, recognized):
+    runtime = next(
+        item
+        for item in recognized["runtimes"]
+        if (item["id"], item["realm"]) == (spec.runtime.id, spec.runtime.realm)
+    )
+    return {"runtime": runtime}
+
+
+class _LaunchBinding:
+    def __init__(self, adapter, endpoint, spec):
+        self.adapter = adapter
+        self.endpoint = endpoint
+        self.spec = spec
+
+
+def _restore_binding(events, state, runtimes, endpoints):
+    _, meta = _session_spec(events)
+    spec = AgentSpec.parse(meta["agent_spec"])
+    adapter = runtimes.require(spec.runtime)
+    endpoint = _persisted_endpoint(endpoints, spec, adapter)
+    _require_binding_snapshot(meta, state, adapter, endpoint)
+    return _LaunchBinding(adapter, endpoint, spec)
+
+
+def _launch_endpoint(endpoints, spec, adapter):
+    return endpoints.resolve(spec.endpoint, spec.model) if adapter.owns_process else endpoints.require(spec.endpoint, spec.model)
+
+
+def _persisted_endpoint(endpoints, spec, adapter):
+    try:
+        return _launch_endpoint(endpoints, spec, adapter)
+    except CapabilityNotFound as error:
+        raise SessionSpecInvalid("persisted endpoint binding is unavailable") from error
+
+
+def _require_binding_snapshot(meta, state, adapter, endpoint) -> None:
+    snapshot = meta.get("capability_snapshot", {}).get("runtime")
+    if not isinstance(snapshot, dict) or not isinstance(meta.get("endpoint_snapshot"), dict):
+        raise SessionSpecInvalid("session launch binding is unavailable")
+    if not _same_runtime(snapshot, adapter.descriptor.public()):
+        raise SessionSpecInvalid("persisted runtime binding is unavailable")
+    if meta["endpoint_snapshot"] != endpoint.public():
+        raise SessionSpecInvalid("persisted endpoint binding is unavailable")
+    _require_executable_identity(state, adapter)
+
+
+def _require_executable_identity(state, adapter) -> None:
+    expected = state.get("runtime_binding")
+    actual = _adapter_identity(adapter)
+    if expected != actual:
+        raise SessionSpecInvalid("persisted runtime executable is unavailable")
+
+
+def _adapter_identity(adapter):
+    if isinstance(adapter, CodexRuntimeAdapter):
+        return adapter.provider.executable_identity
+    return None
+
+
+def _same_runtime(expected, actual) -> bool:
+    ignored = {"last_checked_at"}
+    left = {key: value for key, value in expected.items() if key not in ignored}
+    right = {key: value for key, value in actual.items() if key not in ignored}
+    return left == right
 
 
 def _require_frozen_plan(current: list, frozen: list | None) -> None:
@@ -343,9 +564,27 @@ def _skills_from_meta(meta) -> dict[str, Skill]:
 
 def _messages(events, meta):
     messages = [{"role": "system", "content": _system_prompt(meta)}]
+    replayable = _replayable_turns(events)
     for event in events:
-        _append_message(messages, event)
+        if event.get("turn_id") in replayable:
+            _append_message(messages, event)
     return messages
+
+
+def _replayable_turns(events) -> set[str]:
+    completed = {
+        event["turn_id"]
+        for event in events
+        if event["type"] == "turn_end"
+        and event["data"]["status"] in {"completed", "limit"}
+    }
+    return completed | _latest_open_turn(events)
+
+
+def _latest_open_turn(events) -> set[str]:
+    ended = {event["turn_id"] for event in events if event["type"] == "turn_end"}
+    starts = [event["turn_id"] for event in events if event["type"] == "turn_start"]
+    return {starts[-1]} if starts and starts[-1] not in ended else set()
 
 
 def _system_prompt(meta):
@@ -387,23 +626,16 @@ def _prompt_content(blocks):
     return "\n".join(parts)
 
 
-def _provider_context(meta, events):
+def _provider_context(meta, state, events):
     options = meta["agent_spec"].get("options", {})
     return {
-        "workspace": meta["workspace"],
+        "workspace": state["workspace"],
         "sandbox": options.get("sandbox", "read-only"),
         "reasoning_effort": options.get("reasoning_effort", "medium"),
-        "provider_session_id": _provider_session(events),
+        "runtime_session_id": events[0]["session_id"],
+        "provider_session_id": state.get("provider_session_id"),
+        "codex_home": state.get("codex_home", ""),
     }
-
-
-def _provider_session(events):
-    for event in reversed(events):
-        if event["type"] == "model_response" and event["data"].get(
-            "provider_session_id"
-        ):
-            return event["data"]["provider_session_id"]
-    return None
 
 
 def _add_usage(total, current):
@@ -411,11 +643,19 @@ def _add_usage(total, current):
         total[key] += current.get(key, 0)
 
 
+def _empty_usage():
+    return {"input_tokens": 0, "cached_input_tokens": 0, "cache_write_input_tokens": 0, "output_tokens": 0, "reasoning_output_tokens": 0}
+
+
+def _error_code(error: Exception) -> str:
+    return error.code if isinstance(error, TraceError) else "runtime_error"
+
+
 def _session_info(view, session_id):
     session = view["session"]
     return {
         "session_id": session_id,
-        "cwd": session["workspace"],
+        "cwd": None,
         "title": session["agent_spec"]["name"],
         "updated_at": view["events"][-1]["time"],
     }

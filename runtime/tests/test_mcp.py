@@ -21,51 +21,37 @@ server.run()
 
 
 async def test_selected_tool_exposes_and_executes_operations(tmp_path, monkeypatch):
-    monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
-    monkeypatch.setenv("RUNTIME_API_KEY", "secret")
-    monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
-    script = tmp_path / "server.py"
-    script.write_text(SERVER)
-    call = {
-        "id": "m1",
-        "type": "function",
-        "function": {"name": "tool__proof_mcp__echo", "arguments": '{"text":"hello"}'},
-    }
-    provider = FakeProvider(
-        [
-            {"role": "assistant", "content": "", "tool_calls": [call]},
-            {"role": "assistant", "content": "done"},
-        ]
-    )
-    definition = parse_definition(
-        {
-            "id": "proof_mcp",
-            "name": "Proof MCP",
-            "description": "Formal proof tools",
-            "transport": "stdio",
-            "command": sys.executable,
-            "args": [str(script)],
-        },
-        "runtime",
-    )
-    runtime = Runtime(
-        tmp_path / "data", [endpoint(provider)], tool_definitions=[definition]
-    )
-    agent = {
-        "id": "researcher",
-        "name": "Researcher",
-        "endpoint": "openai-compatible",
-        "model": "qwen-test",
-        "instructions": "Use tools.",
-        "tools": ["proof_mcp"],
-    }
-    launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": agent})
+    provider, runtime = _proof_runtime(tmp_path, monkeypatch)
+    launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": _agent("proof_mcp")})
     artifacts = ArtifactClient()
+    await runtime.prompt(launched["session_id"], [{"type": "text", "text": "echo"}], artifacts)
+    _assert_echo(provider, artifacts)
 
-    await runtime.prompt(
-        launched["session_id"], [{"type": "text", "text": "echo"}], artifacts
-    )
 
+def _proof_runtime(path, monkeypatch, tool_id="proof_mcp", env_values=None, definition_extra=None):
+    _runtime_env(monkeypatch, env_values)
+    script = path / "server.py"
+    script.write_text(SERVER)
+    definition = parse_definition({"id": tool_id, "transport": "stdio", "command": sys.executable, "args": [str(script)], **(definition_extra or {})}, "runtime")
+    provider = FakeProvider(_echo_responses())
+    return provider, Runtime(path / "data", [endpoint(provider)], tool_definitions=[definition])
+
+
+def _runtime_env(monkeypatch, extra=None):
+    for key, value in {"RUNTIME_API_BASE": "https://api.test/v1", "RUNTIME_API_KEY": "secret", "RUNTIME_MODEL": "qwen-test", **(extra or {})}.items():
+        monkeypatch.setenv(key, value)
+
+
+def _echo_responses():
+    call = {"id": "m1", "type": "function", "function": {"name": "tool__proof_mcp__echo", "arguments": '{"text":"hello"}'}}
+    return [{"role": "assistant", "content": "", "tool_calls": [call]}, {"role": "assistant", "content": "done"}]
+
+
+def _agent(tool_id):
+    return {"id": "researcher", "name": "Researcher", "runtime": {"id": "openai-compatible", "realm": "container:runtime"}, "endpoint": "openai-compatible", "model": "qwen-test", "instructions": "Use tools.", "tools": [tool_id]}
+
+
+def _assert_echo(provider, artifacts):
     assert "tool__proof_mcp__echo" in str(provider.requests[0]["tools"])
     assert "mcp:hello" in str(provider.requests[1]["messages"])
     assert "artifact:" + "a" * 64 in str(provider.requests[1]["messages"])
@@ -87,22 +73,8 @@ class ArtifactClient:
 
 
 async def test_tool_dying_after_launch_closes_the_failed_turn(tmp_path, monkeypatch):
-    adapter = FlakyAdapter()
-    monkeypatch.setattr(
-        "runtime.service.discover_adapters",
-        lambda workspace, extra=(): {"offline": adapter},
-    )
-    runtime = Runtime(tmp_path / "data", [endpoint(FakeProvider([]))])
-    agent = {
-        "id": "researcher",
-        "name": "Researcher",
-        "endpoint": "openai-compatible",
-        "model": "qwen-test",
-        "instructions": "Use tools.",
-        "tools": ["offline"],
-    }
-    launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": agent})
-
+    adapter, runtime = _offline_runtime(tmp_path, monkeypatch)
+    launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": _agent("offline")})
     adapter.alive = False
     with pytest.raises(RuntimeError, match="tool failed to open"):
         await runtime.prompt(launched["session_id"], [{"type": "text", "text": "go"}])
@@ -110,6 +82,12 @@ async def test_tool_dying_after_launch_closes_the_failed_turn(tmp_path, monkeypa
     trace = runtime.inspect(launched["session_id"])
     assert trace["status"] == "error"
     assert [event["type"] for event in trace["events"]][-2:] == ["error", "turn_end"]
+
+
+def _offline_runtime(path, monkeypatch):
+    adapter = FlakyAdapter()
+    monkeypatch.setattr("runtime.service.discover_adapters", lambda workspace, extra=(): {"offline": adapter})
+    return adapter, Runtime(path / "data", [endpoint(FakeProvider([]))])
 
 
 class FlakyAdapter:
@@ -149,42 +127,14 @@ class FlakyBound:
 
 
 async def test_tool_plan_snapshot_carries_no_location_or_command(tmp_path, monkeypatch):
-    monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
-    monkeypatch.setenv("RUNTIME_API_KEY", "secret")
-    monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
-    script = tmp_path / "server.py"
-    script.write_text(SERVER)
-    definition = parse_definition(
-        {
-            "id": "proof_mcp",
-            "transport": "stdio",
-            "command": sys.executable,
-            "args": [str(script)],
-        },
-        "runtime",
-    )
-    runtime = Runtime(
-        tmp_path / "data",
-        [endpoint(FakeProvider([]))],
-        tool_definitions=[definition],
-    )
-    agent = {
-        "id": "researcher",
-        "name": "Researcher",
-        "endpoint": "openai-compatible",
-        "model": "qwen-test",
-        "instructions": "Use tools.",
-        "tools": ["proof_mcp"],
-    }
-
-    launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": agent})
-
+    _, runtime = _proof_runtime(tmp_path, monkeypatch)
+    launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": _agent("proof_mcp")})
     meta = runtime.inspect(launched["session_id"])["session"]
     [entry] = meta["tool_plan"]
     assert entry["id"] == "proof_mcp"
     assert [op["name"] for op in entry["operations"]] == ["tool__proof_mcp__echo"]
     frozen = json.dumps(meta)
-    assert str(script) not in frozen
+    assert str(tmp_path / "server.py") not in frozen
     assert sys.executable not in frozen
 
 
@@ -240,39 +190,9 @@ async def test_rejects_operation_names_breaking_model_function_encoding(name):
 
 
 async def test_tool_config_and_credentials_do_not_enter_trace(tmp_path, monkeypatch):
-    monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
-    monkeypatch.setenv("RUNTIME_API_KEY", "secret")
-    monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
-    monkeypatch.setenv("LAB_DB_TOKEN", "top-secret")
-    script = tmp_path / "server.py"
-    script.write_text(SERVER)
-    definition = parse_definition(
-        {
-            "id": "lab-db",
-            "transport": "stdio",
-            "command": sys.executable,
-            "args": [str(script)],
-            "env": {"API_KEY": "${LAB_DB_TOKEN}"},
-        },
-        "runtime",
-    )
-    runtime = Runtime(
-        tmp_path / "data",
-        [endpoint(FakeProvider([]))],
-        tool_definitions=[definition],
-    )
-    agent = {
-        "id": "researcher",
-        "name": "Researcher",
-        "endpoint": "openai-compatible",
-        "model": "qwen-test",
-        "instructions": "Use evidence.",
-        "tools": ["lab-db"],
-    }
-
-    launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": agent})
-
+    _, runtime = _proof_runtime(tmp_path, monkeypatch, "lab-db", {"LAB_DB_TOKEN": "top-secret"}, {"env": {"API_KEY": "${LAB_DB_TOKEN}"}})
+    launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": _agent("lab-db")})
     trace = json.dumps(runtime.inspect(launched["session_id"])["session"])
     assert "top-secret" not in trace
     assert "LAB_DB_TOKEN" not in trace
-    assert str(script) not in trace
+    assert str(tmp_path / "server.py") not in trace
