@@ -30,6 +30,8 @@ def test_report_skill_benchmark_checks_contract_and_sections():
     assert result["contract"]["input_budget_tokens"] == REPORT_INPUT_TOKEN_BUDGET
     assert 0 < result["contract"]["input_tokens"] <= REPORT_INPUT_TOKEN_BUDGET
     assert all(f"<h2>{section}</h2>" in html for section in REPORT_SECTIONS)
+    assert f'href="#evidence-{SOURCE}"' in html
+    assert f'data-artifact="{ARTIFACT}"' in html
 
 
 def test_report_skill_benchmark_blocks_kernel_before_public_projection(world, project, tmp_path):
@@ -42,3 +44,21 @@ def test_report_skill_benchmark_blocks_kernel_before_public_projection(world, pr
     assert "projection" not in envelope
     assert marker not in str(envelope)
     assert envelope["gaps"][0]["code"] == "projection_budget_exceeded"
+
+
+def test_report_skill_benchmark_keeps_the_exact_budget_boundary(world, project, tmp_path, monkeypatch):
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
+    monkeypatch.setattr("server.kernel._report_input_upper_bound", lambda *_: REPORT_INPUT_TOKEN_BUDGET)
+    ready = asyncio.run(kernel.query(KernelQuery("report_projection", project["id"])))
+    monkeypatch.setattr("server.kernel._report_input_upper_bound", lambda *_: REPORT_INPUT_TOKEN_BUDGET + 1)
+    blocked = asyncio.run(kernel.query(KernelQuery("report_projection", project["id"])))
+    assert ready["status"] != "blocked" or ready["gaps"][0]["code"] != "projection_budget_exceeded"
+    assert blocked["gaps"][0]["code"] == "projection_budget_exceeded"
+
+
+def test_report_skill_benchmark_excludes_trace_payload(world, project, tmp_path):
+    marker = "trace-only-marker"
+    world.create_node(project["id"], "experiment", {"trace": marker}, life_state="admitted")
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
+    envelope = asyncio.run(kernel.query(KernelQuery("report_projection", project["id"])))
+    assert marker not in str(envelope)

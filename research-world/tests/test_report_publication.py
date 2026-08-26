@@ -3,6 +3,7 @@ from base64 import b64decode
 
 import pytest
 from fastapi.testclient import TestClient
+from server.artifacts import ArtifactStore
 from server.app import create_app
 from server.kernel import KernelCommand, KernelQuery, ResearchKernel
 from server.reporting import REPORT_INPUT_TOKEN_BUDGET
@@ -33,7 +34,7 @@ def admitted_source(world, project, artifact_id=None):
 
 
 def png():
-    return b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Q6u8AAAAASUVORK5CYII=")
+    return b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC")
 
 
 def report_thread(world, project):
@@ -142,6 +143,35 @@ def assert_rendered_evidence(content, projection):
     assert '<div class="formula"' in content
     assert '<img src="data:image/png;base64,' in content
     assert all(item["id"] in content for item in projection["artifacts"])
+
+
+def test_publication_rejects_invalid_declared_png(world, project, tmp_path):
+    value = kernel(world, tmp_path)
+    artifact = capture(value, project, b"not a png", "image/png")
+    admitted_evidence(world, project, artifact["id"])
+    result = publish(value, project, report_thread(world, project))
+    assert result["stages"][-1] == {"name": "citation_validation", "status": "failed"}
+    assert result["assessment"]["gaps"][0]["code"] == "artifact_display_invalid"
+
+
+def test_persistence_failure_removes_new_report_artifact(world, project, tmp_path, monkeypatch):
+    value = kernel(world, tmp_path)
+    admitted_evidence(world, project)
+    thread = report_thread(world, project)
+    stored, original = [], ArtifactStore.add
+
+    def add(store, content, media_type):
+        record = original(store, content, media_type)
+        stored.append(record["id"])
+        return record
+
+    monkeypatch.setattr(ArtifactStore, "add", add)
+    monkeypatch.setattr(world, "publish_report", lambda *_: (_ for _ in ()).throw(OSError("db down")))
+    result = publish(value, project, thread)
+    assert result["stages"][-1] == {"name": "persistence", "status": "failed"}
+    assert not world.report_publications(project["id"], thread["id"])
+    with pytest.raises(KeyError):
+        ArtifactStore(world.artifacts_root, project["id"]).get(stored[-1])
 
 
 def test_publication_rejects_secrets_before_the_rendering_model(world, project, tmp_path):

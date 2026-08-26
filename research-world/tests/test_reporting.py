@@ -56,13 +56,34 @@ def test_delivery_rejects_supported_claim_without_source_evidence():
 
 
 def test_rendered_report_rejects_credentials_trace_and_paths():
-    content = b"<!doctype html><body>session_id: s1 GITHUB_TOKEN=ghp_abcdefghijklmnopqrstuvwxyz /home/research/key</body></html>"
+    content = report_fixture("session_id: s1 GITHUB_TOKEN=ghp_abcdefghijklmnopqrstuvwxyz /home/research/key")
     assert validate_html(content) == [{"code": "sensitive_data_exposed", "path": "html", "value": None}]
 
 
 def test_rendered_report_allows_normal_trace_language_and_web_paths():
-    content = b"<!doctype html><body>Trace analysis at /methods.</body></html>"
+    content = report_fixture("Trace analysis at /methods.")
     assert validate_html(content) == []
+
+
+def test_rendered_report_rejects_garbage_without_semantic_structure():
+    content = b"<!doctype html><html><body>report</body></html>"
+    assert validate_html(content) == [{"code": "rendered_content_invalid", "path": "html", "value": None}]
+
+
+def report_fixture(text):
+    value = projection()
+    assessment = assess_delivery(value)
+    value["facts"][0]["text"] = text
+    value["claims"][0]["text"] = text
+    return render_html("Orbit", value, assessment)
+
+
+def test_formula_evidence_is_renderable_mathml():
+    value = projection()
+    value["artifacts"][0]["kind"] = "formula"
+    value["artifacts"][0]["display"] = {"kind": "formula", "mathml": "<math><mi>E</mi></math>"}
+    html = render_html("Orbit", value, assess_delivery(value)).decode()
+    assert "<math" in html and "<mtext>" not in html
 
 
 def test_delivery_rejects_unsafe_narrative_without_returning_its_value():

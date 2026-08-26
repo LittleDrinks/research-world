@@ -49,14 +49,28 @@ test("publishes a validated report card, previews, downloads and saves a version
   const publication = { id: "publication:p1", thread_id: "thread:t1", created_at: "2026-08-26T00:00:00Z" };
   await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 201, json: reportResult(publication) }));
   await page.route(/\/threads\/thread%3At1\/report\/save$/, (route) => route.fulfill({ status: 201, json: { id: "report:v1" } }));
+  await page.route(/\/report\/publication%3Ap1\/content/, (route) => route.fulfill({ contentType: "text/html", body: "<!doctype html><html><body>Immutable report content</body></html>" }));
   await page.goto("/chat/thread%3At1");
   await page.getByRole("button", { name: "生成报告" }).click();
   await expect(page.getByText("已校验")).toBeVisible();
   await expect(page.getByTitle("报告预览")).toHaveAttribute("sandbox", "");
   await expect(page.getByRole("link", { name: /下载 HTML/ })).toHaveAttribute("download", "");
+  await expect(page.frameLocator('iframe[title="报告预览"]').getByText("Immutable report content")).toBeVisible();
   await page.getByLabel("报告名称").fill("V1");
   await page.getByRole("button", { name: "保存" }).click();
   await expect(page.getByText("已保存版本 report:v1")).toBeVisible();
+});
+
+
+test("interleaves a report event at its trace turn and sequence", async ({ page }) => {
+  const publication = { id: "publication:p4", thread_id: "thread:t1", created_at: "2026-08-26T00:00:00Z" };
+  const turns = [{ id: "t1", input: [{ type: "text", text: "先发布" }], output: "报告之后", events: [] }, { id: "t2", input: [{ type: "text", text: "后续问题" }], output: "后续答复", events: [] }];
+  const runtime = { ...threadDetail().runtime, turns, reports: [{ ...reportResult(publication), turn_id: "t1", seq: 2 }] };
+  await mockChat(page, threadDetail({ runtime, report_publications: [{ ...publication, title: "测试项目" }] }));
+  await page.goto("/chat/thread%3At1");
+  const text = await page.locator(".message-list").innerText();
+  expect(text.indexOf("报告已发布")).toBeGreaterThan(text.indexOf("先发布"));
+  expect(text.indexOf("报告已发布")).toBeLessThan(text.indexOf("报告之后"));
 });
 
 

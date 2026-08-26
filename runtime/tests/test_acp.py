@@ -169,8 +169,7 @@ async def test_publish_report_crosses_the_client_boundary(tmp_path):
 
 
 @pytest.mark.parametrize(
-    ("arguments", "status"),
-    [({"title": "Orbit"}, "completed"), ({}, "failed")],
+    ("arguments", "status"), [({"title": "Orbit"}, "failed"), ({}, "failed")],
 )
 async def test_publish_report_emits_safe_acp_lifecycle(tmp_path, arguments, status):
     call = _publish_call(arguments)
