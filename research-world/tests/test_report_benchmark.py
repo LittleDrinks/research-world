@@ -69,10 +69,13 @@ def test_report_skill_benchmark_excludes_trace_payload(world, project, tmp_path)
 
 def set_admitted_input_tokens(world, kernel, project, source, direction, target):
     for words in range(1, 4097):
-        text = "word " * words
-        world.update_node(source["id"], {**source["payload"], "title": text})
-        world.update_node(direction["id"], {"claims": [{"text": text, "verdict": "supported", "evidence": [source["id"]]}]})
-        nodes = [world.node(source["id"]), world.node(direction["id"])]
-        if input_tokens(kernel._report_view(project, nodes)) == target:
-            return
+        for suffix in range(4):
+            text = "word " * words + "x" * suffix
+            source_payload = {**source["payload"], "title": text}
+            direction_payload = {"claims": [{"text": text, "verdict": "supported", "evidence": [source["id"]]}]}
+            nodes = [{**source, "payload": source_payload}, {**direction, "payload": direction_payload}]
+            if input_tokens(kernel._report_view(project, nodes)) == target:
+                world.update_node(source["id"], source_payload)
+                world.update_node(direction["id"], direction_payload)
+                return
     raise AssertionError(f"cannot create {target} admitted input tokens")
