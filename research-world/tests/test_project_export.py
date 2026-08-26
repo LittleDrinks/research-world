@@ -120,6 +120,8 @@ def test_kernel_export_is_deterministic_and_complete(world, project, tmp_path):
     assert any(name.startswith("traces/") for name in files)
     assert any(name.startswith("artifacts/") for name in files)
     assert any(name.startswith("reports/") for name in files)
+    assert state["artifacts"]["measurement"]["id"].encode() in first
+    assert b"measurement" not in first
     assert files["references.bib"].decode() == valid_bibtex()
 
 
