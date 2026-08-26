@@ -180,7 +180,10 @@ def test_codex_command_uses_official_exec_jsonl_contract():
 
 def test_runtime_dockerfile_pins_the_audited_codex_release():
     dockerfile = Path(__file__).parents[1] / "Dockerfile"
-    assert "npm install --global @openai/codex@0.149.1" in dockerfile.read_text()
+    content = dockerfile.read_text()
+    assert "npm install --global @openai/codex@0.149.1-linux-x64" in content
+    assert "vendor/x86_64-unknown-linux-musl/bin/codex" in content
+    assert "codex.js" not in content and "/usr/local/bin/node" not in content
 
 
 def _context(session_id=None):
@@ -767,7 +770,7 @@ async def test_completed_stream_redacts_nested_continuation_key_everywhere(tmp_p
 
 
 async def test_official_collab_child_continuations_are_private_at_every_boundary(tmp_path, monkeypatch):
-    values = ["thread-parent-opaque", "thread-sender-opaque", "thread-receiver-opaque", "thread-state-key-opaque", "thread-state-value-opaque"]
+    values = ["thread-parent-opaque", "thread-sender-opaque", "thread-receiver-opaque", "thread-state-key-opaque"]
     emitted, provider = [], ready_provider()
     stream = _collab_continuation_stream()
     collected = await provider.collect(Process(stream), [{"role": "user", "content": "p"}], _capture(emitted), ("parent",))
@@ -779,6 +782,7 @@ async def test_official_collab_child_continuations_are_private_at_every_boundary
     result = await runtime.prompt(session, [{"type": "text", "text": "one"}], emit=_capture(emitted))
     raw, public = runtime.trace.path(session).read_text(), runtime.inspect(session)
     assert all(value not in str(item) for value in values for item in [result, emitted, raw, public])
+    assert "waiting for collaborator" in raw and "waiting for collaborator" in str(public)
     assert runtime.state.read(session)["provider_session_id"] == "thread-parent-opaque"
 
 
@@ -791,35 +795,38 @@ async def test_collect_keeps_assistant_text_for_short_thread_id():
     assert result.provider_items[1]["item"]["arguments"]["thread"] == "<redacted>"
 
 
-def test_codex_freezes_resolved_executable_after_symlink_retarget(tmp_path):
-    first, second, launcher = tmp_path / "first", tmp_path / "second", tmp_path / "codex"
-    first.write_text("#!/bin/sh\nexit 0\n")
-    second.write_text("#!/bin/sh\nexit 0\n")
-    first.chmod(0o755)
-    second.chmod(0o755)
-    launcher.symlink_to(first)
-    provider = CodexProvider(str(launcher))
-    launcher.unlink()
-    launcher.symlink_to(second)
+@pytest.mark.parametrize("session_id", [None, "thread-1"])
+async def test_codex_executes_frozen_native_object_after_path_replacement(tmp_path, session_id):
+    executable, replacement = tmp_path / "codex", tmp_path / "replacement"
+    _native_script(executable, "frozen")
+    provider = CodexProvider(str(executable))
+    _native_script(replacement, "replacement")
+    replacement.replace(executable)
 
-    assert provider._command("gpt", _context())[0] == str(first.resolve())
-    assert provider.executable_identity == provider.executable_identity
+    process = await provider.start("gpt", _context(session_id))
+    stdout, _ = await process.communicate()
+
+    assert stdout == b"frozen"
 
 
-def test_production_child_environment_runs_env_node_entrypoint(tmp_path, monkeypatch):
-    node_dir = tmp_path / "usr" / "local" / "bin"
-    node_dir.mkdir(parents=True)
-    node = node_dir / "node"
-    node.write_text("#!/bin/sh\nprintf ready\n")
-    node.chmod(0o755)
-    entrypoint = tmp_path / "codex"
-    entrypoint.write_text("#!/usr/bin/env node\n")
-    entrypoint.chmod(0o755)
-    monkeypatch.setattr("runtime.providers.codex.CHILD_PATH", f"{node_dir}:/usr/bin:/bin")
+@pytest.mark.parametrize("session_id", [None, "thread-1"])
+async def test_codex_identity_check_cannot_race_frozen_execution(tmp_path, session_id):
+    executable, replacement = tmp_path / "codex", tmp_path / "replacement"
+    _native_script(executable, "verified")
+    provider = CodexProvider(str(executable))
+    assert provider.executable_identity
+    _native_script(replacement, "replacement")
+    replacement.replace(executable)
 
-    result = subprocess.run([entrypoint], env=_environment({"codex_home": str(tmp_path)}), capture_output=True, text=True, check=True)
+    process = await provider.start("gpt", _context(session_id))
+    stdout, _ = await process.communicate()
 
-    assert result.stdout == "ready"
+    assert stdout == b"verified"
+
+
+def _native_script(path, output):
+    path.write_text(f"#!/bin/sh\nprintf {output}")
+    path.chmod(0o755)
 
 
 @pytest.mark.parametrize("item", [
@@ -886,8 +893,8 @@ def _collab_continuation_stream():
     item = {
         "id": "collab", "type": "collab_tool_call", "tool": "wait",
         "sender_thread_id": "thread-sender-opaque", "receiver_thread_ids": ["thread-receiver-opaque"],
-        "prompt": "thread-parent-opaque thread-sender-opaque thread-receiver-opaque thread-state-key-opaque thread-state-value-opaque",
-        "agents_states": {"thread-state-key-opaque": {"status": "running", "message": "thread-state-value-opaque"}},
+        "prompt": "thread-parent-opaque thread-sender-opaque thread-receiver-opaque thread-state-key-opaque",
+        "agents_states": {"thread-state-key-opaque": {"status": "running", "message": "waiting for collaborator"}},
         "status": "completed",
     }
     return _stream([{"type": "item.started", "item": {**item, "status": "in_progress"}}, {"type": "item.completed", "item": item}, {"type": "item.completed", "item": _agent()}], thread_id="thread-parent-opaque")
