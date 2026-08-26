@@ -82,7 +82,7 @@ class RuntimeClient:
         project_id: str | None = None,
         node_ids: list[str] | None = None,
     ):
-        client = KernelClient(self._kernel(), project_id or self.project_id)
+        client = KernelClient(self._kernel(), project_id or self.project_id, session_id)
         async with self._connect(client) as connection:
             blocks = _prompt_blocks(message, node_ids or [])
             task = asyncio.create_task(connection.prompt(session_id, blocks))
@@ -174,9 +174,10 @@ class RuntimeClient:
 
 
 class KernelClient:
-    def __init__(self, kernel, project_id):
+    def __init__(self, kernel, project_id, session_id: str | None = None):
         self.kernel = kernel
         self.project_id = project_id
+        self.session_id = session_id
         self.updates: asyncio.Queue = asyncio.Queue()
 
     async def session_update(self, session_id, update, **kwargs):
@@ -188,23 +189,17 @@ class KernelClient:
 
     async def ext_method(self, method: str, params: dict) -> dict | list:
         extension = method.lstrip("_")
-        if extension == "research/capture_artifact":
-            return await self._capture_artifact(params)
-        if extension == "research/submit_observation":
-            return await self._submit_observation(params)
-        if extension == "research/report_validate":
-            return await self._report_validate(params)
-        if extension == "research/report_projection":
-            return await self._report_projection(params)
-        if extension == "research/export_bibtex":
-            return await self._export_bibtex(params)
-        if extension != "research/graph_query":
+        handler = {
+            "research/capture_artifact": self._capture_artifact,
+            "research/submit_observation": self._submit_observation,
+            "research/report_projection": self._report_projection,
+            "research/publish_report": self._publish_report,
+            "research/export_bibtex": self._export_bibtex,
+            "research/graph_query": self._graph_query,
+        }.get(extension)
+        if handler is None:
             raise RuntimeError(f"unsupported client extension: {method}")
-        if params["action"] == "get":
-            return await self._node(params["node_id"])
-        if params["action"] == "search":
-            return await self._search(params.get("query", ""))
-        raise ValueError("unknown graph action")
+        return await handler(params)
 
     async def ext_notification(self, method: str, params: dict) -> None:
         return None
@@ -224,19 +219,28 @@ class KernelClient:
             KernelQuery("graph_search", self.project_id, {"text": text})
         )
 
-    async def _report_validate(self, params: dict) -> dict:
-        from .kernel import KernelQuery
-
-        values = {"facts": params.get("facts")}
-        return await self.kernel.query(
-            KernelQuery("report_validate", self.project_id, values)
-        )
+    async def _graph_query(self, params: dict) -> dict | list:
+        if params["action"] == "get":
+            return await self._node(params["node_id"])
+        if params["action"] == "search":
+            return await self._search(params.get("query", ""))
+        raise ValueError("unknown graph action")
 
     async def _report_projection(self, params: dict) -> dict:
         from .kernel import KernelQuery
 
+        if params:
+            raise ValueError("report projection takes no fields")
         return await self.kernel.query(
             KernelQuery("report_projection", self.project_id)
+        )
+
+    async def _publish_report(self, params: dict) -> dict:
+        from .kernel import KernelCommand
+
+        title = _runtime_report_title(params, self.session_id)
+        return await self.kernel.command(
+            KernelCommand("runtime_publish_report", self.project_id, {"session_id": self.session_id, "title": title})
         )
 
     async def _export_bibtex(self, params: dict) -> dict:
@@ -311,6 +315,14 @@ def _websocket_url(value: str) -> str:
 def _canonical_node_id(value: str) -> str:
     node_id = value.lstrip("@")
     return node_id if node_id.startswith("node:") else f"node:{node_id}"
+
+
+def _runtime_report_title(params: dict, session_id: str | None) -> str:
+    if not session_id or set(params) != {"title", "_session_id"}:
+        raise ValueError("runtime report publication requires a trusted session")
+    if params["_session_id"] != session_id:
+        raise PermissionError("runtime session does not own report publication")
+    return params["title"]
 
 
 def _prompt_blocks(message: str, node_ids: list[str]) -> list:

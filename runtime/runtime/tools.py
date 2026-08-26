@@ -62,36 +62,6 @@ GRAPH_QUERY = {
         },
     },
 }
-REPORT_VALIDATE = {
-    "type": "function",
-    "function": {
-        "name": "report_validate",
-        "description": "Validate report facts and citations against Research Kernel.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "facts": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "text": {"type": "string"},
-                            "claim_id": {"type": "string"},
-                            "source_ids": {
-                                "type": "array",
-                                "items": {"type": "string"},
-                            },
-                        },
-                        "required": ["text", "claim_id", "source_ids"],
-                        "additionalProperties": False,
-                    },
-                },
-            },
-            "required": ["facts"],
-            "additionalProperties": False,
-        },
-    },
-}
 EXPORT_BIBTEX = {
     "type": "function",
     "function": {
@@ -113,6 +83,19 @@ REPORT_PROJECTION = {
         "parameters": {
             "type": "object",
             "properties": {},
+            "additionalProperties": False,
+        },
+    },
+}
+PUBLISH_REPORT = {
+    "type": "function",
+    "function": {
+        "name": "publish_report",
+        "description": "Publish a validated report through Research Kernel.",
+        "parameters": {
+            "type": "object",
+            "properties": {"title": {"type": "string"}},
+            "required": ["title"],
             "additionalProperties": False,
         },
     },
@@ -175,7 +158,7 @@ BUILTINS = {
     "read_resource": READ_RESOURCE,
     "graph_query": GRAPH_QUERY,
     "report_projection": REPORT_PROJECTION,
-    "report_validate": REPORT_VALIDATE,
+    "publish_report": PUBLISH_REPORT,
     "export_bibtex": EXPORT_BIBTEX,
     "submit_observation": SUBMIT_OBSERVATION,
     "read_file": READ_FILE,
@@ -186,7 +169,7 @@ BUILTIN_NAMES = {
     "read_resource": "读取引用节点",
     "graph_query": "查询研究图谱",
     "report_projection": "读取报告投影",
-    "report_validate": "校验科研报告",
+    "publish_report": "发布科研报告",
     "export_bibtex": "导出 BibTeX",
     "submit_observation": "提交人工观测",
     "read_file": "读取工作区文件",
@@ -253,7 +236,7 @@ class ToolBox:
         try:
             for tool_id in self.selected:
                 await self._open(tool_id)
-        except BaseException:  # noqa: BLE001 - open failure rolls back opened tools
+        except BaseException:
             await self._rollback()
             raise
         return self
@@ -347,15 +330,6 @@ async def _graph_query(bound, session_id, values):
     return json.dumps(result, ensure_ascii=False)
 
 
-async def _report_validate(bound, session_id, values):
-    if bound.client is None:
-        raise RuntimeError("client does not provide report validation")
-    if set(values) != {"facts"}:
-        raise ValueError("unexpected report validation fields")
-    result = await bound.client.ext_method("research/report_validate", values)
-    return json.dumps(result, ensure_ascii=False)
-
-
 async def _export_bibtex(bound, session_id, values):
     if bound.client is None:
         raise RuntimeError("client does not provide BibTeX export")
@@ -369,6 +343,17 @@ async def _report_projection(bound, session_id, values):
     if bound.client is None:
         raise RuntimeError("client does not provide report projection")
     result = await bound.client.ext_method("research/report_projection", values)
+    return json.dumps(result, ensure_ascii=False)
+
+
+async def _publish_report(bound, session_id, values):
+    if bound.client is None:
+        raise RuntimeError("client does not provide report publication")
+    if set(values) != {"title"}:
+        raise ValueError("unexpected report publication fields")
+    result = await bound.client.ext_method(
+        "research/publish_report", {**values, "_session_id": session_id}
+    )
     return json.dumps(result, ensure_ascii=False)
 
 
@@ -394,9 +379,9 @@ _HANDLERS = {
     "read_skill": _read_skill,
     "read_resource": _read_resource,
     "graph_query": _graph_query,
-    "report_validate": _report_validate,
     "export_bibtex": _export_bibtex,
     "report_projection": _report_projection,
+    "publish_report": _publish_report,
     "submit_observation": _submit_observation,
     "read_file": _read_file,
     "write_file": _write_file,

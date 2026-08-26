@@ -51,6 +51,10 @@ class ArtifactStore:
             raise ArtifactIntegrityError("size_mismatch", artifact_id)
         return content
 
+    @staticmethod
+    def identifier(content: bytes) -> str:
+        return f"artifact:{hashlib.sha256(content).hexdigest()}"
+
     def _register(self, artifact_id: str, media_type: str, size: int) -> dict:
         digest = self._digest(artifact_id)
         record = self._record(artifact_id, media_type, size)
