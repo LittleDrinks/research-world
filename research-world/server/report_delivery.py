@@ -31,7 +31,8 @@ from .reporting import contains_restricted_data, evidence_kind, safe_report_text
 MAX_EVIDENCE_BYTES = 262144
 MAX_IMAGE_DIMENSION = 8192
 MAX_IMAGE_PIXELS = 16_777_216
-_ACTIVE_CONTENT = r"<\s*(?:script|iframe|object|embed)\b|\son[a-z]+\s*=|\b(?:javascript|vbscript):"
+_ACTIVE_TAGS = {"script", "iframe", "object", "embed"}
+_ACTIVE_URI = re.compile(r"(?:javascript|vbscript):", re.IGNORECASE)
 _DATA_URI = re.compile(r"\bdata:", re.IGNORECASE)
 _TEX_ERRORS = (NumeratorNotFoundError, DenominatorNotFoundError, ExtraLeftOrMissingRightError, MissingSuperScriptOrSubscriptError, DoubleSubscriptsError, DoubleSuperscriptsError, NoAvailableTokensError, InvalidStyleForGenfracError, MissingEndError, InvalidAlignmentError, InvalidWidthError, LimitsMustFollowMathOperatorError, RecursionError)
 
@@ -126,7 +127,7 @@ def validate_html(content: bytes) -> list[dict]:
     safety_text = _html_safety_text(text)
     valid, active_content = _semantic_html(text)
     gaps = [] if valid else [_html_gap("rendered_content_invalid")]
-    if re.search(_ACTIVE_CONTENT, text, re.IGNORECASE) or active_content:
+    if active_content:
         gaps.append(_html_gap("active_content_exposed"))
     if _DATA_URI.search(safety_text):
         gaps.append(_html_gap("data_uri_exposed"))
@@ -293,6 +294,7 @@ class _ReportStructure(HTMLParser):
         self.invalid |= self.doctype != 1 or bool(self.stack)
 
     def handle_starttag(self, tag, attrs):
+        self.active_content |= tag in _ACTIVE_TAGS or _active_attributes(attrs)
         self.invalid |= not self._start_allowed(tag)
         if self.invalid:
             return
@@ -300,7 +302,6 @@ class _ReportStructure(HTMLParser):
         if tag not in _void_tags:
             self.stack.append(tag)
         values = dict(attrs)
-        self.active_content |= any(re.search(_ACTIVE_CONTENT, value or "", re.IGNORECASE) for _name, value in attrs)
         self.evidence |= tag == "a" and values.get("href", "").startswith("#evidence-")
         self.formula |= tag == "div" and values.get("class") == "formula"
         self.heading = [] if tag == "h2" else self.heading
@@ -343,6 +344,10 @@ class _ReportStructure(HTMLParser):
     def valid(self) -> bool:
         required = {"html", "head", "title", "body", "h1", "h2", "table", "th", "td"}
         return not self.invalid and self.doctype == 1 and not self.stack and required <= self.tags and self.evidence and self.headings == list(_sections) and bool("".join(self.title).strip()) and (not self.formula or "math" in self.tags)
+
+
+def _active_attributes(attrs) -> bool:
+    return any(name.startswith("on") or _ACTIVE_URI.match((value or "").lstrip()) for name, value in attrs)
 
 
 _sections = ("Research question", "Conclusions", "Evidence and methods", "Limitations and gaps")
