@@ -124,8 +124,9 @@ def render_html(title: str, projection: dict, assessment: dict) -> bytes:
 def validate_html(content: bytes) -> list[dict]:
     text = content.decode("utf-8", errors="replace")
     safety_text = _html_safety_text(text)
-    gaps = [] if _semantic_html(text) else [_html_gap("rendered_content_invalid")]
-    if re.search(_ACTIVE_CONTENT, text, re.IGNORECASE):
+    valid, active_content = _semantic_html(text)
+    gaps = [] if valid else [_html_gap("rendered_content_invalid")]
+    if re.search(_ACTIVE_CONTENT, text, re.IGNORECASE) or active_content:
         gaps.append(_html_gap("active_content_exposed"))
     if _DATA_URI.search(safety_text):
         gaps.append(_html_gap("data_uri_exposed"))
@@ -157,14 +158,14 @@ def _is_static_chart(source: str) -> bool:
     return encoded == content
 
 
-def _semantic_html(text: str) -> bool:
+def _semantic_html(text: str) -> tuple[bool, bool]:
     parser = _ReportStructure()
     try:
         parser.feed(text)
         parser.close()
     except (AssertionError, ValueError):
-        return False
-    return parser.valid()
+        return False, False
+    return parser.valid(), parser.active_content
 
 
 def _html_gap(code: str) -> dict:
@@ -284,7 +285,7 @@ class _ReportStructure(HTMLParser):
     def __init__(self):
         super().__init__()
         self.tags, self.stack, self.headings = set(), [], []
-        self.doctype, self.evidence, self.formula, self.invalid = 0, False, False, False
+        self.doctype, self.evidence, self.formula, self.active_content, self.invalid = 0, False, False, False, False
         self.title, self.heading = [], []
 
     def handle_decl(self, decl):
@@ -299,6 +300,7 @@ class _ReportStructure(HTMLParser):
         if tag not in _void_tags:
             self.stack.append(tag)
         values = dict(attrs)
+        self.active_content |= any(re.search(_ACTIVE_CONTENT, value or "", re.IGNORECASE) for _name, value in attrs)
         self.evidence |= tag == "a" and values.get("href", "").startswith("#evidence-")
         self.formula |= tag == "div" and values.get("class") == "formula"
         self.heading = [] if tag == "h2" else self.heading
