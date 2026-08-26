@@ -1,4 +1,5 @@
 import asyncio
+import sqlite3
 from base64 import b64decode
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
@@ -63,6 +64,16 @@ def publish(value, project, thread, title="Orbit report"):
 def capture(value, project, content, media_type="text/plain"):
     values = {"content": content, "media_type": media_type}
     return asyncio.run(value.command(KernelCommand("capture_artifact", project["id"], values)))
+
+
+def broken_readback(monkeypatch, world, method):
+    original = getattr(world, method)
+
+    def fail(*_args, **_kwargs):
+        raise sqlite3.OperationalError("post-commit readback failed")
+
+    monkeypatch.setattr(world, method, fail)
+    return original
 
 
 def test_kernel_rejects_caller_facts_and_fabricated_projection_text(world, project, tmp_path, monkeypatch):
@@ -159,7 +170,7 @@ def test_publication_reencodes_chart_without_input_metadata(world, project, tmp_
     with Image.open(BytesIO(delivered)) as image:
         image.load()
         assert image.format == "PNG" and image.size == (2, 2)
-        assert image.getpixel((0, 0)) == (0, 0, 255)
+        assert image.getpixel((0, 0)) == (0, 0, 255, 255)
 
 
 def test_publication_rejects_invalid_declared_png(world, project, tmp_path):
@@ -189,6 +200,40 @@ def test_persistence_failure_keeps_internal_artifact_without_visible_records(wor
     assert not world.report_publications(project["id"], thread["id"])
     assert not world.reports(project["id"], thread["id"])
     assert ArtifactStore(world.artifacts_root, project["id"]).get(stored[-1])["id"] == stored[-1]
+
+
+def test_persistence_insert_failure_has_no_publication_content_url(world, project, tmp_path, monkeypatch):
+    value, thread = kernel(world, tmp_path), report_thread(world, project)
+    admitted_evidence(world, project)
+    monkeypatch.setattr(world, "publish_report", lambda *_: (_ for _ in ()).throw(sqlite3.OperationalError("insert failed")))
+    client = TestClient(create_app(value))
+    response = client.post(f"/api/v1/threads/{thread['id']}/report/publish", json={"title": "Orbit"})
+    assert response.status_code == 422 and response.json()["status"] == "failed"
+    assert response.json()["stages"][-1] == {"name": "persistence", "status": "failed"}
+    assert not world.report_publications(project["id"], thread["id"])
+    assert client.get(f"/api/v1/threads/{thread['id']}/report/publication:missing/content").status_code == 404
+
+
+def test_publish_returns_committed_record_when_postcommit_readback_fails(world, project, tmp_path, monkeypatch):
+    value, thread = kernel(world, tmp_path), report_thread(world, project)
+    admitted_evidence(world, project)
+    original = broken_readback(monkeypatch, world, "publication")
+    result = publish(value, project, thread)
+    monkeypatch.setattr(world, "publication", original)
+    assert result["status"] == "published"
+    assert world.report_publications(project["id"], thread["id"]) == [result["publication"]]
+    assert read(value, project, thread, result["publication"]).startswith(b"<!doctype html>")
+
+
+def test_save_returns_committed_record_when_postcommit_readback_fails(world, project, tmp_path, monkeypatch):
+    value, thread = kernel(world, tmp_path), report_thread(world, project)
+    admitted_evidence(world, project)
+    publication = publish_thread(value, project, thread)
+    original = broken_readback(monkeypatch, world, "report")
+    saved = save(value, project, thread, publication, "V1")
+    monkeypatch.setattr(world, "report", original)
+    assert saved["publication_id"] == publication["id"]
+    assert world.reports(project["id"], thread["id"]) == [saved]
 
 
 def test_publication_rejects_secrets_before_the_rendering_model(world, project, tmp_path):
@@ -354,31 +399,43 @@ def test_http_failed_publication_is_not_created(world, project, tmp_path):
 
 
 def test_concurrent_same_content_failure_keeps_successful_publication_artifact(world, project, tmp_path, monkeypatch):
+    value, first, second, entered, release = concurrent_publish_fixture(world, project, tmp_path, monkeypatch)
+    failed_result, success_result = competing_publications(value, project, first, second, entered, release)
+    assert failed_result["status"] == "failed"
+    assert success_result["status"] == "published"
+    artifact = ArtifactStore(world.artifacts_root, project["id"]).get(success_result["artifact"]["id"])
+    assert artifact["id"] == success_result["artifact"]["id"]
+
+
+def concurrent_publish_fixture(world, project, tmp_path, monkeypatch):
     value = kernel(world, tmp_path)
     admitted_evidence(world, project)
     first = report_thread(world, project)
     second = world.create_thread(project["id"], "chat", "s-second", "research-assistant")
     entered, release = Event(), Event()
-    original = world.publish_report
+    callback = fail_first_publish(world.publish_report, entered, release)
+    monkeypatch.setattr(world, "publish_report", callback)
+    return value, first, second, entered, release
 
-    def fail_first(*args):
-        if not entered.is_set():
-            entered.set()
-            release.wait(timeout=2)
-            raise OSError("first insert fails")
-        return original(*args)
 
-    monkeypatch.setattr(world, "publish_report", fail_first)
+def fail_first_publish(original, entered, release):
+    def callback(*args):
+        if entered.is_set():
+            return original(*args)
+        entered.set()
+        release.wait(timeout=2)
+        raise OSError("first insert fails")
+
+    return callback
+
+
+def competing_publications(value, project, first, second, entered, release):
     with ThreadPoolExecutor(max_workers=2) as executor:
         failed = executor.submit(publish, value, project, first)
         assert entered.wait(timeout=2)
         succeeded = executor.submit(publish, value, project, second)
         release.set()
-        failed_result, success_result = failed.result(timeout=2), succeeded.result(timeout=2)
-    assert failed_result["status"] == "failed"
-    assert success_result["status"] == "published"
-    artifact = ArtifactStore(world.artifacts_root, project["id"]).get(success_result["artifact"]["id"])
-    assert artifact["id"] == success_result["artifact"]["id"]
+        return failed.result(timeout=2), succeeded.result(timeout=2)
 
 
 def test_failed_publication_keeps_concurrently_captured_content(world, project, tmp_path, monkeypatch):

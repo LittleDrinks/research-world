@@ -1,11 +1,12 @@
+from base64 import b64decode
 from io import BytesIO
 
 import pytest
-from PIL import Image
+from PIL import Image, PngImagePlugin
 from latex2mathml import exceptions as latex_errors
 from latex2mathml.converter import convert
 
-from server.report_delivery import artifact_display, render_html, validate_html
+from server.report_delivery import MAX_EVIDENCE_BYTES, artifact_display, render_html, validate_html
 from server.reporting import assess_delivery, projection_envelope
 
 
@@ -124,6 +125,17 @@ def test_formula_display_rejects_foreign_converter_markup(monkeypatch):
     assert artifact_display({"media_type": "application/x-latex"}, b"x") == {"kind": "invalid"}
 
 
+@pytest.mark.parametrize("mathml", [
+    '<math xmlns="http://www.w3.org/1998/Math/MathML"><mtext>data: text</mtext></math>',
+    '<math xmlns="urn:foreign"><mi>x</mi></math>',
+    '<math xmlns="http://www.w3.org/1998/Math/MathML"><evil:mi xmlns:evil="urn:foreign">x</evil:mi></math>',
+    '<math xmlns="http://www.w3.org/1998/Math/MathML"><mi xmlns:evil="urn:foreign" evil:href="x">x</mi></math>',
+])
+def test_formula_display_rejects_unsafe_mathml_boundaries(monkeypatch, mathml):
+    monkeypatch.setattr("server.report_delivery.convert", lambda _text: mathml)
+    assert artifact_display({"media_type": "application/x-latex"}, b"x") == {"kind": "invalid"}
+
+
 @pytest.mark.parametrize("error", [value for value in vars(latex_errors).values() if isinstance(value, type) and issubclass(value, Exception)])
 def test_formula_conversion_errors_are_controlled(monkeypatch, error):
     monkeypatch.setattr("server.report_delivery.convert", lambda _text: (_ for _ in ()).throw(error()))
@@ -148,6 +160,37 @@ def test_chart_display_rejects_animated_gif():
 def test_chart_display_rejects_pillow_decompression_bombs(monkeypatch):
     monkeypatch.setattr("server.report_delivery.Image.open", lambda _data: (_ for _ in ()).throw(Image.DecompressionBombError("bomb")))
     assert artifact_display({"media_type": "image/png"}, b"png") == {"kind": "invalid"}
+
+
+@pytest.mark.parametrize("media_type", ["image/png", "image/gif", "image/jpeg", "image/webp"])
+def test_chart_reencoding_uses_only_visible_rgba_pixels(media_type):
+    content, marker = chart_fixture(media_type)
+    display = artifact_display({"media_type": media_type}, content)
+    delivered = chart_bytes(display)
+    assert display["src"].startswith("data:image/png;base64,")
+    assert len(delivered) <= MAX_EVIDENCE_BYTES
+    assert not marker or marker in content
+    assert not marker or marker not in delivered
+    assert opened_chart(delivered) == ("PNG", "RGBA", *opened_rgba(content))
+
+
+def test_chart_reencoding_preserves_transparent_png_pixels():
+    content, _marker = transparent_png()
+    delivered = chart_bytes(artifact_display({"media_type": "image/png"}, content))
+    assert opened_chart(delivered) == ("PNG", "RGBA", *opened_rgba(content))
+
+
+@pytest.mark.parametrize("media_type", ["image/png", "image/gif", "image/jpeg", "image/webp"])
+def test_output_validation_accepts_only_sanitized_static_charts(media_type):
+    value = chart_projection(media_type)
+    assessment = assess_delivery(value)
+    assert assessment["valid"] is True
+    assert validate_html(render_html("Orbit", value, assessment)) == []
+
+
+@pytest.mark.parametrize("text", ["data:image/jpeg;base64,sk-abcdefghijklmnopqrstuvwxyz", "https://credentials.example"])
+def test_output_validation_scans_untrusted_data_and_urls(text):
+    assert validate_html(report_fixture(text)) == [{"code": "sensitive_data_exposed", "path": "html", "value": None}]
 
 
 def test_delivery_rejects_unsafe_narrative_without_returning_its_value():
@@ -200,3 +243,69 @@ def image_bytes(size):
     stream = BytesIO()
     Image.new("RGB", size).save(stream, "PNG")
     return stream.getvalue()
+
+
+def chart_fixture(media_type):
+    return {"image/png": indexed_png, "image/gif": transparent_gif, "image/jpeg": jpeg_chart, "image/webp": webp_chart}[media_type]()
+
+
+def indexed_png():
+    marker = b"PALETTE-ONLY-SECRET"
+    image = Image.new("P", (2, 1))
+    palette = bytearray(768)
+    palette[:6], palette[512:512 + len(marker)] = b"\x0a\x14\x1e\x28\x32\x3c", marker
+    image.putpalette(palette)
+    image.putdata([0, 1])
+    info = PngImagePlugin.PngInfo()
+    info.add_text("Comment", marker.decode())
+    return saved_image(image, "PNG", pnginfo=info) + marker, marker
+
+
+def transparent_gif():
+    image = Image.new("P", (2, 1))
+    image.putpalette(b"\x00\x00\x00\xff\x00\x00")
+    image.putdata([0, 1])
+    return saved_image(image, "GIF", transparency=0), b""
+
+
+def transparent_png():
+    image = Image.new("RGBA", (2, 1))
+    image.putdata([(12, 24, 36, 0), (48, 60, 72, 128)])
+    return saved_image(image, "PNG"), b""
+
+
+def jpeg_chart():
+    return saved_image(Image.new("RGB", (2, 1), (14, 28, 42)), "JPEG"), b""
+
+
+def webp_chart():
+    return saved_image(Image.new("RGBA", (2, 1), (12, 24, 36, 128)), "WEBP"), b""
+
+
+def saved_image(image, image_format, **options):
+    stream = BytesIO()
+    image.save(stream, image_format, **options)
+    return stream.getvalue()
+
+
+def chart_bytes(display):
+    return b64decode(display["src"].split(",", 1)[1])
+
+
+def opened_chart(content):
+    with Image.open(BytesIO(content)) as image:
+        image.load()
+        return image.format, image.mode, image.size, image.convert("RGBA").tobytes()
+
+
+def opened_rgba(content):
+    with Image.open(BytesIO(content)) as image:
+        image.load()
+        return image.size, image.convert("RGBA").tobytes()
+
+
+def chart_projection(media_type):
+    content, _marker = chart_fixture(media_type)
+    value = projection()
+    value["artifacts"][0].update(kind="chart", size=len(content), display=artifact_display({"media_type": media_type}, content))
+    return value

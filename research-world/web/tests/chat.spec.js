@@ -158,12 +158,13 @@ test("restores a retry publication from the Thread record without duplicating Tr
   const message = page.locator(".report-message");
   await assertFailedReport(message);
   await message.getByRole("button", { name: "重试" }).click();
-  await expect(page.locator(".report-message")).toHaveCount(2);
+  await expect(page.locator(".report-message")).toHaveCount(1);
   await expect(page.getByTitle("报告预览")).toHaveCount(1);
+  await expect(page.getByRole("alert")).toHaveCount(0);
   await page.reload();
-  await expect(page.locator(".report-message")).toHaveCount(2);
+  await expect(page.locator(".report-message")).toHaveCount(1);
   await expect(page.getByTitle("报告预览")).toHaveCount(1);
-  await expect(page.getByRole("alert")).toHaveCount(1);
+  await expect(page.getByRole("alert")).toHaveCount(0);
 });
 
 
@@ -175,6 +176,65 @@ async function mockRetryPublication(page, failed, publication) {
     detail = threadDetail({ runtime: { ...threadDetail().runtime, reports: [failed] }, report_publications: [{ ...publication, title: "测试项目" }] });
     return route.fulfill({ status: 201, json: reportResult(publication) });
   });
+}
+
+
+function deferred() {
+  let resolve;
+  return { wait: new Promise((value) => { resolve = value; }), release: () => resolve() };
+}
+
+
+async function blockThreadRefresh(page) {
+  const gate = deferred();
+  let block = false;
+  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => block ? gate.wait.then(() => route.fulfill({ json: threadDetail() })) : route.fulfill({ json: threadDetail() }));
+  return { block: () => { block = true; }, release: gate.release };
+}
+
+
+async function mockReportProgressPrompt(page, onStart) {
+  const start = { sessionUpdate: "tool_call", title: "发布科研报告", kind: "other", status: "in_progress" };
+  const updates = [["tool", { update: start }], ["tool", { update: { sessionUpdate: "tool_call_update", status: "completed" } }], ["done", { stop_reason: "end_turn" }]];
+  await page.route(/\/threads\/thread%3At1\/prompts/, (route) => { onStart(); return route.fulfill(sse(updates)); });
+}
+
+
+async function mockOverlappingRetry(page, failed, publication) {
+  const first = deferred();
+  let requests = 0;
+  let detail = threadDetail({ runtime: { ...threadDetail().runtime, reports: [failed] }, report_publications: [] });
+  await mockChat(page, detail);
+  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill({ json: detail }));
+  await page.route(/\/threads\/thread%3At1\/report\/publish$/, async (route) => {
+    requests += 1;
+    if (requests === 1) { await first.wait; return route.fulfill({ status: 422, json: failedRenderingReport() }); }
+    detail = threadDetail({ runtime: { ...threadDetail().runtime, reports: [failed] }, report_publications: [{ ...publication, title: "测试项目" }] });
+    return route.fulfill({ status: 201, json: reportResult(publication) });
+  });
+  return first;
+}
+
+
+async function mockOutOfOrderPublicationRefresh(page, older, newer) {
+  const stale = deferred();
+  const entered = deferred();
+  const details = [threadDetail({ report_publications: [older] }), threadDetail({ report_publications: [newer] })];
+  let detail = threadDetail();
+  let refreshes = 0;
+  let publishes = 0;
+  await mockChat(page);
+  await page.route(/\/api\/v1\/threads\/thread%3At1$/, async (route) => {
+    refreshes += 1;
+    if (refreshes !== 2) return route.fulfill({ json: detail });
+    entered.release(); await stale.wait;
+    return route.fulfill({ json: details[0] });
+  });
+  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => {
+    detail = details[publishes];
+    return route.fulfill({ status: 201, json: reportResult([older, newer][publishes++]) });
+  });
+  return { entered, release: stale.release };
 }
 
 
@@ -232,22 +292,47 @@ test("renders the actual Kernel failed stage sequence", async ({ page }) => {
 
 
 test("shows the ACP report tool progress until Thread restoration", async ({ page }) => {
-  let release;
-  let blockRefresh = false;
-  const gate = new Promise((resolve) => { release = resolve; });
-  const start = { sessionUpdate: "tool_call", title: "发布科研报告", kind: "other", status: "in_progress" };
   await mockChat(page);
-  await page.route(/\/api\/v1\/threads\/thread%3At1$/, async (route) => {
-    if (!blockRefresh) return route.fulfill({ json: threadDetail() });
-    await gate; return route.fulfill({ json: threadDetail() });
-  });
-  await page.route(/\/threads\/thread%3At1\/prompts/, (route) => { blockRefresh = true; return route.fulfill(sse([["tool", { update: start }], ["tool", { update: { sessionUpdate: "tool_call_update", status: "completed" } }], ["done", { stop_reason: "end_turn" }]])); });
+  const refresh = await blockThreadRefresh(page);
+  await mockReportProgressPrompt(page, refresh.block);
   await page.goto("/chat/thread%3At1");
   await page.getByLabel("消息").fill("生成报告");
   await page.getByRole("button", { name: "发送" }).click();
   await expect(page.getByRole("status")).toContainText("发布科研报告");
-  release();
+  refresh.release();
   await expect(page.getByText("正在生成报告")).toHaveCount(0);
+});
+
+
+test("keeps only the newest retry response after a late callback", async ({ page }) => {
+  const failed = failedCitationReport();
+  const publication = { id: "publication:p5", thread_id: "thread:t1", created_at: "2026-08-26T00:00:00Z" };
+  const first = await mockOverlappingRetry(page, failed, publication);
+  await page.goto("/chat/thread%3At1");
+  const retry = page.locator(".report-message").getByRole("button", { name: "重试" });
+  await retry.click();
+  await retry.click();
+  await expect(page.locator(".report-message")).toHaveCount(1);
+  first.release();
+  await expect(page.locator(".report-message")).toHaveCount(1);
+  await expect(page.getByTitle("报告预览")).toHaveCount(1);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+
+test("keeps the newest publication when an older detail refresh resolves late", async ({ page }) => {
+  const older = { id: "publication:old", thread_id: "thread:t1", title: "旧发布", created_at: "2026-08-26T00:00:00Z" };
+  const newer = { id: "publication:new", thread_id: "thread:t1", title: "新发布", created_at: "2026-08-26T00:01:00Z" };
+  const refresh = await mockOutOfOrderPublicationRefresh(page, older, newer);
+  await page.goto("/chat/thread%3At1");
+  const publish = page.getByRole("button", { name: "生成报告" });
+  await publish.click();
+  await refresh.entered.wait;
+  await publish.click();
+  await expect(page.locator(".message-list")).toContainText("新发布");
+  refresh.release();
+  await expect(page.locator(".message-list")).toContainText("新发布");
+  await expect(page.locator(".message-list")).not.toContainText("旧发布");
 });
 
 
