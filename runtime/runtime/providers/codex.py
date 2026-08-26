@@ -8,12 +8,15 @@ import re
 import shutil
 import signal
 import subprocess
+import tempfile
 import threading
 import time
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from .base import Emit, ModelResult
+from ..config import prepare_session_auth
 from ..types import TraceError
 
 VERSION = re.compile(r"codex-cli\s+(\S+)")
@@ -108,9 +111,8 @@ def _options(model: str, context: dict[str, Any]) -> list[str]:
 
 
 def _environment(context: dict[str, Any]) -> dict[str, str]:
-    environment = os.environ.copy()
-    environment["CODEX_HOME"] = context["codex_home"]
-    return environment
+    home = context["codex_home"]
+    return {"CODEX_HOME": home, "HOME": home, "LANG": "C.UTF-8", "PATH": os.defpath}
 
 
 def _version(executable: str) -> tuple[str | None, str, dict[str, str] | None]:
@@ -129,14 +131,24 @@ def _version_probe(executable: str):
     return _probe([executable, "--version"], "version")
 
 
-def _probe(argv: list[str], name: str):
+def _probe(argv: list[str], name: str, environment=None):
     deadline = time.monotonic() + PROBE_CANDIDATE_TIMEOUT
+    process = _start_probe(argv, name, environment)
+    if isinstance(process, tuple):
+        return process
+    stdout, stderr = _bounded_probe_output(process)
+    return _complete_probe(process, stdout, stderr, deadline, name, argv)
+
+
+def _start_probe(argv, name, environment):
     try:
-        process = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                   **_process_group_options())
+        return subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                env=environment, **_process_group_options())
     except OSError:
         return None, "error", _reason("probe_failed", name)
-    stdout, stderr = _bounded_probe_output(process)
+
+
+def _complete_probe(process, stdout, stderr, deadline, name, argv):
     try:
         process.wait(timeout=_remaining(deadline))
     except subprocess.TimeoutExpired:
@@ -146,7 +158,8 @@ def _probe(argv: list[str], name: str):
     except OSError:
         _join_probe_readers(stdout, stderr, deadline=deadline)
         return None, "error", _reason("probe_failed", name)
-    _join_probe_readers(stdout, stderr, deadline=deadline)
+    if _reader_cleanup_failed(process, stdout, stderr, deadline):
+        return None, "error", _reason("probe_timeout", name)
     return subprocess.CompletedProcess(argv, process.returncode, stdout.value, stderr.value)
 
 
@@ -173,6 +186,7 @@ def _join_probe_readers(*outputs, deadline) -> None:
     for output in outputs:
         output.thread.join(_remaining(deadline))
         output.value = bytes(output.chunks).decode(errors="replace")
+    return all(not output.thread.is_alive() for output in outputs)
 
 
 class _ProbeOutput:
@@ -184,10 +198,17 @@ class _ProbeOutput:
 
 def _stop_probe(process, deadline) -> None:
     _terminate_tree(process)
-    if _wait_probe(process, deadline):
-        return
     _kill_tree(process)
     _wait_probe(process, deadline)
+
+
+def _reader_cleanup_failed(process, stdout, stderr, deadline) -> bool:
+    short_deadline = min(deadline, time.monotonic() + PROBE_CLEANUP_SLICE)
+    if _join_probe_readers(stdout, stderr, deadline=short_deadline):
+        return False
+    _stop_probe(process, deadline)
+    _join_probe_readers(stdout, stderr, deadline=deadline)
+    return True
 
 
 def _wait_probe(process, deadline) -> bool:
@@ -357,7 +378,7 @@ class _Lifecycle:
             self._item(kind, event["item"])
 
     def _start(self, kind: str) -> None:
-        expected = "thread.started" if self.state == "new" else "turn.started"
+        expected = {"new": "thread.started", "thread.started": "turn.started"}.get(self.state)
         if kind != expected:
             raise _invalid_jsonl()
         self.state = kind
@@ -549,19 +570,21 @@ def _agent_state(value) -> bool:
 
 
 def _web_item(item: dict) -> bool:
-    return _exact(item, {"id", "type", "query", "action"}) and isinstance(item["query"], str) and _web_action(item["action"])
+    return _exact(item, {"id", "type", "query", "action"}) and isinstance(item["query"], str) and _web_action(item)
 
 
-def _web_action(value) -> bool:
-    if not isinstance(value, dict) or value.get("type") not in {"search", "open_page", "find_in_page", "other"}:
+def _web_action(item) -> bool:
+    action = item["action"]
+    if not isinstance(action, dict) or action.get("type") != "search":
         return False
-    fields = {"search": ({"type", "query"}, {"type", "query", "queries"}), "open_page": ({"type", "url"},), "find_in_page": ({"type", "url", "pattern"},), "other": ({"type"},)}
-    return set(value) in fields[value["type"]] and _web_action_values(value)
+    if set(action) not in ({"type", "query"}, {"type", "query", "queries"}):
+        return False
+    return action["query"] == item["query"] and _same_queries(action, item["query"])
 
 
-def _web_action_values(value) -> bool:
-    return (_string_or_none(value.get("query")) and _string_or_none(value.get("url"))
-            and _string_or_none(value.get("pattern")) and _strings_or_none(value.get("queries")))
+def _same_queries(action, query) -> bool:
+    queries = action.get("queries", [query])
+    return isinstance(query, str) and _strings(queries) and all(value == query for value in queries)
 
 
 def _todo_item(item: dict) -> bool:
@@ -701,14 +724,16 @@ def _thread_id(events: list[dict]) -> str | None:
 def _usage(events: list[dict]) -> dict[str, int]:
     event = next(item for item in reversed(events) if item["type"] == "turn.completed")
     usage = event["usage"]
-    return {
-        "prompt_tokens": usage.get("input_tokens", 0),
-        "completion_tokens": usage.get("output_tokens", 0),
-    }
+    return usage
 
 
 def _readiness(executable: str) -> tuple[str, dict[str, str] | None]:
-    result = _probe([executable, "login", "status"], "login status")
+    with tempfile.TemporaryDirectory() as home:
+        try:
+            prepare_session_auth(Path(home))
+        except RuntimeError:
+            return "auth-required", {"code": "auth_missing", "probe": "login status"}
+        result = _probe([executable, "login", "status"], "login status", _environment({"codex_home": home}))
     if isinstance(result, tuple):
         _, status, reason = result
         return ("found", _reason("auth_probe_unavailable", "login status")) if reason["code"] == "probe_failed" else (status, reason)

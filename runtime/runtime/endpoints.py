@@ -4,7 +4,7 @@ import json
 import os
 import re
 from collections.abc import Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -25,9 +25,6 @@ ENDPOINT_FIELDS = {
     "api_key_env",
     "priority",
 }
-_CODEX_OWNER = object()
-
-
 @dataclass(frozen=True)
 class Endpoint:
     id: str
@@ -40,11 +37,6 @@ class Endpoint:
     base_url_env: str | None = None
     api_key_env: str | None = None
     available: bool = False
-    _owner: object | None = field(default=None, repr=False, compare=False)
-
-    def __post_init__(self) -> None:
-        if self.id == "codex" and self._owner is not _CODEX_OWNER:
-            raise ValueError("endpoint id is reserved by Codex CLI")
 
     def public(self) -> dict[str, Any]:
         return {
@@ -130,13 +122,6 @@ def provider_endpoint(
     value = endpoint_id or provider.id
     return Endpoint(
         value, value, provider.id, models, embedding_models, priority, provider
-    )
-
-
-def codex_endpoint(model: str) -> Endpoint:
-    return Endpoint(
-        "codex", "Codex CLI", "codex", (model,), (), 200, None,
-        available=True, _owner=_CODEX_OWNER,
     )
 
 

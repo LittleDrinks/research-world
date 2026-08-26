@@ -22,8 +22,17 @@ def prepare_codex_home() -> None:
     if not source.is_dir():
         return
     target.mkdir(parents=True, exist_ok=True)
-    for name in ("config.toml", "auth.json"):
-        _copy_private(source / name, target / name)
+    target.chmod(0o700)
+    _copy_private(source / "auth.json", target / "auth.json")
+
+
+def prepare_session_auth(target: Path) -> None:
+    target.mkdir(parents=True, exist_ok=True)
+    target.chmod(0o700)
+    source = Path(os.getenv("CODEX_HOME", Path.home() / ".codex")) / "auth.json"
+    if not source.is_file():
+        raise RuntimeError("Codex authentication is unavailable")
+    _copy_private(source, target / "auth.json")
 
 
 def _copy_private(source: Path, target: Path) -> None:

@@ -5,16 +5,6 @@
   "type": "object",
   "additionalProperties": false,
   "required": ["id", "name", "runtime", "endpoint", "model", "instructions"],
-  "allOf": [
-    {
-      "if": {"properties": {"endpoint": {"const": "codex"}}},
-      "then": {"properties": {"runtime": {"properties": {"id": {"const": "codex"}}}}}
-    },
-    {
-      "if": {"properties": {"runtime": {"properties": {"id": {"const": "codex"}}}}},
-      "then": {"properties": {"endpoint": {"const": "codex"}}}
-    }
-  ],
   "properties": {
     "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
     "name": {"type": "string", "minLength": 1, "pattern": "\\S"},

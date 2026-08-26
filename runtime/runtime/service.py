@@ -12,8 +12,9 @@ from typing import Any
 from acp.interfaces import Client
 
 from . import catalog
+from .config import prepare_session_auth
 from .adapters import ToolDefinition, discover_adapters
-from .endpoints import Endpoint, EndpointPool, codex_endpoint, load_endpoints
+from .endpoints import Endpoint, EndpointPool, load_endpoints
 from .runtimes import (
     CodexRuntimeAdapter,
     RuntimeAdapter,
@@ -48,7 +49,7 @@ class Runtime:
         adapters = runtimes if runtimes is not None else load_runtimes()
         _bind_endpoint_ids(adapters, values)
         self.runtimes = RuntimePool(adapters)
-        self.endpoints = EndpointPool(_runtime_endpoints(values, adapters))
+        self.endpoints = EndpointPool(values)
         self.tool_definitions = tuple(tool_definitions)
         self._locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._cancelled: set[tuple[str, str]] = set()
@@ -307,34 +308,11 @@ def _session_spec(events):
         raise SessionSpecInvalid(str(error)) from error
 
 
-def _codex_endpoints(adapters: list[RuntimeAdapter]) -> list[Endpoint]:
-    values = [
-        item
-        for item in adapters
-        if isinstance(item, CodexRuntimeAdapter) and item.descriptor.status == "ready"
-    ]
-    return [codex_endpoint(_codex_model()) for _ in values]
-
-
-def _runtime_endpoints(values, adapters) -> list[Endpoint]:
-    _reject_reserved_endpoint(values)
-    return [*values, *_codex_endpoints(adapters)]
-
-
-def _reject_reserved_endpoint(values) -> None:
-    if any(item.id == "codex" for item in values):
-        raise ValueError("endpoint id is reserved by Codex CLI")
-
-
 def _bind_endpoint_ids(adapters, endpoints) -> None:
-    ids = tuple(item.id for item in endpoints if item.id != "codex")
+    ids = tuple(item.id for item in endpoints)
     for adapter in adapters:
         if adapter.descriptor.id == "openai-compatible":
             adapter.endpoint_ids = ids
-
-
-def _codex_model() -> str:
-    return os.getenv("CODEX_MODEL", "gpt-5.6-sol")
 
 
 def _session_id(value: str | None) -> str:
@@ -423,8 +401,7 @@ def _add_codex_home(meta, path, spec) -> None:
     if spec.runtime.id != "codex":
         return
     home = path.parent / "codex-home"
-    home.mkdir(parents=True, exist_ok=True)
-    home.chmod(0o700)
+    prepare_session_auth(home)
     meta["codex_home"] = str(home)
 
 
@@ -609,8 +586,8 @@ def _completed_turns(events) -> set[str]:
 
 
 def _add_usage(total, current):
-    for key in total:
-        total[key] += current.get(key, 0)
+    for key, value in current.items():
+        total[key] = total.get(key, 0) + value
 
 
 def _error_code(error: Exception) -> str:

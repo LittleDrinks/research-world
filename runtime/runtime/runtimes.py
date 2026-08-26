@@ -4,7 +4,6 @@ import asyncio
 from dataclasses import dataclass
 from typing import Any
 
-from .endpoints import Endpoint, codex_endpoint
 from .providers.codex import CodexProvider
 from .types import CapabilityNotFound
 
@@ -60,7 +59,7 @@ class RuntimeAdapter:
 
 class CodexRuntimeAdapter(RuntimeAdapter):
     def __init__(self, provider: CodexProvider):
-        super().__init__(_codex_descriptor(provider), ("codex",))
+        super().__init__(_codex_descriptor(provider))
         self.provider = provider
         self._processes: dict[str, object] = {}
         self._cancelled: set[str] = set()
@@ -69,6 +68,9 @@ class CodexRuntimeAdapter(RuntimeAdapter):
     @property
     def owns_process(self) -> bool:
         return True
+
+    def accepts(self, endpoint) -> bool:
+        return endpoint["available"] if isinstance(endpoint, dict) else endpoint.public()["available"]
 
     async def generate(
         self, session_id, endpoint, model, messages, tools, emit, context

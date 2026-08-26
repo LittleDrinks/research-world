@@ -4,7 +4,6 @@ import json
 import os
 import re
 import threading
-from urllib.parse import urlsplit, urlunsplit
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
@@ -12,13 +11,18 @@ from typing import Any
 
 
 CREDENTIAL_LABEL = r"(?:x[\W_]*)?api[\W_]*key|client[\W_]*secret|secret|token|password|credential|authorization"
-CREDENTIAL = re.compile(rf"(?i)((?:bearer|basic)\s+|(?:{CREDENTIAL_LABEL})\s*[:=]\s*)[^\s'\"]+")
+CREDENTIAL = re.compile(rf"(?i)((?:bearer|basic)\s+|(?:{CREDENTIAL_LABEL})\s*[:=]\s*)[^\s;'\"]+")
+AUTHORIZATION = re.compile(r"(?i)authorization\s*:\s*(?:bearer|basic)\s+[^\s;'\"]+")
+COOKIE = re.compile(r"(?i)(?:set-)?cookie\s*:\s*[^\r\n]+")
+URI = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s'\"]+")
 UNIX_PATH = re.compile(r"(?<![\w:])/(?:[^\s'\"]+)")
 WINDOWS_PATH = re.compile(r"(?i)\b[A-Z]:\\(?:[^\s'\"]+)")
+RELATIVE_PATH = re.compile(r"(?<!\w)(?:\.{1,2}/|[\w.-]+/)[^\s'\"]+")
 CREDENTIAL_FIELDS = {
     "apikey", "apikeys", "xapikey", "authorization", "authorizations",
     "password", "credential", "credentials", "secret", "secrets",
     "clientsecret", "token", "tokens", "baseurl", "endpoint",
+    "cookie", "cookies", "setcookie", "dsn", "databaseurl", "databaseuri",
 }
 
 
@@ -42,7 +46,7 @@ class TraceStore:
     ) -> dict[str, Any]:
         with self._locks[session_id]:
             events = self.read(session_id)
-            event = _event(session_id, len(events), event_type, data, turn_id)
+            event = _event(session_id, len(events), event_type, redact_trace_data(data), turn_id)
             _write_once(self.path(session_id), event)
         return event
 
@@ -80,22 +84,30 @@ def _public_event(event):
 
 
 def _public_data(data):
-    hidden = {"runtime_binding", "codex_home"}
-    return _redact(data, hidden, ())
+    hidden = {"runtime_binding", "codex_home", "workspace"}
+    return _redact(redact_trace_data(data), hidden, ())
 
 
-def _redact(value, hidden, path):
+def redact_trace_data(data):
+    return _redact(data, set(), (), {"workspace", "codex_home"})
+
+
+def _redact(value, hidden, path, preserved=()):
     if isinstance(value, dict):
-        return {key: _redact_field(key, item, hidden, path) for key, item in value.items() if key not in hidden}
+        return {key: _redact_field(key, item, hidden, path, preserved) for key, item in value.items() if key not in hidden}
     if isinstance(value, list):
-        return [_redact(item, hidden, path) for item in value]
+        return [_redact(item, hidden, path, preserved) for item in value]
     return _redact_text(value) if isinstance(value, str) else value
 
 
-def _redact_field(key, value, hidden, path):
-    if _credential_field(key) and not _logical_endpoint(key, path):
+def _redact_field(key, value, hidden, path, preserved):
+    if key in preserved:
+        return value
+    if _sensitive_field(key) and not _logical_endpoint(key, path):
         return "<redacted>"
-    return _redact(value, hidden, (*path, key))
+    if _path_field(key):
+        return "<path>"
+    return _redact(value, hidden, (*path, key), preserved)
 
 
 def _logical_endpoint(key, path):
@@ -109,31 +121,21 @@ def _credential_field(key):
     )
 
 
+def _sensitive_field(key):
+    return _credential_field(key) or "cookie" in key.lower()
+
+
+def _path_field(key):
+    return key.lower() in {"path", "cwd"}
+
+
 def _redact_text(value):
-    value = _redact_urls(value)
+    value = URI.sub("<uri>", value)
+    value = COOKIE.sub("Cookie: <redacted>", value)
+    value = AUTHORIZATION.sub("Authorization: <redacted>", value)
     value = _redact_credentials(value)
     value = _redact_paths(value)
     return value
-
-
-def _redact_urls(value):
-    return re.sub(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s'\"]+", _redact_url, value)
-
-
-def _redact_url(match):
-    value = match.group(0)
-    try:
-        parsed = urlsplit(value)
-    except ValueError:
-        return value
-    if not parsed.netloc:
-        return value
-    host = parsed.hostname or ""
-    try:
-        port = f":{parsed.port}" if parsed.port else ""
-    except ValueError:
-        port = ""
-    return urlunsplit((parsed.scheme, host + port, parsed.path, "<redacted>" if parsed.query else "", parsed.fragment))
 
 
 def _redact_credentials(value):
@@ -142,7 +144,8 @@ def _redact_credentials(value):
 
 def _redact_paths(value):
     value = UNIX_PATH.sub("<path>", value)
-    return WINDOWS_PATH.sub("<path>", value)
+    value = WINDOWS_PATH.sub("<path>", value)
+    return RELATIVE_PATH.sub("<path>", value)
 
 
 def _event(session_id, seq, event_type, data, turn_id):
