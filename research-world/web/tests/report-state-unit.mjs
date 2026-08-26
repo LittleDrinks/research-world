@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createReportRequests, replaceTrace, replacementsForThread } from "../src/components/chat/reportState.js";
+import * as reportState from "../src/components/chat/reportState.js";
+
+
+const { createReportRequests, replaceTrace, replacementsForThread } = reportState;
 
 
 function memoryStorage() {
@@ -21,14 +24,26 @@ test("keeps trace replacements scoped to their Thread", () => {
 });
 
 
-test("keeps report request freshness scoped to each card operation", () => {
+test("keeps a save current across publication activity", () => {
   const requests = createReportRequests();
-  const retryB = requests.next("retry:report-turn:b-2");
-  const saveA = requests.next("save:publication:a");
-  assert.equal(requests.latest(retryB), true);
-  assert.equal(requests.latest(saveA), true);
-  const newerRetryB = requests.next("retry:report-turn:b-2");
-  assert.equal(requests.latest(retryB), false);
-  assert.equal(requests.latest(newerRetryB), true);
-  assert.equal(requests.latest(saveA), true);
+  const card = "report-card:thread:a";
+  const save = requests.next(reportState.reportOperationScope(card, "save"));
+  const publish = requests.next(reportState.reportOperationScope(card, "publish"));
+  const retry = requests.next(reportState.reportOperationScope(card, "retry"));
+  assert.equal(requests.latest(save), true);
+  assert.equal(requests.latest(publish), true);
+  assert.equal(requests.latest(retry), true);
+  const newerSave = requests.next(reportState.reportOperationScope(card, "save"));
+  assert.equal(requests.latest(save), false);
+  assert.equal(requests.latest(newerSave), true);
+});
+
+
+test("ignores an older response from the same operation", () => {
+  const requests = createReportRequests();
+  const scope = reportState.reportOperationScope("report-card:thread:a", "retry");
+  const older = requests.next(scope);
+  const newer = requests.next(scope);
+  assert.equal(requests.latest(older), false);
+  assert.equal(requests.latest(newer), true);
 });
