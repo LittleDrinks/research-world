@@ -26,7 +26,7 @@
 | #33 | 已关闭，不做 | 保留可变实验环境与不可变 Artifact 冲突 |
 | #34 | 不做 opencli | 外部数据走 Connector；结果登记 Artifact 后提交 observation；公共目录隐藏 location/config |
 | #35 | 完成 | claim/action 审核依据显式保存，支持/挑战 argument 分离，候选选择不使用模型自报 quality |
-| #36 | 完成 | Report Skill 只消费 admitted projection、BibTeX export 与 delivery validation |
+| #36 | 待验收 | research-report 只消费 `report_projection` 并调用 `publish_report`；Kernel 发布、不可变命名引用与 Chat 卡片已实现 |
 ## 附加验收
 | 要求 | 结果 |
 |---|---|
