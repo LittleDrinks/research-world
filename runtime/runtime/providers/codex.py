@@ -118,8 +118,8 @@ class CodexProvider:
                 stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
                 pass_fds=(self._fd,), **_process_group_options(),
             )
-        except OSError as error:
-            raise TraceError("cli_unavailable", "frozen codex executable is unavailable") from error
+        except OSError:
+            raise TraceError("cli_unavailable", "frozen codex executable is unavailable") from None
 
     async def collect(
         self, process, messages: list[dict], emit: Emit, continuations=()
@@ -528,6 +528,8 @@ class _Lifecycle:
             raise _invalid_jsonl()
 
     def _completable(self, state, item_type) -> bool:
+        if item_type == "file_change":
+            return state is None
         return state in {"started", "updated"} or (
             state is None and item_type in COMPLETED_ONLY_ITEMS
         )
@@ -602,7 +604,7 @@ def _may_update(state, item_type) -> bool:
 
 
 def _starts_item(item_type, state) -> bool:
-    return state is None and item_type not in COMPLETED_ONLY_ITEMS
+    return state is None and item_type != "file_change" and item_type not in COMPLETED_ONLY_ITEMS
 
 
 def _phase_matches(kind, item) -> bool:
@@ -831,7 +833,7 @@ def _freeze_executable(path: str | None) -> int | None:
     except OSError:
         return None
     finally:
-        os.close(source)
+        _close_fd(source)
 
 
 def _open_source(path: str | None) -> int | None:
@@ -856,7 +858,7 @@ def _sealed_snapshot(source: int) -> int:
         _seal_snapshot(snapshot)
         return snapshot
     except OSError:
-        os.close(snapshot)
+        _close_fd(snapshot)
         raise
 
 
@@ -872,7 +874,9 @@ def _memfd_create() -> int:
 
 def _libc_memfd_create() -> int:
     library = ctypes.CDLL(None, use_errno=True)
-    create = library.memfd_create
+    create = getattr(library, "memfd_create", None)
+    if create is None:
+        raise OSError("memfd_create")
     create.argtypes, create.restype = (ctypes.c_char_p, ctypes.c_uint), ctypes.c_int
     descriptor = create(b"codex-snapshot", _memfd_flags())
     if descriptor == -1:

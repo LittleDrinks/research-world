@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .providers.codex import CodexProvider
-from .types import CapabilityNotFound
+from .types import CapabilityNotFound, TraceError
 
 REALM = "container:runtime"
 
@@ -70,8 +70,12 @@ class CodexRuntimeAdapter(RuntimeAdapter):
         super().__init__(_codex_descriptor(provider), ("openai-compatible",))
         self.provider = provider
         self._processes: dict[str, object] = {}
+        self._starts: dict[str, asyncio.Task] = {}
         self._cancelled: set[str] = set()
         self._stops: dict[str, asyncio.Task] = {}
+        self._stopped: dict[str, object] = {}
+        self._closing = False
+        self._close_task: asyncio.Task | None = None
 
     @property
     def owns_process(self) -> bool:
@@ -89,21 +93,34 @@ class CodexRuntimeAdapter(RuntimeAdapter):
             return endpoint.id, collected.result, collected.continuation_id
         except BaseException:
             if process is not None:
-                await _cleanup(self.provider, process)
+                await self._stop(session_id, process)
             raise
         finally:
             self._unregister(session_id, process)
 
     async def _start(self, session_id, model, context):
-        process = await self.provider.start(model, context)
-        self._processes[session_id] = process
-        if session_id in self._cancelled:
-            self._schedule_stop(session_id, process)
-        return process
+        if self._closing:
+            raise TraceError("runtime_closed", "codex runtime is closed")
+        task = asyncio.create_task(self.provider.start(model, context))
+        self._starts[session_id] = task
+        try:
+            process = await task
+            if self._closing:
+                await self._stop(session_id, process)
+                raise TraceError("runtime_closed", "codex runtime is closed")
+            self._processes[session_id] = process
+            if session_id in self._cancelled:
+                self._schedule_stop(session_id, process)
+            return process
+        finally:
+            if self._starts.get(session_id) is task:
+                self._starts.pop(session_id)
 
     def _unregister(self, session_id, process) -> None:
-        if process is not None:
+        if self._processes.get(session_id) is process:
             self._processes.pop(session_id, None)
+        if self._stopped.get(session_id) is process:
+            self._stopped.pop(session_id, None)
         self._cancelled.discard(session_id)
 
     def cancel(self, session_id: str) -> None:
@@ -112,19 +129,53 @@ class CodexRuntimeAdapter(RuntimeAdapter):
             self._schedule_stop(session_id, process)
 
     def _schedule_stop(self, session_id, process) -> None:
+        if self._stopped.get(session_id) is process:
+            return
         if session_id not in self._stops:
             self._stops[session_id] = asyncio.create_task(
                 self._stop_registered(session_id, process)
             )
 
     async def close(self) -> None:
+        if self._close_task is None:
+            self._closing = True
+            self._close_task = asyncio.create_task(self._close())
+        await asyncio.shield(self._close_task)
+
+    async def _close(self) -> None:
+        try:
+            self._stop_active()
+            await self._stop_pending()
+            await self._wait_stops()
+        finally:
+            self.release()
+
+    def _stop_active(self) -> None:
         self._cancelled.update(self._processes)
         for session_id, process in tuple(self._processes.items()):
             self._schedule_stop(session_id, process)
-        try:
-            await asyncio.gather(*tuple(self._stops.values()))
-        finally:
-            self.release()
+
+    async def _stop_pending(self) -> None:
+        starts = tuple(self._starts.items())
+        results = await asyncio.gather(
+            *(task for _, task in starts), return_exceptions=True
+        )
+        for (session_id, _), process in zip(starts, results):
+            if not isinstance(process, BaseException):
+                self._schedule_stop(session_id, process)
+
+    async def _wait_stops(self) -> None:
+        errors = []
+        while stops := tuple(self._stops.values()):
+            results = await asyncio.gather(*stops, return_exceptions=True)
+            errors.extend(value for value in results if isinstance(value, BaseException))
+        if errors:
+            raise errors[0]
+
+    async def _stop(self, session_id, process) -> None:
+        self._schedule_stop(session_id, process)
+        if task := self._stops.get(session_id):
+            await _wait_task(task)
 
     def release(self) -> None:
         self.provider.close()
@@ -135,6 +186,7 @@ class CodexRuntimeAdapter(RuntimeAdapter):
     async def _stop_registered(self, session_id, process) -> None:
         try:
             await _cleanup(self.provider, process)
+            self._stopped[session_id] = process
         finally:
             if self._processes.get(session_id) is process:
                 self._processes.pop(session_id, None)
@@ -186,6 +238,10 @@ def _codex_descriptor(provider: CodexProvider) -> RuntimeDescriptor:
 
 async def _cleanup(provider, process) -> None:
     task = asyncio.create_task(provider.stop(process))
+    await _wait_task(task)
+
+
+async def _wait_task(task) -> None:
     while not task.done():
         try:
             await asyncio.shield(task)
