@@ -183,10 +183,11 @@ def thread_pin_routes(app, kernel) -> None:
 
 
 def thread_report_routes(app, kernel) -> None:
-    @app.post("/api/v1/threads/{thread_id}/report/publish", status_code=201)
+    @app.post("/api/v1/threads/{thread_id}/report/publish")
     async def publish_thread_report(thread_id: str, request: Request):
         values = {"thread_id": thread_id, **_report_fields(await request.json(), {"title"})}
-        return await kernel.command(KernelCommand("thread_publish_report", values=values))
+        result = await kernel.command(KernelCommand("thread_publish_report", values=values))
+        return JSONResponse(result, status_code=201 if result["status"] == "published" else 422)
 
     @app.post("/api/v1/threads/{thread_id}/report/save", status_code=201)
     async def save_thread_report(thread_id: str, request: Request):

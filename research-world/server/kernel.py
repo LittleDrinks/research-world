@@ -6,6 +6,7 @@ import sqlite3
 from dataclasses import dataclass, field
 from inspect import isawaitable
 from pathlib import Path
+from threading import Lock
 
 from pybtex.database import parse_string
 from pybtex.exceptions import PybtexError
@@ -34,6 +35,9 @@ from .reporting import (
     safe_node_id,
 )
 from .world import World, node_text
+
+
+_publication_locks, _publication_locks_guard = {}, Lock()
 
 
 @dataclass(frozen=True)
@@ -215,14 +219,15 @@ class ResearchKernel:
 
     def _persist_publication(self, project_id, thread_id, title, content, assessment, stages):
         store = ArtifactStore(self._world.artifacts_root, project_id)
-        created, artifact_id = not store.has_content(content), ArtifactStore.identifier(content)
-        try:
-            artifact = store.add(content, "text/html")
-            publication = self._world.publish_report(project_id, thread_id, title, artifact["id"])
-        except (ArtifactIntegrityError, OSError, sqlite3.Error):
-            if created:
-                store.discard(artifact_id)
-            return _publication_failure("persistence", stages, {**assessment, "valid": False, "gaps": [{"code": "persistence_failed", "path": "publication", "value": None}]})
+        with _publication_lock(project_id, ArtifactStore.identifier(content)):
+            created, artifact_id = not store.has_content(content), ArtifactStore.identifier(content)
+            try:
+                artifact = store.add(content, "text/html")
+                publication = self._world.publish_report(project_id, thread_id, title, artifact["id"])
+            except (ArtifactIntegrityError, OSError, sqlite3.Error):
+                if created:
+                    store.discard(artifact_id)
+                return _publication_failure("persistence", stages, {**assessment, "valid": False, "gaps": [{"code": "persistence_failed", "path": "publication", "value": None}]})
         stages.append({"name": "persistence", "status": "completed"})
         return {"status": "published", "title": title, "publication": publication, "artifact": _artifact_view(artifact), "assessment": assessment, "stages": stages}
 
@@ -818,6 +823,11 @@ def _blocked_assessment(envelope: dict) -> dict:
 
 def _publication_failure(stage: str, stages: list[dict], assessment: dict) -> dict:
     return {"status": "failed", "assessment": assessment, "stages": [*stages, {"name": stage, "status": "failed"}]}
+
+
+def _publication_lock(project_id: str, artifact_id: str) -> Lock:
+    with _publication_locks_guard:
+        return _publication_locks.setdefault((project_id, artifact_id), Lock())
 
 
 def _direct_artifact_ids(node: dict) -> list[str]:

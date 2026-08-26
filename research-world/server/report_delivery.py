@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import re
 import warnings
+from xml.etree import ElementTree
 from io import BytesIO
 from html import escape, unescape
 from html.parser import HTMLParser
@@ -56,8 +57,9 @@ def _text_display(kind: str, content: bytes) -> dict:
 
 def _formula_display(text: str) -> dict:
     try:
-        return {"kind": "formula", "mathml": convert(text)}
-    except _TEX_ERRORS:
+        mathml = convert(text)
+        return {"kind": "formula", "mathml": mathml} if _safe_mathml(mathml) else {"kind": "invalid"}
+    except _TEX_ERRORS + (ElementTree.ParseError, TypeError, ValueError):
         return {"kind": "invalid"}
 
 
@@ -73,7 +75,7 @@ def _decoded_image_matches(media_type: str, content: bytes) -> bool:
         with warnings.catch_warnings():
             warnings.simplefilter("error", Image.DecompressionBombWarning)
             with Image.open(BytesIO(content)) as image:
-                if image.format != _image_formats[media_type] or not _image_size_valid(image):
+                if image.format != _image_formats[media_type] or getattr(image, "n_frames", 1) != 1 or not _image_size_valid(image):
                     return False
                 image.verify()
             with Image.open(BytesIO(content)) as image:
@@ -267,6 +269,15 @@ class _ReportStructure(HTMLParser):
         if self.stack and "h2" in self.stack:
             self.heading.append(data)
 
+    def handle_comment(self, _data):
+        self.invalid = True
+
+    def handle_pi(self, _data):
+        self.invalid = True
+
+    def unknown_decl(self, _data):
+        self.invalid = True
+
     def _start_allowed(self, tag) -> bool:
         if tag in _void_tags:
             return bool(self.stack)
@@ -287,3 +298,30 @@ class _ReportStructure(HTMLParser):
 
 _sections = ("Research question", "Conclusions", "Evidence and methods", "Limitations and gaps")
 _void_tags = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"}
+_MATHML = "http://www.w3.org/1998/Math/MathML"
+_MATH_ELEMENTS = {"math", "mrow", "mi", "mn", "mo", "mtext", "mspace", "msup", "msub", "msubsup", "mfrac", "msqrt", "mroot", "mover", "munder", "munderover", "mtable", "mtr", "mtd", "mstyle", "mpadded", "menclose"}
+_MATH_ATTRIBUTES = {"display", "mathvariant", "mathsize", "mathcolor", "mathbackground", "scriptlevel", "displaystyle", "accent", "accentunder", "stretchy", "fence", "form", "separator", "lspace", "rspace", "symmetric", "largeop", "movablelimits", "minsize", "maxsize", "width", "height", "depth", "voffset", "linethickness", "bevelled", "numalign", "denomalign", "columnalign", "rowalign", "columnspacing", "rowspacing", "columnlines", "rowlines", "framespacing", "equalrows", "equalcolumns", "side", "minlabelspacing", "notation", "open", "close", "separators", "linebreak"}
+
+
+def _safe_mathml(value: str) -> bool:
+    if not isinstance(value, str) or "<!" in value or "<?" in value:
+        return False
+    root = ElementTree.fromstring(value)
+    return _math_tree_safe(root) and not any(_unsafe_math_value(text) for text in root.itertext())
+
+
+def _math_tree_safe(root) -> bool:
+    return all(_math_element_safe(element) for element in root.iter())
+
+
+def _math_element_safe(element) -> bool:
+    namespace, _, tag = element.tag.rpartition("}")
+    return namespace == f"{{{_MATHML}" and tag in _MATH_ELEMENTS and all(_math_attribute_safe(key, value) for key, value in element.attrib.items())
+
+
+def _math_attribute_safe(key: str, value: str) -> bool:
+    return key in _MATH_ATTRIBUTES and not _unsafe_math_value(value)
+
+
+def _unsafe_math_value(value: str) -> bool:
+    return not isinstance(value, str) or ":" in value or "url(" in value.lower()

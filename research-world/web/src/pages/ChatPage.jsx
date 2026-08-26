@@ -93,10 +93,11 @@ function useSend(threadId, setDetail, onSpecInvalid) {
     const reply = { text: "" };
     try {
       await sendPrompt(threadId, text, (...event) => promptEvent(reply, setStreaming, setReportProgress, ...event));
-      setDetail(await getThread(threadId)); await refresh(projectId); return true;
+      const detail = await getThread(threadId);
+      setDetail(detail); setReportProgress(false); await refresh(projectId); return true;
     } catch (error) {
       showSendError(error, onSpecInvalid, setError); return false;
-    } finally { setSending(false); setStreaming(""); setPending(""); setReportProgress(false); }
+    } finally { setSending(false); setStreaming(""); setPending(""); }
   };
   return { sending, streaming, pending, reportProgress, send };
 }
