@@ -27,6 +27,7 @@ async def test_resume_uses_private_state_without_trace_paths(tmp_path, monkeypat
     await runtime.prompt(session, [{"type": "text", "text": "one"}])
     raw = runtime.trace.path(session).read_text()
     assert all(value not in raw for value in [str(tmp_path), "codex_home", "runtime_binding"])
+    assert runtime.state.path(session).stat().st_mode & 0o777 == 0o600
     second = ready_provider()
     monkeypatch.setattr(second, "start", _resuming_start(contexts))
     restored = Runtime(tmp_path / "data", [_codex_endpoint("gpt-5.6-sol")], runtimes=[CodexRuntimeAdapter(second)])
