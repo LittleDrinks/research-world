@@ -220,13 +220,10 @@ class ResearchKernel:
     def _persist_publication(self, project_id, thread_id, title, content, assessment, stages):
         store = ArtifactStore(self._world.artifacts_root, project_id)
         with _publication_lock(project_id, ArtifactStore.identifier(content)):
-            created, artifact_id = not store.has_content(content), ArtifactStore.identifier(content)
             try:
                 artifact = store.add(content, "text/html")
                 publication = self._world.publish_report(project_id, thread_id, title, artifact["id"])
             except (ArtifactIntegrityError, OSError, sqlite3.Error):
-                if created:
-                    store.discard(artifact_id)
                 return _publication_failure("persistence", stages, {**assessment, "valid": False, "gaps": [{"code": "persistence_failed", "path": "publication", "value": None}]})
         stages.append({"name": "persistence", "status": "completed"})
         return {"status": "published", "title": title, "publication": publication, "artifact": _artifact_view(artifact), "assessment": assessment, "stages": stages}

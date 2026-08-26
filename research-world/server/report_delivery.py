@@ -64,25 +64,42 @@ def _formula_display(text: str) -> dict:
 
 
 def _chart_display(media_type: str, content: bytes) -> dict:
-    if not _decoded_image_matches(media_type, content):
+    image = _decoded_image(media_type, content)
+    if image is None:
         return {"kind": "invalid"}
-    encoded = base64.b64encode(content).decode("ascii")
+    encoded = base64.b64encode(_encode_image(image, media_type)).decode("ascii")
     return {"kind": "chart", "src": f"data:{media_type};base64,{encoded}"}
 
 
-def _decoded_image_matches(media_type: str, content: bytes) -> bool:
+def _decoded_image(media_type: str, content: bytes):
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", Image.DecompressionBombWarning)
             with Image.open(BytesIO(content)) as image:
-                if image.format != _image_formats[media_type] or getattr(image, "n_frames", 1) != 1 or not _image_size_valid(image):
-                    return False
+                if not _image_valid(image, media_type):
+                    return None
                 image.verify()
             with Image.open(BytesIO(content)) as image:
                 image.load()
-        return True
+                return _image_pixels(image)
     except (KeyError, UnidentifiedImageError, OSError, SyntaxError, ValueError, Image.DecompressionBombError, Image.DecompressionBombWarning):
-        return False
+        return None
+
+
+def _image_valid(image, media_type: str) -> bool:
+    return image.format == _image_formats.get(media_type) and getattr(image, "n_frames", 1) == 1 and _image_size_valid(image)
+
+
+def _image_pixels(image):
+    pixels = image.copy()
+    pixels.info.clear()
+    return pixels
+
+
+def _encode_image(image, media_type: str) -> bytes:
+    output = BytesIO()
+    image.save(output, format=_image_formats[media_type])
+    return output.getvalue()
 
 
 def _image_size_valid(image) -> bool:
@@ -299,7 +316,7 @@ class _ReportStructure(HTMLParser):
 _sections = ("Research question", "Conclusions", "Evidence and methods", "Limitations and gaps")
 _void_tags = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"}
 _MATHML = "http://www.w3.org/1998/Math/MathML"
-_MATH_ELEMENTS = {"math", "mrow", "mi", "mn", "mo", "mtext", "mspace", "msup", "msub", "msubsup", "mfrac", "msqrt", "mroot", "mover", "munder", "munderover", "mtable", "mtr", "mtd", "mstyle", "mpadded", "menclose"}
+_MATH_ELEMENTS = {"math", "mrow", "mi", "mn", "mo", "mtext", "mspace", "mphantom", "msup", "msub", "msubsup", "mfrac", "msqrt", "mroot", "mover", "munder", "munderover", "mtable", "mtr", "mtd", "mstyle", "mpadded", "menclose"}
 _MATH_ATTRIBUTES = {"display", "mathvariant", "mathsize", "mathcolor", "mathbackground", "scriptlevel", "displaystyle", "accent", "accentunder", "stretchy", "fence", "form", "separator", "lspace", "rspace", "symmetric", "largeop", "movablelimits", "minsize", "maxsize", "width", "height", "depth", "voffset", "linethickness", "bevelled", "numalign", "denomalign", "columnalign", "rowalign", "columnspacing", "rowspacing", "columnlines", "rowlines", "framespacing", "equalrows", "equalcolumns", "side", "minlabelspacing", "notation", "open", "close", "separators", "linebreak"}
 
 
@@ -307,7 +324,7 @@ def _safe_mathml(value: str) -> bool:
     if not isinstance(value, str) or "<!" in value or "<?" in value:
         return False
     root = ElementTree.fromstring(value)
-    return _math_tree_safe(root) and not any(_unsafe_math_value(text) for text in root.itertext())
+    return _math_tree_safe(root) and not any(_unsafe_math_text(text) for text in root.itertext())
 
 
 def _math_tree_safe(root) -> bool:
@@ -320,8 +337,12 @@ def _math_element_safe(element) -> bool:
 
 
 def _math_attribute_safe(key: str, value: str) -> bool:
-    return key in _MATH_ATTRIBUTES and not _unsafe_math_value(value)
+    return key in _MATH_ATTRIBUTES and not _unsafe_math_attribute(value)
 
 
-def _unsafe_math_value(value: str) -> bool:
+def _unsafe_math_text(value: str) -> bool:
+    return not isinstance(value, str) or re.search(r"(?i)\b[a-z][a-z0-9+.-]{1,31}://|\bwww\.|url\(", value) is not None
+
+
+def _unsafe_math_attribute(value: str) -> bool:
     return not isinstance(value, str) or ":" in value or "url(" in value.lower()

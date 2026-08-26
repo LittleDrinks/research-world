@@ -55,7 +55,7 @@ async function publishReport(threadId, title, setState, onRefresh) {
   try {
     const result = await publishThreadReport(threadId, { title });
     setState(resultState(result));
-    await refreshQuietly(onRefresh, setState);
+    if (result.status === "published") await refreshQuietly(onRefresh, setState);
   } catch (error) {
     setState({ ...emptyState(), error: [failureGap(error)] });
   }
@@ -65,9 +65,8 @@ async function publishReport(threadId, title, setState, onRefresh) {
 async function retryReport(threadId, title, previous, setState, onRefresh) {
   try {
     const result = await publishThreadReport(threadId, { title });
-    if (!onRefresh) return setState(resultState(result));
-    try { await onRefresh(); setState(previous); }
-    catch { setState({ ...resultState(result), refresh: "failed" }); }
+    setState(resultState(result));
+    if (result.status === "published") await refreshQuietly(onRefresh, setState);
   } catch (error) {
     setState({ ...previous, error: [failureGap(error)] });
   }

@@ -51,15 +51,6 @@ class ArtifactStore:
             raise ArtifactIntegrityError("size_mismatch", artifact_id)
         return content
 
-    def has_content(self, content: bytes) -> bool:
-        digest = hashlib.sha256(content).hexdigest()
-        return self._metadata_path(digest).exists()
-
-    def discard(self, artifact_id: str) -> None:
-        digest = self._digest(artifact_id)
-        for path in (self._metadata_path(digest), self._content_path(digest)):
-            path.unlink(missing_ok=True)
-
     @staticmethod
     def identifier(content: bytes) -> str:
         return f"artifact:{hashlib.sha256(content).hexdigest()}"

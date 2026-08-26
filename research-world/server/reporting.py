@@ -59,10 +59,10 @@ def _entropy(value: str) -> float:
 
 
 def evidence_kind(media_type) -> str | None:
-    if media_type == "text/plain" or isinstance(media_type, str) and media_type.startswith("text/x-"):
-        return "code"
     if media_type in {"application/x-latex", "text/x-tex"}:
         return "formula"
+    if media_type == "text/plain" or isinstance(media_type, str) and media_type.startswith("text/x-"):
+        return "code"
     return "chart" if media_type in {"image/png", "image/jpeg", "image/gif", "image/webp"} else None
 
 
