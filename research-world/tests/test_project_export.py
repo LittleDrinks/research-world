@@ -2,13 +2,25 @@ import asyncio
 import hashlib
 import json
 from io import BytesIO
+from pathlib import Path
 from zipfile import ZipFile
 
+import pytest
 from fastapi.testclient import TestClient
 
 from server.app import create_app
-from server.artifacts import ArtifactStore
+from server.artifacts import ArtifactIntegrityError, ArtifactStore
 from server.kernel import KernelQuery, ResearchKernel
+
+
+VALID_REPORT = (
+    b"<!doctype html><html><head><title>Report</title></head><body>"
+    b"<h1>Report</h1><h2>Research question</h2><p>Orbit?</p>"
+    b"<h2>Conclusions</h2><ul><li><a href=\"#evidence-source\">[Source]</a></li></ul>"
+    b"<h2>Evidence and methods</h2><table><tr><th>Source</th><th>Level</th><th>Checked</th></tr>"
+    b"<tr id=\"evidence-source\"><td>Source</td><td>published</td><td>2026-08-26</td></tr></table>"
+    b"<h2>Limitations and gaps</h2><p>No validated delivery gaps.</p></body></html>"
+)
 
 
 def inspect(kernel, query):
@@ -74,7 +86,7 @@ def add_pipeline_run(world, project, node):
 
 def add_report(world, project):
     thread = world.create_thread(project["id"], "Trace", "session:export", "agent")
-    artifact = artifact_store(world, project).add(b"<!doctype html><title>Report</title>", "text/html")
+    artifact = artifact_store(world, project).add(VALID_REPORT, "text/html")
     publication = world.publish_report(project["id"], thread["id"], "Report", artifact["id"])
     world.save_report(project["id"], thread["id"], "V1", publication["id"])
     return thread
@@ -128,6 +140,7 @@ def test_kernel_export_is_deterministic_and_complete(world, project, tmp_path):
 
 
 def test_kernel_export_manifest_checks_every_payload(world, project, tmp_path):
+    seed_export_state(world, project)
     archive = export_archive(export_kernel(world, tmp_path), project)
     files, digest_map = archive_files(archive), checksums(archive)
     paths = [entry["path"] for entry in manifest(archive)["files"]]
@@ -139,6 +152,7 @@ def test_kernel_export_manifest_checks_every_payload(world, project, tmp_path):
 
 
 def test_kernel_export_redacts_credentials_paths_and_temporary_files(world, project, tmp_path):
+    seed_export_state(world, project)
     archive = export_archive(export_kernel(world, tmp_path), project)
     names = archive_files(archive)
     assert b"export-secret" not in archive
@@ -148,9 +162,90 @@ def test_kernel_export_redacts_credentials_paths_and_temporary_files(world, proj
 
 
 def test_export_http_downloads_the_kernel_archive(world, project, tmp_path):
+    seed_export_state(world, project)
     kernel = export_kernel(world, tmp_path)
     response = TestClient(create_app(kernel)).get(f"/api/v1/projects/{project['id']}/export")
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/zip")
     assert response.headers["content-disposition"] == 'attachment; filename="project-export.zip"'
     assert response.content == export_archive(kernel, project)
+
+
+def test_kernel_export_rejects_tampered_unreferenced_artifact(world, project, tmp_path):
+    state = seed_export_state(world, project)
+    Path(state["artifacts"]["measurement"]["path"]).write_bytes(b"tampered")
+
+    with pytest.raises(ArtifactIntegrityError) as captured:
+        export_archive(export_kernel(world, tmp_path), project)
+
+    assert captured.value.code == "content_hash_mismatch"
+    assert captured.value.artifact_id == state["artifacts"]["measurement"]["id"]
+
+
+@pytest.mark.parametrize("content,media_type", [
+    (b"not a report", "text/html"),
+    (VALID_REPORT.replace(b"Orbit?", b"sk-abcdefghijklmnopqrstuvwxyz"), "text/html"),
+    (VALID_REPORT, "text/plain"),
+])
+def test_kernel_export_rejects_claimed_invalid_published_report(world, project, tmp_path, content, media_type):
+    thread = world.create_thread(project["id"], "Trace", "session:invalid-report", "agent")
+    artifact = artifact_store(world, project).add(content, media_type)
+    world.publish_report(project["id"], thread["id"], "Report", artifact["id"])
+    bibtex = artifact_store(world, project).add(valid_bibtex().encode(), "application/x-bibtex")
+    world.create_node(project["id"], "source", {"artifact_ids": [bibtex["id"]]}, life_state="admitted")
+
+    with pytest.raises(ValueError, match="published report"):
+        export_archive(export_kernel(world, tmp_path), project)
+
+
+def test_kernel_export_requires_a_valid_bibtex_entry(world, project, tmp_path):
+    with pytest.raises(ValueError, match="at least one valid BibTeX entry"):
+        export_archive(export_kernel(world, tmp_path), project)
+
+
+@pytest.mark.parametrize("value", [
+    "file:///home/research/result.txt",
+    "https://example.test/download?key=plain-secret&keep=yes",
+    "standalone sk-abcdefghijklmnopqrstuvwxyz",
+])
+def test_kernel_export_redacts_uri_query_and_standalone_secrets(world, project, tmp_path, value):
+    seed_export_state(world, project)
+    world.create_node(project["id"], "experiment", {"note": value}, life_state="admitted")
+
+    archive = export_archive(export_kernel(world, tmp_path), project)
+
+    assert value.encode() not in archive
+
+
+def test_kernel_export_redacts_secrets_in_serialized_structures(world, project, tmp_path):
+    seed_export_state(world, project)
+    world.create_node(project["id"], "experiment", {"encoded": '{"token":"serialized-secret","safe":"kept"}'}, life_state="admitted")
+
+    archive = export_archive(export_kernel(world, tmp_path), project)
+
+    assert b"serialized-secret" not in archive
+    assert b'\\"safe\\":\\"kept\\"' in archive
+
+
+def test_kernel_export_stays_within_requested_project_scope(world, project, tmp_path):
+    state = seed_export_state(world, project)
+    other = world.create_project("other", tmp_path / "other", "Foreign question")
+    foreign = ArtifactStore(world.artifacts_root, other["id"]).add(b"foreign-only", "text/plain")
+    world.create_node(other["id"], "direction", {"text": "foreign-only"}, life_state="admitted")
+
+    archive = export_archive(export_kernel(world, tmp_path), project)
+
+    assert state["artifacts"]["measurement"]["id"].encode() in archive
+    assert foreign["id"].encode() not in archive
+    assert other["id"].encode() not in archive
+    assert b"foreign-only" not in archive
+
+
+def test_kernel_export_rejects_foreign_artifact_reference(world, project, tmp_path):
+    other = world.create_project("other", tmp_path / "other", "Foreign question")
+    foreign = ArtifactStore(world.artifacts_root, other["id"]).add(b"foreign-only", "text/plain")
+    seed_export_state(world, project)
+    world.create_node(project["id"], "experiment", {"artifact_ids": [foreign["id"]]}, life_state="admitted")
+
+    with pytest.raises(ValueError, match="outside project scope"):
+        export_archive(export_kernel(world, tmp_path), project)

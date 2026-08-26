@@ -12,6 +12,7 @@ from pybtex.database import parse_string
 from pybtex.exceptions import PybtexError
 
 from .artifacts import ArtifactStore
+from .report_delivery import validate_html
 from .reporting import safe_artifact_id
 
 
@@ -19,15 +20,18 @@ FORMAT = "research-world-project-export/v1"
 REDACTED = "[redacted]"
 MAX_DEPTH = 16
 MAX_ITEMS = 10000
-_CREDENTIAL = re.compile(r"(?i)\b(?:api[\W_]*key|client[\W_]*secret|secret|token|password|credential|authorization|baseurl|endpoint|dsn)\b\s*[:=]\s*(?:bearer|basic)?\s*[^\s,;]+")
+_CREDENTIAL = re.compile(r"(?i)\b(?:[a-z][a-z0-9_]*(?:key|token|secret|password|credential|authorization)|api[\W_]*key|client[\W_]*secret|baseurl|endpoint|dsn)\b\s*[:=]\s*(?:bearer|basic)?\s*[^\s,;]+")
 _BEARER = re.compile(r"(?i)\b(?:bearer|basic)\s+[^\s,;]+")
+_KNOWN_SECRET = re.compile(r"(?i)\b(?:gh[pousr]_[A-Za-z0-9_]{8,}|AKIA[0-9A-Z]{16}|(?:sk|rk|pk)-[A-Za-z0-9_-]{8,}|xox[baprs]-[A-Za-z0-9-]{8,})\b")
 _UNIX_PATH = re.compile(r"(?<![A-Za-z0-9:<])/(?:[^\s\"']+)")
 _WINDOWS_PATH = re.compile(r"\b[A-Za-z]:[\\/]")
 _URI = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s\"'<>]+")
 _URI_USERINFO = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s/@]+:[^\s/@]+@")
+_FILE_URI = re.compile(r"(?i)\bfile:(?:/{1,3}|[a-z]:[\\/]|\\\\)")
 _TEMPORARY = re.compile(r"(?i)\b[^\s/\\]+\.(?:tmp|temp|swp)\b")
 _SENSITIVE_KEY = re.compile(r"(?i)(?:api[\W_]*key|secret|token|password|credential|authorization|cookie|dsn|baseurl|endpoint|continuation)")
 _PATH_KEYS = {"path", "root", "workspace", "cwd", "home", "codex_home", "runtime_binding", "provider_session_id"}
+_QUERY_SECRET_KEYS = {"key", "apikey", "accesskey", "accesstoken", "auth", "authtoken", "authorization", "clientsecret", "credential", "password", "secret", "signature", "sig", "token", "xapikey"}
 
 
 async def export_project(world, runtime, project_id: str) -> bytes:
@@ -35,7 +39,7 @@ async def export_project(world, runtime, project_id: str) -> bytes:
     nodes = sorted(world.nodes(project_id), key=lambda item: item["id"])
     threads = sorted(world.project_threads(project_id), key=lambda item: item["id"])
     store = ArtifactStore(world.artifacts_root, project_id)
-    artifacts = store.records()
+    artifacts = _verified_artifacts(store)
     traces = await _traces(runtime, threads)
     reports, report_files = _reports(world, threads, store)
     snapshot = _snapshot(world, project, nodes, traces, reports)
@@ -105,11 +109,7 @@ def _thread_records(world, threads, reader):
 
 
 def _report_files(store, publications):
-    return {
-        _report_member(record): content
-        for record in publications
-        if (content := _report_content(store, record["artifact_id"])) is not None
-    }
+    return {_report_member(record): _report_content(store, record["artifact_id"]) for record in publications}
 
 
 def _report_member(record):
@@ -119,22 +119,27 @@ def _report_member(record):
 def _report_content(store, artifact_id):
     record = store.get(artifact_id)
     if record["media_type"] != "text/html":
-        return None
+        raise ValueError("project export contains invalid published report")
     content = store.read(artifact_id)
-    return content if _safe_document(content) else None
+    if not _safe_document(content):
+        raise ValueError("project export contains unsafe published report")
+    return content
 
 
 def _safe_document(content):
     try:
-        text = content.decode("utf-8")
+        content.decode("utf-8")
     except UnicodeDecodeError:
         return False
-    return _clean_text(text) == text
+    return not validate_html(content)
 
 
 def _bibtex(store, nodes):
     entries = [_bibtex_entry(store, artifact_id) for artifact_id in _source_artifacts(nodes)]
-    return "\n".join(entry for entry in entries if entry).encode("utf-8")
+    valid = [entry for entry in entries if entry]
+    if not valid:
+        raise ValueError("project export requires at least one valid BibTeX entry")
+    return "\n".join(valid).encode("utf-8")
 
 
 def _source_artifacts(nodes):
@@ -154,9 +159,11 @@ def _bibtex_entry(store, artifact_id):
         return ""
     try:
         text = store.read(artifact_id).decode("utf-8")
-        parse_string(text, "bibtex")
+        bibliography = parse_string(text, "bibtex")
     except (PybtexError, UnicodeDecodeError) as error:
         raise ValueError("project export contains invalid BibTeX") from error
+    if not bibliography.entries:
+        raise ValueError("project export contains no valid BibTeX entries")
     if _clean_text(text) != text:
         raise ValueError("project export contains unsafe BibTeX")
     return text
@@ -198,11 +205,18 @@ def _artifact_metadata(record):
     return {
         "id": record["id"],
         "sha256": record["sha256"],
-        "media_type": _clean_text(record["media_type"]),
-        "size": record["size"],
-        "created_at": record["created_at"],
+        "media_type": _clean(record["media_type"]),
+        "size": _clean(record["size"]),
+        "created_at": _clean(record["created_at"]),
         "omitted": "raw_content",
     }
+
+
+def _verified_artifacts(store):
+    records = store.records()
+    for record in records:
+        store.read(record["id"])
+    return records
 
 
 def _validate_references(snapshot, artifacts):
@@ -258,11 +272,23 @@ def _safe_key(key):
 
 
 def _clean_text(value):
-    return REDACTED if _unsafe_text(value) else value
+    if _unsafe_text(value):
+        return REDACTED
+    return _clean_serialized(value)
+
+
+def _clean_serialized(value):
+    if not value.lstrip().startswith(("{", "[")):
+        return value
+    try:
+        parsed = json.loads(value)
+    except (json.JSONDecodeError, RecursionError):
+        return value
+    return _json(_clean(parsed)).decode("utf-8")
 
 
 def _unsafe_text(value):
-    return bool(_CREDENTIAL.search(value) or _BEARER.search(value) or _temporary(value) or _absolute_path(value) or _uri_secret(value))
+    return bool(_CREDENTIAL.search(value) or _BEARER.search(value) or _KNOWN_SECRET.search(value) or _FILE_URI.search(value) or _temporary(value) or _absolute_path(value) or _uri_secret(value))
 
 
 def _temporary(value):
@@ -289,7 +315,12 @@ def _parsed_uri_secret(value):
 
 
 def _query_secret(query):
-    return any(_hidden_key(key) for key, _value in parse_qsl(query, keep_blank_values=True))
+    return any(_query_key(key) for key, _value in parse_qsl(query, keep_blank_values=True))
+
+
+def _query_key(key):
+    normalized = re.sub(r"[^a-z0-9]", "", key.lower())
+    return normalized in _QUERY_SECRET_KEYS or _hidden_key(key)
 
 
 def _manifest(project_id, files):
