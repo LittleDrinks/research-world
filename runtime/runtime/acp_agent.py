@@ -144,8 +144,7 @@ async def _async_value(value):
 
 
 def _default_spec(runtime: Runtime):
-    selected = runtime.runtimes.default().descriptor
-    endpoint = runtime.default_endpoint(selected)
+    selected, endpoint = runtime.default_agent()
     return {
         "id": "default",
         "name": "Research Assistant",

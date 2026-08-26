@@ -236,11 +236,23 @@ def _version_status(version: str) -> tuple[str, str, dict[str, str] | None]:
 async def _collect(process, prompt: str, emit: Emit, timeout: float) -> ModelResult:
     stdout = await _stdout(process, prompt, timeout)
     events = _events(stdout)
+    thread_id = _thread_id(events)
+    events = _redact_thread(events, thread_id)
     text = _agent_text(events)
     if text:
         await emit(text)
     return ModelResult({"role": "assistant", "content": text}, _usage(events),
-                       _thread_id(events), _trace_items(events))
+                       thread_id, _trace_items(events))
+
+
+def _redact_thread(value, thread_id):
+    if not thread_id:
+        return value
+    if isinstance(value, dict):
+        return {key: _redact_thread(item, thread_id) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_redact_thread(item, thread_id) for item in value]
+    return value.replace(thread_id, "<redacted>") if isinstance(value, str) else value
 
 
 async def _stdout(process, prompt: str, timeout: float) -> bytes:

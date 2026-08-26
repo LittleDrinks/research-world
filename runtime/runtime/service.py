@@ -127,15 +127,26 @@ class Runtime:
 
     def default_endpoint(self, descriptor) -> Endpoint:
         adapter = self.runtimes.require(descriptor)
-        endpoint = next(
-            (item for item in self.endpoints.values()
-             if item.models and adapter.accepts(item)
-             and (isinstance(adapter, CodexRuntimeAdapter)
-                  or item.public()["available"])), None
-        )
+        endpoint = next(self._eligible_endpoints(adapter), None)
         if endpoint is None:
             raise CapabilityNotFound("no model endpoint is available for runtime")
         return endpoint
+
+    def default_agent(self) -> tuple:
+        pair = next(
+            ((adapter.descriptor, endpoint) for adapter in self.runtimes.values()
+             if adapter.descriptor.status == "ready"
+             for endpoint in self._eligible_endpoints(adapter)), None
+        )
+        if pair is None:
+            raise CapabilityNotFound("no model endpoint is available for runtime")
+        return pair
+
+    def _eligible_endpoints(self, adapter):
+        return (item for item in self.endpoints.values() if item.models
+                and adapter.accepts(item)
+                and (isinstance(adapter, CodexRuntimeAdapter)
+                     or item.public()["available"]))
 
     def cancel(self, session_id: str) -> None:
         active = self._active_turns.get(session_id)
@@ -150,6 +161,7 @@ class Runtime:
         _session_spec(events)
         self.trace.remember_continuations(session_id, self.state.read(session_id).get("provider_session_id"))
         binding = self._binding(session_id)
+        _require_executable_identity(self.state.read(session_id), binding.adapter)
         spec, meta = binding.spec, events[0]["data"]
         turn_id = f"t-{uuid.uuid4().hex}"
         self._begin_turn(session_id, turn_id, blocks, binding.adapter)
@@ -263,6 +275,9 @@ class Runtime:
     def _finish(self, session_id, turn_id, status, result, usage, provider_session_id=None):
         if (session_id, turn_id) in self._cancelled:
             status = "cancelled"
+        usage = _empty_usage() if status == "cancelled" else {
+            key: usage.get(key, 0) for key in _empty_usage()
+        }
         self._cancelled.discard((session_id, turn_id))
         self.trace.append(
             session_id,
@@ -283,7 +298,7 @@ class Runtime:
         message = {"code": _error_code(error), "message": str(error)}
         self.trace.append(session_id, "error", message, turn_id)
         self.trace.append(
-            session_id, "turn_end", {"status": "error", "result_text": None}, turn_id
+            session_id, "turn_end", {"status": "error", "result_text": None, "usage": _empty_usage()}, turn_id
         )
 
     def _events(self, session_id):

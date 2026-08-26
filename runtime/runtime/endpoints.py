@@ -93,21 +93,6 @@ class EndpointPool:
             raise CapabilityNotFound("no model endpoint is available")
         return endpoint
 
-    def default_for(self, adapter: str) -> Endpoint:
-        endpoint = next(
-            (
-                item
-                for item in self._ordered()
-                if item.adapter == adapter
-                and item.public()["available"]
-                and item.models
-            ),
-            None,
-        )
-        if endpoint is None:
-            raise CapabilityNotFound("no model endpoint is available for runtime")
-        return endpoint
-
     async def embed(self, endpoint_id: str, model: str, texts: list[str]):
         endpoint = self.require_embedding(endpoint_id, model)
         return await endpoint.provider.embed(model, texts)

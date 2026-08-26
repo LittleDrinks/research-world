@@ -85,7 +85,6 @@ def test_duplicate_runtime_identity_is_rejected(tmp_path):
 
 def test_default_spec_selects_runtime_before_endpoint(tmp_path):
     provider = FakeProvider([])
-    provider.id = "codex"
     runtime = Runtime(
         tmp_path / "data", [endpoint(provider)],
         runtimes=[RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM))],
@@ -115,6 +114,14 @@ async def test_codex_rejects_incompatible_declared_endpoint_adapter(tmp_path):
 
     with pytest.raises(CapabilityNotFound, match="endpoint is not available"):
         await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec(runtime={"id": "codex", "realm": REALM}, endpoint="foreign", model="gpt")})
+
+
+async def test_generic_rejects_foreign_declared_endpoint_adapter(tmp_path):
+    foreign = Endpoint("foreign", "Foreign", "foreign", ("gpt",), (), 1, None, available=True)
+    runtime = Runtime(tmp_path / "data", [foreign])
+
+    with pytest.raises(CapabilityNotFound, match="endpoint is not available"):
+        await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec(endpoint="foreign", model="gpt")})
 
 
 async def test_public_usage_has_only_official_counters(tmp_path, monkeypatch):

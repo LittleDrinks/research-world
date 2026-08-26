@@ -16,6 +16,7 @@ from runtime.endpoints import Endpoint
 from runtime.runtimes import CodexRuntimeAdapter
 from runtime.service import Runtime
 from runtime.tools import ToolBox
+from runtime.types import CapabilityNotFound
 from tests.helpers import FakeProvider, endpoint
 from tests.test_codex import ready_provider
 
@@ -59,6 +60,31 @@ async def test_acp_default_codex_uses_declared_credentialless_endpoint(tmp_path,
     response = await RuntimeAgent(runtime).new_session(str(tmp_path))
 
     assert runtime.state.read(response.session_id)["agent_spec"]["endpoint"] == "chat"
+
+
+async def test_acp_default_uses_codex_when_generic_endpoint_is_credentialless(tmp_path, monkeypatch):
+    home = tmp_path / "codex"
+    home.mkdir()
+    (home / "auth.json").write_text('{"token":"test"}')
+    monkeypatch.setenv("CODEX_HOME", str(home))
+    monkeypatch.setattr("runtime.runtimes.CodexProvider.detected", lambda: ready_provider())
+    chat = Endpoint("chat", "Chat", "openai-compatible", ("gpt",), (), 1, None)
+    runtime = Runtime(tmp_path / "data", [chat])
+
+    response = await RuntimeAgent(runtime).new_session(str(tmp_path))
+
+    spec = runtime.state.read(response.session_id)["agent_spec"]
+    assert spec["runtime"]["id"] == "codex"
+    assert (spec["endpoint"], spec["model"]) == ("chat", "gpt")
+
+
+async def test_acp_default_fails_when_catalog_has_no_eligible_pair(tmp_path, monkeypatch):
+    monkeypatch.setattr("runtime.runtimes.CodexProvider.detected", lambda: ready_provider())
+    foreign = Endpoint("foreign", "Foreign", "foreign", ("gpt",), (), 1, None, available=True)
+    runtime = Runtime(tmp_path / "data", [foreign])
+
+    with pytest.raises(CapabilityNotFound, match="no model endpoint"):
+        await RuntimeAgent(runtime).new_session(str(tmp_path))
 
 
 def _resource_runtime(path, monkeypatch):

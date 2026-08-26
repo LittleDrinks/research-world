@@ -47,7 +47,8 @@ class RuntimeAdapter:
 
     def accepts(self, endpoint) -> bool:
         endpoint_id = endpoint["id"] if isinstance(endpoint, dict) else endpoint.id
-        return endpoint_id in self.endpoint_ids
+        adapter = endpoint["adapter"] if isinstance(endpoint, dict) else endpoint.adapter
+        return adapter == self.descriptor.id and endpoint_id in self.endpoint_ids
 
     @property
     def owns_process(self) -> bool:
@@ -134,11 +135,8 @@ class RuntimePool:
             raise CapabilityNotFound(f"runtime is not available: {value.id}")
         return adapter
 
-    def default(self) -> RuntimeAdapter:
-        adapter = next(iter(self._values.values()), None)
-        if adapter is None:
-            raise CapabilityNotFound("no runtime is available")
-        return adapter
+    def values(self) -> list[RuntimeAdapter]:
+        return list(self._values.values())
 
 
 def load_runtimes() -> list[RuntimeAdapter]:

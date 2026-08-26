@@ -291,6 +291,44 @@ async def test_collect_normalizes_jsonl_into_model_result():
     assert emitted == ["answer"]
 
 
+async def test_collect_redacts_thread_id_before_public_results():
+    process = Process(
+        b'{"type":"thread.started","thread_id":"secret-thread"}\n'
+        b'{"type":"turn.started"}\n'
+        b'{"type":"item.completed","item":{"id":"i1","type":"agent_message","text":"secret-thread remains hidden"}}\n'
+        b'{"type":"turn.completed","usage":{"input_tokens":3,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":2,"reasoning_output_tokens":0}}\n'
+    )
+    emitted = []
+
+    async def emit(text):
+        emitted.append(text)
+
+    result = await _collect(process, "prompt", emit, 1)
+
+    assert result.provider_session_id == "secret-thread"
+    assert "secret-thread" not in str((result.message, result.provider_items, emitted))
+    assert "remains hidden" in result.message["content"]
+
+
+async def test_runtime_never_persists_or_projects_collected_thread_id(monkeypatch, tmp_path):
+    stream = (
+        b'{"type":"thread.started","thread_id":"secret-thread"}\n'
+        b'{"type":"turn.started"}\n'
+        b'{"type":"item.completed","item":{"id":"i1","type":"agent_message","text":"secret-thread remains visible"}}\n'
+        + _usage_line()
+    )
+    provider = ready_provider()
+    monkeypatch.setattr(provider, "start", lambda *_: _process(Process(stream)))
+    runtime = codex_runtime(tmp_path, provider)
+    session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
+
+    result = await runtime.prompt(session, [{"type": "text", "text": "one"}])
+    raw, view = runtime.trace.path(session).read_text(), runtime.inspect(session)
+
+    assert "secret-thread" not in str((result, raw, view))
+    assert "remains visible" in result["result_text"]
+
+
 async def test_runtime_trace_preserves_all_codex_usage_counters(monkeypatch, tmp_path):
     provider = ready_provider()
     monkeypatch.setattr(provider, "start", lambda *_: _process(Process(_usage_stream())))
@@ -473,9 +511,13 @@ async def test_cancel_terminates_active_process(monkeypatch, tmp_path):
     task, session = await _active_task(runtime, tmp_path, started)
     runtime.cancel(session)
     release.set()
-    assert (await task)["status"] == "cancelled"
+    result = await task
+    assert result["status"] == "cancelled"
+    assert result["usage"] == _usage_values(0, 0, 0, 0, 0)
     assert process.terminated
-    assert runtime.inspect(session)["turns"][-1]["status"] == "cancelled"
+    turn = runtime.inspect(session)["turns"][-1]
+    assert turn["status"] == "cancelled"
+    assert turn["events"][-1]["data"]["usage"] == _usage_values(0, 0, 0, 0, 0)
     assert not runtime.runtimes._values[("codex", REALM)]._processes
 
 
@@ -845,6 +887,18 @@ async def test_launch_binding_ignores_adapter_replacement(monkeypatch, tmp_path)
     session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
     runtime.runtimes._values[("codex", REALM)] = CodexRuntimeAdapter(replacement)
     assert (await runtime.prompt(session, [{"type": "text", "text": "one"}]))["status"] == "completed"
+
+
+async def test_cached_binding_rechecks_executable_identity(monkeypatch, tmp_path):
+    provider = ready_provider()
+    monkeypatch.setattr(provider, "start", lambda *_: _process(_completed_process()))
+    runtime = codex_runtime(tmp_path, provider)
+    session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
+    await runtime.prompt(session, [{"type": "text", "text": "one"}])
+    runtime.state.update(session, {"runtime_binding": "different"})
+
+    with pytest.raises(RuntimeError, match="persisted runtime executable"):
+        await runtime.prompt(session, [{"type": "text", "text": "two"}])
 
 
 async def test_caller_cancellation_during_start_stops_created_process(monkeypatch, tmp_path):
