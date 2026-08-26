@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import math
 import secrets
 from dataclasses import dataclass, field
 from inspect import isawaitable
@@ -12,15 +14,24 @@ from .admission import (
     AdmissionPolicy,
     AdmissionVerdict,
     PendingAdmissionPolicy,
-    claim_id,
     validate_claims,
     validate_project_claim_ids,
 )
-from .artifacts import ArtifactStore
+from .artifacts import ArtifactIntegrityError, ArtifactStore
 from .observations import observation_submission
 from .presets import agent_draft, require_tools_ready
-from .report_delivery import render_html, validate_html
-from .reporting import assess_delivery
+from .report_delivery import MAX_EVIDENCE_BYTES, artifact_display, render_html, validate_html
+from .reporting import (
+    REPORT_INPUT_TOKEN_BUDGET,
+    assess_delivery,
+    blocked_projection,
+    evidence_kind,
+    normalized_checked_at,
+    projection_envelope,
+    safe_artifact_id,
+    safe_narrative,
+    safe_node_id,
+)
 from .world import World, node_text
 
 
@@ -169,12 +180,23 @@ class ResearchKernel:
         project_id = thread["project_id"]
         return self._publish_report(project_id, thread["id"], values["title"])
 
+    def _command_runtime_publish_report(self, command: KernelCommand) -> dict:
+        _validate_fields(command.values, {"session_id", "title"}, {"session_id", "title"})
+        project_id = _project_id(command)
+        thread = self._world.thread_for_session(command.values["session_id"])
+        if thread["project_id"] != project_id:
+            raise PermissionError("runtime session belongs to another project")
+        return self._publish_report(project_id, thread["id"], command.values["title"])
+
     def _publish_report(self, project_id: str, thread_id: str, title: str) -> dict:
-        projection = self._report_projection(project_id)
+        envelope = self._publication_projection(project_id)
+        if envelope["status"] == "blocked":
+            return _publication_failure("projection", [], _blocked_assessment(envelope))
+        projection = envelope["projection"]
         stages = [{"name": "projection", "status": "completed"}]
         assessment = assess_delivery(projection)
         if not assessment["valid"]:
-            return _publication_failure(stages, assessment)
+            return _publication_failure("citation_validation", stages, assessment)
         stages.append({"name": "citation_validation", "status": "completed"})
         return self._render_publication(project_id, thread_id, title, projection, assessment, stages)
 
@@ -183,7 +205,7 @@ class ResearchKernel:
         stages.append({"name": "rendering", "status": "completed"})
         gaps = validate_html(content)
         if gaps:
-            return _publication_failure(stages, {**assessment, "valid": False, "gaps": gaps})
+            return _publication_failure("output_validation", stages, {**assessment, "valid": False, "gaps": gaps})
         stages.append({"name": "output_validation", "status": "completed"})
         artifact = ArtifactStore(self._world.artifacts_root, project_id).add(content, "text/html")
         publication = self._world.publish_report(project_id, thread_id, title, artifact["id"])
@@ -343,7 +365,8 @@ class ResearchKernel:
 
     def _query_report_validate(self, query: KernelQuery) -> dict:
         _validate_fields(query.values, set(), set())
-        return assess_delivery(self._report_projection(_project_id(query)))
+        envelope = self._publication_projection(_project_id(query))
+        return assess_delivery(envelope["projection"]) if envelope["status"] == "ready" else _blocked_assessment(envelope)
 
     def _query_report_bibtex(self, query: KernelQuery) -> dict:
         _validate_fields(query.values, {"artifact_id"}, {"artifact_id"})
@@ -452,21 +475,42 @@ class ResearchKernel:
         return _bootstrap_value(self, project_id, projects, runs)
 
     def _report_projection(self, project_id: str) -> dict:
-        nodes = [
-            node
-            for node in self._world.nodes(project_id)
-            if node["life_state"] == "admitted"
-        ]
+        return self._public_report_projection(*self._report_inputs(project_id))
+
+    def _publication_projection(self, project_id: str) -> dict:
+        project, nodes = self._report_inputs(project_id)
+        envelope = self._public_report_projection(project, nodes)
+        if envelope["status"] == "blocked":
+            return envelope
+        artifacts = self._publication_artifacts(project["id"], envelope["projection"]["artifacts"])
+        return {**envelope, "projection": {**envelope["projection"], "artifacts": artifacts}}
+
+    def _public_report_projection(self, project: dict, nodes: list[dict]) -> dict:
+        tokens = _report_input_upper_bound(project, nodes)
+        if tokens > REPORT_INPUT_TOKEN_BUDGET:
+            return blocked_projection(tokens)
+        return projection_envelope(self._report_view(project, nodes))
+
+    def _report_inputs(self, project_id: str) -> tuple[dict, list[dict]]:
+        nodes = [node for node in self._world.nodes(project_id) if node["life_state"] == "admitted"]
+        return self._world.project(project_id), nodes
+
+    def _report_view(self, project: dict, nodes: list[dict]) -> dict:
         claims = _report_claims(nodes)
         facts = [_claim_fact(claim) for claim in claims if claim["verdict"] == "supported"]
         sources = _report_sources(nodes, facts)
-        artifacts = self._report_artifacts(project_id, facts)
-        return {"facts": facts, "claims": claims, "sources": sources, "artifacts": artifacts}
+        artifacts = self._report_artifacts(project["id"], claims)
+        question = safe_narrative(project["question"])
+        return {"question": question, "facts": facts, "claims": claims, "sources": sources, "artifacts": artifacts}
 
-    def _report_artifacts(self, project_id: str, facts: list[dict]) -> list[dict]:
-        links = _artifact_links(facts)
+    def _publication_artifacts(self, project_id: str, artifacts: list[dict]) -> list[dict]:
         store = ArtifactStore(self._world.artifacts_root, project_id)
-        return [_report_artifact(store.get(artifact_id), links[artifact_id]) for artifact_id in sorted(links)]
+        return [_publication_artifact(store, artifact) for artifact in artifacts]
+
+    def _report_artifacts(self, project_id: str, claims: list[dict]) -> list[dict]:
+        links = _artifact_links(claims)
+        store = ArtifactStore(self._world.artifacts_root, project_id)
+        return [_report_artifact(store, artifact_id, links[artifact_id]) for artifact_id in sorted(links)]
 
     def _source_artifact_ids(self, project_id: str) -> set[str]:
         sources = [
@@ -539,9 +583,16 @@ def _project_id(value) -> str:
 
 
 def _report_title(value) -> str:
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError("report title must be non-empty text")
-    return value.strip()
+    title = safe_narrative(value)
+    if title is None:
+        raise ValueError("report title must be safe non-empty text")
+    return title
+
+
+def _report_input_upper_bound(project: dict, nodes: list[dict]) -> int:
+    values = [project.get("question"), *({"id": node["id"], "kind": node["kind"], "payload": node["payload"]} for node in nodes)]
+    size = sum(len(json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")) for value in values)
+    return math.ceil(size / 4)
 
 
 def _validate_project(value: dict) -> None:
@@ -660,16 +711,23 @@ def _report_claims(nodes: list[dict]) -> list[dict]:
 
 
 def _claim_record(node: dict, ordinal: int, claim: dict, index: dict) -> dict:
-    evidence = [index[item] for item in claim.get("evidence", []) if item in index]
+    evidence = [_claim_evidence(index[item]) for item in claim.get("evidence", []) if item in index]
+    evidence = [item for item in evidence if item is not None]
     return {
-        "id": claim_id(node, ordinal, claim),
-        "text": claim["text"],
+        "id": _report_claim_id(node["id"], ordinal),
+        "text": safe_narrative(claim["text"]),
         "life_state": node["life_state"],
         "verdict": claim["verdict"],
+        "evidence": evidence,
         "evidence_ids": [item["id"] for item in evidence],
         "source_ids": [item["id"] for item in evidence if item["kind"] == "source"],
-        "artifact_ids": sorted({artifact for item in evidence for artifact in _direct_artifact_ids(item)}),
+        "artifact_ids": sorted({artifact for item in evidence for artifact in item["artifact_ids"]}),
     }
+
+
+def _report_claim_id(node_id: str, ordinal: int) -> str | None:
+    node = safe_node_id(node_id)
+    return f"claim:{node.removeprefix('node:')}:{ordinal}" if node else None
 
 
 def _claim_fact(claim: dict) -> dict:
@@ -688,29 +746,81 @@ def _report_sources(nodes: list[dict], facts: list[dict]) -> list[dict]:
 
 def _safe_source(node: dict) -> dict:
     payload = node["payload"]
-    return {"id": node["id"], "title": payload.get("title"), "source_level": payload.get("source_level"), "checked_at": payload.get("checked_at"), "anchor": f"source-{node['id']}"}
+    level = payload.get("source_level")
+    return {"id": safe_node_id(node["id"]), "title": safe_narrative(payload.get("title")), "source_level": level if level in {"preprint", "conference", "published", "primary_data"} else None, "checked_at": normalized_checked_at(payload.get("checked_at"))}
 
 
-def _artifact_links(facts: list[dict]) -> dict[str, dict]:
+def _claim_evidence(node: dict) -> dict | None:
+    if node["kind"] not in {"source", "experiment"}:
+        return None
+    return {"id": safe_node_id(node["id"]), "kind": node["kind"], "artifact_ids": _direct_artifact_ids(node)}
+
+
+def _artifact_links(claims: list[dict]) -> dict[str, list[dict]]:
     links = {}
-    for fact in facts:
-        for artifact in fact["artifact_ids"]:
-            links.setdefault(artifact, {"claim_ids": [], "source_ids": []})["claim_ids"].append(fact["claim_id"])
-            links[artifact]["source_ids"].extend(fact["source_ids"])
+    for claim in claims:
+        if claim["verdict"] == "supported":
+            _add_claim_links(links, claim)
     return links
 
 
-def _report_artifact(record: dict, links: dict) -> dict:
-    return {"id": record["id"], "media_type": record["media_type"], "size": record["size"], "anchor": f"artifact-{record['id']}", **links}
+def _add_claim_links(links: dict, claim: dict) -> None:
+    for evidence in claim["evidence"]:
+        for artifact_id in evidence["artifact_ids"]:
+            link = _artifact_link(claim, evidence)
+            if link is not None:
+                links.setdefault(artifact_id, []).append(link)
 
 
-def _publication_failure(stages: list[dict], assessment: dict) -> dict:
-    return {"status": "failed", "assessment": assessment, "stages": stages}
+def _artifact_link(claim: dict, evidence: dict) -> dict | None:
+    if not claim["id"] or not evidence["id"]:
+        return None
+    link = {"claim_id": claim["id"], "evidence_id": evidence["id"]}
+    return {**link, "source_id": evidence["id"]} if evidence["kind"] == "source" else link
+
+
+def _report_artifact(store, artifact_id: str, links: list[dict]) -> dict:
+    try:
+        record = store.get(artifact_id)
+    except (ArtifactIntegrityError, KeyError, OSError):
+        record = {}
+    return {"id": safe_artifact_id(record.get("id")), "kind": evidence_kind(record.get("media_type")), "size": record.get("size") if isinstance(record.get("size"), int) else None, "links": links}
+
+
+def _publication_artifact(store, artifact: dict) -> dict:
+    try:
+        record = store.get(artifact["id"])
+        display = _artifact_display(store, record, artifact)
+    except (ArtifactIntegrityError, KeyError, OSError, TypeError):
+        display = {"kind": "invalid"}
+    return {**artifact, "display": display}
+
+
+def _artifact_display(store, record: dict, artifact: dict) -> dict:
+    if not _artifact_record_matches(record, artifact):
+        return {"kind": "invalid"}
+    try:
+        return artifact_display(record, store.read(record["id"]))
+    except (ArtifactIntegrityError, KeyError, OSError):
+        return {"kind": "invalid"}
+
+
+def _artifact_record_matches(record: dict, artifact: dict) -> bool:
+    checks = (record.get("id") == artifact.get("id"), evidence_kind(record.get("media_type")) == artifact.get("kind"), record.get("size") == artifact.get("size"), isinstance(record.get("size"), int) and record["size"] <= MAX_EVIDENCE_BYTES)
+    return all(checks)
+
+
+def _blocked_assessment(envelope: dict) -> dict:
+    return {"valid": False, "delivery_level": 0, "accepted_facts": [], "minimum_source_level": None, "gaps": envelope["gaps"], "contract": envelope["contract"]}
+
+
+def _publication_failure(stage: str, stages: list[dict], assessment: dict) -> dict:
+    return {"status": "failed", "assessment": assessment, "stages": [*stages, {"name": stage, "status": "failed"}]}
 
 
 def _direct_artifact_ids(node: dict) -> list[str]:
     values = node["payload"].get("artifact_ids", [])
-    return values if isinstance(values, list) and all(isinstance(item, str) for item in values) else []
+    return sorted({item for item in values if safe_artifact_id(item)}) if isinstance(values, list) else []
 
 
 def _slots(runs: list[dict], count: int = 2) -> list[dict]:

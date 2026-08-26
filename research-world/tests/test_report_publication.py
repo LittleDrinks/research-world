@@ -1,9 +1,11 @@
 import asyncio
+from base64 import b64decode
 
 import pytest
 from fastapi.testclient import TestClient
 from server.app import create_app
 from server.kernel import KernelCommand, KernelQuery, ResearchKernel
+from server.reporting import REPORT_INPUT_TOKEN_BUDGET
 from server.runtime_client import KernelClient
 
 
@@ -17,12 +19,21 @@ def source_payload(artifact_id=None):
 
 
 def admitted_evidence(world, project, artifact_id=None):
-    source = world.create_node(project["id"], "source", source_payload(artifact_id))
-    world.admit_node(source["id"])
+    source = admitted_source(world, project, artifact_id)
     claim = {"text": "Measured at 42 K.", "verdict": "supported", "evidence": [source["id"]]}
     direction = world.create_node(project["id"], "direction", {"claims": [claim]})
     world.admit_node(direction["id"])
     return source
+
+
+def admitted_source(world, project, artifact_id=None):
+    source = world.create_node(project["id"], "source", source_payload(artifact_id))
+    world.admit_node(source["id"])
+    return source
+
+
+def png():
+    return b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Q6u8AAAAASUVORK5CYII=")
 
 
 def report_thread(world, project):
@@ -35,8 +46,8 @@ def publish(value, project, thread, title="Orbit report"):
     return asyncio.run(value.command(KernelCommand("thread_publish_report", project["id"], values)))
 
 
-def capture(value, project, content):
-    values = {"content": content, "media_type": "text/plain"}
+def capture(value, project, content, media_type="text/plain"):
+    values = {"content": content, "media_type": media_type}
     return asyncio.run(value.command(KernelCommand("capture_artifact", project["id"], values)))
 
 
@@ -45,7 +56,7 @@ def test_kernel_rejects_caller_facts_and_fabricated_projection_text(world, proje
     thread = report_thread(world, project)
     with pytest.raises(ValueError, match="facts"):
         publish_facts(value, project, thread)
-    monkeypatch.setattr(value, "_report_projection", lambda _id: fabricated_projection())
+    monkeypatch.setattr(value, "_publication_projection", lambda _id: ready_projection(fabricated_projection()))
     result = publish(value, project, thread)
     assert result["status"] == "failed"
     assert result["assessment"]["gaps"][0]["code"] == "fact_text_mismatch"
@@ -57,10 +68,17 @@ def publish_facts(value, project, thread):
 
 
 def fabricated_projection():
-    source = {"id": "node:s", "title": "Paper", "source_level": "published", "checked_at": "2026-08-26T00:00:00+00:00", "anchor": "source-node:s"}
-    claim = {"id": "claim:1", "text": "Measured", "life_state": "admitted", "verdict": "supported", "evidence_ids": ["node:s"], "source_ids": ["node:s"]}
-    fact = {"text": "Fabricated", "claim_id": "claim:1", "source_ids": ["node:s"], "artifact_ids": []}
-    return {"facts": [fact], "claims": [claim], "sources": [source], "artifacts": []}
+    source_id = "node:" + "a" * 24
+    claim_id = "claim:" + "b" * 24 + ":1"
+    evidence = {"id": source_id, "kind": "source", "artifact_ids": []}
+    source = {"id": source_id, "title": "Paper", "source_level": "published", "checked_at": "2026-08-26T00:00:00+00:00"}
+    claim = {"id": claim_id, "text": "Measured", "life_state": "admitted", "verdict": "supported", "evidence": [evidence], "evidence_ids": [source_id], "source_ids": [source_id], "artifact_ids": []}
+    fact = {"text": "Fabricated", "claim_id": claim_id, "source_ids": [source_id], "artifact_ids": []}
+    return {"question": "How does it behave?", "facts": [fact], "claims": [claim], "sources": [source], "artifacts": []}
+
+
+def ready_projection(projection):
+    return {"status": "ready", "projection": projection, "contract": {}}
 
 
 def test_projection_filters_unsafe_fields_and_unlinked_artifacts(world, project, tmp_path):
@@ -71,23 +89,134 @@ def test_projection_filters_unsafe_fields_and_unlinked_artifacts(world, project,
     world.create_node(project["id"], "experiment", payload, life_state="admitted")
     unsafe = {**world.node(source["id"])["payload"], "apikey": "secret", "baseurl": "https://secret", "config_path": "/etc/key", "raw": {"token": "secret"}}
     world.update_node(source["id"], unsafe)
-    projection = asyncio.run(value.query(KernelQuery("report_projection", project["id"])))
-    assert set(projection["sources"][0]) == {"id", "title", "source_level", "checked_at", "anchor"}
+    envelope = asyncio.run(value.query(KernelQuery("report_projection", project["id"])))
+    assert envelope["status"] == "ready"
+    projection = envelope["projection"]
+    assert set(projection["sources"][0]) == {"id", "title", "source_level", "checked_at"}
     assert [item["id"] for item in projection["artifacts"]] == [linked["id"]]
     assert "secret" not in str(projection)
+    assert all(field not in str(envelope) for field in ("apikey", "baseurl", "config_path", "raw"))
+
+
+def test_report_validate_assesses_a_ready_private_projection(world, project, tmp_path):
+    value = kernel(world, tmp_path)
+    admitted_evidence(world, project)
+
+    assessment = asyncio.run(value.query(KernelQuery("report_validate", project["id"])))
+
+    assert assessment["valid"] is True
+    assert assessment["accepted_facts"][0]["text"] == "Measured at 42 K."
+
+
+def test_publication_renders_typed_evidence_with_exact_source_links(world, project, tmp_path):
+    value = kernel(world, tmp_path)
+    sources, projection = typed_projection(value, world, project)
+    assert_exact_source_links(projection, sources)
+    thread = report_thread(world, project)
+    content = read(value, project, thread, publish(value, project, thread)["publication"]).decode()
+    assert_rendered_evidence(content, projection)
+
+
+def typed_projection(value, world, project):
+    code = capture(value, project, b"result = 42")
+    formula = capture(value, project, b"E = mc^2", "application/x-latex")
+    chart = capture(value, project, png(), "image/png")
+    sources = [admitted_source(world, project, item["id"]) for item in (code, formula, chart)]
+    claim = {"text": "Three independent measurements agree.", "verdict": "supported", "evidence": [item["id"] for item in sources]}
+    direction = world.create_node(project["id"], "direction", {"claims": [claim]})
+    world.admit_node(direction["id"])
+    envelope = asyncio.run(value.query(KernelQuery("report_projection", project["id"])))
+    assert envelope["status"] == "ready"
+    return sources, envelope["projection"]
+
+
+def assert_exact_source_links(projection, sources):
+    claim_id = projection["facts"][0]["claim_id"]
+    links = {tuple(sorted(item["links"][0].items())) for item in projection["artifacts"]}
+    expected = {tuple(sorted({"claim_id": claim_id, "evidence_id": source["id"], "source_id": source["id"]}.items())) for source in sources}
+    assert links == expected
+
+
+def assert_rendered_evidence(content, projection):
+    assert '<pre><code data-artifact=' in content
+    assert '<div class="formula"' in content
+    assert '<img src="data:image/png;base64,' in content
+    assert all(item["id"] in content for item in projection["artifacts"])
+
+
+def test_publication_rejects_secrets_before_the_rendering_model(world, project, tmp_path):
+    value = kernel(world, tmp_path)
+    artifact = capture(value, project, b"result = 42")
+    source = admitted_evidence(world, project, artifact["id"])
+    payload = {**world.node(source["id"])["payload"], "title": "baseurl=https://secret.example"}
+    world.update_node(source["id"], payload)
+    projection = asyncio.run(value.query(KernelQuery("report_projection", project["id"])))
+    thread = report_thread(world, project)
+    result = publish(value, project, thread)
+    assert "secret" not in str(projection)
+    assert "secret" not in str(result)
+    assert result["status"] == "failed"
+    assert result["stages"] == [{"name": "projection", "status": "failed"}]
+    assert not world.report_publications(project["id"], thread["id"])
+
+
+@pytest.mark.parametrize("content", [b"OPENAI_API_KEY=sk-abcdefghijklmnopqrstuvwxyz", b"baseurl=https://credentials.example", b"session_id: temporary-session", b"/tmp/report-secret.txt"])
+def test_publication_rejects_restricted_artifact_text_without_leaking_it(world, project, tmp_path, content):
+    value = kernel(world, tmp_path)
+    artifact = capture(value, project, content)
+    admitted_evidence(world, project, artifact["id"])
+    thread = report_thread(world, project)
+    envelope = asyncio.run(value.query(KernelQuery("report_projection", project["id"])))
+    result = publish(value, project, thread)
+    assert envelope["status"] == "ready"
+    assert result["stages"] == [{"name": "projection", "status": "completed"}, {"name": "citation_validation", "status": "failed"}]
+    assert content.decode() not in str(result)
+    assert not world.report_publications(project["id"], thread["id"])
 
 
 def test_failed_validation_has_no_publication_side_effect(world, project, tmp_path):
     value = kernel(world, tmp_path)
-    result = publish(value, project, report_thread(world, project))
+    thread = report_thread(world, project)
+    result = publish(value, project, thread)
     assert result["status"] == "failed"
-    assert not value._world._rows("SELECT 1 FROM report_publications")
+    assert result["stages"] == [{"name": "projection", "status": "failed"}]
+    assert not world.report_publications(project["id"], thread["id"])
+
+
+def test_publication_stops_before_materializing_an_over_budget_projection(world, project, tmp_path):
+    value = kernel(world, tmp_path)
+    marker = "bounded-artifact"
+    world.create_node(project["id"], "experiment", {"notes": marker * (REPORT_INPUT_TOKEN_BUDGET + 1)}, life_state="admitted")
+    thread = report_thread(world, project)
+    result = publish(value, project, thread)
+    assert result["stages"] == [{"name": "projection", "status": "failed"}]
+    assert result["assessment"]["gaps"][0]["code"] == "projection_budget_exceeded"
+    assert marker not in str(result)
+    assert not world.report_publications(project["id"], thread["id"])
+
+
+def test_publication_anchors_experiment_owned_artifacts_to_the_exact_claim(world, project, tmp_path):
+    value = kernel(world, tmp_path)
+    source = admitted_source(world, project)
+    artifact = capture(value, project, b"experiment = 42")
+    experiment = world.create_node(project["id"], "experiment", {"artifact_ids": [artifact["id"]]}, life_state="admitted")
+    direction = world.create_node(project["id"], "direction", {"claims": [{"text": "Experiment supports the result.", "verdict": "supported", "evidence": [source["id"], experiment["id"]]}]})
+    world.admit_node(direction["id"])
+    envelope = asyncio.run(value.query(KernelQuery("report_projection", project["id"])))
+    projection = envelope["projection"]
+    link = projection["artifacts"][0]["links"][0]
+    thread = report_thread(world, project)
+    result = publish(value, project, thread)
+    content = read(value, project, thread, result["publication"]).decode()
+    assert link == {"claim_id": projection["facts"][0]["claim_id"], "evidence_id": experiment["id"]}
+    assert f'id="evidence-{experiment["id"]}"' in content
+    assert f'href="#evidence-{experiment["id"]}"' in content
 
 
 def test_identical_bytes_publish_independently_per_project(world, project, tmp_path):
     value = kernel(world, tmp_path)
     other = world.create_project("other", tmp_path / "other", "Other?")
-    value._report_projection = lambda _id: shared_projection()
+    value._publication_projection = lambda _id: ready_projection(shared_projection())
     first = publish(value, project, report_thread(world, project))
     second = publish(value, other, report_thread(world, other))
     assert first["artifact"]["id"] == second["artifact"]["id"]
@@ -95,10 +224,13 @@ def test_identical_bytes_publish_independently_per_project(world, project, tmp_p
 
 
 def shared_projection():
-    claim = {"id": "claim:1", "text": "Measured", "life_state": "admitted", "verdict": "supported", "evidence_ids": ["node:s"], "source_ids": ["node:s"]}
-    fact = {"text": "Measured", "claim_id": "claim:1", "source_ids": ["node:s"], "artifact_ids": []}
-    source = {"id": "node:s", "title": "Paper", "source_level": "published", "checked_at": "2026-08-26T00:00:00+00:00", "anchor": "source-node:s"}
-    return {"facts": [fact], "claims": [claim], "sources": [source], "artifacts": []}
+    source_id = "node:" + "f" * 24
+    claim_id = "claim:" + "1" * 24 + ":1"
+    evidence = {"id": source_id, "kind": "source", "artifact_ids": []}
+    claim = {"id": claim_id, "text": "Measured", "life_state": "admitted", "verdict": "supported", "evidence": [evidence], "evidence_ids": [source_id], "source_ids": [source_id], "artifact_ids": []}
+    fact = {"text": "Measured", "claim_id": claim_id, "source_ids": [source_id], "artifact_ids": []}
+    source = {"id": source_id, "title": "Paper", "source_level": "published", "checked_at": "2026-08-26T00:00:00+00:00"}
+    return {"question": "How does it behave?", "facts": [fact], "claims": [claim], "sources": [source], "artifacts": []}
 
 
 def test_named_save_is_immutable_and_duplicate_names_are_actionable(world, project, tmp_path):
@@ -166,6 +298,17 @@ def test_http_rejects_body_thread_and_cross_thread_save(world, project, tmp_path
     save = f"/api/v1/threads/{second['id']}/report/save"
     assert client.post(save, json={"title": "V1", "publication_id": publication["id"]}).status_code == 404
     assert not value._world.reports(project["id"], second["id"])
+
+
+def test_http_report_content_rejects_a_get_body(world, project, tmp_path):
+    value = kernel(world, tmp_path)
+    admitted_evidence(world, project)
+    thread = report_thread(world, project)
+    publication = publish_thread(value, project, thread)
+    path = f"/api/v1/threads/{thread['id']}/report/{publication['id']}/content"
+    response = TestClient(create_app(value)).request("GET", path, content=b"{}")
+    assert response.status_code == 400
+    assert response.json()["detail"] == "report content request accepts no body"
 
 
 @pytest.mark.asyncio

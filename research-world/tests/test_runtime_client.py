@@ -183,26 +183,34 @@ async def test_kernel_client_captures_artifact_then_submits_observation(
 ):
     kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
     client = KernelClient(kernel, project["id"])
-    artifact = await client.ext_method(
-        "research/capture_artifact",
-        {"content": "measured result", "media_type": "text/plain"},
-    )
+    artifact = await captured_artifact(client)
     assert set(artifact) == {"id", "sha256", "media_type", "size", "created_at"}
-    observation = await client.ext_method(
-        "research/submit_observation", observation_record(artifact["id"])
-    )
-    await kernel.command(
-        KernelCommand(
-            "resolve_admission",
-            project["id"],
-            {"node_id": observation["id"], "decision": "approve"},
-        )
-    )
+    observation = await admitted_observation(client, kernel, project, artifact)
     projection = await client.ext_method("research/report_projection", {})
-
     assert observation["life_state"] == "pending"
     assert observation["payload"]["artifact_ids"] == [artifact["id"]]
-    assert projection["artifacts"] == []
+    assert projection["status"] == "blocked"
+    assert "projection" not in projection
+
+
+async def captured_artifact(client):
+    return await client.ext_method(
+        "research/capture_artifact", {"content": "measured result", "media_type": "text/plain"}
+    )
+
+
+async def admitted_observation(client, kernel, project, artifact):
+    observation = await client.ext_method("research/submit_observation", observation_record(artifact["id"]))
+    values = {"node_id": observation["id"], "decision": "approve"}
+    await kernel.command(KernelCommand("resolve_admission", project["id"], values))
+    return observation
+
+
+@pytest.mark.asyncio
+async def test_kernel_client_report_projection_rejects_caller_fields():
+    client = KernelClient(None, "project:test")
+    with pytest.raises(ValueError, match="takes no fields"):
+        await client.ext_method("research/report_projection", {"facts": []})
 
 
 def test_embedding_wraps_runtime_failure():

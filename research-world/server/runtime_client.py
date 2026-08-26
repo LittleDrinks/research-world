@@ -189,25 +189,18 @@ class KernelClient:
 
     async def ext_method(self, method: str, params: dict) -> dict | list:
         extension = method.lstrip("_")
-        if extension == "research/capture_artifact":
-            return await self._capture_artifact(params)
-        if extension == "research/submit_observation":
-            return await self._submit_observation(params)
-        if extension == "research/report_validate":
-            return await self._report_validate(params)
-        if extension == "research/report_projection":
-            return await self._report_projection(params)
-        if extension == "research/publish_report":
-            return await self._publish_report(params)
-        if extension == "research/export_bibtex":
-            return await self._export_bibtex(params)
-        if extension != "research/graph_query":
+        handler = {
+            "research/capture_artifact": self._capture_artifact,
+            "research/submit_observation": self._submit_observation,
+            "research/report_validate": self._report_validate,
+            "research/report_projection": self._report_projection,
+            "research/publish_report": self._publish_report,
+            "research/export_bibtex": self._export_bibtex,
+            "research/graph_query": self._graph_query,
+        }.get(extension)
+        if handler is None:
             raise RuntimeError(f"unsupported client extension: {method}")
-        if params["action"] == "get":
-            return await self._node(params["node_id"])
-        if params["action"] == "search":
-            return await self._search(params.get("query", ""))
-        raise ValueError("unknown graph action")
+        return await handler(params)
 
     async def ext_notification(self, method: str, params: dict) -> None:
         return None
@@ -227,6 +220,13 @@ class KernelClient:
             KernelQuery("graph_search", self.project_id, {"text": text})
         )
 
+    async def _graph_query(self, params: dict) -> dict | list:
+        if params["action"] == "get":
+            return await self._node(params["node_id"])
+        if params["action"] == "search":
+            return await self._search(params.get("query", ""))
+        raise ValueError("unknown graph action")
+
     async def _report_validate(self, params: dict) -> dict:
         from .kernel import KernelQuery
 
@@ -239,6 +239,8 @@ class KernelClient:
     async def _report_projection(self, params: dict) -> dict:
         from .kernel import KernelQuery
 
+        if params:
+            raise ValueError("report projection takes no fields")
         return await self.kernel.query(
             KernelQuery("report_projection", self.project_id)
         )
@@ -247,9 +249,8 @@ class KernelClient:
         from .kernel import KernelCommand
 
         title = _runtime_report_title(params, self.session_id)
-        thread = self.kernel._world.thread_for_session(self.session_id)
         return await self.kernel.command(
-            KernelCommand("thread_publish_report", thread["project_id"], {"thread_id": thread["id"], "title": title})
+            KernelCommand("runtime_publish_report", self.project_id, {"session_id": self.session_id, "title": title})
         )
 
     async def _export_bibtex(self, params: dict) -> dict:

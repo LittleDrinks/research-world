@@ -311,12 +311,14 @@ def test_report_projection_exposes_only_safe_cited_source_fields(world, project,
     world.admit_node(source["id"])
     direction = world.create_node(project["id"], "direction", {"claims": [{"text": "Stable", "verdict": "supported", "evidence": [source["id"]]}]})
     world.admit_node(direction["id"])
-    projection = inspect(
+    envelope = inspect(
         ResearchKernel(world, projects_root=tmp_path / "projects"),
         KernelQuery("report_projection", project["id"]),
     )
+    assert envelope["status"] == "ready"
+    projection = envelope["projection"]
     assert projection["sources"][0]["id"] == source["id"]
-    assert set(projection["sources"][0]) == {"id", "title", "source_level", "checked_at", "anchor"}
+    assert set(projection["sources"][0]) == {"id", "title", "source_level", "checked_at"}
 
 
 def test_bibtex_export_reads_only_admitted_source_artifact(world, project, tmp_path):

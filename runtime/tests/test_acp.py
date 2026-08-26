@@ -33,6 +33,19 @@ class ProjectClient:
         return {"id": params["node_id"], "life_state": "admitted"}
 
 
+class PublicationClient:
+    def __init__(self):
+        self.calls = []
+        self.updates = []
+
+    async def session_update(self, session_id, update, **kwargs):
+        self.updates.append(update)
+
+    async def ext_method(self, method, params):
+        self.calls.append((method, params))
+        return {"status": "failed", "assessment": {"gaps": []}}
+
+
 async def test_acp_is_the_runtime_transport(tmp_path, monkeypatch):
     monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
     monkeypatch.setenv("RUNTIME_API_KEY", "secret")
@@ -153,6 +166,53 @@ async def test_publish_report_crosses_the_client_boundary(tmp_path):
     assert failed is False
     assert json.loads(content)["status"] == "failed"
     assert client.calls == [("research/publish_report", {**values, "_session_id": "session"})]
+
+
+@pytest.mark.parametrize(
+    ("arguments", "status"),
+    [({"title": "Orbit"}, "completed"), ({}, "failed")],
+)
+async def test_publish_report_emits_safe_acp_lifecycle(tmp_path, arguments, status):
+    call = _publish_call(arguments)
+    provider = FakeProvider(
+        [{"role": "assistant", "content": "", "tool_calls": [call]},
+         {"role": "assistant", "content": "done"}]
+    )
+    client = PublicationClient()
+    runtime = Runtime(tmp_path / "data", [endpoint(provider)])
+    launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": _report_agent()})
+    await runtime.prompt(launched["session_id"], [{"type": "text", "text": "publish"}], client)
+    first, last = client.updates
+    assert _lifecycle(client.updates) == [
+        ("tool_call", "in_progress"), ("tool_call_update", status)
+    ]
+    assert first.tool_call_id == last.tool_call_id
+    assert first.tool_call_id.startswith("report:")
+    assert (first.title, first.kind) == ("发布科研报告", "other")
+    assert all(update.content is update.raw_input is update.raw_output is None for update in client.updates)
+
+
+def _publish_call(arguments):
+    return {
+        "id": "report-call",
+        "type": "function",
+        "function": {"name": "publish_report", "arguments": json.dumps(arguments)},
+    }
+
+
+def _report_agent():
+    return {
+        "id": "reporter",
+        "name": "Reporter",
+        "endpoint": "openai-compatible",
+        "model": "qwen-test",
+        "instructions": "Publish the report.",
+        "tools": ["publish_report"],
+    }
+
+
+def _lifecycle(updates):
+    return [(item.session_update, item.status) for item in updates]
 
 
 async def test_submit_observation_crosses_the_client_boundary(tmp_path):

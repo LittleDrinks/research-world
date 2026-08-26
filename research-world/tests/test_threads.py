@@ -117,6 +117,49 @@ def test_thread_points_to_runtime_session_and_pins_nodes(world, project, tmp_pat
     assert thread["runtime"]["messages"] == []
 
 
+def test_thread_detail_projects_persisted_publications_without_storage_fields(world, project, tmp_path):
+    runtime = FakeRuntime()
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects", runtime=runtime, agents=_agents(tmp_path))
+    client = TestClient(create_app(kernel))
+    thread = client.post(f"/api/v1/projects/{project['id']}/threads", json={}).json()
+    publication = world.publish_report(project["id"], thread["id"], "Orbit", "artifact:private")
+    report = world.save_report(project["id"], thread["id"], "V1", publication["id"])
+    detail = client.get(f"/api/v1/threads/{thread['id']}").json()
+    assert detail["report_publications"] == [{key: publication[key] for key in ("id", "thread_id", "title", "created_at")}]
+    assert detail["reports"] == [{key: report[key] for key in ("id", "publication_id", "title", "created_at")}]
+    assert "artifact_id" not in str(detail["report_publications"])
+    assert "project_id" not in str(detail["report_publications"])
+
+
+def test_thread_detail_recovers_report_records_in_stable_order(world, project, tmp_path):
+    runtime = FakeRuntime()
+    kernel = ResearchKernel(world, projects_root=tmp_path / "projects", runtime=runtime, agents=_agents(tmp_path))
+    client = TestClient(create_app(kernel))
+    thread = client.post(f"/api/v1/projects/{project['id']}/threads", json={}).json()
+    publications = _report_records(world, project, thread)
+    _same_record_timestamps(world, "report_publications", publications)
+    _same_record_timestamps(world, "reports", world.reports(project["id"], thread["id"]))
+    details = [client.get(f"/api/v1/threads/{thread['id']}").json() for _ in range(2)]
+    assert details[0]["report_publications"] == details[1]["report_publications"]
+    assert [item["id"] for item in details[0]["report_publications"]] == sorted([item["id"] for item in publications], reverse=True)
+    assert [item["id"] for item in details[0]["reports"]] == sorted([item["id"] for item in world.reports(project["id"], thread["id"])], reverse=True)
+
+
+def _report_records(world, project, thread):
+    tokens = iter(["a" * 24, "b" * 24, "c" * 24, "d" * 24])
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr("server.world.secrets.token_hex", lambda _size: next(tokens))
+        publications = [world.publish_report(project["id"], thread["id"], title, "artifact:private") for title in ("A", "B")]
+        for title, publication in zip(("A", "B"), publications, strict=True):
+            world.save_report(project["id"], thread["id"], title, publication["id"])
+    return publications
+
+
+def _same_record_timestamps(world, table, records):
+    with world.db.connect() as connection:
+        connection.executemany(f"UPDATE {table} SET created_at=? WHERE id=?", [("2026-08-26T00:00:00+00:00", record["id"]) for record in records])
+
+
 def test_research_assistant_exposes_the_report_publication_tool():
     agent = AgentRegistry(Path(__file__).parents[1] / "agents").get("research-assistant")
     assert "research-report" in agent["skills"]

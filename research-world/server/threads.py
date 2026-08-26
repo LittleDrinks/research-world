@@ -36,8 +36,9 @@ class ThreadManager:
     async def detail(self, thread_id: str) -> dict:
         thread = self.world.thread(thread_id)
         trace = await self.runtime.inspect(thread["session_id"])
-        reports = self.world.reports(thread["project_id"], thread["id"])
-        return {**thread, "runtime": trace, "reports": reports}
+        reports = _report_cards(self.world.reports(thread["project_id"], thread["id"]))
+        publications = self.world.report_publications(thread["project_id"], thread["id"])
+        return {**thread, "runtime": trace, "reports": reports, "report_publications": _publication_cards(publications)}
 
     async def prompt(self, thread_id: str, message: str):
         thread = self.world.thread(thread_id)
@@ -78,3 +79,13 @@ class ThreadManager:
         if any(node["life_state"] != "admitted" for node in nodes):
             raise ValueError("thread nodes must be admitted")
         return nodes
+
+
+def _publication_cards(records: list[dict]) -> list[dict]:
+    fields = ("id", "thread_id", "title", "created_at")
+    return [{field: record[field] for field in fields} for record in records if all(isinstance(record.get(field), str) for field in fields)]
+
+
+def _report_cards(records: list[dict]) -> list[dict]:
+    fields = ("id", "publication_id", "title", "created_at")
+    return [{field: record[field] for field in fields} for record in records if all(isinstance(record.get(field), str) for field in fields)]

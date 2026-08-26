@@ -56,12 +56,18 @@ function useThreadDetail(threadId) {
 }
 
 
-function promptEvent(reply, setStreaming, event, payload) {
+function promptEvent(reply, setStreaming, setReportProgress, event, payload) {
   if (event === "delta") { reply.text += payload.text; setStreaming(reply.text || " "); }
+  if (event === "tool" && reportStarted(payload?.update)) setReportProgress(true);
   if (event !== "error") return;
   const failure = new Error(payload.detail || "答复失败");
   failure.code = payload.code;
   throw failure;
+}
+
+
+function reportStarted(update) {
+  return update?.sessionUpdate === "tool_call" && update.title === "发布科研报告" && update.kind === "other" && update.status === "in_progress";
 }
 
 
@@ -76,17 +82,18 @@ function useSend(threadId, setDetail, onSpecInvalid) {
   const [sending, setSending] = useState(false);
   const [streaming, setStreaming] = useState("");
   const [pending, setPending] = useState("");
+  const [reportProgress, setReportProgress] = useState(false);
   const send = async (text) => {
     setSending(true); setPending(text); setStreaming(" ");
     const reply = { text: "" };
     try {
-      await sendPrompt(threadId, text, (...event) => promptEvent(reply, setStreaming, ...event));
+      await sendPrompt(threadId, text, (...event) => promptEvent(reply, setStreaming, setReportProgress, ...event));
       setDetail(await getThread(threadId)); await refresh(projectId); return true;
     } catch (error) {
       showSendError(error, onSpecInvalid, setError); return false;
-    } finally { setSending(false); setStreaming(""); setPending(""); }
+    } finally { setSending(false); setStreaming(""); setPending(""); setReportProgress(false); }
   };
-  return { sending, streaming, pending, send };
+  return { sending, streaming, pending, reportProgress, send };
 }
 
 
@@ -120,25 +127,42 @@ function useRestart(threadId, setDetail) {
 }
 
 
+function useReportRefresh(threadId, setDetail) {
+  return async () => setDetail(await getThread(threadId));
+}
+
+
 function ThreadView({ threadId }) {
   const { data } = useWorld();
   const { detail, failed, retry, setDetail } = useThreadDetail(threadId);
   const { specInvalid, flagSpecInvalid, restart } = useRestart(threadId, setDetail);
-  const { sending, streaming, pending, send } = useSend(threadId, setDetail, flagSpecInvalid);
+  const { sending, streaming, pending, reportProgress, send } = useSend(threadId, setDetail, flagSpecInvalid);
   const pin = usePin(threadId, setDetail);
+  const refreshReports = useReportRefresh(threadId, setDetail);
   const [draft, setDraft] = useState(null);
-  if (failed) return <ThreadFailed onRetry={retry} />;
-  if (!detail) return <div className="page-loading">正在载入 Thread...</div>;
-  const messages = [...(detail.runtime?.messages || [])];
-  if (pending) messages.push({ role: "user", content: pending });
+  if (failed) return <ThreadFailed onRetry={retry} />; if (!detail) return <div className="page-loading">正在载入 Thread...</div>;
+  return <ThreadContent data={data} detail={detail} draft={draft} pending={pending} pin={pin} reportProgress={reportProgress} sending={sending} setDraft={setDraft} onRefresh={refreshReports} onRestart={restart} onSend={send} specInvalid={specInvalid} streaming={streaming} />;
+}
+
+
+function ThreadContent({ data, detail, draft, pending, pin, reportProgress, sending, setDraft, onRefresh, onRestart, onSend, specInvalid, streaming }) {
+  const messages = threadMessages(detail, pending);
+  const reportTitle = data.projects.find((item) => item.id === data.active_project_id)?.name || "Research report";
   return <section className="chat-page">
-    <ThreadHeader detail={detail} sending={sending} onRestart={restart} />
-    <div className="chat-scroll"><MessageList messages={messages} streaming={sending ? streaming : ""} /><div className="chat-report"><ReportCard threadId={detail.id} reports={detail.reports || []} title={data.projects.find((item) => item.id === data.active_project_id)?.name || "Research report"} /></div></div>
-    {specInvalid && <SpecInvalidNotice onRestart={restart} />}
+    <ThreadHeader detail={detail} sending={sending} onRestart={onRestart} />
+    <div className="chat-scroll"><MessageList messages={messages} streaming={sending ? streaming : ""} reports={detail.runtime?.reports || []} publications={detail.report_publications || []} reportProgress={reportProgress} threadId={detail.id} reportTitle={reportTitle} onReportRefresh={onRefresh} /><div className="chat-report"><ReportCard threadId={detail.id} reports={detail.reports || []} title={reportTitle} onRefresh={onRefresh} /></div></div>
+    {specInvalid && <SpecInvalidNotice onRestart={onRestart} />}
     {draft && <ProfileDraftCard key={draft.nonce} draft={draft} onCancel={() => setDraft(null)} />}
-    <Composer pinnedNodes={detail.nodes} sending={sending} onSend={send} onPin={pin}
+    <Composer pinnedNodes={detail.nodes} sending={sending} onSend={onSend} onPin={pin}
       accessory={<><ResearchControls thread={detail} runs={threadRuns(data.runs, detail)} />
         <ProfileDraftButton onDraft={(value) => setDraft({ ...value, nonce: Date.now() })} /></>} /></section>;
+}
+
+
+function threadMessages(detail, pending) {
+  const messages = [...(detail.runtime?.messages || [])];
+  if (pending) messages.push({ role: "user", content: pending });
+  return messages;
 }
 
 

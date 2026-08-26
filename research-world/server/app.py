@@ -194,7 +194,8 @@ def thread_report_routes(app, kernel) -> None:
         return await kernel.command(KernelCommand("save_report", values=values))
 
     @app.get("/api/v1/threads/{thread_id}/report/{publication_id}/content")
-    async def report_content(thread_id: str, publication_id: str, download: bool = False):
+    async def report_content(thread_id: str, publication_id: str, request: Request, download: bool = False):
+        await _require_empty_body(request)
         values = {"thread_id": thread_id, "publication_id": publication_id}
         content = await kernel.query(KernelQuery("report_content", values=values))
         return report_response(content, download)
@@ -309,7 +310,7 @@ def graph_tool_routes(app, kernel) -> None:
 
 
 def report_response(content: bytes, download: bool):
-    headers = {"Content-Security-Policy": "sandbox; default-src 'none'; style-src 'unsafe-inline'"}
+    headers = {"Content-Security-Policy": "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'"}
     if download:
         headers["Content-Disposition"] = 'attachment; filename="report.html"'
         return Response(content, media_type="text/html", headers=headers)
@@ -321,6 +322,11 @@ def _report_fields(value: object, fields: set[str]) -> dict:
         names = ", ".join(sorted(fields))
         raise ValueError(f"report request requires only: {names}")
     return value
+
+
+async def _require_empty_body(request: Request) -> None:
+    if await request.body():
+        raise ValueError("report content request accepts no body")
 
 
 def _artifact_values(value: dict) -> dict:

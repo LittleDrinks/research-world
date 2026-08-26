@@ -55,6 +55,7 @@ def inspect_trace(events: list[dict[str, Any]]) -> dict[str, Any]:
         "session": events[0]["data"],
         "status": _status(turns),
         "messages": _messages(turns),
+        "reports": _reports(events),
         "turns": turns,
         "events": events,
     }
@@ -132,6 +133,64 @@ def _messages(turns):
         if turn["output"] is not None:
             messages.append({"role": "assistant", "content": turn["output"]})
     return messages
+
+
+def _reports(events):
+    values = [_report(event) for event in events if event["type"] == "tool_result"]
+    return [value for value in values if value is not None]
+
+
+def _report(event):
+    data = event["data"]
+    if data.get("name") != "publish_report" or data.get("is_error"):
+        return None
+    try:
+        value = json.loads(data["content"])
+    except (KeyError, TypeError, json.JSONDecodeError):
+        return None
+    return _report_message(value)
+
+
+def _report_message(value):
+    if not isinstance(value, dict) or value.get("status") not in {"published", "failed"}:
+        return None
+    result = {"status": value["status"], "stages": _report_stages(value), "assessment": _assessment(value)}
+    if value["status"] != "published":
+        return result
+    publication = _publication(value.get("publication"))
+    return {**result, "title": value.get("title"), "publication": publication} if publication else None
+
+
+def _report_stages(value):
+    allowed = {"projection", "citation_validation", "rendering", "output_validation", "persistence"}
+    rows = value.get("stages", [])
+    return [{"name": row["name"], "status": row["status"]} for row in rows if isinstance(row, dict) and row.get("name") in allowed and row.get("status") in {"completed", "failed"}]
+
+
+def _publication(value):
+    if not isinstance(value, dict):
+        return None
+    keys = ("id", "thread_id", "created_at")
+    return {key: value[key] for key in keys} if all(isinstance(value.get(key), str) for key in keys) else None
+
+
+def _assessment(value):
+    assessment = value.get("assessment") if isinstance(value, dict) else None
+    if not isinstance(assessment, dict):
+        return {"gaps": []}
+    return {"delivery_level": assessment.get("delivery_level"), "minimum_source_level": assessment.get("minimum_source_level"), "gaps": _gaps(assessment.get("gaps"))}
+
+
+def _gaps(value):
+    return [_gap(item) for item in value if isinstance(item, dict)] if isinstance(value, list) else []
+
+
+def _gap(value):
+    return {"code": value.get("code"), "path": value.get("path"), "value": _gap_value(value.get("value"))}
+
+
+def _gap_value(value):
+    return value if value is None or isinstance(value, (int, float, bool)) else None
 
 
 def _prompt_text(blocks):

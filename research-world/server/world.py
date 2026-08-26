@@ -375,14 +375,14 @@ class World:
         return self._one(sql, params)
 
     def report_publications(self, project_id: str, thread_id: str) -> list[dict]:
-        sql = "SELECT * FROM report_publications WHERE project_id=? AND thread_id=? ORDER BY created_at DESC"
+        sql = "SELECT * FROM report_publications WHERE project_id=? AND thread_id=? ORDER BY created_at DESC, id DESC"
         return self._many(sql, (project_id, thread_id))
 
     def report(self, project_id: str, report_id: str) -> dict:
         return self._one("SELECT * FROM reports WHERE id=? AND project_id=?", (report_id, project_id))
 
     def reports(self, project_id: str, thread_id: str) -> list[dict]:
-        sql = "SELECT * FROM reports WHERE project_id=? AND thread_id=? ORDER BY created_at DESC"
+        sql = "SELECT * FROM reports WHERE project_id=? AND thread_id=? ORDER BY created_at DESC, id DESC"
         return self._many(sql, (project_id, thread_id))
 
     def _validate_thread_node(self, thread_id: str, node_id: str) -> None:
