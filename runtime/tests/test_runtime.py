@@ -124,6 +124,34 @@ async def test_generic_rejects_foreign_declared_endpoint_adapter(tmp_path):
         await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec(endpoint="foreign", model="gpt")})
 
 
+async def test_runtime_accepts_independent_compatible_endpoint_id(tmp_path):
+    runtime = _independent_runtime(tmp_path)
+
+    launched = await runtime.launch(
+        {"workspace": str(tmp_path), "agent_spec": _independent_spec()}
+    )
+
+    assert launched["session_id"].startswith("s-")
+
+
+@pytest.mark.parametrize(
+    "runtime_value, endpoint_id, model, message",
+    [
+        ({"id": "generic", "realm": "other"}, "logical", "gpt", "runtime is not available"),
+        ({"id": "generic", "realm": REALM}, "foreign", "gpt", "endpoint is not available"),
+        ({"id": "generic", "realm": REALM}, "logical", "other", "model is not available"),
+    ],
+)
+async def test_runtime_rejects_independent_invalid_bindings(
+    tmp_path, runtime_value, endpoint_id, model, message
+):
+    runtime = _independent_runtime(tmp_path)
+    agent = _independent_spec(runtime=runtime_value, endpoint=endpoint_id, model=model)
+
+    with pytest.raises(CapabilityNotFound, match=message):
+        await runtime.launch({"workspace": str(tmp_path), "agent_spec": agent})
+
+
 async def test_public_usage_has_only_official_counters(tmp_path, monkeypatch):
     runtime, _ = configured_runtime(tmp_path, monkeypatch)
     session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": spec()}))["session_id"]
@@ -282,3 +310,18 @@ def configured_runtime(tmp_path, monkeypatch):
 
 def _usage_keys():
     return {"input_tokens", "cached_input_tokens", "cache_write_input_tokens", "output_tokens", "reasoning_output_tokens"}
+
+
+def _independent_runtime(path):
+    endpoint = Endpoint("logical", "Logical", "openai-compatible", ("gpt",), (), 1, FakeProvider([]), available=True)
+    adapter = RuntimeAdapter(RuntimeDescriptor("generic", REALM), ("openai-compatible",))
+    return Runtime(path / "data", [endpoint], [adapter])
+
+
+def _independent_spec(**values):
+    return spec(**{
+        "runtime": {"id": "generic", "realm": REALM},
+        "endpoint": "logical",
+        "model": "gpt",
+        **values,
+    })

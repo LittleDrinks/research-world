@@ -752,6 +752,30 @@ async def test_completed_resumed_stream_redacts_current_and_result_continuations
     assert "unrelated fact" in str((emitted, result, raw, public))
 
 
+async def test_completed_stream_redacts_nested_continuation_key_everywhere(tmp_path, monkeypatch):
+    provider, emitted = ready_provider(), []
+    monkeypatch.setattr(provider, "start", lambda *_: _process(Process(_continuation_key_stream())))
+    runtime = codex_runtime(tmp_path, provider)
+    session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
+
+    result = await runtime.prompt(session, [{"type": "text", "text": "one"}], emit=_capture(emitted))
+    raw, public = runtime.trace.path(session).read_text(), runtime.inspect(session)
+
+    assert all("result-continuation" not in str(item) for item in [emitted, result, raw, public])
+    arguments = public["turns"][0]["provider_items"][0]["arguments"]
+    assert set(arguments) == {"<redacted>", "<redacted>#2"}
+    assert set(arguments.values()) == {"secret-value", "preserved-value"}
+
+
+async def test_collect_keeps_assistant_text_for_short_thread_id():
+    emitted = []
+    result = await _collect(Process(_short_thread_stream()), "prompt", _capture(emitted), 1)
+
+    assert emitted == ["an answer"]
+    assert result.message["content"] == "an answer"
+    assert "a" not in str(result.provider_items)
+
+
 @pytest.mark.parametrize("item", [
     {"id": "x", "type": "future_item"},
     {"id": "x", "type": "agent_message", "text": "x", "extra": True},
@@ -805,6 +829,15 @@ def _continuation_failure_stream():
 def _continuation_completed_stream():
     text = "current-continuation result-continuation unrelated fact"
     return _stream([{"type": "item.completed", "item": {"id": "answer", "type": "agent_message", "text": text}}], thread_id="result-continuation")
+
+
+def _continuation_key_stream():
+    item = {"id": "mcp", "type": "mcp_tool_call", "server": "s", "tool": "t", "arguments": {"result-continuation": "secret-value", "<redacted>": "preserved-value"}, "result": None, "error": None, "status": "completed"}
+    return _stream([{"type": "item.started", "item": {**item, "status": "in_progress"}}, {"type": "item.completed", "item": item}, {"type": "item.completed", "item": _agent()}], thread_id="result-continuation")
+
+
+def _short_thread_stream():
+    return _stream([{"type": "item.completed", "item": {"id": "one", "type": "agent_message", "text": "an answer"}}], thread_id="a")
 
 
 def _query_only_web_events():
