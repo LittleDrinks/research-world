@@ -79,8 +79,29 @@ def test_rendered_report_rejects_non_chart_data_uri():
 
 
 def test_rendered_report_rejects_entity_encoded_active_uri():
-    content = report_fixture("Validated").replace(b"</body>", b'<a href="java&#x73;cript:alert(1)">x</a></body>')
+    content = report_fixture("Validated").replace(b"</body>", b'<a href=" java&#x73;cript:alert(1)">x</a></body>')
     assert validate_html(content) == [{"code": "active_content_exposed", "path": "html", "value": None}]
+
+
+@pytest.mark.parametrize(("attribute", "codes"), [
+    ('title="/javascript: literal"', []),
+    ('href="https://example.test/docs/javascript: literal"', ["sensitive_data_exposed"]),
+])
+def test_rendered_report_allows_javascript_in_non_scheme_attributes(attribute, codes):
+    content = report_fixture("Validated").replace(b"</body>", f"<p {attribute}>x</p></body>".encode())
+    assert [gap["code"] for gap in validate_html(content)] == codes
+
+
+def test_rendered_report_allows_visible_javascript_text_and_escaped_code():
+    value = projection()
+    value["facts"][0]["text"] = "The literal javascript: protocol is evidence."
+    value["claims"][0]["text"] = value["facts"][0]["text"]
+    value["artifacts"][0]["display"]["text"] = '<a href="javascript:alert(1)">example</a>'
+    assessment = assess_delivery(value)
+    content = render_html("Orbit", value, assessment)
+    assert assessment["valid"] is True
+    assert b"&lt;a href=&quot;javascript:alert(1)&quot;&gt;example&lt;/a&gt;" in content
+    assert validate_html(content) == []
 
 
 def test_rendered_report_rejects_garbage_without_semantic_structure():
