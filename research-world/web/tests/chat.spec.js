@@ -2,10 +2,38 @@ import { expect, test } from "@playwright/test";
 import { agentDraft, agents, bootstrap, catalog, mockBase, node, run, sse, thread, threadDetail } from "./fixtures";
 
 
-async function mockChat(page, detail = threadDetail()) {
+async function mockChat(page, detail = threadDetail(), onThread) {
   await mockBase(page);
-  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill({ json: detail }));
+  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => { onThread?.(); return route.fulfill({ json: detail }); });
   await page.route(/\/api\/v1\/projects\/project%3Atest\/threads/, (route) => route.fulfill({ json: [thread()] }));
+}
+
+
+function reportStages() {
+  return ["projection", "citation_validation", "rendering", "output_validation", "persistence"].map((name) => ({ name, status: "completed" }));
+}
+
+
+function reportResult(publication) {
+  return { status: "published", title: "测试项目", publication, stages: reportStages(), assessment: { delivery_level: 4, minimum_source_level: "published", gaps: [] } };
+}
+
+
+function failedCitationReport() {
+  return { status: "failed", stages: [{ name: "projection", status: "completed" }, { name: "citation_validation", status: "failed" }], assessment: { gaps: [{ code: "source_missing", path: "facts[0]", value: "node:s" }] } };
+}
+
+
+function failedRenderingReport() {
+  return { status: "failed", stages: [{ name: "projection", status: "completed" }, { name: "citation_validation", status: "completed" }, { name: "rendering", status: "failed" }], assessment: { gaps: [{ code: "rendering_invalid", path: "html", value: null }] } };
+}
+
+
+async function downloadText(download) {
+  const stream = await download.createReadStream();
+  let text = "";
+  for await (const chunk of stream) text += chunk;
+  return text;
 }
 
 
@@ -21,11 +49,303 @@ test("renders project thread messages and sends via the prompts stream", async (
   await expect(page.locator(".pin-strip")).toHaveCount(0);
   const composer = await page.locator(".composer-wrap").boundingBox();
   expect(composer.y + composer.height).toBe(await page.evaluate(() => innerHeight));
-  await page.screenshot({ path: "test-results/chat-desktop.png" });
   await page.getByLabel("消息").fill("下一步做什么？");
   await page.getByRole("button", { name: "发送" }).click();
   await expect(page.getByText("先生成并筛选多个研究方向。")).toBeVisible();
   expect(request).toEqual({ message: "下一步做什么？" });
+});
+
+
+test("publishes a validated report card, previews, downloads and saves a version", async ({ page }) => {
+  await mockChat(page);
+  const publication = { id: "publication:p1", thread_id: "thread:t1", created_at: "2026-08-26T00:00:00Z" };
+  const content = "<!doctype html><html><body>Immutable report content</body></html>";
+  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 201, json: reportResult(publication) }));
+  await page.route(/\/threads\/thread%3At1\/report\/save$/, (route) => route.fulfill({ status: 201, json: { id: "report:v1" } }));
+  await page.route(/\/report\/publication%3Ap1\/content/, (route) => route.fulfill(route.request().url().includes("download=true")
+    ? { body: content, headers: { "content-type": "text/html", "content-disposition": "attachment; filename=report.html" } }
+    : { contentType: "text/html", body: content }));
+  await page.goto("/chat/thread%3At1");
+  await page.getByRole("button", { name: "生成报告" }).click();
+  await expect(page.getByText("已校验")).toBeVisible();
+  await expect(page.getByTitle("报告预览")).toHaveAttribute("sandbox", "");
+  await expect(page.getByRole("link", { name: /下载 HTML/ })).toHaveAttribute("download", "");
+  await expect(page.frameLocator('iframe[title="报告预览"]').getByText("Immutable report content")).toBeVisible();
+  const downloadEvent = page.waitForEvent("download");
+  await page.getByRole("link", { name: /下载 HTML/ }).click();
+  expect(await downloadText(await downloadEvent)).toBe(content);
+  await page.getByLabel("报告名称").fill("V1");
+  await page.getByRole("button", { name: "保存" }).click();
+  await expect(page.getByText("已保存版本 report:v1")).toBeVisible();
+});
+
+
+test("interleaves a report event at its trace turn and sequence", async ({ page }) => {
+  const publication = { id: "publication:p4", thread_id: "thread:t1", created_at: "2026-08-26T00:00:00Z" };
+  const turns = [{ id: "t1", input: [{ type: "text", text: "先发布" }], output: "报告之后", events: [] }, { id: "t2", input: [{ type: "text", text: "后续问题" }], output: "后续答复", events: [] }];
+  const runtime = { ...threadDetail().runtime, turns, reports: [{ ...reportResult(publication), turn_id: "t1", seq: 2 }] };
+  await mockChat(page, threadDetail({ runtime, report_publications: [{ ...publication, title: "测试项目" }] }));
+  await page.goto("/chat/thread%3At1");
+  const text = await page.locator(".message-list").innerText();
+  expect(text.indexOf("报告已发布")).toBeGreaterThan(text.indexOf("先发布"));
+  expect(text.indexOf("报告已发布")).toBeLessThan(text.indexOf("报告之后"));
+  await expect(page.locator(".report-message")).toHaveCount(1);
+});
+
+
+test("renders a failed traced report without a publication key", async ({ page }) => {
+  const runtime = { ...threadDetail().runtime, reports: [{ ...failedCitationReport(), turn_id: "t1", seq: 2 }], turns: [{ id: "t1", input: [], output: "失败后继续", events: [] }] };
+  await mockChat(page, threadDetail({ runtime }));
+  await page.goto("/chat/thread%3At1");
+  await expect(page.locator(".report-message")).toHaveCount(1);
+  await expect(page.getByRole("alert")).toContainText("source_missing");
+});
+
+
+test("keeps failed publication stages and gaps without refreshing", async ({ page }) => {
+  await mockChat(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  const failed = failedCitationReport();
+  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 422, json: failed }));
+  await page.goto("/chat/thread%3At1");
+  const refresh = page.waitForRequest(/\/api\/v1\/threads\/thread%3At1$/, { timeout: 200 }).then(() => true).catch(() => false);
+  await page.getByRole("button", { name: "生成报告" }).click();
+  await expect(page.getByRole("alert")).toContainText("source_missing: facts[0] = null");
+  await expect(page.getByRole("link", { name: /下载 HTML/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "重试" })).toBeVisible();
+  await expect(page.locator(".report-stages .completed")).toHaveCount(1);
+  await expect(page.locator(".report-stages .failed")).toHaveCount(1);
+  await expect(page.locator(".report-stages")).not.toContainText("生成");
+  expect(await refresh).toBe(false);
+});
+
+
+test("restores named thread report cards after reload", async ({ page }) => {
+  const reports = [{ id: "report:v1", title: "V1", publication_id: "publication:p1" }];
+  await mockChat(page, threadDetail({ reports }));
+  await page.context().route(/\/report\/publication%3Ap1\/content/, (route) => route.fulfill({ contentType: "text/html", body: "<!doctype html><html><body>Immutable saved version</body></html>" }));
+  await page.goto("/chat/thread%3At1");
+  await expect(page.getByText("V1")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("V1")).toBeVisible();
+  await expect(page.getByRole("link", { name: "下载" })).toHaveAttribute("download", "");
+  const opened = page.waitForEvent("popup");
+  await page.getByRole("link", { name: "预览" }).click();
+  await expect((await opened).locator("body")).toHaveText("Immutable saved version");
+});
+
+
+test("restores a Runtime-published report as a complete chat message", async ({ page }) => {
+  const publication = { id: "publication:p1", thread_id: "thread:t1", created_at: "2026-08-26T00:00:00Z" };
+  const detail = threadDetail({ runtime: { ...threadDetail().runtime, reports: [reportResult(publication)] }, report_publications: [{ ...publication, title: "测试项目" }] });
+  await mockChat(page, detail);
+  await page.goto("/chat/thread%3At1");
+  await expect(page.getByText("报告已发布")).toBeVisible();
+  await expect(page.getByTitle("报告预览")).toHaveAttribute("sandbox", "");
+  await expect(page.getByRole("link", { name: /下载 HTML/ })).toHaveAttribute("download", "");
+  await expect(page.locator(".report-message")).toHaveCount(1);
+  await page.reload();
+  await expect(page.getByText("报告已发布")).toBeVisible();
+  await expect(page.locator(".report-message")).toHaveCount(1);
+});
+
+
+test("restores a retry publication from the Thread record without duplicating Trace cards", async ({ page }) => {
+  const failed = failedCitationReport();
+  const publication = { id: "publication:p2", thread_id: "thread:t1", created_at: "2026-08-26T00:00:00Z" };
+  await mockRetryPublication(page, failed, publication);
+  await page.goto("/chat/thread%3At1");
+  const message = page.locator(".report-message");
+  await assertFailedReport(message);
+  await message.getByRole("button", { name: "重试" }).click();
+  await expect(page.locator(".report-message")).toHaveCount(1);
+  await expect(page.getByTitle("报告预览")).toHaveCount(1);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator(".report-message")).toHaveCount(1);
+  await expect(page.getByTitle("报告预览")).toHaveCount(1);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+
+async function mockRetryPublication(page, failed, publication) {
+  let detail = threadDetail({ runtime: { ...threadDetail().runtime, reports: [failed] }, report_publications: [] });
+  await mockChat(page, detail);
+  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill({ json: detail }));
+  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => {
+    detail = threadDetail({ runtime: { ...threadDetail().runtime, reports: [failed] }, report_publications: [{ ...publication, title: "测试项目" }] });
+    return route.fulfill({ status: 201, json: reportResult(publication) });
+  });
+}
+
+
+function deferred() {
+  let resolve;
+  return { wait: new Promise((value) => { resolve = value; }), release: () => resolve() };
+}
+
+
+async function blockThreadRefresh(page) {
+  const gate = deferred();
+  let block = false;
+  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => block ? gate.wait.then(() => route.fulfill({ json: threadDetail() })) : route.fulfill({ json: threadDetail() }));
+  return { block: () => { block = true; }, release: gate.release };
+}
+
+
+async function mockReportProgressPrompt(page, onStart) {
+  const start = { sessionUpdate: "tool_call", title: "发布科研报告", kind: "other", status: "in_progress" };
+  const updates = [["tool", { update: start }], ["tool", { update: { sessionUpdate: "tool_call_update", status: "completed" } }], ["done", { stop_reason: "end_turn" }]];
+  await page.route(/\/threads\/thread%3At1\/prompts/, (route) => { onStart(); return route.fulfill(sse(updates)); });
+}
+
+
+async function mockOverlappingRetry(page, failed, publication) {
+  const first = deferred();
+  let requests = 0;
+  let detail = threadDetail({ runtime: { ...threadDetail().runtime, reports: [failed] }, report_publications: [] });
+  await mockChat(page, detail);
+  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill({ json: detail }));
+  await page.route(/\/threads\/thread%3At1\/report\/publish$/, async (route) => {
+    requests += 1;
+    if (requests === 1) { await first.wait; return route.fulfill({ status: 422, json: failedRenderingReport() }); }
+    detail = threadDetail({ runtime: { ...threadDetail().runtime, reports: [failed] }, report_publications: [{ ...publication, title: "测试项目" }] });
+    return route.fulfill({ status: 201, json: reportResult(publication) });
+  });
+  return first;
+}
+
+
+async function mockOutOfOrderPublicationRefresh(page, older, newer) {
+  const stale = deferred();
+  const entered = deferred();
+  const details = [threadDetail({ report_publications: [older] }), threadDetail({ report_publications: [newer] })];
+  let detail = threadDetail();
+  let refreshes = 0;
+  let publishes = 0;
+  await mockChat(page);
+  await page.route(/\/api\/v1\/threads\/thread%3At1$/, async (route) => {
+    refreshes += 1;
+    if (refreshes !== 2) return route.fulfill({ json: detail });
+    entered.release(); await stale.wait;
+    return route.fulfill({ json: details[0] });
+  });
+  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => {
+    detail = details[publishes];
+    return route.fulfill({ status: 201, json: reportResult([older, newer][publishes++]) });
+  });
+  return { entered, release: stale.release };
+}
+
+
+async function assertFailedReport(message) {
+  await expect(message.getByRole("alert")).toContainText("source_missing");
+  await expect(message.locator(".report-stages .completed")).toHaveCount(1);
+  await expect(message.locator(".report-stages .failed")).toHaveCount(1);
+  await expect(message.getByRole("link", { name: /下载 HTML/ })).toHaveCount(0);
+}
+
+
+test("keeps retry failure stages and gaps without refreshing", async ({ page }) => {
+  const first = failedCitationReport();
+  const runtime = { ...threadDetail().runtime, reports: [{ ...first, turn_id: "t1", seq: 2 }] };
+  await mockChat(page, threadDetail({ runtime }));
+  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 422, json: failedRenderingReport() }));
+  await page.goto("/chat/thread%3At1");
+  const refresh = page.waitForRequest(/\/api\/v1\/threads\/thread%3At1$/, { timeout: 200 }).then(() => true).catch(() => false);
+  await page.locator(".report-message").getByRole("button", { name: "重试" }).click();
+  await expect(page.getByRole("alert")).toContainText("rendering_invalid");
+  await expect(page.locator(".report-stages .completed")).toHaveCount(2);
+  await expect(page.locator(".report-stages .failed")).toHaveCount(1);
+  expect(await refresh).toBe(false);
+});
+
+
+test("keeps a published preview and saved version when refresh fails", async ({ page }) => {
+  const publication = { id: "publication:p3", thread_id: "thread:t1", created_at: "2026-08-26T00:00:00Z" };
+  let refreshFails = false;
+  await mockChat(page);
+  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill(refreshFails ? { status: 500, json: { detail: "reload failed" } } : { json: threadDetail() }));
+  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => { refreshFails = true; return route.fulfill({ status: 201, json: reportResult(publication) }); });
+  await page.route(/\/threads\/thread%3At1\/report\/save$/, (route) => route.fulfill({ status: 201, json: { id: "report:v2" } }));
+  await page.goto("/chat/thread%3At1");
+  await page.getByRole("button", { name: "生成报告" }).click();
+  await expect(page.getByTitle("报告预览")).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("报告已发布，刷新失败。");
+  await page.getByLabel("报告名称").fill("V2");
+  await page.getByRole("button", { name: "保存" }).click();
+  await expect(page.getByText("已保存版本 report:v2")).toBeVisible();
+  await expect(page.getByTitle("报告预览")).toHaveCount(1);
+});
+
+
+test("renders the actual Kernel failed stage sequence", async ({ page }) => {
+  const failed = { status: "failed", stages: [{ name: "projection", status: "completed" }, { name: "citation_validation", status: "completed" }, { name: "rendering", status: "failed" }], assessment: { gaps: [{ code: "rendering_invalid", path: "html", value: null }] } };
+  await mockChat(page);
+  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 422, json: failed }));
+  await page.goto("/chat/thread%3At1");
+  await page.getByRole("button", { name: "生成报告" }).click();
+  await expect(page.locator(".report-stages .completed")).toHaveCount(2);
+  await expect(page.locator(".report-stages .failed")).toHaveCount(1);
+  await expect(page.locator(".report-stages")).not.toContainText("最终校验");
+});
+
+
+test("shows the ACP report tool progress until Thread restoration", async ({ page }) => {
+  await mockChat(page);
+  const refresh = await blockThreadRefresh(page);
+  await mockReportProgressPrompt(page, refresh.block);
+  await page.goto("/chat/thread%3At1");
+  await page.getByLabel("消息").fill("生成报告");
+  await page.getByRole("button", { name: "发送" }).click();
+  await expect(page.getByRole("status")).toContainText("发布科研报告");
+  refresh.release();
+  await expect(page.getByText("正在生成报告")).toHaveCount(0);
+});
+
+
+test("keeps only the newest retry response after a late callback", async ({ page }) => {
+  const failed = failedCitationReport();
+  const publication = { id: "publication:p5", thread_id: "thread:t1", created_at: "2026-08-26T00:00:00Z" };
+  const first = await mockOverlappingRetry(page, failed, publication);
+  await page.goto("/chat/thread%3At1");
+  const retry = page.locator(".report-message").getByRole("button", { name: "重试" });
+  await retry.click();
+  await retry.click();
+  await expect(page.locator(".report-message")).toHaveCount(1);
+  first.release();
+  await expect(page.locator(".report-message")).toHaveCount(1);
+  await expect(page.getByTitle("报告预览")).toHaveCount(1);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+
+test("keeps the newest publication when an older detail refresh resolves late", async ({ page }) => {
+  const older = { id: "publication:old", thread_id: "thread:t1", title: "旧发布", created_at: "2026-08-26T00:00:00Z" };
+  const newer = { id: "publication:new", thread_id: "thread:t1", title: "新发布", created_at: "2026-08-26T00:01:00Z" };
+  const refresh = await mockOutOfOrderPublicationRefresh(page, older, newer);
+  await page.goto("/chat/thread%3At1");
+  const publish = page.getByRole("button", { name: "生成报告" });
+  await publish.click();
+  await refresh.entered.wait;
+  await publish.click();
+  await expect(page.locator(".message-list")).toContainText("新发布");
+  refresh.release();
+  await expect(page.locator(".message-list")).toContainText("新发布");
+  await expect(page.locator(".message-list")).not.toContainText("旧发布");
+});
+
+
+test("keeps ACP report progress visible when Thread refresh fails", async ({ page }) => {
+  const start = { sessionUpdate: "tool_call", title: "发布科研报告", kind: "other", status: "in_progress" };
+  let refreshed = false;
+  await mockChat(page);
+  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill(refreshed ? { status: 500, json: { detail: "reload failed" } } : { json: threadDetail() }));
+  await page.route(/\/threads\/thread%3At1\/prompts/, (route) => { refreshed = true; return route.fulfill(sse([["tool", { update: start }], ["done", { stop_reason: "end_turn" }]])); });
+  await page.goto("/chat/thread%3At1");
+  await page.getByLabel("消息").fill("生成报告");
+  await page.getByRole("button", { name: "发送" }).click();
+  await expect(page.getByRole("status")).toContainText("发布科研报告");
 });
 
 

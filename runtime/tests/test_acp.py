@@ -33,6 +33,19 @@ class ProjectClient:
         return {"id": params["node_id"], "life_state": "admitted"}
 
 
+class PublicationClient:
+    def __init__(self):
+        self.calls = []
+        self.updates = []
+
+    async def session_update(self, session_id, update, **kwargs):
+        self.updates.append(update)
+
+    async def ext_method(self, method, params):
+        self.calls.append((method, params))
+        return {"status": "failed", "assessment": {"gaps": []}}
+
+
 async def test_acp_is_the_runtime_transport(tmp_path, monkeypatch):
     monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
     monkeypatch.setenv("RUNTIME_API_KEY", "secret")
@@ -98,34 +111,6 @@ async def test_graph_query_crosses_the_client_boundary(tmp_path):
     assert json.loads(content) == {"id": "D-008", "life_state": "admitted"}
 
 
-async def test_report_validate_crosses_the_client_boundary(tmp_path):
-    client = KernelClient()
-    facts = [{"text": "Result", "claim_id": "claim:1", "source_ids": ["S-1"]}]
-    async with ToolBox(tmp_path, {}, ("report_validate",), {}, client) as tools:
-        content, failed = await tools.call(
-            "session",
-            "report_validate",
-            json.dumps({"facts": facts}),
-        )
-
-    assert failed is False
-    assert json.loads(content) == {"valid": True, "delivery_level": 4}
-    assert client.calls == [("research/report_validate", {"facts": facts})]
-
-
-async def test_report_validate_rejects_caller_readiness(tmp_path):
-    client = KernelClient()
-    values = {"facts": [], "endpoint_ready": True}
-    async with ToolBox(tmp_path, {}, ("report_validate",), {}, client) as tools:
-        content, failed = await tools.call(
-            "session", "report_validate", json.dumps(values)
-        )
-
-    assert failed is True
-    assert "unexpected report validation fields" in content
-    assert client.calls == []
-
-
 async def test_export_bibtex_crosses_the_client_boundary(tmp_path):
     client = KernelClient()
     artifact_id = "artifact:" + "a" * 64
@@ -149,6 +134,63 @@ async def test_report_projection_crosses_the_client_boundary(tmp_path):
     assert client.calls == [("research/report_projection", {})]
 
 
+async def test_publish_report_crosses_the_client_boundary(tmp_path):
+    client = KernelClient()
+    values = {"title": "Orbit"}
+    async with ToolBox(tmp_path, {}, ("publish_report",), {}, client) as tools:
+        content, failed = await tools.call("session", "publish_report", json.dumps(values))
+
+    assert failed is False
+    assert json.loads(content)["status"] == "failed"
+    assert client.calls == [("research/publish_report", {**values, "_session_id": "session"})]
+
+
+@pytest.mark.parametrize(
+    ("arguments", "status"), [({"title": "Orbit"}, "failed"), ({}, "failed")],
+)
+async def test_publish_report_emits_safe_acp_lifecycle(tmp_path, arguments, status):
+    call = _publish_call(arguments)
+    provider = FakeProvider(
+        [{"role": "assistant", "content": "", "tool_calls": [call]},
+         {"role": "assistant", "content": "done"}]
+    )
+    client = PublicationClient()
+    runtime = Runtime(tmp_path / "data", [endpoint(provider)])
+    launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": _report_agent()})
+    await runtime.prompt(launched["session_id"], [{"type": "text", "text": "publish"}], client)
+    first, last = client.updates
+    assert _lifecycle(client.updates) == [
+        ("tool_call", "in_progress"), ("tool_call_update", status)
+    ]
+    assert first.tool_call_id == last.tool_call_id
+    assert first.tool_call_id.startswith("report:")
+    assert (first.title, first.kind) == ("发布科研报告", "other")
+    assert all(update.content is update.raw_input is update.raw_output is None for update in client.updates)
+
+
+def _publish_call(arguments):
+    return {
+        "id": "report-call",
+        "type": "function",
+        "function": {"name": "publish_report", "arguments": json.dumps(arguments)},
+    }
+
+
+def _report_agent():
+    return {
+        "id": "reporter",
+        "name": "Reporter",
+        "endpoint": "openai-compatible",
+        "model": "qwen-test",
+        "instructions": "Publish the report.",
+        "tools": ["publish_report"],
+    }
+
+
+def _lifecycle(updates):
+    return [(item.session_update, item.status) for item in updates]
+
+
 async def test_submit_observation_crosses_the_client_boundary(tmp_path):
     client = KernelClient()
     value = observation()
@@ -164,17 +206,16 @@ async def test_submit_observation_crosses_the_client_boundary(tmp_path):
 
 async def test_kernel_tools_are_exposed_only_when_selected(tmp_path):
     async with ToolBox(
-        tmp_path, {}, ("report_projection", "report_validate", "submit_observation"), {}, None
+        tmp_path, {}, ("report_projection", "publish_report", "submit_observation"), {}, None
     ) as selected:
         selected_names = tool_names(selected)
     async with ToolBox(tmp_path, {}, (), {}, None) as omitted:
         omitted_names = tool_names(omitted)
 
     assert "report_projection" in selected_names
-    assert "report_validate" in selected_names
+    assert "publish_report" in selected_names
     assert "submit_observation" in selected_names
     assert "report_projection" not in omitted_names
-    assert "report_validate" not in omitted_names
     assert "submit_observation" not in omitted_names
 
 
@@ -284,8 +325,8 @@ class KernelClient:
         self.calls.append((method, params))
         if method == "research/report_projection":
             return {"facts": [], "claims": [], "sources": []}
-        if method == "research/report_validate":
-            return {"valid": True, "delivery_level": 4}
+        if method == "research/publish_report":
+            return {"status": "failed", "assessment": {"gaps": []}}
         if method == "research/export_bibtex":
             return {"id": params["artifact_id"], "content": "@article{x}"}
         if method == "research/submit_observation":

@@ -247,7 +247,7 @@ test("scrolls the map workspace down to the inspector on mobile", async ({ page 
 
 
 test("copies the exact node id from the inspector without conversation controls", async ({ page, context }) => {
-  await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: "http://127.0.0.1:8095" });
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await mockBase(page, mapFixture());
   await page.goto("/map?node=node%3Ad");
   const inspector = page.locator(".inspector");
