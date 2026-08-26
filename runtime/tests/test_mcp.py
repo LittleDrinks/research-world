@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 from runtime.adapters import BoundMcp, parse_definition
 from runtime.service import Runtime
+from runtime.runtimes import REALM, RuntimeAdapter, RuntimeDescriptor
 from tests.helpers import FakeProvider, endpoint
 
 SERVER = """
@@ -34,7 +35,9 @@ def _proof_runtime(path, monkeypatch, tool_id="proof_mcp", env_values=None, defi
     script.write_text(SERVER)
     definition = parse_definition({"id": tool_id, "transport": "stdio", "command": sys.executable, "args": [str(script)], **(definition_extra or {})}, "runtime")
     provider = FakeProvider(_echo_responses())
-    return provider, Runtime(path / "data", [endpoint(provider)], tool_definitions=[definition])
+    adapter = RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM), ("openai-compatible",))
+    runtime = Runtime(path / "data", [endpoint(provider)], [adapter], tool_definitions=[definition])
+    return provider, runtime
 
 
 def _runtime_env(monkeypatch, extra=None):
@@ -87,7 +90,8 @@ async def test_tool_dying_after_launch_closes_the_failed_turn(tmp_path, monkeypa
 def _offline_runtime(path, monkeypatch):
     adapter = FlakyAdapter()
     monkeypatch.setattr("runtime.service.discover_adapters", lambda workspace, extra=(): {"offline": adapter})
-    return adapter, Runtime(path / "data", [endpoint(FakeProvider([]))])
+    runtime_adapter = RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM), ("openai-compatible",))
+    return adapter, Runtime(path / "data", [endpoint(FakeProvider([]))], [runtime_adapter])
 
 
 class FlakyAdapter:

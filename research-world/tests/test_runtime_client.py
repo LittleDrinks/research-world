@@ -84,7 +84,7 @@ async def test_invalid_runtime_extension_params_become_value_error():
     runtime = FailingExtensionRuntime(error)
 
     with pytest.raises(ValueError, match="agent name is required"):
-        await runtime.validate_agent({"id": "bad"})
+        await runtime.validate_agent({"id": "bad"}, "/workspace")
 
 
 @pytest.mark.asyncio
@@ -93,7 +93,7 @@ async def test_internal_runtime_extension_error_becomes_capability_error():
     runtime = FailingExtensionRuntime(error)
 
     with pytest.raises(RuntimeCapabilityError, match="runtime unavailable"):
-        await runtime.validate_agent({"id": "bad"})
+        await runtime.validate_agent({"id": "bad"}, "/workspace")
 
 
 @pytest.mark.asyncio

@@ -1,4 +1,5 @@
 import { CapabilityPicker } from "./CapabilityPicker";
+import { RuntimeSelect } from "./RuntimeSelect";
 import "../../agents.css";
 
 const EFFORTS = ["low", "medium", "high"];
@@ -35,8 +36,11 @@ function RuntimeFields({ spec, catalog, onChange, patch, patchOption }) {
     onChange({ ...spec, endpoint, model: model?.id || "" });
   };
   return <div className="agent-grid">
+    <RuntimeSelect value={spec.runtime} runtimes={catalog.runtimes || []} onChange={(runtime) => onChange({ ...spec, runtime })} />
     <label className="field"><span>Endpoint</span><select value={spec.endpoint} onChange={chooseEndpoint}>{catalog.endpoints.map(endpointOption)}</select></label>
-    <label className="field"><span>模型</span><select value={spec.model} onChange={(event) => patch("model", event.target.value)}>{models.map(modelOption)}</select></label>
+    <label className="field"><span>模型</span><select value={spec.model} onChange={(event) => patch("model", event.target.value)}>
+      {!models.some((item) => item.id === spec.model) && spec.model && <option value={spec.model}>{spec.model}（不在 catalog）</option>}
+      {models.map(modelOption)}</select></label>
     <label className="field"><span>推理强度</span><select value={spec.options.reasoning_effort} onChange={(event) => patchOption("reasoning_effort", event.target.value)}>{EFFORTS.map(option)}</select></label>
   </div>;
 }

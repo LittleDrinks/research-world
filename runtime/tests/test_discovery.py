@@ -54,7 +54,10 @@ async def test_catalog_contains_only_detected_workspace_assets(tmp_path, monkeyp
 
 def _assert_catalog_shape(value):
     assert set(value) == {"runtimes", "endpoints", "models", "skills", "tools", "presets"}
-    assert {item["id"] for item in value["runtimes"]} >= {"openai-compatible"}
+    assert {item["id"] for item in value["runtimes"]} == {"codex"}
+    assert all("executable" not in item and "path" not in item for item in value["runtimes"])
+    assert all("adapter" not in item for item in value["endpoints"])
+    assert all(item["runtime_refs"] == [{"id": "codex", "realm": "container:runtime"}] for item in value["endpoints"])
     assert {item["id"] for item in value["endpoints"]} >= {"openai-compatible"}
     assert {item["id"] for item in value["models"]} >= {"qwen-test"}
     assert all(set(item) == {"id", "endpoint"} for item in value["models"])

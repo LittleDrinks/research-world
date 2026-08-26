@@ -26,27 +26,6 @@ def agent_draft(preset_id: str, catalog: dict) -> dict:
     }
 
 
-def require_tools_ready(catalog: dict, value: dict) -> None:
-    states = _tool_states(catalog)
-    blocked = [
-        _tool_issue(states.get(tool, {"id": tool, "status": "missing"}))
-        for tool in value.get("tools", [])
-        if states.get(tool, {}).get("status") != "ready"
-    ]
-    if blocked:
-        raise ValueError(", ".join(blocked))
-
-
-def _tool_states(catalog: dict) -> dict[str, dict]:
-    states = {}
-    for preset in catalog.get("presets", []):
-        for tool in preset.get("tools", []):
-            states[tool["id"]] = {**states.get(tool["id"], {}), **tool}
-    for tool in catalog.get("tools", []):
-        states[tool["id"]] = {**states.get(tool["id"], {}), **tool}
-    return states
-
-
 def _tool_issue(tool: dict) -> str:
     state = " / ".join(filter(None, [tool["status"], tool.get("reason")]))
     return f"tool unavailable: {tool['id']} ({state})"
@@ -60,11 +39,19 @@ def _preset(preset_id: str, catalog: dict) -> dict:
 
 
 def _defaults(catalog: dict) -> dict:
-    endpoints = [item for item in catalog.get("endpoints", []) if item.get("available")]
-    if not endpoints:
-        raise ValueError("no available endpoint in runtime catalog")
-    endpoint = endpoints[0]
-    models = [
-        item for item in catalog.get("models", []) if item["endpoint"] == endpoint["id"]
-    ]
-    return {"endpoint": endpoint["id"], "model": models[0]["id"] if models else ""}
+    runtime = next(
+        (item for item in catalog.get("runtimes", [])
+         if item.get("id") == "codex" and item.get("status") == "ready"), None
+    )
+    if runtime is None:
+        raise ValueError("no ready Codex runtime in runtime catalog")
+    runtime_ref = {"id": runtime["id"], "realm": runtime["realm"]}
+    for endpoint in catalog.get("endpoints", []):
+        if not endpoint.get("available") or runtime_ref not in endpoint.get("runtime_refs", []):
+            continue
+        model = next((item for item in catalog.get("models", [])
+                      if item["endpoint"] == endpoint["id"]), None)
+        if model:
+            return {"runtime": runtime_ref,
+                    "endpoint": endpoint["id"], "model": model["id"]}
+    raise ValueError("no available Endpoint/Model pair in runtime catalog")

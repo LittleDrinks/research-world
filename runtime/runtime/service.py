@@ -65,29 +65,36 @@ class Runtime:
             path, self.endpoints.values(), self.runtimes, adapters
         )
 
-    def validate_agent(self, value: dict[str, Any]) -> dict[str, bool]:
-        AgentSpec.parse(value)
+    async def validate_agent(self, value: dict[str, Any], workspace: str) -> dict[str, bool]:
+        spec = AgentSpec.parse(value)
+        path = _workspace(workspace)
+        await self._validate_binding(spec, path)
         return {"valid": True}
 
     async def launch(self, value: dict[str, Any]) -> dict[str, Any]:
         workspace = _workspace(value["workspace"])
         spec = AgentSpec.parse(value["agent_spec"])
         session_id = _session_id(value.get("session_id"))
+        binding = await self._validate_binding(spec, workspace)
         if self.trace.path(session_id).exists():
             self._validate_launch(session_id, spec, workspace, value)
         else:
-            await self._create_session(session_id, spec, workspace, value)
+            await self._create_session(session_id, spec, workspace, value, binding)
         return {"session_id": session_id}
+
+    async def _validate_binding(self, spec, workspace):
+        recognized = await self.recognize(str(workspace))
+        adapter = self.runtimes.require(spec.runtime)
+        endpoint = self.endpoints.require(spec.endpoint, spec.model)
+        _validate_spec(spec, recognized, adapter, endpoint)
+        return recognized, adapter, endpoint
 
     def _validate_launch(self, session_id, spec, workspace, value) -> None:
         state = self.state.read(session_id)
         _validate_existing_session(state, _launch_identity(spec, workspace, value))
 
-    async def _create_session(self, session_id, spec, workspace, value) -> None:
-        recognized = await self.recognize(str(workspace))
-        adapter = self.runtimes.require(spec.runtime)
-        _validate_spec(spec, recognized, adapter)
-        endpoint = _launch_endpoint(self.endpoints, spec, adapter)
+    async def _create_session(self, session_id, spec, workspace, value, binding) -> None:
+        recognized, adapter, endpoint = binding
         snapshots = _skill_snapshots(spec, workspace)
         plan = await self._tool_plan(spec, workspace, snapshots)
         meta = _session_meta(spec, value, snapshots, plan, recognized, endpoint)
@@ -136,7 +143,8 @@ class Runtime:
     def default_agent(self) -> tuple:
         pair = next(
             ((adapter.descriptor, endpoint) for adapter in self.runtimes.values()
-             if adapter.descriptor.status == "ready"
+             if adapter.descriptor.id == "codex"
+             and adapter.descriptor.status == "ready"
              for endpoint in self._eligible_endpoints(adapter)), None
         )
         if pair is None:
@@ -146,8 +154,7 @@ class Runtime:
     def _eligible_endpoints(self, adapter):
         return (item for item in self.endpoints.values() if item.models
                 and adapter.accepts(item)
-                and (isinstance(adapter, CodexRuntimeAdapter)
-                     or item.public()["available"]))
+                and item.public()["available"])
 
     def cancel(self, session_id: str) -> None:
         active = self._active_turns.get(session_id)
@@ -396,14 +403,14 @@ def _launch_identity(spec, workspace, value) -> dict:
     }
 
 
-def _validate_spec(spec: AgentSpec, recognized: dict, runtime) -> None:
+def _validate_spec(spec: AgentSpec, recognized: dict, runtime, endpoint) -> None:
     _validate_runtime(spec, recognized)
-    endpoint = _validate_endpoint(spec, recognized, not runtime.owns_process)
+    _validate_endpoint(spec, recognized)
     if not runtime.accepts(endpoint):
         raise CapabilityNotFound("endpoint is not available for runtime")
+    _validate_dependencies(spec, recognized)
     if runtime.owns_process and spec.tools:
         raise CapabilityNotFound("codex cannot expose selected Tool schemas")
-    _validate_dependencies(spec, recognized)
 
 
 def _validate_runtime(spec, recognized) -> None:
@@ -415,21 +422,15 @@ def _validate_runtime(spec, recognized) -> None:
     _require((spec.runtime.id, spec.runtime.realm), runtimes, "runtime")
 
 
-def _validate_endpoint(spec, recognized, require_ready) -> dict:
-    endpoint_ids = {item["id"] for item in recognized["endpoints"] if item["available"] or not require_ready}
-    model_pairs = _model_pairs(recognized, require_ready)
+def _validate_endpoint(spec, recognized) -> dict:
+    endpoint_ids = {
+        item["id"] for item in recognized["endpoints"] if item["available"]
+    }
     _require(spec.endpoint, endpoint_ids, "endpoint")
-    endpoint = next(
-        item for item in recognized["endpoints"] if item["id"] == spec.endpoint
-    )
-    _require((spec.endpoint, spec.model), model_pairs, "model")
+    endpoint = next(item for item in recognized["endpoints"] if item["id"] == spec.endpoint)
+    models = {(item["endpoint"], item["id"]) for item in recognized["models"]}
+    _require((spec.endpoint, spec.model), models, "model")
     return endpoint
-
-
-def _model_pairs(recognized, require_ready):
-    if require_ready:
-        return {(item["endpoint"], item["id"]) for item in recognized["models"]}
-    return {(item["id"], model) for item in recognized["endpoints"] for model in item["models"]}
 
 
 def _validate_dependencies(spec, recognized) -> None:
@@ -493,7 +494,7 @@ def _restore_binding(events, state, runtimes, endpoints):
 
 
 def _launch_endpoint(endpoints, spec, adapter):
-    return endpoints.resolve(spec.endpoint, spec.model) if adapter.owns_process else endpoints.require(spec.endpoint, spec.model)
+    return endpoints.require(spec.endpoint, spec.model)
 
 
 def _persisted_endpoint(endpoints, spec, adapter):

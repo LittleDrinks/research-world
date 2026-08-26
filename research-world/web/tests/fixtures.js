@@ -50,7 +50,10 @@ export function sessionInspect() {
 
 
 export function catalog() {
-  return { endpoints: [{ id: "openai-compatible", name: "OpenAI 兼容端点", available: true }, { id: "codex", name: "Codex CLI", available: true }],
+  const codex = { id: "codex", realm: "container:runtime" };
+  return { runtimes: [{ ...codex, display_name: "Codex CLI", status: "ready", version: "0.1.0", source: "path" }],
+    endpoints: [{ id: "openai-compatible", name: "OpenAI 兼容端点", available: true, runtime_refs: [codex] },
+      { id: "codex", name: "Codex CLI", available: true, runtime_refs: [codex] }],
     models: [{ id: "qwen3.7-flash", endpoint: "openai-compatible" }, { id: "gpt-5.2", endpoint: "codex" }],
     skills: [{ id: "skill-review", name: "文献综述", description: "检索并综述相关文献", source: "workspace" }],
     tools: [{ id: "read_resource", name: "读取引用节点", status: "ready" },
@@ -71,15 +74,15 @@ export function preset(state = {}) {
 export function agentDraft(state = {}) {
   const value = preset();
   return { preset_id: value.id, reason: value.description,
-    spec: { ...value.spec, endpoint: "openai-compatible", model: "qwen3.7-flash",
+    spec: { ...value.spec, runtime: { id: "codex", realm: "container:runtime" }, endpoint: "openai-compatible", model: "qwen3.7-flash",
       options: { reasoning_effort: "medium", sandbox: "read-only", max_rounds: 12, token_budget: 200000 } },
     tools: value.tools, confirmable: true, issues: [], ...state };
 }
 
 
 export function agents() {
-  return [{ id: "research-assistant", name: "研究助手", endpoint: "openai-compatible", model: "qwen3.7-flash",
-    instructions: "围绕研究问题进行严谨讨论。", skills: [], tools: ["read_resource"],
+  return [{ id: "research-assistant", name: "研究助手", runtime: { id: "codex", realm: "container:runtime" }, endpoint: "openai-compatible", model: "qwen3.7-flash",
+    instructions: "围绕研究问题进行严谨讨论。", skills: [], tools: [],
     options: { reasoning_effort: "high", sandbox: "read-only", max_rounds: 12, token_budget: 200000 } }];
 }
 

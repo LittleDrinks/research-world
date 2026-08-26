@@ -13,7 +13,7 @@ from acp.agent import AgentSideConnection
 from acp.schema import ClientCapabilities, Implementation
 from runtime.acp_agent import RuntimeAgent
 from runtime.endpoints import Endpoint
-from runtime.runtimes import CodexRuntimeAdapter
+from runtime.runtimes import REALM, CodexRuntimeAdapter, RuntimeAdapter, RuntimeDescriptor
 from runtime.service import Runtime
 from runtime.tools import ToolBox
 from runtime.types import CapabilityNotFound
@@ -67,7 +67,7 @@ async def test_acp_default_codex_uses_declared_credentialless_endpoint(tmp_path,
     home.mkdir()
     (home / "auth.json").write_text('{"token":"test"}')
     monkeypatch.setenv("CODEX_HOME", str(home))
-    endpoint = Endpoint("chat", "Chat", "openai-compatible", ("gpt",), (), 1, None)
+    endpoint = Endpoint("chat", "Chat", "openai-compatible", ("gpt",), (), 1, None, available=True)
     runtime = Runtime(tmp_path / "data", [endpoint], [CodexRuntimeAdapter(ready_provider())])
 
     response = await RuntimeAgent(runtime).new_session(str(tmp_path))
@@ -81,7 +81,7 @@ async def test_acp_default_uses_codex_when_generic_endpoint_is_credentialless(tm
     (home / "auth.json").write_text('{"token":"test"}')
     monkeypatch.setenv("CODEX_HOME", str(home))
     monkeypatch.setattr("runtime.runtimes.CodexProvider.detected", lambda: ready_provider())
-    chat = Endpoint("chat", "Chat", "openai-compatible", ("gpt",), (), 1, None)
+    chat = Endpoint("chat", "Chat", "openai-compatible", ("gpt",), (), 1, None, available=True)
     runtime = Runtime(tmp_path / "data", [chat])
 
     response = await RuntimeAgent(runtime).new_session(str(tmp_path))
@@ -103,7 +103,9 @@ async def test_acp_default_fails_when_catalog_has_no_eligible_pair(tmp_path, mon
 def _resource_runtime(path, monkeypatch):
     for key, value in {"RUNTIME_API_BASE": "https://api.test/v1", "RUNTIME_API_KEY": "secret", "RUNTIME_MODEL": "qwen-test"}.items():
         monkeypatch.setenv(key, value)
-    return Runtime(path / "data", [endpoint(FakeProvider(_resource_responses()))])
+    provider = FakeProvider(_resource_responses())
+    adapter = RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM), ("openai-compatible",))
+    return Runtime(path / "data", [endpoint(provider)], [adapter])
 
 
 async def _resource_session(connection, workspace):
@@ -188,7 +190,7 @@ async def test_publish_report_emits_safe_acp_lifecycle(tmp_path, arguments, stat
          {"role": "assistant", "content": "done"}]
     )
     client = PublicationClient()
-    runtime = Runtime(tmp_path / "data", [endpoint(provider)])
+    runtime = generic_runtime(tmp_path, [endpoint(provider)])
     launched = await runtime.launch({"workspace": str(tmp_path), "agent_spec": _report_agent()})
     await runtime.prompt(launched["session_id"], [{"type": "text", "text": "publish"}], client)
     first, last = client.updates
@@ -284,11 +286,11 @@ async def test_runtime_extension_embed(tmp_path):
 
 
 async def test_runtime_extension_validates_agent_spec(tmp_path):
-    runtime = Runtime(tmp_path / "data", [endpoint(FakeProvider([]))])
+    runtime = generic_runtime(tmp_path, [endpoint(FakeProvider([]))])
     agent = RuntimeAgent(runtime)
 
     result = await agent.ext_method(
-        "runtime/agents/validate", {"agent_spec": valid_agent_spec()}
+        "runtime/agents/validate", {"agent_spec": valid_agent_spec(), "workspace": str(tmp_path)}
     )
 
     assert result == {"valid": True}
@@ -397,10 +399,15 @@ def valid_agent_spec():
         "id": "researcher",
         "name": "Researcher",
         "runtime": {"id": "openai-compatible", "realm": "container:runtime"},
-        "endpoint": "embedding",
-        "model": "embed-model",
+        "endpoint": "openai-compatible",
+        "model": "qwen-test",
         "instructions": "Use evidence.",
     }
+
+
+def generic_runtime(path, endpoints):
+    adapter = RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM), ("openai-compatible",))
+    return Runtime(path / "data", endpoints, [adapter])
 
 
 async def test_toolbox_rolls_back_opened_tools_in_reverse_order(tmp_path):
