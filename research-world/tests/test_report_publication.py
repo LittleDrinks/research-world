@@ -204,14 +204,14 @@ def test_failed_validation_has_no_publication_side_effect(world, project, tmp_pa
     assert not world.report_publications(project["id"], thread["id"])
 
 
-def test_publication_stops_before_materializing_an_over_budget_projection(world, project, tmp_path):
+def test_publication_ignores_unprojected_admitted_payload(world, project, tmp_path):
     value = kernel(world, tmp_path)
     marker = "bounded-artifact"
     world.create_node(project["id"], "experiment", {"notes": marker * (REPORT_INPUT_TOKEN_BUDGET + 1)}, life_state="admitted")
     thread = report_thread(world, project)
     result = publish(value, project, thread)
     assert result["stages"] == [{"name": "projection", "status": "failed"}]
-    assert result["assessment"]["gaps"][0]["code"] == "projection_budget_exceeded"
+    assert result["assessment"]["gaps"][0]["code"] == "facts_missing"
     assert marker not in str(result)
     assert not world.report_publications(project["id"], thread["id"])
 

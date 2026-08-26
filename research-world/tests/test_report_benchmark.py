@@ -34,7 +34,7 @@ def test_report_skill_benchmark_checks_contract_and_sections():
     assert f'data-artifact="{ARTIFACT}"' in html
 
 
-def test_report_skill_benchmark_blocks_kernel_before_public_projection(world, project, tmp_path):
+def test_report_skill_benchmark_ignores_unprojected_admitted_payload(world, project, tmp_path):
     marker = "bounded-evidence"
     payload = {"notes": marker * (REPORT_INPUT_TOKEN_BUDGET + 1)}
     world.create_node(project["id"], "experiment", payload, life_state="admitted")
@@ -43,7 +43,7 @@ def test_report_skill_benchmark_blocks_kernel_before_public_projection(world, pr
     assert envelope["status"] == "blocked"
     assert "projection" not in envelope
     assert marker not in str(envelope)
-    assert envelope["gaps"][0]["code"] == "projection_budget_exceeded"
+    assert envelope["gaps"][0]["code"] == "facts_missing"
 
 
 def test_report_skill_benchmark_keeps_the_exact_budget_boundary(world, project, tmp_path, monkeypatch):
@@ -66,6 +66,7 @@ def test_report_skill_benchmark_excludes_trace_payload(world, project, tmp_path)
 
 def boundary_projection(tokens):
     value = projection()
+    del value["artifacts"][0]["display"]
     source, question = value["sources"][0], value["question"]
     while input_tokens(value) < tokens:
         if len(source["title"]) < 4096:
