@@ -8,13 +8,22 @@ import time
 from pathlib import Path
 
 import pytest
+from runtime.endpoints import Endpoint
 from runtime.providers.codex import CodexProvider, _collect, _probe, _taskkill
 from runtime.runtimes import CodexRuntimeAdapter, REALM, load_runtimes
 from runtime.service import Runtime, _messages, _provider_context
 
 
-def codex_runtime(tmp_path, provider):
-    return Runtime(tmp_path / "data", [], runtimes=[CodexRuntimeAdapter(provider)])
+@pytest.fixture(autouse=True)
+def _codex_auth(monkeypatch, tmp_path):
+    home = tmp_path / "credential-store"
+    home.mkdir()
+    (home / "auth.json").write_text('{"token":"test"}')
+    monkeypatch.setenv("CODEX_HOME", str(home))
+
+
+def codex_runtime(tmp_path, provider, model="gpt-5.6-sol"):
+    return Runtime(tmp_path / "data", [_codex_endpoint(model)], runtimes=[CodexRuntimeAdapter(provider)])
 
 
 def ready_provider(executable="echo"):
@@ -72,6 +81,7 @@ def test_readiness_checks_version_without_exposing_probe_output(monkeypatch):
     assert calls[0][0] == (["/bin/codex", "--version"],)
     assert calls[0][1]["start_new_session"] is True
     assert calls[1][0] == (["/bin/codex", "login", "status"],)
+    assert set(calls[1][1]["env"]) == {"CODEX_HOME", "HOME", "LANG", "PATH"}
 
 
 def test_readiness_keeps_invalid_version_candidate(monkeypatch):
@@ -115,22 +125,23 @@ def test_probe_caps_noisy_stdout_before_buffering(monkeypatch):
 
 
 @pytest.mark.skipif(os.name != "posix", reason="process groups require POSIX")
-def test_probe_deadline_bounds_noisy_descendant_reader_join(monkeypatch, tmp_path):
-    monkeypatch.setattr("runtime.providers.codex.PROBE_CANDIDATE_TIMEOUT", 0.2)
-    child = f"import os,time;os.setsid();open({str(tmp_path / 'pid')!r},'w').write(str(os.getpid()));time.sleep(10)"
-    parent = f"import subprocess,sys,time;subprocess.Popen([sys.executable,'-c',{child!r}]);time.sleep(.05);exec('while True: pass')"
-    pid_file, started = tmp_path / "pid", time.monotonic()
+def test_probe_kills_same_group_reader_child_and_returns_error(monkeypatch, tmp_path):
+    monkeypatch.setattr("runtime.providers.codex.PROBE_CLEANUP_SLICE", 0.05)
+    pid_file = tmp_path / "pid"
+    child = f"import os,time;open({str(pid_file)!r},'w').write(str(os.getpid()));time.sleep(10)"
+    parent = f"import pathlib,subprocess,sys,time;subprocess.Popen([sys.executable,'-c',{child!r}]);p=pathlib.Path({str(pid_file)!r});exec('while not p.exists(): time.sleep(.001)')"
     result = _probe([sys.executable, "-c", parent], "test")
-    _kill_pid(int(pid_file.read_text())) if pid_file.exists() else None
     assert result[2]["code"] == "probe_timeout"
-    assert time.monotonic() - started < 0.4
+    assert not _pid_exists(int(pid_file.read_text()))
 
 
-def _kill_pid(pid):
-    try:
-        os.kill(pid, 9)
-    except ProcessLookupError:
-        return
+def _pid_exists(pid):
+    path = Path(f"/proc/{pid}/stat")
+    for _ in range(50):
+        if not path.exists() or path.read_text().split()[2] == "Z":
+            return False
+        time.sleep(0.01)
+    return True
 
 
 @pytest.mark.skipif(os.name != "posix", reason="process groups require POSIX")
@@ -186,6 +197,24 @@ def test_codex_session_home_is_per_session_and_restart_stable(tmp_path):
     first = str(tmp_path / "sessions" / "s-one" / "codex-home")
     second = str(tmp_path / "sessions" / "s-two" / "codex-home")
     assert first != second and first.endswith("s-one/codex-home")
+
+
+async def test_codex_session_copies_only_auth_into_restricted_child_environment(monkeypatch, tmp_path):
+    source, calls = tmp_path / "credential-store", []
+    (source / "config.toml").write_text("mcp_servers = {}")
+    monkeypatch.setenv("RUNTIME_API_KEY", "runtime-secret")
+    monkeypatch.setattr("runtime.providers.codex.asyncio.create_subprocess_exec", _record_launches(calls))
+    runtime = codex_runtime(tmp_path, ready_provider())
+    await _launch_and_prompt(runtime, tmp_path, "auth")
+    home, environment = Path(calls[0][1]["env"]["CODEX_HOME"]), calls[0][1]["env"]
+    assert (home / "auth.json").read_text() == (source / "auth.json").read_text()
+    assert (home / "auth.json").stat().st_mode & 0o777 == 0o600
+    assert not (home / "config.toml").exists() and set(environment) == _child_environment_keys()
+    assert "RUNTIME_API_KEY" not in environment
+
+
+def _child_environment_keys():
+    return {"CODEX_HOME", "HOME", "LANG", "PATH"}
 
 
 async def test_codex_launch_isolated_across_sessions_and_restart(monkeypatch, tmp_path):
@@ -254,9 +283,19 @@ async def test_collect_normalizes_jsonl_into_model_result():
 
     result = await _collect(process, "prompt", emit, 1)
     assert result.message == {"role": "assistant", "content": "answer"}
-    assert result.usage == {"prompt_tokens": 3, "completion_tokens": 2}
+    assert result.usage == _usage_values(3, 2)
     assert result.provider_session_id == "thread-1"
     assert emitted == ["answer"]
+
+
+async def test_runtime_trace_preserves_all_codex_usage_counters(monkeypatch, tmp_path):
+    provider = ready_provider()
+    monkeypatch.setattr(provider, "start", lambda *_: _process(Process(_usage_stream())))
+    runtime = codex_runtime(tmp_path, provider)
+    session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
+    await runtime.prompt(session, [{"type": "text", "text": "one"}])
+    response = next(event for event in runtime.inspect(session)["events"] if event["type"] == "model_response")
+    assert response["data"]["usage"] == _usage_values(3, 2, 1, 4, 5)
 
 
 @pytest.mark.parametrize(
@@ -485,7 +524,7 @@ async def test_runtime_preserves_capability_snapshot_and_recovers_resume(
     await runtime.prompt(launched["session_id"], [{"type": "text", "text": "one"}])
     await runtime.prompt(launched["session_id"], [{"type": "text", "text": "two"}])
     session = runtime.inspect(launched["session_id"])["session"]
-    assert session["agent_spec"]["endpoint"] == "codex"
+    assert session["agent_spec"]["endpoint"] == "primary"
     snapshot = session["capability_snapshot"]["runtime"]
     assert set(snapshot) == _DESCRIPTOR_FIELDS
     assert "runtime_binding" not in session
@@ -513,9 +552,8 @@ async def test_fresh_runtime_rejects_changed_persisted_endpoint(tmp_path, monkey
     monkeypatch.setattr(provider, "start", _resuming_start([]))
     runtime = codex_runtime(tmp_path, provider)
     session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
-    monkeypatch.setenv("CODEX_MODEL", "other")
     with pytest.raises(RuntimeError, match="persisted endpoint binding"):
-        await codex_runtime(tmp_path, ready_provider()).prompt(session, [])
+        await codex_runtime(tmp_path, ready_provider(), "other").prompt(session, [])
 
 
 async def test_fresh_runtime_rejects_changed_private_executable_identity(tmp_path, monkeypatch):
@@ -571,6 +609,24 @@ async def test_collect_accepts_release_completed_only_items_and_updates():
 async def test_collect_accepts_query_only_web_search():
     result = await _collect(Process(_stream(_query_only_web_events())), "prompt", _ignore, 1)
     assert result.provider_items[1]["item"]["action"] == {"type": "search", "query": "q"}
+
+
+@pytest.mark.parametrize("action", [
+    {"type": "open_page", "url": "https://example.test"},
+    {"type": "find_in_page", "url": "https://example.test", "pattern": "q"},
+    {"type": "other"}, {"type": "search", "query": "other"},
+])
+async def test_collect_rejects_nonquery_or_mismatched_web_actions(action):
+    item = {"id": "web", "type": "web_search", "query": "q", "action": action}
+    with pytest.raises(RuntimeError, match="invalid JSONL"):
+        await _collect(Process(_stream([{"type": "item.started", "item": item}])), "p", _ignore, 1)
+
+
+async def test_collect_rejects_second_turn_after_terminal():
+    stream = _stream([{"type": "item.completed", "item": _agent()}])
+    stream += b'{"type":"turn.started"}\n'
+    with pytest.raises(RuntimeError, match="invalid JSONL"):
+        await _collect(Process(stream), "p", _ignore, 1)
 
 
 @pytest.mark.parametrize("phase, status", [("started", "completed"), ("completed", "in_progress")])
@@ -843,6 +899,18 @@ def _usage_line():
     return b'{"type":"turn.completed","usage":{"input_tokens":1,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":1,"reasoning_output_tokens":0}}\n'
 
 
+def _usage_values(input_tokens, output_tokens, cached=0, cache_write=0, reasoning=0):
+    return {"input_tokens": input_tokens, "cached_input_tokens": cached, "cache_write_input_tokens": cache_write, "output_tokens": output_tokens, "reasoning_output_tokens": reasoning}
+
+
+def _usage_stream():
+    return b'{"type":"thread.started","thread_id":"thread-1"}\n{"type":"turn.started"}\n{"type":"item.completed","item":{"id":"one","type":"agent_message","text":"answer"}}\n{"type":"turn.completed","usage":{"input_tokens":3,"cached_input_tokens":1,"cache_write_input_tokens":4,"output_tokens":2,"reasoning_output_tokens":5}}\n'
+
+
+def _codex_endpoint(model):
+    return Endpoint("primary", "Primary", "test", (model,), (), 1, None, available=True)
+
+
 def _resuming_start(contexts):
     async def start(_, context):
         contexts.append(context)
@@ -897,7 +965,7 @@ def _spec(**extra):
         "id": "researcher",
         "name": "Researcher",
         "runtime": {"id": "codex", "realm": REALM},
-        "endpoint": "codex",
+        "endpoint": "primary",
         "model": "gpt-5.6-sol",
         "instructions": "Answer.",
     }

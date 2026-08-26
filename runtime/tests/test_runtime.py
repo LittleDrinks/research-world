@@ -32,9 +32,8 @@ def test_agent_spec_rejects_legacy_fields(legacy):
     spec(endpoint="codex"),
     spec(runtime={"id": "codex", "realm": REALM}),
 ])
-def test_agent_spec_binds_codex_runtime_and_endpoint(value):
-    with pytest.raises(SpecError):
-        AgentSpec.parse(value)
+def test_agent_spec_keeps_runtime_and_endpoint_independent(value):
+    assert AgentSpec.parse(value).snapshot()["runtime"]["id"] == value["runtime"]["id"]
 
 
 @pytest.mark.parametrize(

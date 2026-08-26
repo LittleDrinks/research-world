@@ -160,18 +160,14 @@ def test_endpoint_settings_reject_inline_credentials(monkeypatch):
         load_endpoints()
 
 
-def test_endpoint_settings_reserve_codex_for_the_cli_runtime(monkeypatch, tmp_path):
+def test_endpoint_settings_allow_codex_id_without_runtime_inference(monkeypatch, tmp_path):
     monkeypatch.setenv("RUNTIME_ENDPOINTS", json.dumps([configured_row(id="codex")]))
-    with pytest.raises(ValueError, match="reserved by Codex CLI"):
-        Runtime(
-            tmp_path / "data", load_endpoints(),
-            runtimes=[RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM))],
-        )
+    runtime = Runtime(tmp_path / "data", load_endpoints())
+    assert runtime.endpoints.values()[0].id == "codex"
 
 
-def test_endpoint_constructor_cannot_claim_codex_ownership():
-    with pytest.raises(ValueError, match="reserved by Codex CLI"):
-        Endpoint("codex", "Codex", "codex", ("model",), (), 1, None)
+def test_endpoint_constructor_allows_codex_id():
+    assert Endpoint("codex", "Codex", "test", ("model",), (), 1, None).id == "codex"
 
 
 async def test_embedding_requires_an_endpoint_id(tmp_path):

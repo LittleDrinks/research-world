@@ -1,4 +1,4 @@
-from runtime.trace import inspect_trace
+from runtime.trace import TraceStore, inspect_trace
 
 
 def test_public_trace_redacts_embedded_credentials_and_paths():
@@ -8,10 +8,12 @@ def test_public_trace_redacts_embedded_credentials_and_paths():
     assert "alice" not in rendered and "C:\\Users" not in rendered
 
 
-def test_public_trace_keeps_private_trace_facts_untouched():
-    event = _event(_attack_payload())
-    inspect_trace([event])
-    assert event["data"]["nested"]["items"][0]["url"].endswith("secret=one")
+def test_trace_redacts_secrets_and_paths_before_private_persistence(tmp_path):
+    store, payload = TraceStore(tmp_path), _private_attack_payload()
+    store.create("s", payload)
+    raw, view = store.path("s").read_text(), inspect_trace(store.read("s"))
+    for value in _private_values():
+        assert value not in raw and value not in str(view)
 
 
 def test_public_trace_keeps_token_accounting():
@@ -50,3 +52,11 @@ def _event(data):
 
 def _attack_payload():
     return {"command": "curl https://alice:hunter2@example.test/a?x-api-key=hunter2 /srv/private", "authorization": "Bearer token", "nested": {"items": [{"url": "ssh://u:p@host/x?secret=one", "path": "C:\\Users\\a\\x"}]}}
+
+
+def _private_attack_payload():
+    return {"provider_item": {"raw": "Authorization: Bearer auth-secret; Set-Cookie: sid=cookie-secret; ./private/file", "Database_URL": "postgres://db:dsn-secret@host/db", "nested": [{"URL": "https://user:url-secret@host/a?token=query-secret", "path": "relative/private", "COOKIE": "cookie-secret"}]}}
+
+
+def _private_values():
+    return ["auth-secret", "cookie-secret", "dsn-secret", "url-secret", "query-secret", "./private/file", "relative/private"]
