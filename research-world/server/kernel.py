@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import math
 import secrets
+import sqlite3
 from dataclasses import dataclass, field
 from inspect import isawaitable
 from pathlib import Path
@@ -201,14 +202,27 @@ class ResearchKernel:
         return self._render_publication(project_id, thread_id, title, projection, assessment, stages)
 
     def _render_publication(self, project_id, thread_id, title, projection, assessment, stages):
-        title, content = _report_title(title), render_html(title, projection, assessment)
+        try:
+            title, content = _report_title(title), render_html(title, projection, assessment)
+        except (TypeError, ValueError):
+            return _publication_failure("rendering", stages, {**assessment, "valid": False, "gaps": [{"code": "rendering_invalid", "path": "html", "value": None}]})
         stages.append({"name": "rendering", "status": "completed"})
         gaps = validate_html(content)
         if gaps:
             return _publication_failure("output_validation", stages, {**assessment, "valid": False, "gaps": gaps})
         stages.append({"name": "output_validation", "status": "completed"})
-        artifact = ArtifactStore(self._world.artifacts_root, project_id).add(content, "text/html")
-        publication = self._world.publish_report(project_id, thread_id, title, artifact["id"])
+        return self._persist_publication(project_id, thread_id, title, content, assessment, stages)
+
+    def _persist_publication(self, project_id, thread_id, title, content, assessment, stages):
+        store = ArtifactStore(self._world.artifacts_root, project_id)
+        created, artifact_id = not store.has_content(content), ArtifactStore.identifier(content)
+        try:
+            artifact = store.add(content, "text/html")
+            publication = self._world.publish_report(project_id, thread_id, title, artifact["id"])
+        except (ArtifactIntegrityError, OSError, sqlite3.Error):
+            if created:
+                store.discard(artifact_id)
+            return _publication_failure("persistence", stages, {**assessment, "valid": False, "gaps": [{"code": "persistence_failed", "path": "publication", "value": None}]})
         stages.append({"name": "persistence", "status": "completed"})
         return {"status": "published", "title": title, "publication": publication, "artifact": _artifact_view(artifact), "assessment": assessment, "stages": stages}
 

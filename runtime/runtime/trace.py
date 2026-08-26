@@ -148,7 +148,8 @@ def _report(event):
         value = json.loads(data["content"])
     except (KeyError, TypeError, json.JSONDecodeError):
         return None
-    return _report_message(value)
+    report = _report_message(value)
+    return {**report, "turn_id": event.get("turn_id"), "seq": event["seq"]} if report else None
 
 
 def _report_message(value):

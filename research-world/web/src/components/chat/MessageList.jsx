@@ -8,16 +8,13 @@ import { PublicationMessage, ReportMessage, ReportProgressMessage } from "./Repo
 const MENTION = /@(node:[A-Za-z0-9]+)/g;
 
 
-export function MessageList({ messages, streaming, reports = [], publications = [], reportProgress, threadId, reportTitle, onReportRefresh }) {
+export function MessageList({ messages, streaming, reports = [], publications = [], reportProgress, threadId, reportTitle, onReportRefresh, turns = [] }) {
   const end = useRef(null);
-  const entries = reportEntries(reports, publications);
+  const entries = chatEntries(messages, reports, publications, turns, streaming);
   useEffect(() => { end.current?.scrollIntoView({ block: "end" }); }, [messages, entries, reportProgress, streaming]);
   return <div className="message-list">
     {!messages.length && !entries.length && !reportProgress && !streaming && <p className="message-placeholder">暂无消息。直接提问，或输入 @ 引用节点作为上下文。</p>}
-    {messages.map((message, index) => <Message key={index} message={message} />)}
-    {entries.map((entry, index) => entry.result
-      ? <ReportMessage key={entry.result.publication?.id || `report-${index}`} result={entry.result} threadId={threadId} title={reportTitle} onRefresh={onReportRefresh} />
-      : <PublicationMessage key={entry.publication.id} publication={entry.publication} />)}
+    {entries.map((entry, index) => <ChatEntry key={entryKey(entry, index)} entry={entry} threadId={threadId} title={reportTitle} onRefresh={onReportRefresh} />)}
     {reportProgress && <ReportProgressMessage />}
     {streaming ? <article className="message assistant"><span>助手</span>
       <div className="markdown streaming"><ReactMarkdown>{streaming}</ReactMarkdown><i className="cursor-block" /></div></article> : null}
@@ -25,9 +22,52 @@ export function MessageList({ messages, streaming, reports = [], publications = 
 }
 
 
+function chatEntries(messages, reports, publications, turns, streaming) {
+  if (!streaming && reports.some((report) => report.turn_id) && turns.length) return turnEntries(reports, publications, turns);
+  return [...messages.map((message) => ({ message })), ...reportEntries(reports, publications)];
+}
+
+
+function turnEntries(reports, publications, turns) {
+  const seen = new Set();
+  const entries = turns.flatMap((turn) => oneTurn(turn, reports, seen));
+  return [...entries, ...reportEntries(reports.filter((report) => !seen.has(report)), publications)];
+}
+
+
+function oneTurn(turn, reports, seen) {
+  const result = reports.filter((report) => report.turn_id === turn.id).sort((a, b) => a.seq - b.seq);
+  result.forEach((report) => seen.add(report));
+  return [turnInput(turn), ...result.map((item) => ({ result: item })), turnOutput(turn)].filter(Boolean);
+}
+
+
+function turnInput(turn) {
+  const content = turn.input?.map((item) => item.text).filter(Boolean).join("\n");
+  return content ? { message: { role: "user", content } } : null;
+}
+
+
+function turnOutput(turn) {
+  return turn.output ? { message: { role: "assistant", content: turn.output } } : null;
+}
+
+
 function reportEntries(reports, publications) {
   const known = new Set(reports.map((result) => result.publication?.id).filter(Boolean));
   return [...reports.map((result) => ({ result })), ...publications.filter((item) => !known.has(item.id)).map((publication) => ({ publication }))];
+}
+
+
+function entryKey(entry, index) {
+  return entry.result?.publication?.id || entry.publication?.id || `${entry.message.role}-${index}`;
+}
+
+
+function ChatEntry({ entry, threadId, title, onRefresh }) {
+  if (entry.message) return <Message message={entry.message} />;
+  if (entry.result) return <ReportMessage result={entry.result} threadId={threadId} title={title} onRefresh={onRefresh} />;
+  return <PublicationMessage publication={entry.publication} />;
 }
 
 

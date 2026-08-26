@@ -206,9 +206,15 @@ def _display_gaps(artifact: dict) -> list[dict]:
     display, kind = artifact.get("display"), artifact.get("kind")
     if not isinstance(display, dict) or display.get("kind") != kind:
         return [_gap("artifact_display_invalid", "artifacts")]
-    if kind in {"code", "formula"}:
+    if kind == "code":
         return [] if set(display) == {"kind", "text"} and safe_report_text(display.get("text")) else [_gap("artifact_display_invalid", "artifacts")]
+    if kind == "formula":
+        return [] if set(display) == {"kind", "mathml"} and _mathml(display.get("mathml")) else [_gap("artifact_display_invalid", "artifacts")]
     return [] if set(display) == {"kind", "src"} and _chart_source(display.get("src")) else [_gap("artifact_display_invalid", "artifacts")]
+
+
+def _mathml(value) -> bool:
+    return isinstance(value, str) and value.startswith("<math") and value.endswith("</math>")
 
 
 def _chart_source(value) -> bool:

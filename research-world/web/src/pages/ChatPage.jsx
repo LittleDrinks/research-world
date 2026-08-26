@@ -150,7 +150,7 @@ function ThreadContent({ data, detail, draft, pending, pin, reportProgress, send
   const reportTitle = data.projects.find((item) => item.id === data.active_project_id)?.name || "Research report";
   return <section className="chat-page">
     <ThreadHeader detail={detail} sending={sending} onRestart={onRestart} />
-    <div className="chat-scroll"><MessageList messages={messages} streaming={sending ? streaming : ""} reports={detail.runtime?.reports || []} publications={detail.report_publications || []} reportProgress={reportProgress} threadId={detail.id} reportTitle={reportTitle} onReportRefresh={onRefresh} /><div className="chat-report"><ReportCard threadId={detail.id} reports={detail.reports || []} title={reportTitle} onRefresh={onRefresh} /></div></div>
+    <div className="chat-scroll"><MessageList messages={messages} streaming={sending ? streaming : ""} reports={detail.runtime?.reports || []} publications={detail.report_publications || []} reportProgress={reportProgress} threadId={detail.id} reportTitle={reportTitle} onReportRefresh={onRefresh} turns={detail.runtime?.turns || []} /><div className="chat-report"><ReportCard threadId={detail.id} reports={detail.reports || []} title={reportTitle} onRefresh={onRefresh} /></div></div>
     {specInvalid && <SpecInvalidNotice onRestart={onRestart} />}
     {draft && <ProfileDraftCard key={draft.nonce} draft={draft} onCancel={() => setDraft(null)} />}
     <Composer pinnedNodes={detail.nodes} sending={sending} onSend={onSend} onPin={pin}

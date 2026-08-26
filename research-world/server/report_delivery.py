@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import base64
 import re
+from io import BytesIO
 from html import escape, unescape
+from html.parser import HTMLParser
+
+from PIL import Image, UnidentifiedImageError
+from latex2mathml.converter import convert
 
 from .reporting import contains_restricted_data, evidence_kind, safe_report_text
 
@@ -26,12 +31,32 @@ def _text_display(kind: str, content: bytes) -> dict:
         text = safe_report_text(content.decode("utf-8"))
     except UnicodeDecodeError:
         text = None
-    return {"kind": kind, "text": text} if text else {"kind": "invalid"}
+    if not text:
+        return {"kind": "invalid"}
+    return {"kind": "code", "text": text} if kind == "code" else _formula_display(text)
+
+
+def _formula_display(text: str) -> dict:
+    try:
+        return {"kind": "formula", "mathml": convert(text)}
+    except (ValueError, TypeError):
+        return {"kind": "invalid"}
 
 
 def _chart_display(media_type: str, content: bytes) -> dict:
+    if not _decoded_image_matches(media_type, content):
+        return {"kind": "invalid"}
     encoded = base64.b64encode(content).decode("ascii")
     return {"kind": "chart", "src": f"data:{media_type};base64,{encoded}"}
+
+
+def _decoded_image_matches(media_type: str, content: bytes) -> bool:
+    try:
+        with Image.open(BytesIO(content)) as image:
+            image.verify()
+            return image.format == _image_formats[media_type]
+    except (KeyError, UnidentifiedImageError, OSError, SyntaxError):
+        return False
 
 
 def render_html(title: str, projection: dict, assessment: dict) -> bytes:
@@ -45,11 +70,20 @@ def render_html(title: str, projection: dict, assessment: dict) -> bytes:
 
 def validate_html(content: bytes) -> list[dict]:
     text = content.decode("utf-8", errors="replace")
-    required = ("<!doctype html>", "</body></html>")
-    gaps = [_html_gap("rendered_content_invalid") for value in required if value not in text.lower()]
+    gaps = [] if _semantic_html(text) else [_html_gap("rendered_content_invalid")]
     if re.search(_ACTIVE_CONTENT, text, re.IGNORECASE):
         gaps.append(_html_gap("active_content_exposed"))
-    return gaps + ([_html_gap("sensitive_data_exposed")] if contains_restricted_data(unescape(text), opaque=False) else [])
+    return gaps + ([_html_gap("sensitive_data_exposed")] if contains_restricted_data(_html_safety_text(text), opaque=False) else [])
+
+
+def _html_safety_text(text: str) -> str:
+    return unescape(text).replace('xmlns="http://www.w3.org/1998/Math/MathML"', "")
+
+
+def _semantic_html(text: str) -> bool:
+    parser = _ReportStructure()
+    parser.feed(text)
+    return parser.valid() and "<!doctype html>" in text.lower()
 
 
 def _html_gap(code: str) -> dict:
@@ -132,8 +166,8 @@ def _code(item: dict) -> str:
 
 
 def _formula(item: dict) -> str:
-    content = escape(item["display"]["text"])
-    return _figure(item, f'<div class="formula" data-artifact="{escape(item["id"])}"><math><mtext>{content}</mtext></math></div>')
+    content = item["display"]["mathml"]
+    return _figure(item, f'<div class="formula" data-artifact="{escape(item["id"])}">{content}</div>')
 
 
 def _chart(item: dict) -> str:
@@ -161,3 +195,27 @@ def _limitations(gaps: list[dict]) -> str:
 
 
 _artifact_html = {"code": _code, "formula": _formula, "chart": _chart}
+_image_formats = {"image/png": "PNG", "image/jpeg": "JPEG", "image/gif": "GIF", "image/webp": "WEBP"}
+
+
+class _ReportStructure(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.tags, self.sections, self.evidence, self.formula = set(), set(), False, False
+
+    def handle_starttag(self, tag, attrs):
+        self.tags.add(tag)
+        values = dict(attrs)
+        self.evidence |= tag == "a" and values.get("href", "").startswith("#evidence-")
+        self.formula |= tag == "div" and values.get("class") == "formula"
+
+    def handle_data(self, data):
+        if self.lasttag == "h2":
+            self.sections.add(data.strip())
+
+    def valid(self) -> bool:
+        required = {"html", "head", "title", "body", "h1", "h2", "table", "th", "td"}
+        return required <= self.tags and self.evidence and set(_sections) <= self.sections and (not self.formula or "math" in self.tags)
+
+
+_sections = ("Research question", "Conclusions", "Evidence and methods", "Limitations and gaps")

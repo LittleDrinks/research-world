@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import re
 import uuid
@@ -193,7 +194,7 @@ class Runtime:
             )
             result = {**data, "content": content, "is_error": failed}
             self.trace.append(session_id, "tool_result", result, turn_id)
-            await _report_finished(tools.client, session_id, progress_id, failed)
+            await _report_finished(tools.client, session_id, progress_id, failed, content)
 
     def _finish(self, session_id, turn_id, status, result, usage):
         self._cancelled.discard(session_id)
@@ -234,13 +235,22 @@ async def _report_started(client, session_id, name):
     return tool_call_id
 
 
-async def _report_finished(client, session_id, tool_call_id, failed):
+async def _report_finished(client, session_id, tool_call_id, failed, content):
     if client is None or tool_call_id is None:
         return None
-    status = "failed" if failed else "completed"
+    status = "failed" if _report_failed(failed, content) else "completed"
     await client.session_update(
         session_id, update_tool_call(tool_call_id, status=status)
     )
+
+
+def _report_failed(failed, content) -> bool:
+    if failed:
+        return True
+    try:
+        return json.loads(content).get("status") == "failed"
+    except (AttributeError, TypeError, json.JSONDecodeError):
+        return True
 
 
 def _workspace(value: str) -> Path:
