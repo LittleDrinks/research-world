@@ -88,11 +88,12 @@ class CodexProvider:
             **_process_group_options(),
         )
 
-    async def collect(self, process, messages: list[dict], emit: Emit) -> ModelResult:
-        return await _collect(process, _latest_user(messages), emit, self.timeout)
-
-    def cancel(self, process) -> None:
-        _terminate_tree(process)
+    async def collect(
+        self, process, messages: list[dict], emit: Emit, continuations=()
+    ) -> ModelResult:
+        return await _collect(
+            process, _latest_user(messages), emit, self.timeout, continuations
+        )
 
     async def stop(self, process) -> None:
         await _bounded_stop(process)
@@ -233,11 +234,13 @@ def _version_status(version: str) -> tuple[str, str, dict[str, str] | None]:
     return version, "unsupported", _reason("version_incompatible", "version")
 
 
-async def _collect(process, prompt: str, emit: Emit, timeout: float) -> ModelResult:
+async def _collect(
+    process, prompt: str, emit: Emit, timeout: float, continuations=()
+) -> ModelResult:
     stdout = await _stdout(process, prompt, timeout)
     events = _events(stdout)
     thread_id = _thread_id(events)
-    events = _redact_thread(events, thread_id)
+    events = _redact_threads(events, (*continuations, thread_id))
     text = _agent_text(events)
     if text:
         await emit(text)
@@ -245,14 +248,44 @@ async def _collect(process, prompt: str, emit: Emit, timeout: float) -> ModelRes
                        thread_id, _trace_items(events))
 
 
-def _redact_thread(value, thread_id):
-    if not thread_id:
+def _redact_threads(value, thread_ids):
+    ids = tuple(thread_id for thread_id in thread_ids if thread_id)
+    if not ids:
         return value
     if isinstance(value, dict):
-        return {key: _redact_thread(item, thread_id) for key, item in value.items()}
+        return _redact_thread_mapping(value, ids)
     if isinstance(value, list):
-        return [_redact_thread(item, thread_id) for item in value]
-    return value.replace(thread_id, "<redacted>") if isinstance(value, str) else value
+        return [_redact_threads(item, ids) for item in value]
+    return _redact_text(value, ids) if isinstance(value, str) else value
+
+
+def _redact_thread_mapping(value, thread_ids):
+    redacted = {}
+    for key, item in value.items():
+        redacted[_unique_key(redacted, _redact_thread_key(key, thread_ids))] = _redact_threads(item, thread_ids)
+    return redacted
+
+
+def _redact_thread_key(key, thread_ids):
+    return "<redacted>" if key in thread_ids else key
+
+
+def _unique_key(value, key):
+    index, candidate = 2, key
+    while candidate in value:
+        candidate = f"{key}#{index}"
+        index += 1
+    return candidate
+
+
+def _redact_text(value, thread_ids):
+    for thread_id in thread_ids:
+        if value == thread_id:
+            return "<redacted>"
+        value = re.sub(
+            rf"(?<!\w){re.escape(thread_id)}(?!\w)", "<redacted>", value
+        )
+    return value
 
 
 async def _stdout(process, prompt: str, timeout: float) -> bytes:

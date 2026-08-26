@@ -48,7 +48,6 @@ class Runtime:
         self.trace, self.state = _session_stores(root)
         values = endpoints if endpoints is not None else load_endpoints()
         adapters = runtimes if runtimes is not None else load_runtimes()
-        _bind_endpoint_ids(adapters, values)
         self.runtimes = RuntimePool(adapters)
         self.endpoints = EndpointPool(values)
         self.tool_definitions = tuple(tool_definitions)
@@ -124,13 +123,6 @@ class Runtime:
             _session_info(self.inspect(session_id), session_id)
             for session_id in self.trace.sessions()
         ]
-
-    def default_endpoint(self, descriptor) -> Endpoint:
-        adapter = self.runtimes.require(descriptor)
-        endpoint = next(self._eligible_endpoints(adapter), None)
-        if endpoint is None:
-            raise CapabilityNotFound("no model endpoint is available for runtime")
-        return endpoint
 
     def default_agent(self) -> tuple:
         pair = next(
@@ -336,13 +328,6 @@ def _session_spec(events):
         return AgentSpec.parse(meta["agent_spec"]), meta
     except RuntimeInputError as error:
         raise SessionSpecInvalid(str(error)) from error
-
-
-def _bind_endpoint_ids(adapters, endpoints) -> None:
-    ids = tuple(item.id for item in endpoints)
-    for adapter in adapters:
-        if adapter.descriptor.id == "openai-compatible":
-            adapter.endpoint_ids = ids
 
 
 def _session_id(value: str | None) -> str:

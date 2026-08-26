@@ -99,15 +99,35 @@ def redact_trace_data(data, continuations=()):
 
 def _redact_continuations(value, continuations):
     if isinstance(value, dict):
-        return {key: _redact_continuations(item, continuations) for key, item in value.items()}
+        return _redact_continuation_mapping(value, continuations)
     if isinstance(value, list):
         return [_redact_continuations(item, continuations) for item in value]
     return _redact_continuation_text(value, continuations) if isinstance(value, str) else value
 
 
+def _redact_continuation_mapping(value, continuations):
+    redacted = {}
+    for key, item in value.items():
+        key = "<redacted>" if key in continuations else key
+        redacted[_unique_key(redacted, key)] = _redact_continuations(item, continuations)
+    return redacted
+
+
+def _unique_key(value, key):
+    index, candidate = 2, key
+    while candidate in value:
+        candidate = f"{key}#{index}"
+        index += 1
+    return candidate
+
+
 def _redact_continuation_text(value, continuations):
     for continuation in continuations:
-        value = value.replace(continuation, "<redacted>")
+        if value == continuation:
+            return "<redacted>"
+        value = re.sub(
+            rf"(?<!\w){re.escape(continuation)}(?!\w)", "<redacted>", value
+        )
     return value
 
 

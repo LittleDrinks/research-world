@@ -41,14 +41,15 @@ class RuntimeDescriptor:
 
 
 class RuntimeAdapter:
-    def __init__(self, descriptor: RuntimeDescriptor, endpoint_ids: tuple[str, ...] = ()):
+    def __init__(
+        self, descriptor: RuntimeDescriptor, endpoint_adapters: tuple[str, ...] = ()
+    ):
         self.descriptor = descriptor
-        self.endpoint_ids = endpoint_ids
+        self.endpoint_adapters = endpoint_adapters or (descriptor.id,)
 
     def accepts(self, endpoint) -> bool:
-        endpoint_id = endpoint["id"] if isinstance(endpoint, dict) else endpoint.id
         adapter = endpoint["adapter"] if isinstance(endpoint, dict) else endpoint.adapter
-        return adapter == self.descriptor.id and endpoint_id in self.endpoint_ids
+        return adapter in self.endpoint_adapters
 
     @property
     def owns_process(self) -> bool:
@@ -80,7 +81,9 @@ class CodexRuntimeAdapter(RuntimeAdapter):
         process = None
         try:
             process = await self._start(session_id, model, context)
-            result = await self.provider.collect(process, messages, emit)
+            result = await self.provider.collect(
+                process, messages, emit, (context.get("provider_session_id"),)
+            )
             return endpoint.id, result
         except BaseException:
             if process is not None:
