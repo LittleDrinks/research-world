@@ -48,7 +48,7 @@ OpenCLI 是浏览器自动化 Tool Adapter，只能以 `browser.opencli` 进入 
 ## Probe
 Runtime 对每个内置候选执行固定 argv allowlist，不经过 shell。定位、路径解析、版本与认证 probe 分进程运行；单步 2 秒、单候选累计 5 秒，stdout 与 stderr 各截断到 16 KiB，解析后丢弃。进程组超时终止；一个候选失败不改变其他结果。
 固定 version argv 包含 Codex `['codex', '--version']` 与 Kimi Code `['kimi', '--version']`。Kimi 不登记认证 argv；version probe 不运行 `doctor`、读取配置或访问 secret。
-Codex 定位后解析 symlink 并冻结目标；version/login probe、launch 与恢复都执行该目标，identity recheck 比较同一目标。child environment 使用固定 locale 和包含 `/usr/local/bin` 的受信任 PATH，支持镜像内 pinned Node entrypoint。
+Codex 定位后解析 symlink 并打开冻结的官方 native executable；version/login probe、launch 与恢复都执行该已打开对象，identity recheck 比较同一对象，路径替换不能穿透。child environment 使用固定 locale 和受信任系统 PATH，不支持 Node entrypoint。
 认证只使用官方、非交互、无敏感输出的状态命令。Codex 固定执行 `['codex', 'login', 'status']`：退出码 0 为 `ready`，非 0 为 `auth-required/auth_missing`；命令不可用为 `found/auth_probe_unavailable`。不得读取配置文件、环境变量值或 token。配置语法有效不等于已认证；Kimi `doctor config` 成功仍保持认证 unknown。probe 不执行 install、update、login、token refresh、doctor 修复、付费模型调用或任意用户命令。
 ## Realm 与缓存
 `wsl`、`windows` 与 `container` 是独立 execution realm。Runtime 只把当前 launch realm 的 descriptor 用于 AgentSpec readiness；其他 realm 仅作为 inventory 事实展示。
