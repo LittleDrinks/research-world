@@ -26,8 +26,9 @@ async def test_resume_uses_private_state_without_trace_paths(tmp_path, monkeypat
     runtime = Runtime(tmp_path / "data", [_codex_endpoint("gpt-5.6-sol")], runtimes=[CodexRuntimeAdapter(first)])
     session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
     await runtime.prompt(session, [{"type": "text", "text": "one"}])
-    raw = runtime.trace.path(session).read_text()
-    assert all(value not in raw for value in [str(tmp_path), "codex_home", "runtime_binding"])
+    raw, public = runtime.trace.path(session).read_text(), runtime.inspect(session)
+    assert all(value not in raw for value in [str(tmp_path), "codex_home", "runtime_binding", "provider_session_id", "thread-1"])
+    assert "provider_session_id" not in str(public) and "thread-1" not in str(public)
     assert runtime.state.path(session).stat().st_mode & 0o777 == 0o600
     second = ready_provider()
     monkeypatch.setattr(second, "start", _resuming_start(contexts))
@@ -64,6 +65,13 @@ def test_public_trace_redacts_credential_label_variants():
     labels = "api-key=a apikey:b client_secret=c secret=d token=e password=f credential=g"
     rendered = str(inspect_trace([_event({"output": labels})]))
     assert all(value not in rendered for value in ["api-key=a", "apikey:b", "client_secret=c", "secret=d", "token=e", "password=f", "credential=g"])
+
+
+def test_trace_redacts_bare_relative_path_tokens(tmp_path):
+    store = TraceStore(tmp_path)
+    store.create("s", {"output": "read alpha.txt before replying"})
+    raw, public = store.path("s").read_text(), inspect_trace(store.read("s"))
+    assert "alpha.txt" not in raw and "alpha.txt" not in str(public)
 
 
 def _event(data):

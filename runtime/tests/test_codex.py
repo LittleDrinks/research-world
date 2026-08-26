@@ -8,10 +8,11 @@ import time
 from pathlib import Path
 
 import pytest
-from runtime.endpoints import Endpoint
+from runtime.endpoints import Endpoint, load_endpoints
 from runtime.providers.codex import CodexProvider, _collect, _probe, _taskkill
 from runtime.runtimes import CodexRuntimeAdapter, REALM, load_runtimes
 from runtime.service import Runtime, _messages, _provider_context
+from runtime.types import CapabilityNotFound
 
 
 @pytest.fixture(autouse=True)
@@ -576,6 +577,23 @@ async def test_unprobed_provider_is_not_advertised_ready(tmp_path):
     assert all(item["id"] != "codex" for item in catalog["endpoints"])
 
 
+async def test_loaded_catalog_codex_launch_needs_only_codex_auth(tmp_path, monkeypatch):
+    _catalog_endpoint(monkeypatch)
+    runtime = Runtime(tmp_path / "data", load_endpoints(), runtimes=[CodexRuntimeAdapter(ready_provider())])
+    catalog = await runtime.recognize(str(tmp_path))
+    assert not catalog["endpoints"][0]["available"]
+    session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
+    assert session.startswith("s-")
+
+
+@pytest.mark.parametrize("endpoint, model, error", [("missing", "gpt-5.6-sol", "endpoint"), ("primary", "missing", "model")])
+async def test_loaded_catalog_codex_rejects_missing_declarations(tmp_path, monkeypatch, endpoint, model, error):
+    _catalog_endpoint(monkeypatch)
+    runtime = Runtime(tmp_path / "data", load_endpoints(), runtimes=[CodexRuntimeAdapter(ready_provider())])
+    with pytest.raises(CapabilityNotFound, match=f"{error} is not available"):
+        await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec(endpoint=endpoint, model=model)})
+
+
 @pytest.mark.parametrize("path, result, status, code", [
     (None, None, "missing", "not_on_path"),
     ("/bin/codex", subprocess.TimeoutExpired([], 2), "error", "probe_timeout"),
@@ -865,15 +883,11 @@ def test_cancelled_or_unfinished_turns_are_not_replayed():
     ]
 
 
-def test_provider_session_uses_only_completed_replayable_turn():
-    events = [
-        _turn_start("done", "keep"), {"type": "model_response", "turn_id": "done", "data": {"provider_session_id": "good"}}, _turn_end("done", "completed"),
-        _turn_start("cancelled", "drop"), {"type": "model_response", "turn_id": "cancelled", "data": {"provider_session_id": "bad"}}, _turn_end("cancelled", "cancelled"),
-        _turn_start("open", "drop"), {"type": "model_response", "turn_id": "open", "data": {"provider_session_id": "open"}},
-    ]
+def test_provider_session_uses_private_state():
     meta = {"session_id": "s", "type": "session_meta", "data": {}}
-    state = {"workspace": "/tmp"}
-    assert _provider_context({"agent_spec": {"options": {}}}, state, [meta, *events])["provider_session_id"] == "good"
+    state = {"workspace": "/tmp", "provider_session_id": "good"}
+    context = _provider_context({"agent_spec": {"options": {}}}, state, [meta])
+    assert context["provider_session_id"] == "good"
 
 
 def _replay_events():
@@ -912,6 +926,11 @@ def _usage_stream():
 
 def _codex_endpoint(model):
     return Endpoint("primary", "Primary", "test", (model,), (), 1, None, available=True)
+
+
+def _catalog_endpoint(monkeypatch):
+    value = [{"id": "primary", "name": "Primary", "adapter": "openai-compatible", "models": ["gpt-5.6-sol"], "embedding_models": [], "base_url_env": "UNUSED_BASE", "api_key_env": "UNUSED_KEY", "priority": 1}]
+    monkeypatch.setenv("RUNTIME_ENDPOINTS", json.dumps(value))
 
 
 def _resuming_start(contexts):
