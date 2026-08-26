@@ -1,10 +1,12 @@
 import asyncio
 from base64 import b64decode
 from concurrent.futures import ThreadPoolExecutor
+from io import BytesIO
 from threading import Event
 
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image, PngImagePlugin
 from server.artifacts import ArtifactStore
 from server.app import create_app
 from server.kernel import KernelCommand, KernelQuery, ResearchKernel
@@ -38,6 +40,14 @@ def admitted_source(world, project, artifact_id=None):
 
 def png():
     return b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC")
+
+
+def png_with_metadata(text):
+    info = PngImagePlugin.PngInfo()
+    info.add_text("Comment", text)
+    stream = BytesIO()
+    Image.new("RGB", (2, 2), "blue").save(stream, "PNG", pnginfo=info)
+    return stream.getvalue()
 
 
 def report_thread(world, project):
@@ -138,6 +148,20 @@ def assert_rendered_evidence(content, projection):
     assert all(item["id"] in content for item in projection["artifacts"])
 
 
+def test_publication_reencodes_chart_without_input_metadata(world, project, tmp_path):
+    value, secret = kernel(world, tmp_path), "report-image-sensitive"
+    artifact = capture(value, project, png_with_metadata(secret), "image/png")
+    admitted_evidence(world, project, artifact["id"])
+    thread = report_thread(world, project)
+    content = read(value, project, thread, publish(value, project, thread)["publication"])
+    delivered = b64decode(content.split(b"data:image/png;base64,", 1)[1].split(b'"', 1)[0])
+    assert secret.encode() not in content and secret.encode() not in delivered
+    with Image.open(BytesIO(delivered)) as image:
+        image.load()
+        assert image.format == "PNG" and image.size == (2, 2)
+        assert image.getpixel((0, 0)) == (0, 0, 255)
+
+
 def test_publication_rejects_invalid_declared_png(world, project, tmp_path):
     value = kernel(world, tmp_path)
     artifact = capture(value, project, b"not a png", "image/png")
@@ -147,7 +171,7 @@ def test_publication_rejects_invalid_declared_png(world, project, tmp_path):
     assert result["assessment"]["gaps"][0]["code"] == "artifact_display_invalid"
 
 
-def test_persistence_failure_removes_new_report_artifact(world, project, tmp_path, monkeypatch):
+def test_persistence_failure_keeps_internal_artifact_without_visible_records(world, project, tmp_path, monkeypatch):
     value = kernel(world, tmp_path)
     admitted_evidence(world, project)
     thread = report_thread(world, project)
@@ -163,8 +187,8 @@ def test_persistence_failure_removes_new_report_artifact(world, project, tmp_pat
     result = publish(value, project, thread)
     assert result["stages"][-1] == {"name": "persistence", "status": "failed"}
     assert not world.report_publications(project["id"], thread["id"])
-    with pytest.raises(KeyError):
-        ArtifactStore(world.artifacts_root, project["id"]).get(stored[-1])
+    assert not world.reports(project["id"], thread["id"])
+    assert ArtifactStore(world.artifacts_root, project["id"]).get(stored[-1])["id"] == stored[-1]
 
 
 def test_publication_rejects_secrets_before_the_rendering_model(world, project, tmp_path):
@@ -275,6 +299,7 @@ def test_named_save_is_immutable_and_duplicate_names_are_actionable(world, proje
     assert before == read(value, project, thread, publication)
     with pytest.raises(ValueError, match="report_name_taken"):
         save(value, project, thread, publication, "V1")
+    assert world.reports(project["id"], thread["id"]) == [saved]
 
 
 def publish_thread(value, project, thread):
@@ -354,6 +379,32 @@ def test_concurrent_same_content_failure_keeps_successful_publication_artifact(w
     assert success_result["status"] == "published"
     artifact = ArtifactStore(world.artifacts_root, project["id"]).get(success_result["artifact"]["id"])
     assert artifact["id"] == success_result["artifact"]["id"]
+
+
+def test_failed_publication_keeps_concurrently_captured_content(world, project, tmp_path, monkeypatch):
+    value, thread = kernel(world, tmp_path), report_thread(world, project)
+    entered, release, copied = Event(), Event(), {}
+    original = ArtifactStore.add
+
+    def block_report_add(store, content, media_type):
+        record = original(store, content, media_type)
+        if media_type == "text/html" and not entered.is_set():
+            copied["content"] = content
+            entered.set()
+            release.wait(timeout=2)
+        return record
+
+    admitted_evidence(world, project)
+    monkeypatch.setattr(ArtifactStore, "add", block_report_add)
+    monkeypatch.setattr(world, "publish_report", lambda *_: (_ for _ in ()).throw(OSError("db down")))
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        failed = executor.submit(publish, value, project, thread)
+        assert entered.wait(timeout=2)
+        captured = executor.submit(capture, value, project, copied["content"], "text/html").result(timeout=2)
+        release.set()
+        result = failed.result(timeout=2)
+    assert result["status"] == "failed" and not world.report_publications(project["id"], thread["id"])
+    assert ArtifactStore(world.artifacts_root, project["id"]).get(captured["id"])["id"] == captured["id"]
 
 
 def test_http_rejects_body_thread_and_cross_thread_save(world, project, tmp_path):

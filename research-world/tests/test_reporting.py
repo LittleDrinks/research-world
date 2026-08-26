@@ -3,6 +3,7 @@ from io import BytesIO
 import pytest
 from PIL import Image
 from latex2mathml import exceptions as latex_errors
+from latex2mathml.converter import convert
 
 from server.report_delivery import artifact_display, render_html, validate_html
 from server.reporting import assess_delivery, projection_envelope
@@ -108,6 +109,14 @@ def test_formula_evidence_is_renderable_mathml():
 
 def test_formula_display_accepts_converter_mathml():
     assert artifact_display({"media_type": "application/x-latex"}, b"x^2")["kind"] == "formula"
+
+
+def test_formula_display_accepts_current_converter_phantom_and_colons():
+    formula = r"\phantom{x}+y"
+    expected = convert(formula)
+    assert "<mphantom>" in expected
+    assert artifact_display({"media_type": "application/x-latex"}, formula.encode()) == {"kind": "formula", "mathml": expected}
+    assert all(artifact_display({"media_type": "text/x-tex"}, value)["kind"] == "formula" for value in (b"a:b", b"x:=y"))
 
 
 def test_formula_display_rejects_foreign_converter_markup(monkeypatch):

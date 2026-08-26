@@ -2,9 +2,9 @@ import { expect, test } from "@playwright/test";
 import { agentDraft, agents, bootstrap, catalog, mockBase, node, run, sse, thread, threadDetail } from "./fixtures";
 
 
-async function mockChat(page, detail = threadDetail()) {
+async function mockChat(page, detail = threadDetail(), onThread) {
   await mockBase(page);
-  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => route.fulfill({ json: detail }));
+  await page.route(/\/api\/v1\/threads\/thread%3At1$/, (route) => { onThread?.(); return route.fulfill({ json: detail }); });
   await page.route(/\/api\/v1\/projects\/project%3Atest\/threads/, (route) => route.fulfill({ json: [thread()] }));
 }
 
@@ -21,6 +21,19 @@ function reportResult(publication) {
 
 function failedCitationReport() {
   return { status: "failed", stages: [{ name: "projection", status: "completed" }, { name: "citation_validation", status: "failed" }], assessment: { gaps: [{ code: "source_missing", path: "facts[0]", value: "node:s" }] } };
+}
+
+
+function failedRenderingReport() {
+  return { status: "failed", stages: [{ name: "projection", status: "completed" }, { name: "citation_validation", status: "completed" }, { name: "rendering", status: "failed" }], assessment: { gaps: [{ code: "rendering_invalid", path: "html", value: null }] } };
+}
+
+
+async function downloadText(download) {
+  const stream = await download.createReadStream();
+  let text = "";
+  for await (const chunk of stream) text += chunk;
+  return text;
 }
 
 
@@ -46,15 +59,21 @@ test("renders project thread messages and sends via the prompts stream", async (
 test("publishes a validated report card, previews, downloads and saves a version", async ({ page }) => {
   await mockChat(page);
   const publication = { id: "publication:p1", thread_id: "thread:t1", created_at: "2026-08-26T00:00:00Z" };
+  const content = "<!doctype html><html><body>Immutable report content</body></html>";
   await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 201, json: reportResult(publication) }));
   await page.route(/\/threads\/thread%3At1\/report\/save$/, (route) => route.fulfill({ status: 201, json: { id: "report:v1" } }));
-  await page.route(/\/report\/publication%3Ap1\/content/, (route) => route.fulfill({ contentType: "text/html", body: "<!doctype html><html><body>Immutable report content</body></html>" }));
+  await page.route(/\/report\/publication%3Ap1\/content/, (route) => route.fulfill(route.request().url().includes("download=true")
+    ? { body: content, headers: { "content-type": "text/html", "content-disposition": "attachment; filename=report.html" } }
+    : { contentType: "text/html", body: content }));
   await page.goto("/chat/thread%3At1");
   await page.getByRole("button", { name: "生成报告" }).click();
   await expect(page.getByText("已校验")).toBeVisible();
   await expect(page.getByTitle("报告预览")).toHaveAttribute("sandbox", "");
   await expect(page.getByRole("link", { name: /下载 HTML/ })).toHaveAttribute("download", "");
   await expect(page.frameLocator('iframe[title="报告预览"]').getByText("Immutable report content")).toBeVisible();
+  const downloadEvent = page.waitForEvent("download");
+  await page.getByRole("link", { name: /下载 HTML/ }).click();
+  expect(await downloadText(await downloadEvent)).toBe(content);
   await page.getByLabel("报告名称").fill("V1");
   await page.getByRole("button", { name: "保存" }).click();
   await expect(page.getByText("已保存版本 report:v1")).toBeVisible();
@@ -83,12 +102,13 @@ test("renders a failed traced report without a publication key", async ({ page }
 });
 
 
-test("keeps failed citation reports retryable without preview links on mobile", async ({ page }) => {
+test("keeps failed publication stages and gaps without refreshing", async ({ page }) => {
   await mockChat(page);
   await page.setViewportSize({ width: 390, height: 844 });
   const failed = failedCitationReport();
   await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 422, json: failed }));
   await page.goto("/chat/thread%3At1");
+  const refresh = page.waitForRequest(/\/api\/v1\/threads\/thread%3At1$/, { timeout: 200 }).then(() => true).catch(() => false);
   await page.getByRole("button", { name: "生成报告" }).click();
   await expect(page.getByRole("alert")).toContainText("source_missing: facts[0] = null");
   await expect(page.getByRole("link", { name: /下载 HTML/ })).toHaveCount(0);
@@ -96,6 +116,7 @@ test("keeps failed citation reports retryable without preview links on mobile", 
   await expect(page.locator(".report-stages .completed")).toHaveCount(1);
   await expect(page.locator(".report-stages .failed")).toHaveCount(1);
   await expect(page.locator(".report-stages")).not.toContainText("生成");
+  expect(await refresh).toBe(false);
 });
 
 
@@ -165,6 +186,21 @@ async function assertFailedReport(message) {
 }
 
 
+test("keeps retry failure stages and gaps without refreshing", async ({ page }) => {
+  const first = failedCitationReport();
+  const runtime = { ...threadDetail().runtime, reports: [{ ...first, turn_id: "t1", seq: 2 }] };
+  await mockChat(page, threadDetail({ runtime }));
+  await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 422, json: failedRenderingReport() }));
+  await page.goto("/chat/thread%3At1");
+  const refresh = page.waitForRequest(/\/api\/v1\/threads\/thread%3At1$/, { timeout: 200 }).then(() => true).catch(() => false);
+  await page.locator(".report-message").getByRole("button", { name: "重试" }).click();
+  await expect(page.getByRole("alert")).toContainText("rendering_invalid");
+  await expect(page.locator(".report-stages .completed")).toHaveCount(2);
+  await expect(page.locator(".report-stages .failed")).toHaveCount(1);
+  expect(await refresh).toBe(false);
+});
+
+
 test("keeps a published preview and saved version when refresh fails", async ({ page }) => {
   const publication = { id: "publication:p3", thread_id: "thread:t1", created_at: "2026-08-26T00:00:00Z" };
   let refreshFails = false;
@@ -175,6 +211,7 @@ test("keeps a published preview and saved version when refresh fails", async ({ 
   await page.goto("/chat/thread%3At1");
   await page.getByRole("button", { name: "生成报告" }).click();
   await expect(page.getByTitle("报告预览")).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("报告已发布，刷新失败。");
   await page.getByLabel("报告名称").fill("V2");
   await page.getByRole("button", { name: "保存" }).click();
   await expect(page.getByText("已保存版本 report:v2")).toBeVisible();
