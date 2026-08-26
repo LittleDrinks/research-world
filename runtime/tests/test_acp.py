@@ -34,59 +34,49 @@ class ProjectClient:
 
 
 async def test_acp_is_the_runtime_transport(tmp_path, monkeypatch):
-    monkeypatch.setenv("RUNTIME_API_BASE", "https://api.test/v1")
-    monkeypatch.setenv("RUNTIME_API_KEY", "secret")
-    monkeypatch.setenv("RUNTIME_MODEL", "qwen-test")
-    call = {
-        "id": "r1",
-        "type": "function",
-        "function": {
-            "name": "read_resource",
-            "arguments": json.dumps({"node_id": "D-008"}),
-        },
-    }
-    provider = FakeProvider(
-        [
-            {"role": "assistant", "content": "", "tool_calls": [call]},
-            {"role": "assistant", "content": "verified"},
-        ]
-    )
-    runtime = Runtime(tmp_path / "data", [endpoint(provider)])
-    left, right = memory_transport_pair()
-    agent = AgentSideConnection(lambda client: RuntimeAgent(runtime), left)
-    project = ProjectClient()
-    connection = connect_to_agent(project, right)
+    project, agent, connection = _acp_connection(_resource_runtime(tmp_path, monkeypatch))
     try:
-        await connection.initialize(
-            protocol_version=PROTOCOL_VERSION,
-            client_capabilities=ClientCapabilities(),
-            client_info=Implementation(name="test", title="Test", version="1"),
-        )
-        launched = await connection.ext_method(
-            "runtime/launch",
-            {
-                "workspace": str(tmp_path),
-                "agent_spec": {
-                    "id": "researcher",
-                    "name": "Researcher",
-                    "runtime": {"id": "openai-compatible", "realm": "container:runtime"},
-                    "endpoint": "openai-compatible",
-                    "model": "qwen-test",
-                    "instructions": "Use cited nodes.",
-                    "tools": ["read_resource"],
-                },
-            },
-        )
-        await connection.prompt(launched["session_id"], [text_block("Check @D-008")])
-        inspected = await connection.ext_method(
-            "runtime/inspect", {"session_id": launched["session_id"]}
-        )
+        inspected = await _resource_session(connection, tmp_path)
     finally:
         await connection.close()
         await agent.close()
 
     assert inspected["messages"][-1]["content"] == "verified"
     assert project.updates
+
+
+def _resource_runtime(path, monkeypatch):
+    for key, value in {"RUNTIME_API_BASE": "https://api.test/v1", "RUNTIME_API_KEY": "secret", "RUNTIME_MODEL": "qwen-test"}.items():
+        monkeypatch.setenv(key, value)
+    return Runtime(path / "data", [endpoint(FakeProvider(_resource_responses()))])
+
+
+async def _resource_session(connection, workspace):
+    await _initialize(connection)
+    launched = await connection.ext_method("runtime/launch", _resource_launch(workspace))
+    await connection.prompt(launched["session_id"], [text_block("Check @D-008")])
+    return await connection.ext_method("runtime/inspect", {"session_id": launched["session_id"]})
+
+
+def _resource_responses():
+    call = {"id": "r1", "type": "function", "function": {"name": "read_resource", "arguments": json.dumps({"node_id": "D-008"})}}
+    return [{"role": "assistant", "content": "", "tool_calls": [call]}, {"role": "assistant", "content": "verified"}]
+
+
+def _acp_connection(runtime):
+    left, right = memory_transport_pair()
+    agent = AgentSideConnection(lambda client: RuntimeAgent(runtime), left)
+    project = ProjectClient()
+    return project, agent, connect_to_agent(project, right)
+
+
+async def _initialize(connection):
+    await connection.initialize(protocol_version=PROTOCOL_VERSION, client_capabilities=ClientCapabilities(), client_info=Implementation(name="test", title="Test", version="1"))
+
+
+def _resource_launch(workspace):
+    spec = {"id": "researcher", "name": "Researcher", "runtime": {"id": "openai-compatible", "realm": "container:runtime"}, "endpoint": "openai-compatible", "model": "qwen-test", "instructions": "Use cited nodes.", "tools": ["read_resource"]}
+    return {"workspace": str(workspace), "agent_spec": spec}
 
 
 async def test_graph_query_crosses_the_client_boundary(tmp_path):
@@ -244,25 +234,7 @@ async def test_runtime_user_input_errors_cross_acp_as_invalid_params(
 
 async def test_prompt_on_legacy_session_meta_surfaces_validation_error(tmp_path):
     runtime = Runtime(tmp_path / "data", [endpoint(FakeProvider([]))])
-    legacy_spec = {
-        "id": "researcher",
-        "name": "Researcher",
-        "runtime": {"id": "openai-compatible", "realm": "container:runtime"},
-        "runtime": "openai-compatible",
-        "model": "qwen-test",
-        "instructions": "Use cited nodes.",
-        "mcp_servers": [],
-    }
-    runtime.trace.create(
-        "s-legacy",
-        {
-            "agent_spec": legacy_spec,
-            "workspace": str(tmp_path),
-            "parent": None,
-            "mode": "resume",
-            "skills": [],
-        },
-    )
+    _legacy_trace(runtime, tmp_path)
     left, right = memory_transport_pair()
     agent = AgentSideConnection(lambda client: RuntimeAgent(runtime), left)
     connection = connect_to_agent(ProjectClient(), right)
@@ -276,6 +248,11 @@ async def test_prompt_on_legacy_session_meta_surfaces_validation_error(tmp_path)
     assert raised.value.code == -32602
     assert raised.value.data["code"] == "session_spec_invalid"
     assert "Additional properties are not allowed" in raised.value.data["details"]
+
+
+def _legacy_trace(runtime, workspace):
+    spec = {"id": "researcher", "name": "Researcher", "runtime": {"id": "openai-compatible", "realm": "container:runtime"}, "model": "qwen-test", "instructions": "Use cited nodes.", "mcp_servers": []}
+    runtime.trace.create("s-legacy", {"agent_spec": spec, "workspace": str(workspace), "parent": None, "mode": "resume", "skills": []})
 
 
 class KernelClient:

@@ -16,6 +16,24 @@ def test_trace_redacts_secrets_and_paths_before_private_persistence(tmp_path):
         assert value not in raw and value not in str(view)
 
 
+async def test_resume_uses_private_state_without_trace_paths(tmp_path, monkeypatch):
+    from runtime.runtimes import CodexRuntimeAdapter
+    from runtime.service import Runtime
+    from tests.test_codex import _codex_endpoint, _resuming_start, _spec, ready_provider
+    first, contexts = ready_provider(), []
+    monkeypatch.setattr(first, "start", _resuming_start([]))
+    runtime = Runtime(tmp_path / "data", [_codex_endpoint("gpt-5.6-sol")], runtimes=[CodexRuntimeAdapter(first)])
+    session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
+    await runtime.prompt(session, [{"type": "text", "text": "one"}])
+    raw = runtime.trace.path(session).read_text()
+    assert all(value not in raw for value in [str(tmp_path), "codex_home", "runtime_binding"])
+    second = ready_provider()
+    monkeypatch.setattr(second, "start", _resuming_start(contexts))
+    restored = Runtime(tmp_path / "data", [_codex_endpoint("gpt-5.6-sol")], runtimes=[CodexRuntimeAdapter(second)])
+    assert (await restored.prompt(session, [{"type": "text", "text": "two"}]))["status"] == "completed"
+    assert contexts[0]["provider_session_id"] == "thread-1"
+
+
 def test_public_trace_keeps_token_accounting():
     event = _event(_projection_boundary_payload())
     session = inspect_trace([event])["session"]

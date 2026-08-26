@@ -80,6 +80,7 @@ def test_readiness_checks_version_without_exposing_probe_output(monkeypatch):
     assert provider.version == "0.149.1"
     assert calls[0][0] == (["/bin/codex", "--version"],)
     assert calls[0][1]["start_new_session"] is True
+    assert set(calls[0][1]["env"]) == {"LANG", "PATH"}
     assert calls[1][0] == (["/bin/codex", "login", "status"],)
     assert set(calls[1][1]["env"]) == {"CODEX_HOME", "HOME", "LANG", "PATH"}
 
@@ -235,9 +236,10 @@ async def test_codex_rejects_selected_runtime_tools(tmp_path):
 
 
 def test_provider_context_reads_agent_options_and_session_id():
-    meta = {"workspace": "/tmp", "agent_spec": {"options": {"sandbox": "read-only"}}}
+    meta = {"agent_spec": {"options": {"sandbox": "read-only"}}}
+    state = {"workspace": "/tmp"}
     events = [{"session_id": "s-codex", "type": "session_meta", "data": {}}]
-    context = _provider_context(meta, events)
+    context = _provider_context(meta, state, events)
     assert context["sandbox"] == "read-only"
     assert context["runtime_session_id"] == "s-codex"
 
@@ -561,7 +563,7 @@ async def test_fresh_runtime_rejects_changed_private_executable_identity(tmp_pat
     monkeypatch.setattr(provider, "start", _resuming_start([]))
     first = codex_runtime(tmp_path, provider)
     session = (await first.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
-    assert first.trace.read(session)[0]["data"]["runtime_binding"]["runtime"]
+    assert first.state.read(session)["runtime_binding"]
     monkeypatch.setattr("runtime.providers.codex._executable_identity", lambda _: "changed")
     with pytest.raises(RuntimeError, match="persisted runtime executable"):
         await codex_runtime(tmp_path, ready_provider()).prompt(session, [])
@@ -870,7 +872,8 @@ def test_provider_session_uses_only_completed_replayable_turn():
         _turn_start("open", "drop"), {"type": "model_response", "turn_id": "open", "data": {"provider_session_id": "open"}},
     ]
     meta = {"session_id": "s", "type": "session_meta", "data": {}}
-    assert _provider_context({"workspace": "/tmp", "agent_spec": {"options": {}}}, [meta, *events])["provider_session_id"] == "good"
+    state = {"workspace": "/tmp"}
+    assert _provider_context({"agent_spec": {"options": {}}}, state, [meta, *events])["provider_session_id"] == "good"
 
 
 def _replay_events():
