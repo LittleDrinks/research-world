@@ -21,6 +21,7 @@ from .runtimes import (
     RuntimePool,
     load_runtimes,
 )
+from .session_state import SessionStateStore
 from .skills import Skill, discover_skills, skill_index
 from .tools import ToolBox
 from .trace import TraceStore, inspect_trace
@@ -44,7 +45,7 @@ class Runtime:
         tool_definitions: Iterable[ToolDefinition] = (),
     ):
         root = Path(data_root or os.getenv("RUNTIME_DATA", "./data"))
-        self.trace = TraceStore(root / "sessions")
+        self.trace, self.state = _session_stores(root)
         values = endpoints if endpoints is not None else load_endpoints()
         adapters = runtimes if runtimes is not None else load_runtimes()
         _bind_endpoint_ids(adapters, values)
@@ -78,8 +79,8 @@ class Runtime:
         return {"session_id": session_id}
 
     def _validate_launch(self, session_id, spec, workspace, value) -> None:
-        meta = self._events(session_id)[0]["data"]
-        _validate_existing_session(meta, _launch_identity(spec, workspace, value))
+        state = self.state.read(session_id)
+        _validate_existing_session(state, _launch_identity(spec, workspace, value))
 
     async def _create_session(self, session_id, spec, workspace, value) -> None:
         recognized = await self.recognize(str(workspace))
@@ -88,8 +89,9 @@ class Runtime:
         endpoint = self.endpoints.require(spec.endpoint, spec.model)
         snapshots = _skill_snapshots(spec, workspace)
         plan = await self._tool_plan(spec, workspace, snapshots)
-        meta = _session_meta(spec, workspace, value, snapshots, plan, recognized, endpoint, adapter)
-        _add_codex_home(meta, self.trace.path(session_id), spec)
+        meta = _session_meta(spec, value, snapshots, plan, recognized, endpoint)
+        state = _session_state(spec, workspace, value, self.trace.path(session_id), adapter)
+        self.state.create(session_id, state)
         self.trace.create(session_id, meta)
         self._bindings[session_id] = _LaunchBinding(adapter, endpoint, spec)
 
@@ -170,7 +172,7 @@ class Runtime:
     async def _run_turn(self, session_id, turn_id, binding, meta, client, emit):
         spec = binding.spec
         skills = _skills_from_meta(meta)
-        workspace = Path(meta["workspace"])
+        workspace = Path(self.state.read(session_id)["workspace"])
         adapters = discover_adapters(workspace, self.tool_definitions)
         async with ToolBox(workspace, skills, spec.tools, adapters, client) as tools:
             _require_frozen_plan(tools.plan(), meta.get("tool_plan"))
@@ -218,7 +220,7 @@ class Runtime:
         self.trace.append(session_id, "model_request", data, turn_id)
 
     async def _generate(self, session_id, binding, meta, messages, tools, emit):
-        context = _provider_context(meta, self._events(session_id))
+        context = _provider_context(meta, self.state.read(session_id), self._events(session_id))
         endpoint, adapter, spec = binding.endpoint, binding.adapter, binding.spec
         if adapter.owns_process:
             return await adapter.generate(
@@ -284,13 +286,17 @@ class Runtime:
     def _binding(self, session_id):
         binding = self._bindings.get(session_id)
         if binding is None:
-            binding = _restore_binding(self._events(session_id), self.runtimes, self.endpoints)
+            binding = _restore_binding(self._events(session_id), self.state.read(session_id), self.runtimes, self.endpoints)
             self._bindings[session_id] = binding
         return binding
 
 
 async def _ignore(text: str) -> None:
     return None
+
+
+def _session_stores(root):
+    return TraceStore(root / "sessions"), SessionStateStore(root / "session-state")
 
 
 def _workspace(value: str) -> Path:
@@ -383,26 +389,25 @@ def _require(value, available, kind):
         raise CapabilityNotFound(f"{kind} is not available: {value}")
 
 
-def _session_meta(spec, workspace, value, skills, tool_plan, capabilities, endpoint, adapter):
+def _session_meta(spec, value, skills, tool_plan, capabilities, endpoint):
     return {
         "agent_spec": spec.snapshot(),
-        "workspace": str(workspace),
         "parent": value.get("parent"),
         "mode": value.get("mode", "resume"),
         "skills": skills,
         "tool_plan": tool_plan,
         "capability_snapshot": _capability_snapshot(spec, capabilities),
         "endpoint_snapshot": endpoint.public(),
-        "runtime_binding": {"runtime": _adapter_identity(adapter)},
     }
 
 
-def _add_codex_home(meta, path, spec) -> None:
-    if spec.runtime.id != "codex":
-        return
-    home = path.parent / "codex-home"
-    prepare_session_auth(home)
-    meta["codex_home"] = str(home)
+def _session_state(spec, workspace, value, trace_path, adapter):
+    state = {**_launch_identity(spec, workspace, value), "runtime_binding": _adapter_identity(adapter)}
+    if spec.runtime.id == "codex":
+        home = trace_path.parent / "codex-home"
+        prepare_session_auth(home)
+        state["codex_home"] = str(home)
+    return state
 
 
 def _capability_snapshot(spec, recognized):
@@ -421,12 +426,12 @@ class _LaunchBinding:
         self.spec = spec
 
 
-def _restore_binding(events, runtimes, endpoints):
+def _restore_binding(events, state, runtimes, endpoints):
     _, meta = _session_spec(events)
     spec = AgentSpec.parse(meta["agent_spec"])
     adapter = runtimes.require(spec.runtime)
     endpoint = _persisted_endpoint(endpoints, spec)
-    _require_binding_snapshot(meta, adapter, endpoint)
+    _require_binding_snapshot(meta, state, adapter, endpoint)
     return _LaunchBinding(adapter, endpoint, spec)
 
 
@@ -437,7 +442,7 @@ def _persisted_endpoint(endpoints, spec):
         raise SessionSpecInvalid("persisted endpoint binding is unavailable") from error
 
 
-def _require_binding_snapshot(meta, adapter, endpoint) -> None:
+def _require_binding_snapshot(meta, state, adapter, endpoint) -> None:
     snapshot = meta.get("capability_snapshot", {}).get("runtime")
     if not isinstance(snapshot, dict) or not isinstance(meta.get("endpoint_snapshot"), dict):
         raise SessionSpecInvalid("session launch binding is unavailable")
@@ -445,11 +450,11 @@ def _require_binding_snapshot(meta, adapter, endpoint) -> None:
         raise SessionSpecInvalid("persisted runtime binding is unavailable")
     if meta["endpoint_snapshot"] != endpoint.public():
         raise SessionSpecInvalid("persisted endpoint binding is unavailable")
-    _require_executable_identity(meta, adapter)
+    _require_executable_identity(state, adapter)
 
 
-def _require_executable_identity(meta, adapter) -> None:
-    expected = meta.get("runtime_binding", {}).get("runtime")
+def _require_executable_identity(state, adapter) -> None:
+    expected = state.get("runtime_binding")
     actual = _adapter_identity(adapter)
     if expected != actual:
         raise SessionSpecInvalid("persisted runtime executable is unavailable")
@@ -560,15 +565,15 @@ def _prompt_content(blocks):
     return "\n".join(parts)
 
 
-def _provider_context(meta, events):
+def _provider_context(meta, state, events):
     options = meta["agent_spec"].get("options", {})
     return {
-        "workspace": meta["workspace"],
+        "workspace": state["workspace"],
         "sandbox": options.get("sandbox", "read-only"),
         "reasoning_effort": options.get("reasoning_effort", "medium"),
         "runtime_session_id": events[0]["session_id"],
         "provider_session_id": _provider_session(events),
-        "codex_home": meta.get("codex_home", ""),
+        "codex_home": state.get("codex_home", ""),
     }
 
 
@@ -598,7 +603,7 @@ def _session_info(view, session_id):
     session = view["session"]
     return {
         "session_id": session_id,
-        "cwd": session["workspace"],
+        "cwd": None,
         "title": session["agent_spec"]["name"],
         "updated_at": view["events"][-1]["time"],
     }

@@ -89,7 +89,7 @@ def _public_data(data):
 
 
 def redact_trace_data(data):
-    return _redact(data, set(), (), {"workspace", "codex_home"})
+    return _redact(data, {"workspace", "codex_home", "runtime_binding"}, ())
 
 
 def _redact(value, hidden, path, preserved=()):

@@ -112,7 +112,11 @@ def _options(model: str, context: dict[str, Any]) -> list[str]:
 
 def _environment(context: dict[str, Any]) -> dict[str, str]:
     home = context["codex_home"]
-    return {"CODEX_HOME": home, "HOME": home, "LANG": "C.UTF-8", "PATH": os.defpath}
+    return {**_probe_environment(), "CODEX_HOME": home, "HOME": home}
+
+
+def _probe_environment() -> dict[str, str]:
+    return {"LANG": "C.UTF-8", "PATH": os.defpath}
 
 
 def _version(executable: str) -> tuple[str | None, str, dict[str, str] | None]:
@@ -128,7 +132,7 @@ def _version(executable: str) -> tuple[str | None, str, dict[str, str] | None]:
 
 
 def _version_probe(executable: str):
-    return _probe([executable, "--version"], "version")
+    return _probe([executable, "--version"], "version", _probe_environment())
 
 
 def _probe(argv: list[str], name: str, environment=None):
