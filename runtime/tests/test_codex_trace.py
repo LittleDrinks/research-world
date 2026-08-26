@@ -20,6 +20,7 @@ async def test_resume_uses_private_state_without_trace_paths(tmp_path, monkeypat
     from runtime.runtimes import CodexRuntimeAdapter
     from runtime.service import Runtime
     from tests.test_codex import _codex_endpoint, _resuming_start, _spec, ready_provider
+    _codex_auth(monkeypatch, tmp_path)
     first, contexts = ready_provider(), []
     monkeypatch.setattr(first, "start", _resuming_start([]))
     runtime = Runtime(tmp_path / "data", [_codex_endpoint("gpt-5.6-sol")], runtimes=[CodexRuntimeAdapter(first)])
@@ -67,6 +68,13 @@ def test_public_trace_redacts_credential_label_variants():
 
 def _event(data):
     return {"type": "session_meta", "seq": 0, "time": "now", "session_id": "s", "data": data}
+
+
+def _codex_auth(monkeypatch, tmp_path):
+    home = tmp_path / "credential-store"
+    home.mkdir()
+    (home / "auth.json").write_text('{"token":"test"}')
+    monkeypatch.setenv("CODEX_HOME", str(home))
 
 
 def _attack_payload():
