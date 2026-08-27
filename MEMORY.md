@@ -1,7 +1,7 @@
 # 项目状态
 ## 已确认目标
 - Research Graph 保存 Question、Source、Direction、Experiment、Artifact 与证据关系；研究地图是其 UI 投影，报告只使用具有证据闭包的 Claim。
-- Agent Runtime 拥有 Session 与 Trajectory。每个 Agent 在 Trajectory 结尾输出 Summary；主 Agent 默认读取尾窗，按需展开完整日志；Summary 不是 Research Graph 事实。
+- Agent Runtime 拥有 Session 与 Trajectory。正常结束的 Agent 在 Trajectory 结尾输出 Summary；异常结束时主 Agent 读取结束原因和尾窗，按需展开完整日志；Summary 不是 Research Graph 事实。
 - 主 Agent 动态编排 Workflow，可继续、复审、并行或转向；不使用固定 Pipeline、Stage、Auto 或图谱状态机。
 - 主 Agent 与人类可调用 Graph CLI，Child Agent 只读；双审留在主 Agent Skill/prompt。Source 失效时以显式确认的级联撤销保留历史。
 ## 当前实现

@@ -13,7 +13,7 @@
 - 证据形态从文本、文献和代码扩展到图像、表格、日志、仪器读数与湿实验记录，保留强度取决于可复现成本。
 ## 产品边界
 - Research Graph 保存长期研究对象与关系；原始对话、Tool Call 和 Tool I/O 保留在 Agent Runtime 的 Trajectory，不复制入图。
-- Child Agent 结束前输出 Summary；主 Agent 默认读取末尾窗口，需要时展开完整 Trajectory。Summary 只用于编排，不能直接成为图谱对象或报告结论。
+- 正常结束的 Child Agent 在末尾输出 Summary；异常结束时主 Agent 读取结束原因和 Trajectory 尾窗，需要时展开完整日志。Summary 只用于编排，不能直接成为图谱对象或报告结论。
 - 主 Agent 根据 Skill/prompt 中的独立审查决定是否写图；主 Agent 与人类可调用 Graph CLI，Child Agent 只读。没有强制数据库准入 Gate 或图谱状态机。
 - Workflow 可继续原 Agent、委派复审、并行探索或转向；没有固定 Pipeline、Stage 或 Auto。
 - 计算实验保留代码、输入、配置、环境、随机种子与不可变 Artifact；难以重跑的实验保留完整证据。
@@ -23,7 +23,7 @@
 ## 设计原则
 最大化研究员对 Agent 系统的掌控：可读性（研究地图和 Trajectory）、可玩性（能力装配）、便捷性（领域内置），服务对象是不同领域的研究员。
 ## 成功条件
-- 研究者无需阅读完整 Trajectory 即可通过 Summary 尾窗说明本周期新增方向、关键失败、待办和影响范围，并能展开到支撑证据。
+- 研究者无需阅读完整 Trajectory 即可通过 Summary 或异常结束的 Trajectory 尾窗说明本周期新增方向、关键失败、待办和影响范围，并能展开到支撑证据。
 - 任一报告 Claim 都能回到关联的 Source、Experiment 或 Artifact；未审核 Direction 不被写成结论。
 - 已保存的研究对象足以继续规划、独立复现和质疑；原始 Trajectory 仍可回放，不默认进入 Research Graph 检索。
 - 错误上游 Source 被撤销时，依赖结果可确定性定位并停止继续使用，而不是依赖模型重新阅读历史猜测。

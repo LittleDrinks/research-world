@@ -29,7 +29,7 @@ _Avoid_: Endpoint、模型服务、传输协议
 _Avoid_: Thread、研究事实
 **Trajectory**：一个 Agent 的工作日志，包含模型输出、Tool Call、Tool I/O、父子 Session 关系与结束原因。
 _Avoid_: Trace、Research event
-**Summary**：Agent 结束前在其 Trajectory 最后一段输出的工作摘要；主 Agent 默认读取该末尾窗口，按需展开完整 Trajectory；它不直接成为 Research Graph 事实。
+**Summary**：正常结束的 Agent 在其 Trajectory 最后一段输出的工作摘要；主 Agent 默认读取该末尾窗口，按需展开完整 Trajectory。异常结束时读取结束原因和 Trajectory 尾窗；Summary 不直接成为 Research Graph 事实。
 _Avoid_: Handoff 实体、Outcome 实体
 **Workflow**：主 Agent 依据 Research Graph、Trajectory 与 Summary 动态编排 Child Agent 的过程；可以继续、复审、并行探索或转向，不具有固定 Pipeline、Stage 或状态机。
 _Avoid_: Pipeline run、Research Round
