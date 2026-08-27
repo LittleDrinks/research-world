@@ -24,3 +24,11 @@
 6. 紧凑排版：段落间不留空行，不写垫话，潜台词不写明，写完读一遍"这句删掉有损失吗"。
 7. 同一信息只维护一处：术语 CONTEXT.md、项目记忆 MEMORY.md、决策 docs/adr/、评测证据 benchmarks/README.md、赛题 readme.md。
 8. 陌生或未定义名词先查 CONTEXT.md、ADR、现有代码与成熟产品语义，映射已有概念；区分口语、示例、验收代理与领域不变量。已有概念无法表达时，Agent 先调研事实，再向用户确认产品决策；确认后才新增术语、schema 或 ADR。
+
+## Agent skills
+### Issue 跟踪
+Issue 使用 `LittleDrinks/research-world` 的 GitHub Issues。见 `docs/agents/issue-tracker.md`。
+### 分诊标签
+标准分诊角色使用 `needs-triage`、`needs-info`、`ready-for-agent`、`ready-for-human` 与 `wontfix`。见 `docs/agents/triage-labels.md`。
+### 领域文档
+单一上下文：根目录 `CONTEXT.md` 与 `docs/adr/`。见 `docs/agents/domain.md`。
