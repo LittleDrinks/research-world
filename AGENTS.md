@@ -26,15 +26,9 @@
 8. 陌生或未定义名词先查 CONTEXT.md、ADR、现有代码与成熟产品语义，映射已有概念；区分口语、示例、验收代理与领域不变量。已有概念无法表达时，Agent 先调研事实，再向用户确认产品决策；确认后才新增术语、schema 或 ADR。
 
 ## Agent skills
-
 ### Issue 跟踪
-
 Issue 使用 `LittleDrinks/research-world` 的 GitHub Issues。见 `docs/agents/issue-tracker.md`。
-
 ### 分诊标签
-
-标准分诊角色使用默认 GitHub 标签。见 `docs/agents/triage-labels.md`。
-
+标准分诊角色使用 `needs-triage`、`needs-info`、`ready-for-agent`、`ready-for-human` 与 `wontfix`。见 `docs/agents/triage-labels.md`。
 ### 领域文档
-
 单一上下文：根目录 `CONTEXT.md` 与 `docs/adr/`。见 `docs/agents/domain.md`。
