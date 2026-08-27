@@ -424,7 +424,7 @@ Figure 7. Evaluating the correctness of model-predicted patches.
 
 ƑѶ
 
-Ɣ 
+Ɣ
 
 ! v Ѵ u   Őѷő
 
@@ -473,11 +473,11 @@ We also study how different bug-injection strategies affect downstream performan
 
 From the figure, SSR proves effective across all injection strategies, demonstrating its generalizability. However, the effectiveness of different methods varies in subtle but meaningful ways. First, direct-injection leads to the worst result because it tends to produce trivial bugs with superficial oneline modifications (e.g., var = 0 → var = 1) that offer little
 
-ƒѶ  
+ƒѶ
 
-ƒѶ  
+ƒѶ
 
-ƒѶ  
+ƒѶ
 
 | | | | | |
 |---|---|---|---|---|
@@ -494,13 +494,13 @@ From the figure, SSR proves effective across all injection strategies, demonstra
 
 ƒƕ Ɣ
 
-ƒѵ  
-
 ƒѵ
 
 ƒѵ
 
-ƒƔ  
+ƒѵ
+
+ƒƔ
 
 ƒ
 
@@ -520,33 +520,33 @@ From the figure, SSR proves effective across all injection strategies, demonstra
 
 ƒƓ
 
-ƒ   
+ƒ
 
 ƒƑ
 
 ƒƑ
 
- bu 1 b f 1 b  
+ bu 1 b f 1 b
 
-! r bu   Ѵ 
+! r bu   Ѵ
 
 Ƒƕ Ɣ
 
- f 1 b     Ѵ 
+ f 1 b     Ѵ
 
-!    Ѵ   Ѵ 
+!    Ѵ   Ѵ
 
-ƒ 
+ƒ
 
-ƒ 
+ƒ
 
 ƑƔ Ƒ
 
-!    Ѵ  bv  u 
+!    Ѵ  bv  u
 
-" Ѵ  rѴ  
+" Ѵ  rѴ
 
-ƑƔ  
+ƑƔ
 
 Ɣ  Ɛ   ƐƔ  $u b b  v  rv
 
@@ -1324,5 +1324,3 @@ Besides addressing the aforementioned limitations, our work opens several promis
 - Distribution control with seeding: The current approach lacks explicit control over bug injection locations, which can lead to duplicate bugs or distribution bias when sampling multiple times from the same repository. To improve diversity, future work could adopt seeding techniques from Magicoder (Wei et al., 2024), providing the bug-injection agent with contextual information such as target code snippets or specific files to guide the generation process toward diversity.
 - Synthesizing complex multi-step software tasks: While our approach handles repository-level bug fixing, many realworld tasks require complex, multi-step workflows, such as major version migrations or building new software stacks from scratch. Our concept of higher-order bugs is a first step, introducing layered dependencies between bug injection and repair. Enabling such tasks will require new scaffolding designs, such as multi-context rollouts spanning interdependent sessions and automated context compaction (Anthropic, 2025; OpenAI, 2025).
 - Efficient training paradigms for long-horizon software agents: Real-world software projects, such as building a production-grade RL codebase, pose unique challenges for agent training: they span months of iterative development, involve thousands of interdependent decisions, and cannot be fully validated by unit tests alone. Current outcome-based RL is inefficient for such tasks because sparse terminal rewards provide little signal when most trajectories fail, making credit assignment across thousands of steps intractable. Addressing this requires new paradigms that exploit the asymmetry between generation and verification (Wei, 2025) for self-verification while delivering dense and structured feedback beyond scalar rewards.
-
-

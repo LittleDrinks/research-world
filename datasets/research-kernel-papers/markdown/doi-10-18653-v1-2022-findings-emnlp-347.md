@@ -1104,5 +1104,3 @@ MultiVerS MultiVerS10
 (b) Absolute value of percentage change in average precision.
 
 - Figure 13: Effect of system count on average precision. Again, the results here mirror the conclusions drawn using F1 score.
-
-

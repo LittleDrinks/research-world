@@ -685,4 +685,3 @@ native 81.36 77.96 91.18 74.54 python 83.10 94.44 77.73 84.17
 https://www2.census.gov/programs-surveys/popest/datasets/20102019/counties/totals/,
 
 then we accept https://www2.census.gov/.
-

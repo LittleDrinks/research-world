@@ -395,5 +395,3 @@ bibo:article
 - 19. Hu, Y., Janowicz, K., McKenzie, G., Sengupta, K., Hitzler, P.: A linked-datadriven and semantically-enabled journal portal for scientometrics. In Alani, H., Kagal, L., Fokoue, A., Groth, P., Biemann, C., Parreira, J.X., Aroyo, L., Noy, N., Welty, C., Janowicz, K., eds.: The Semantic Web. Number 8219 in Lecture Notes in Computer Science. Springer Berlin Heidelberg (January 2013) 114–129
 - 20. Tillett, B.: What is FRBR? a conceptual model for the bibliographic universe. The Australian Library Journal 54(1) (2005) 24–30
 - 21. Liakata, M., Soldatova, L.: Guidelines for the annotation of general scientiﬁc concepts. Aberystwyth University, JISC Project Report (November 2008)
-
-

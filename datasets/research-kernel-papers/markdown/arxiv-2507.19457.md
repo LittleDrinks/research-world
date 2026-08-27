@@ -5849,4 +5849,3 @@ Table 4: Total number of calls made by GEPA to reflection LM during optimization
 Benchmark Name Num Reflection Calls Num Reflection Calls GPT-4.1-Mini Qwen3-8B
 
 AIME-2025 24 90 LiveBench-Math 34 38 HotpotQA 69 64 IFBench 21 17 Hover 92 50 PUPA 46 38
-

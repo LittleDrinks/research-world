@@ -1098,4 +1098,3 @@ Easy 0; medium 0; hard 100; unknown 0
 Note. Difficulty counts in this table are source labels from the split files; Table 44 gives the D0-calibrated buckets. The split files are deterministic for the recorded seed and may overlap by task ID.
 
 The split artifacts are release metadata for controlled reruns rather than additional headline evidence. They make the challenge, representative, and hard subsets auditable under a fixed seed, while the paper’s reported Core, audit, and Exec conclusions remain anchored to the 600-case challenge denominator used throughout the main text.
-

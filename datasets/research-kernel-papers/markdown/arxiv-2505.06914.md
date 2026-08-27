@@ -1907,4 +1907,3 @@ Table 3: Detailed answer accuracy across different test set configurations. Resu
 
 
 ##### Figure 25: Prompt for distracting passage generation, modal statement.
-

@@ -547,4 +547,3 @@ OlympiadBench Omni-MATH error correct F1 error correct F1
 Model
 
 Meta-Llama-3-8B-Instruct 17.2 0.6 1.1 17.3 4.1 6.7 Meta-Llama-3-70B-Instruct 20.9 41.6 27.8 20.9 50.2 29.6 Llama-3.1-8B-Instruct 19.1 5.6 8.7 17.1 10.0 12.6 Llama-3.1-70B-Instruct 32.8 32.4 32.6 29.5 39.0 33.6 Llama-3.3-70B-Instruct 30.9 90.0 46.0 27.1 86.3 41.3 Qwen2.5-Math-7B-Instruct 6.4 79.1 11.8 4.7 78.0 8.9 Qwen2.5-Math-72B-Instruct 17.2 95.0 29.2 18.3 93.4 30.6 Qwen2.5-Coder-7B-Instruct 0.0 13.3 0.0 0.0 27.8 0.0 Qwen2.5-Coder-14B-Instruct 9.1 95.6 16.6 6.2 95.9 11.6 Qwen2.5-Coder-32B-Instruct 31.8 86.7 46.5 31.5 84.6 45.9 Qwen2-7B-Instruct 14.1 2.9 4.9 13.7 2.9 4.8 Qwen2-72B-Instruct 33.4 48.1 39.4 30.4 48.1 37.3 Qwen2.5-7B-Instruct 25.4 46.0 32.7 26.1 43.6 32.6 Qwen2.5-14B-Instruct 30.9 76.4 44.0 27.0 72.6 39.4 Qwen2.5-32B-Instruct 22.4 90.0 35.9 22.4 87.6 35.7 Qwen2.5-72B-Instruct 33.7 88.5 48.9 33.7 88.4 48.8 QwQ-32B-Preview 37.8 31.9 34.6 29.5 41.9 34.6
-

@@ -747,4 +747,3 @@ You are a senior research advisor evaluating research direction fit for a specif
 Respond with a JSON array of [n_dirs] sub-arrays. Each sub-array has exactly 3 floats in order: [executability, comprehensibility, growth_potential]. All values in [0,1]. Example (for 2 directions): [[0.85, 0.70, 0.80], [0.12, 0.30, 0.20]] Do NOT include the final average — output only the 3-component sub-arrays.
 
 Table 13: Table 12 (continued).
-

@@ -350,4 +350,3 @@ Zhu, D.; Zhou, X.; Qin, S.; Zhu, X.; Ding, H.; Zhong, S.; Wen, Z.; Xie, Z.; Gou,
 
 
 Zhu, J.; Fan, Z.; Zhu, X.; Jiang, Y.; Wang, H.; Han, X.; Ding, H.; Wang, X.; Zhao, W.; Gong, Z.; Yang, H.; Chai, Z.; Chen, Z.; Zheng, Y.; Chen, Q.; Zhang, F.; Zhou, X.; Xu, P.; Yang, X.; Wu, D.; and Liu, Z. 2025. RankMixer: Scaling Up Ranking Models in Industrial Recommenders. In Proceedings of the 34th ACM International Conference on Information and Knowledge Management, 6309–6316.
-

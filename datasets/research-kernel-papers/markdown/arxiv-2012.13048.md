@@ -567,4 +567,3 @@ INPUT: $answer$ ; $question$ = Dave is rough. ; $context$ = triple1: Anne is whi
 OUTPUT: $answer$ = Dave is young. , Dave is smart.
 
 This particular abduction question has 2 alternative missing facts. Any one of them when added to the input theory is sufﬁcient to prove the implication ‘Dave is rough’.
-

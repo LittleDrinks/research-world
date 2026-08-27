@@ -2067,4 +2067,3 @@ adaptive-pruning ✓ ✓ ✓ ✓ ✓ all-in-one ✓ ✓ ✓ ✓ ✓ bam ✓ ✗ 
 ###### Total detected (/23) 23 21 5 23 23
 
 Table 14. Per-paper × per-injection detection for the Level-2 mutation benchmark. ✓ = detected; ✗ = missed. The orphan-experiment column reveals the systematic blind spot discussed in §7.5.
-

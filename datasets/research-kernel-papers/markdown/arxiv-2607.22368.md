@@ -848,4 +848,3 @@ Two research directions could move benchmark verification from case-specific aud
 
 
 Formal verification defines the invariants that keep a score tied to the intended capability; adaptive generation preserves those invariants as tasks and agents change. These directions would make protocol validity a maintained property of benchmark design, extending the useful lifetime and evidential value of reported scores.
-

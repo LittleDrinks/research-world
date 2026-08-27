@@ -1578,4 +1578,3 @@ rebase −i\‘). Use non−interactive versions of commands (e.g. \‘npm init 
 different types, which are:
 
 {computer pool str} − ‘cpu‘ computers are remote computers with CPU, ‘localhost cpu‘ is the local computer with CPU, and ‘gpu‘ computers are remote computers with GPU. − You are only premitted to use the GPU in ‘gpu‘ computers, do not use it or running some related command ( for example ‘ray start‘) in ‘localhost cpu‘ or ‘cpu‘ computers. − ‘gpu‘ computers can never connect ‘localhost cpu‘ or ‘cpu‘ computers via internet (for example ‘ping‘) − **Do not use ‘gpu‘ computer to install any package, because it has no internet connection. It also can’t connect the cpu via internet.**
-

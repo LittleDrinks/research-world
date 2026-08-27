@@ -524,5 +524,3 @@ REFERENCES
 - [60] Bundesrepublik Deutschland, “Gesetz über Urheberrecht und verwandte Schutzrechte (UrhG), §2 Geschützte Werke,” https://www. gesetze-im-internet.de/urhg/__2.html, 1965.
 - [61] T. Haase, R. Glück, P. Kaufmann, and M. Willmeroth, “shepard: storage for heterogeneous product and research data,” Zenodo, v5.1.2, DLR, Dec. 2025. [Online]. Available: https://doi.org/10.5281/zenodo. 17897485
 - [62] N. Unger, P. Kamble, M. Vinot, and R. Glück, “Project MEMAS: Integrated data management for additive manufacturing enabling highfidelity modeling,” HMC Conference 2024, 2024. [Online]. Available: https://elib.dlr.de/208404/
-
-

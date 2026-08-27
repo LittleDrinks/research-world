@@ -197,5 +197,3 @@ The source code developed for this study will be made publicly available upon pu
 - [44] OpenAI. GPT-5.5 System Card. https://openai.com/index/gpt-5-5-system-card/, 2026. Published 2026-04-23; accessed 2026-07-09.
 - [45] OpenAI. Introducing GPT-5.4 mini and nano. https://openai.com/index/ introducing-gpt-5-4-mini-and-nano/, 2026. Published 2026-03-17; accessed 2026-07-09.
 - [46] OpenAI. Introducing GPT-4.1 in the API. https://openai.com/index/gpt-4-1/, 2025. Accessed 2026-07-09.
-
-

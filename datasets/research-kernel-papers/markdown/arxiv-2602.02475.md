@@ -1985,4 +1985,3 @@ Executable check violation with grounded evidence
 #### How to Judge (Decision Procedure):
 
 1. Step 1 - Locate the first failure: Scan the trajectory step-by-step from the start. The first step where the agent deviates from the intended plan or emits an error is the first failure. Record the step index and a short failure note.
-

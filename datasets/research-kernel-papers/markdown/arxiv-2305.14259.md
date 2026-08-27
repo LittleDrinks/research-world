@@ -711,4 +711,3 @@ Table 14: Percent (%) of same labels from overlapped 20 human evaluation instanc
 ##### Figure 7: Human evaluation example for GPT3.5Rnd, GPT3.5Retr, GPT3.5Rnd+CT, T5, and T5+SN+CL
 
 ##### Figure 8: Human evaluation example for GPT3.5Rnd+KG, GPT4Rnd, and GPT4Rnd+KG
-

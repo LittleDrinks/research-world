@@ -298,4 +298,3 @@ How original is the approach? Does this paper break new ground in topic, methodo
 2 = Pedestrian: Obvious, or a minor improvement on familiar techniques.
 
 1 = Significant portions have actually been done before or done better.
-

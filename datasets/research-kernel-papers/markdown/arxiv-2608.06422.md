@@ -538,5 +538,3 @@ configuration over-acceptance false-reject kappa primitives
 holistic, unattacked 0.330 – – – sharded, unattacked 0.256 – – 𝑆 holistic, attacked 0.505 0.038 0.498 – sharded, attacked 0.402 0.057 0.574 𝑆 evidence directive 0.369 0.069 0.590 𝑆 + directive three same-side skeptics 0.365 0.065 0.598 𝑆+𝑅-like opposing advocate 0.163 0.262 0.551 𝑆+𝑂 opposed consensus 0.409 0.061 0.563 𝑆+𝑂+𝑅 cross-examination 0.377 0.054 0.601 𝑆+𝑂+𝑅+𝑋 amplification 0.337 0.162 0.509 𝑆+𝐴+𝑅 full protocol 0.340 0.146 0.524 𝑆+𝑂+𝑅+𝑋+𝐴
 
 - Table S22: Static persuasion attack and defenses on JudgmentBench with judge and adversary both Opus 4.8 (best-of-6; 78 attacked outputs). One-sided opposition (𝑆+𝑂) is the only arm that brings over-acceptance below the unattacked sharded baseline of 0.256. The higher rungs, including opposed consensus, do not improve robustness under this attack even though consensus helps accuracy without an adversary.
-
-

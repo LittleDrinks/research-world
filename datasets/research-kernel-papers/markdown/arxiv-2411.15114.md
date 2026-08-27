@@ -1139,4 +1139,3 @@ Here we present score over time for 8-hour runs for each task. Average performan
 ##### Figure 50: 8-hour performance for Finetune GPT-2 for QA.
 
 ##### Figure 51: 8-hour performance for Scaffolding for Rust CodeContests.
-

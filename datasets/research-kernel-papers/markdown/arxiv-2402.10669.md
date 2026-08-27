@@ -1407,4 +1407,3 @@ Chuan Jiang Kaiyou Wu Gustavs Nolle Joshua Kurniawan Djunaidi MD PARVAGE Jerome 
 Jefferson Joseph Tedjojuwono Annabel Leonardi Yixin Deng Jeremy Christstardy Owen Lee Marta Laurent Lo Kayla Soewito Travis William Lintungan Lanruo Xia Xintong Zhu
 
 Vaughn Buquid Wentian Zhao Yue Zhang Florensia Widjaja Yu Zhang Haoyi Yu Kerui Wan Boshi Xu Nathania Josephine Tjung Bernadette Adila Hutani Dokyung Lee Zoe Emmanuel Halim Wei Xie Zhangchi Weng Xiaoliang Liu William Christopher Archieta Venkata Yashwant Kunar Bhyri Shuwen Zhang Zihang Jie Jiani Wu Weiwen Kong Yuanhao Zhu Juan Albert Wibowo Jonathan Yulliz Jubilee Ruixi Zou Keven Pratama Hendrata Junhan Fu Yujie Sun Yingjie Wang Han Yan Aragorn Leon Gobardja Yingxue Hu Christopher Nathanael Jessica Asali Xuejing Lin Kenneth Barli Ziche Liu Baohua Fang Junhan Jia Di Wu Yingxuan Bian Ziyun Wang Bryan Delton Tawarikh Sibarani Fanzeng Xia
-

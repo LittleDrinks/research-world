@@ -883,5 +883,3 @@ LLMs Still Get "Lost in the Middle". We observed that some papers have most of t
 This indicates that LLMs perform significantly better when the important tokens are not located in the middle of the document. Our manual inspection also reveals that LLMs tend to focus on the beginning and end of the document. The "Lost in the Middle" phenomenon, as reported in previous LLMs (Liu et al., 2024), seems to persist in current LLMs on EvidenceBench.
 
 - Figure 19: Original EvidenceBench. Left figure shows the distribution for the relative position in the candidate pool of all sentences that are considered as source of information for at least one study aspect. Right figure shows the same but for aspects labeled as ’Results’. Abstract sentences have much higher chance to be matched with aspects. However, all abstract sentences (around 10 sentences per research paper) only cover around 50% of all aspects, indicating no heuristic algorithm can cheat EvidenceBench.
-
-

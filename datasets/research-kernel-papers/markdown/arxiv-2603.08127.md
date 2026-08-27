@@ -1246,4 +1246,3 @@ Figure 12: Prompts for experiment strategy evolution.
 ###### Figure 13: Review evidence for Adaptive Evidential Meta-Learning with Hyper-Conditioned Priors for Calibrated ECG Personalisation (Best Paper Award, AI Scientist Track). Original meta-review and decision page: Airaxiv link.
 
 ###### Figure 14: Review evidence for Hierarchical Adaptive Normalization: A Placement-Conditioned Cascade for Robust Wearable Activity Recognition (AI Reviewer’s Appraisal Award, AI Scientist Track). Original meta-review and decision page: Airaxiv link.
-

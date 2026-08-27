@@ -50,7 +50,7 @@ The planets are indexed in order of increasing semi-major axes (ai)8i=1, m0 and 
 
 By developing the 2-body perturbing function [23, 24] in the computer algebra system TRIP [25, 26], the secular Hamiltonian can be systematically expanded in series of the Poincar´e rectangular coordinates in complex form,
 
-xi = Λi 1 − 1 − e2iEj 
+xi = Λi 1 − 1 − e2iEj
 
 ,
 
@@ -1764,5 +1764,3 @@ Middle: C2. Right: E4 (H4) and E6 (H6). The quantity E2•n is an exact integral
 
 - [82] J. Laskar, Accurate methods in general planetary theory, Astronomy and Astrophysics 144, 133 (1985).
 - [83] G. Contopoulos, L. Galgani, and A. Giorgilli, On the number of isolating integrals in Hamiltonian systems, Phys. Rev. A 18, 1183 (1978).
-
-

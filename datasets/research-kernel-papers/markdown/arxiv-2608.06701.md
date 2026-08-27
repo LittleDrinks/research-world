@@ -923,5 +923,3 @@ REFERENCES
 
 - [39] Z. Zhang, T. Chen, W. Xu, A. Pentland, and J. Pei, “ReCAP: Recursive context-aware reasoning and planning for large language model agents,” in Conference on Neural Information Processing Systems (NeurIPS), Dec. 2025. [Online]. Available: https://openreview.net/forum?id=r2ykUnzuGt
 - [40] A. Zhou, K. Yan, M. Shlapentokh-Rothman, H. Wang, and Y.-X. Wang, “Language agent tree search unifies reasoning, acting, and planning in language models,” in International Conference on Machine Learning (ICML), Jul. 2024, pp. 62138–62160. [Online]. Available: https://proceedings.mlr.press/v235/zhou24r.html
-
-

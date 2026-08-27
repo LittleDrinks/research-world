@@ -444,5 +444,3 @@ I. Colonnelli, M. Gallo, T. Ohta, H. Suetake, S. Capella-Guti´errez, R. de Wit,
 - [51] N. Cresswell-Clay, B. Liu, D. R. Durran, Z. Liu, Z. I. Espinosa, R. A. Moreno, and M. Karlbauer, “A deep learning earth system model for efficient simulation of the observed climate,” AGU Advances, vol. 6, no. 4, p. e2025AV001706, 2025.
 - [52] W. Brewer, P. Widener, V. Anantharaj, F. Wang, T. Beck, A. Shankar, and S. Oral, “Data readiness pipeline patterns for scientific ai at scale: Insights from climate, fusion, life sciences, and materials,” AI Magazine, vol. 47, no. 1, p. e70056, 2026.
 - [53] A. Hannachi, I. T. Jolliffe, and D. B. Stephenson, “Empirical orthogonal functions and related techniques in atmospheric science: A review,” International Journal of Climatology, vol. 27, no. 9, pp. 1119–1152, 2007.
-
-

@@ -2138,5 +2138,3 @@ Total score (%)
 #### a Single-Cell b spatial
 
 - Supplementary Fig. 8: Error distribution for tasks based on omics data. (a) Error proportion for Single-Cell Omics. (b) Error proportion for Spatial Omics.
-
-

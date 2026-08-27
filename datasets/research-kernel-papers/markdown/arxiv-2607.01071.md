@@ -1482,4 +1482,3 @@ Mark outdated_preference_contamination = 1 if any of the following occurs:
 
 
 Figure 18: Rubric prompt for Valid Memory Selection.
-

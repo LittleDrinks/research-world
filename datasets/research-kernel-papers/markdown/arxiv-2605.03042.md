@@ -1051,4 +1051,3 @@ Policy Description
 Fresh Each review round opens a new reviewer thread with no prior context. Used to prevent confirmation bias from previous rounds (REVIEWER_BIAS_GUARD = true default). Required for paper-claim-audit and the auto-paper improvement loop.
 
 Cross-round Reviewer retains memory across rounds, can reference previous critiques and verify whether raised issues have been addressed. Used selectively when convergence verification is more important than independence.
-

@@ -6,7 +6,6 @@ import hashlib
 import html
 import json
 import re
-import shutil
 import subprocess
 import tempfile
 from datetime import datetime, timezone
@@ -460,7 +459,7 @@ def convert_pdf(pdf, target):
         outputs = sorted(Path(output_dir).glob("*.md"))
         if len(outputs) != 1 or not nonempty(outputs[0]):
             raise RuntimeError("opendataloader-pdf 未生成非空 Markdown")
-        shutil.copyfile(outputs[0], target)
+        write_atomic(target, normalize_markdown(outputs[0].read_text(encoding="utf-8", errors="replace")))
 
 
 def ensure_pdf(record, pdf, relative):
@@ -499,6 +498,11 @@ def html_title(source):
     match = re.search(r"<title[^>]*>(.*?)</title>", source, re.I | re.S)
     value = re.sub(r"<[^>]+>", " ", match.group(1)) if match else ""
     return " ".join(html.unescape(value).split())
+
+
+def normalize_markdown(source):
+    lines = [line.rstrip() for line in source.splitlines()]
+    return "\n".join(lines).rstrip("\n") + "\n"
 
 
 def html_snapshot(source):
@@ -619,6 +623,13 @@ def write_manifest(path, records, excluded, unresolved):
             "supplemental_issue": 139,
             "supplemental_source_list": SUPPLEMENTAL_SOURCE_LIST,
         },
+        "audit_exceptions": [
+            {
+                "path": "datasets/research-kernel-papers/snapshots/issue-139/pi-compaction.md",
+                "status": "expected-source-whitespace",
+                "reason": "固定 commit 的原始 Markdown 保留两处空行尾空格；SHA-256 按原始快照校验，.gitattributes 仅免除 diff whitespace 告警。",
+            },
+        ],
         "entries": records,
         "excluded_sources": excluded,
         "unresolved_citations": unresolved,

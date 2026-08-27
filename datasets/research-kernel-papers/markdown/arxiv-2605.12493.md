@@ -1323,4 +1323,3 @@ ServiceNow Incident form top right button area visible controls; ServiceNow Chan
 Incident: Submit, Resolve.
 
 Change Request: Submit only.
-

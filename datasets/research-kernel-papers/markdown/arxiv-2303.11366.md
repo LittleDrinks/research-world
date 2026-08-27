@@ -620,4 +620,3 @@ Trial #2: Question: The head of the Foreign Relations Department of the Rastriya
 Observation 1: Answer is INCORRECT
 
 Reflection: For the first trial, I misunderstood the question. I thought the question was asking for a category of degrees, rather than a specific degree. I learned from my mistake and in the second trial, I focused more closely on the question to understand that it was asking for a specific field of study.
-

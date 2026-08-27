@@ -1249,5 +1249,3 @@ Iteration step
 Iteration step
 
 - Figure 14: Levenshtein distance heatmaps for nine independent mutation chains (first 64 iterations each). Checkered patterns and block structures appear consistently across replications, though the specific block sizes and transition points vary. Some chains (e.g., top-left) enter stagnation almost immediately, while others (e.g., bottom-right) sustain more varied exploration before settling.
-
-

@@ -637,5 +637,3 @@ training to the end of prediction for each fold. The number of features is count
 - 18. van der Walt, S., Colbert, S. C. &amp; Varoquaux, G. The NumPy Array: A Structure for Efficient Numerical Computation. Comput. Sci. Eng. 13, 22–30 (2011).
 
 - 19. Zhuo, Y., Mansouri Tehrani, A. &amp; Brgoch, J. Predicting the Band Gaps of Inorganic Solids by Machine Learning. J. Phys. Chem. Lett. 9, 1668–1673 (2018).
-
-

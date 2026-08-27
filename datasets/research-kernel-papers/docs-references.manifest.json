@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generated_at": "2026-08-27T06:13:38.227154+00:00",
+  "generated_at": "2026-08-27T06:27:20.657542+00:00",
   "scope": {
     "included": "docs 中指向论文、会议论文、学术文章或研究报告的来源，以及 #139 指定的一手固定源码和网页规范",
     "excluded": "产品页、代码仓库、Issue、纯网页文档和社交媒体（#139 明确指定的固定来源除外）",
@@ -14,6 +14,13 @@
     "supplemental_issue": 139,
     "supplemental_source_list": "https://github.com/LittleDrinks/research-world/issues/139#issuecomment-5434636802"
   },
+  "audit_exceptions": [
+    {
+      "path": "datasets/research-kernel-papers/snapshots/issue-139/pi-compaction.md",
+      "status": "expected-source-whitespace",
+      "reason": "固定 commit 的原始 Markdown 保留两处空行尾空格；SHA-256 按原始快照校验，.gitattributes 仅免除 diff whitespace 告警。"
+    }
+  ],
   "entries": [
     {
       "id": "acl-2020.emnlp-main.609",

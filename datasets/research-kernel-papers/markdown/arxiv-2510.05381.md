@@ -594,4 +594,3 @@ Apache License 2.0
 13 Tasks English
 
 Table 10: Artifacts used in this work
-

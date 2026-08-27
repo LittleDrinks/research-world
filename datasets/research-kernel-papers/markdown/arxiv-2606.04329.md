@@ -565,5 +565,3 @@ Benign examples are generated in two categories: contexts where no memory write 
 - Explicit Command Insertion uses trigger keywords drawn from Table 5: imperative verbs, explicit memory commands, user-preference framing, and temporal persistence cues to embed a direct write instruction in the context. The payload is immediately executable upon processing.
 - Conditional Command Insertion specifies a trigger phrase at generation time (e.g., yes, ok, sure) and instructs the model to craft an agent question that naturally elicits it. The payload fires in a second turn after the user provides the affirmative response.
 - Salience-Driven Compaction Poisoning fixes a repetition count of three or more instances per test case, each rephrased and distributed across section boundaries so no single instance appears anomalous. Signal strength controls disguise level: strong signal uses imperative phrasing, moderate signal embeds payloads as docu-
-
-

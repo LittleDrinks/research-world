@@ -651,7 +651,7 @@ DeepSeek dev LLM terms only 351 6 3.50 × 10−6 46 36 DeepSeek dev GenericPrimi
 
 ###### %FFQ4FF C   E
 
-######   B BGV  CF DI BS 
+######   B BGV  CF DI BS
 
  
 
@@ -670,7 +670,7 @@ DeepSeek dev LLM terms only 351 6 3.50 × 10−6 46 36 DeepSeek dev GenericPrimi
 | | | | | | | | |
 
 
- F  
+ F 
 
 ) CS E15# 4FBSDI
 
@@ -778,4 +778,3 @@ Table 16: Hard program-domain per-distribution readout. Blind excess-bin rate is
 Distribution Arm Mean blind excess (%) Median blind excess (%)
 
 OR-style Fresh 3.637 3.795 OR-style Parent evolution 3.178 3.168 OR-style External population 3.276 3.287 OR-style Crossover probe 3.068 3.287 Tight Fresh 3.800 3.879 Tight Parent evolution 3.712 3.715 Tight External population 3.445 3.273 Tight Crossover probe 3.225 3.184 Weibull Fresh 4.283 4.295 Weibull Parent evolution 3.814 3.635 Weibull External population 3.361 3.166 Weibull Crossover probe 3.292 3.166
-

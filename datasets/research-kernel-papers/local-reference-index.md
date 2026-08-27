@@ -17,4 +17,5 @@ sources:
 ## 完整性
 - `docs` 论文型来源：84 条，81 条同时有本地 PDF 和 Markdown，3 条保留失败原因与重试命令。
 - #139 补充来源：13 条；固定源码记录 commit，网页记录规范或产品版本与访问日，格式和 SHA-256 在 manifest 中。
+- 固定源码按原始快照校验；`pi-compaction.md` 的原始尾空格审计例外已在 manifest 明列，不作为下载失败。
 - 设计说明中 17 条无原 URL 的题名-only 引用保留在 `unresolved_citations`；产品页、代码仓库、Issue 和未纳入清单的纯网页文档保留在 `excluded_sources`。

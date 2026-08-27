@@ -2568,5 +2568,3 @@ baselineembeddedindependent
 baselineembeddedindependent
 
 - Figure 12: Suspicion-score distribution per monitor model. For each monitor backbone, the distribution of suspicion scores split by side-task class (baseline / successful embedded / successful independent), pooled over the regime’s settings and all access types. Kimi K2.6 and GLM-5.1 have no independent distribution (we did not run these). Top two rows: the six optimization backbones; bottom: the two post-training backbones.
-
-

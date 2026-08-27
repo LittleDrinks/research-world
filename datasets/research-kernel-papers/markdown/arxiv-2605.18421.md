@@ -494,11 +494,11 @@ backbone model, additional memory may introduce irrelevant evidence, mismatched 
 
         )   (
 
-   .    ))% ( 
+   .    ))% (
 
- )            0      )(  ) 
+ )            0      )(  )
 
- (   )  
+ (   )
 
 | | | | |
 |---|---|---|---|
@@ -507,25 +507,25 @@ backbone model, additional memory may introduce irrelevant evidence, mismatched 
 | | | | |
 
 
- (   )  
+ (   )
 
  )-     )   (
 
-   .    ))% ( 
+   .    ))% (
 
- )            0    
+ )            0
 
- )(  ) 
+ )(  )
 
-       (        
+       (
 
 ######         )   (
 
-   .    ))% ( 
+   .    ))% (
 
- )            0      )(  ) 
+ )            0      )(  )
 
- (   )  
+ (   )
 
 | | | | |
 |---|---|---|---|
@@ -536,11 +536,11 @@ backbone model, additional memory may introduce irrelevant evidence, mismatched 
 
         )   (
 
-   .    ))% ( 
+   .    ))% (
 
- )            0      )(  ) 
+ )            0      )(  )
 
- (   )  
+ (   )
 
 | | | | |
 |---|---|---|---|
@@ -553,11 +553,11 @@ backbone model, additional memory may introduce irrelevant evidence, mismatched 
 
         )   (
 
-   .    ))% ( 
+   .    ))% (
 
- )            0      )(  ) 
+ )            0      )(  )
 
- (   )  
+ (   )
 
 | | | | |
 |---|---|---|---|
@@ -566,7 +566,7 @@ backbone model, additional memory may introduce irrelevant evidence, mismatched 
 | | | | |
 
 
-######       .) . 
+######       .) .
 
 | | |
 |---|---|
@@ -577,13 +577,13 @@ backbone model, additional memory may introduce irrelevant evidence, mismatched 
 | | |
 
 
-######    -   0    (      
+######    -   0    (
 
-1 
+1
 
 Figure 3: Cross-environment transfer results in CROSSEP-TOOL.
 
- .&amp;%0  -  ( 
+ .&amp;%0  -  (
 
  4  ( % (   (&amp; 0
 
@@ -610,7 +610,7 @@ Figure 3: Cross-environment transfer results in CROSSEP-TOOL.
 
  ( )  3     %
 
- -1. %  -  ( 
+ -1. %  -  (
 
  ( )      %
 
@@ -620,9 +620,9 @@ Figure 3: Cross-environment transfer results in CROSSEP-TOOL.
 
  --       %
 
-     3%         
+     3%
 
-######  .&amp;%0  -  ( 
+######  .&amp;%0  -  (
 
  4  ( % (   (&amp; 0
 
@@ -645,7 +645,7 @@ Figure 3: Cross-environment transfer results in CROSSEP-TOOL.
 | | | | | | |
 
 
- .&amp;%0  -  ( 
+ .&amp;%0  -  (
 
  4  ( % (   (&amp; 0
 
@@ -670,7 +670,7 @@ Figure 3: Cross-environment transfer results in CROSSEP-TOOL.
 
      %  - ( &amp;   )
 
- .&amp;%0  -  ( 
+ .&amp;%0  -  (
 
  4  ( % (   (&amp; 0
 
@@ -699,11 +699,11 @@ Figure 3: Cross-environment transfer results in CROSSEP-TOOL.
 |---|
 
 
-######    1.  5     &amp;%    
+######    1.  5     &amp;%
 
-6  
+6
 
-6  
+6
 
 Figure 4: Cross-environment transfer results in CROSSEP-EMB.
 
@@ -1138,7 +1138,7 @@ We provide the full cross-environment transfer visualizations for CROSSEP-EMB an
 | | | | | | |
 
 
-     0  (   
+     0  (
 
   0 &amp;1  .  )-
 
@@ -1163,7 +1163,7 @@ We provide the full cross-environment transfer visualizations for CROSSEP-EMB an
 | | | | | | |
 
 
-     &amp;  
+     &amp;
 
   0 &amp;1  .  )-
 
@@ -1188,17 +1188,17 @@ We provide the full cross-environment transfer visualizations for CROSSEP-EMB an
 | | | | | | |
 
 
- %   &amp;  
+ %   &amp;
 
 | |
 |---|
 
 
-   20  5  ( - &amp;    
+   20  5  ( - &amp;
 
-6  
+6
 
-6  
+6
 
 - Figure 5: Cross-environment transfer results in CROSSEP-EMB for BM25, GraphRAG, Mem0, and MemOS.
 
@@ -1239,7 +1239,7 @@ We provide the full cross-environment transfer visualizations for CROSSEP-EMB an
 
  ..       &amp;
 
-     &amp; . 4  
+     &amp; . 4
 
 | | | | | | |
 |---|---|---|---|---|---|
@@ -1287,7 +1287,7 @@ We provide the full cross-environment transfer visualizations for CROSSEP-EMB an
 
    &amp;0  .  )-
 
-      &amp;-0  
+      &amp;-0
 
 | | | | | | |
 |---|---|---|---|---|---|
@@ -1312,17 +1312,17 @@ We provide the full cross-environment transfer visualizations for CROSSEP-EMB an
 
    &amp;0  .  )-
 
- %     
+ %
 
 | |
 |---|
 
 
-5  
+5
 
-5  
+5
 
-   1   4  ( - &amp;    
+   1   4  ( - &amp;
 
 - Figure 6: Cross-environment transfer results in CROSSEP-EMB for MemoryOS, AWM, AgentKB, and ACE.
 
@@ -1335,21 +1335,21 @@ C.1.2 CROSSEP-TOOL
 | | | | |
 
 
- (   )-   ))% ( 
+ (   )-   ))% (
 
- )            0 -    )(- ) 
+ )            0 -    )(- )
 
      -  )   (
 
  ).     )   (
 
- (   )- 
+ (   )-
 
- ))% ( 
+ ))% (
 
- )            0 -  
+ )            0 -
 
- )(- ) 
+ )(- )
 
 | | | | |
 |---|---|---|---|
@@ -1358,9 +1358,9 @@ C.1.2 CROSSEP-TOOL
 | | | | |
 
 
- (   )-   ))% ( 
+ (   )-   ))% (
 
- )            0 -    )(- ) 
+ )            0 -    )(- )
 
      -  )   (
 
@@ -1371,9 +1371,9 @@ C.1.2 CROSSEP-TOOL
 | | | | |
 
 
- (   )-   ))% ( 
+ (   )-   ))% (
 
- )            0 -    )(- ) 
+ )            0 -    )(- )
 
      -  )   (
 
@@ -1384,9 +1384,9 @@ C.1.2 CROSSEP-TOOL
 | | | | |
 
 
- (   )-   ))% ( 
+ (   )-   ))% (
 
- )            0 -    )(- ) 
+ )            0 -    )(- )
 
      -  )   (
 
@@ -1399,11 +1399,11 @@ C.1.2 CROSSEP-TOOL
 | | |
 
 
-1  
+1
 
-1  
+1
 
-   .   0    (      
+   .   0    (
 
 - Figure 7: Cross-environment transfer results in CROSSEP-TOOL for BM25, GraphRAG, Mem0, and MemOS.
 
@@ -1412,9 +1412,9 @@ C.1.2 CROSSEP-TOOL
 
    %     %    0 - (
 
-    %)    -      %) 
+    %)    -      %)
 
-   %   )-   
+   %   )-
 
 | | | | |
 |---|---|---|---|
@@ -1423,25 +1423,25 @@ C.1.2 CROSSEP-TOOL
 | | | | |
 
 
-    %)    - 
+    %)    -
 
   .      ( %)
 
-    %) 
+    %)
 
    %     %    0 - (
 
-   %   )-   
+   %   )-
 
-      (  0  
+      (  0
 
 ######      -   ( %)
 
    %     %    0 - (
 
-    %)    -      %) 
+    %)    -      %)
 
-   %   )-   
+   %   )-
 
 | | | | |
 |---|---|---|---|
@@ -1454,9 +1454,9 @@ C.1.2 CROSSEP-TOOL
 
    %     %    0 - (
 
-    %)    -      %) 
+    %)    -      %)
 
-   %   )-   
+   %   )-
 
 | | | | |
 |---|---|---|---|
@@ -1465,15 +1465,15 @@ C.1.2 CROSSEP-TOOL
 | | | | |
 
 
-     )-  
+     )-
 
 ######      -   ( %)
 
    %     %    0 - (
 
-    %)    -      %) 
+    %)    -      %)
 
-   %   )-   
+   %   )-
 
 | | | | |
 |---|---|---|---|
@@ -1486,11 +1486,11 @@ C.1.2 CROSSEP-TOOL
 |---|
 
 
-###### .   0    )      
+###### .   0    )
 
-1  
+1
 
-1  
+1
 
 - Figure 8: Cross-environment transfer results in CROSSEP-TOOL for MemoryOS, AWM, AgentKB, and ACE.
 
@@ -1772,4 +1772,3 @@ Trading Bots
 Booking Average Gemini-3-Flash 60136 82076 336793 80528 141437 GPT-5-mini 46875 67273 178668 50309 85959 DeepSeek-V3.2 83920 96226 199725 64076 110987 BM25 141335 162259 261983 105814 167848 Qwen3-Emb-4B 135416 174900 279903 110877 175274 GraphRAG 144339 167429 215260 106440 158367 MemAgent 84212 92239 224752 61541 115686 MemoBrain 131772 131863 197039 81771 135611 Mem0 133638 155550 229999 117347 159133 A-MEM 118105 132459 221201 106099 144080 MemOS 105597 123065 239596 83622 137459 MemoryOS 142679 219548 215285 158213 180424 AWM 136952 163160 224228 75445 149946 SkillWeaver 99893 104069 218444 71885 123573 AgentKB 227553 116884 395484 95346 205974 ACE 157982 177453 326612 126807 196563 ReasoningBank 156512 141968 240103 97710 189712 MemEvolve 95391 117017 280024 78307 140593
 
 Method
-

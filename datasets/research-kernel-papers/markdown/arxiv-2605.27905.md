@@ -1316,4 +1316,3 @@ Specifically, three independent LLM annotators, including Qwen-30b, Llama-8B and
 Table S8 Agreement among three LLM annotators for new-question and new-method-or-approach labels. Each annotator compares the generated idea with the same five seed papers. Values are computed over the common set of generated ideas with valid labels. Gwet’s AC1 is reported because both binary labels are imbalanced [39].
 
 Agreement metric Research question Method All three annotators agree 74.0% 77.6% Gwet’s AC1 0.771 0.809 Qwen 30B vs. Llama 8B 82.7% 80.8% Qwen 30B vs. Gemma 31B 82.9% 84.5% Llama 8B vs. Gemma 31B 82.3% 89.9%
-

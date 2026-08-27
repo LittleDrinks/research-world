@@ -1371,5 +1371,3 @@ OpenClawBench is intended for process-side anomaly auditing. It supports trainin
 The BFCL oracle remains useful as task-level context. However, the central labels in OpenClawBench are FullTax process-anomaly annotations. A model that performs well on OpenClawBench should be interpreted as better at process-side auditing under this protocol. It should not be interpreted as better
 
 - at completing BFCL tasks unless task-completion metrics are reported separately.
-
-

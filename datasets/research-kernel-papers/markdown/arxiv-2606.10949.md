@@ -1286,4 +1286,3 @@ MIST-Moral
 Table 12: Significance of memory vs. chat-history strict sycophancy (GPT-5.2, 5-run mean rate difference in percentage points, bootstrap 95% CI over runs). BH: Benjamini–Hochberg adjusted p-value within dataset group.
 
 Takeaways. All three memory backends increase strict sycophancy relative to chat history alone on both dataset families. On MIST-Moral, lifts are large (∆ ≈12–36pp) and highly significant under both run-level and McNemar tests (BHadjusted p &lt; 0.001 for every comparison). On MIST-Science, effects are smaller (∆ ≈1.5– 2.7pp) but run-level tests remain significant at BH ≤ 0.05 for all three systems; McNemar confirms Mem0 and Zep while MemOS vs. chat history does not reach significance on per-question pairing, consistent with the modest effect size and lower baseline rate on science tasks.
-

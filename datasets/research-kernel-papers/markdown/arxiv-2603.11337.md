@@ -622,5 +622,3 @@ REFERENCES
 - [27] M. Arnold, R. K. E. Bellamy, M. Hind, S. Houde, S. Mehta, A. Mojsilovic, K. N. Ramamurthy, D. Reimer, A. Olteanu, D. Piorkowski, J. Tsay, and K. R. Varshney, “Factsheets: Increasing trust in AI services through supplier’s declarations of conformity,” IBM Journal of Research and Development, 2019.
 - [28] “Artificial intelligence risk management framework (AI RMF 1.0),” National Institute of Standards and Technology (NIST), Tech. Rep. NIST AI 100-1, 2023.
 - [29] Université de Montréal, “The montréal declaration for a responsible development of artificial intelligence,” Website, 2018, accessed: 202512-14.
-
-

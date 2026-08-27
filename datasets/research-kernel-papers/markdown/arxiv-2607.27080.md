@@ -2366,5 +2366,3 @@ FM5 FM4
 FM1 Action binding (81) FM2 Scope / condition (65) FM3 Provenance / authority (60) FM4 Persistence / update (32) FM5 Memory composition (31) FM6 Temporal validity (26) FM7 Semantic association (15)
 
 - Figure 11: Configuration-wise lifecycle profiles by primary failure mode. Rows report MPSR, MESR, E2E-ASR, and SRSR; columns fix the memory mechanism. Color identifies the LLM backend, while line style identifies the agent harness. Codes below the grid give failure-mode labels and case counts.
-
-

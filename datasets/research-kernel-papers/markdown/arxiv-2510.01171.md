@@ -5623,5 +5623,3 @@ y2+z2 x2+1 + z
 - Problem 8 Let f(x) = ax2 + bx + c be a quadratic polynomial with a,b,c real numbers. If f(x) ≥ 0 for all real x, and f(1) = 0, f(2) = 1, find the value of a.
 
 - Problem 9 Six friends sit around a circular table. Each passes a gift either left or right at random. What is the probability that no two friends exchange gifts with each other?
-
-
