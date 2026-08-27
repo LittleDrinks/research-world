@@ -189,7 +189,7 @@ def _unexpected_probe(*_args, **_kwargs):
 def test_readiness_keeps_invalid_version_candidate(monkeypatch):
     monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: sys.executable)
     monkeypatch.setattr("runtime.providers.codex.subprocess.Popen", _popen([], [_probe_result("unknown")]))
-    descriptor = load_runtimes()[1].descriptor.public()
+    descriptor = CodexRuntimeAdapter(CodexProvider.detected()).descriptor.public()
     assert descriptor["status"] == "error"
     assert descriptor["reason"] == {"code": "probe_invalid_output", "probe": "version"}
 
@@ -278,12 +278,13 @@ def test_codex_command_uses_official_exec_jsonl_contract():
     assert provider._command("gpt-test", _context("thread-1")) == _resume_command(provider)
 
 
-def test_runtime_dockerfile_pins_the_audited_codex_release():
+def test_runtime_dockerfile_pins_the_audited_agent_cli_releases():
     dockerfile = Path(__file__).parents[1] / "Dockerfile"
     content = dockerfile.read_text()
-    assert "npm install --global @openai/codex@0.149.1-linux-x64" in content
+    assert "@openai/codex@0.149.1-linux-x64" in content
+    assert "@earendil-works/pi-coding-agent@0.84.3" in content
     assert "vendor/x86_64-unknown-linux-musl/bin/codex" in content
-    assert "codex.js" not in content and "/usr/local/bin/node" not in content
+    assert "codex.js" not in content and "COPY --from=agent-clis /usr/local/bin/node" in content
 
 
 def _context(session_id=None):
@@ -757,7 +758,7 @@ def test_discovery_keeps_unready_codex_descriptor(monkeypatch, path, result, sta
     monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: path)
     if result:
         monkeypatch.setattr("runtime.providers.codex.subprocess.Popen", _popen([], [_Probe(error=result)]))
-    descriptor = load_runtimes()[1].descriptor.public()
+    descriptor = CodexRuntimeAdapter(CodexProvider.detected()).descriptor.public()
     assert descriptor["status"] == status
     assert descriptor["reason"]["code"] == code
     assert descriptor["executable"] == "codex"

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .providers.codex import CodexProvider
+from .providers.pi import PiProvider
 from .types import CapabilityNotFound, TraceError
 
 REALM = "container:runtime"
@@ -65,9 +66,9 @@ class RuntimeAdapter:
         return None
 
 
-class CodexRuntimeAdapter(RuntimeAdapter):
-    def __init__(self, provider: CodexProvider):
-        super().__init__(_codex_descriptor(provider), ("openai-compatible",))
+class ProcessRuntimeAdapter(RuntimeAdapter):
+    def __init__(self, descriptor, endpoint_adapters, provider):
+        super().__init__(descriptor, endpoint_adapters)
         self.provider = provider
         self._processes: dict[str, object] = {}
         self._starts: dict[str, asyncio.Task] = {}
@@ -86,7 +87,7 @@ class CodexRuntimeAdapter(RuntimeAdapter):
     ):
         process = None
         try:
-            process = await self._start(session_id, model, context)
+            process = await self._start(session_id, model, context, messages)
             collected = await self.provider.collect(
                 process, messages, emit, (context.get("provider_session_id"),)
             )
@@ -98,16 +99,16 @@ class CodexRuntimeAdapter(RuntimeAdapter):
         finally:
             self._unregister(session_id, process)
 
-    async def _start(self, session_id, model, context):
+    async def _start(self, session_id, model, context, messages):
         if self._closing:
-            raise TraceError("runtime_closed", "codex runtime is closed")
-        task = asyncio.create_task(self.provider.start(model, context))
+            raise self._closed_error()
+        task = asyncio.create_task(self._provider_start(model, context, messages))
         self._starts[session_id] = task
         try:
             process = await task
             if self._closing:
                 await self._stop(session_id, process)
-                raise TraceError("runtime_closed", "codex runtime is closed")
+                raise self._closed_error()
             self._processes[session_id] = process
             if session_id in self._cancelled:
                 self._schedule_stop(session_id, process)
@@ -115,6 +116,13 @@ class CodexRuntimeAdapter(RuntimeAdapter):
         finally:
             if self._starts.get(session_id) is task:
                 self._starts.pop(session_id)
+
+    def _closed_error(self) -> TraceError:
+        name = self.descriptor.id
+        return TraceError("runtime_closed", f"{name} runtime is closed")
+
+    async def _provider_start(self, model, context, messages):
+        return await self.provider.start(model, context)
 
     def _unregister(self, session_id, process) -> None:
         if self._processes.get(session_id) is process:
@@ -196,6 +204,21 @@ class CodexRuntimeAdapter(RuntimeAdapter):
             self._stops.pop(session_id, None)
 
 
+class CodexRuntimeAdapter(ProcessRuntimeAdapter):
+    def __init__(self, provider: CodexProvider):
+        super().__init__(
+            _codex_descriptor(provider), ("openai-compatible",), provider
+        )
+
+
+class PiRuntimeAdapter(ProcessRuntimeAdapter):
+    def __init__(self, provider: PiProvider):
+        super().__init__(_pi_descriptor(provider), ("pi",), provider)
+
+    async def _provider_start(self, model, context, messages):
+        return await self.provider.start(model, context, messages)
+
+
 class RuntimePool:
     def __init__(self, adapters: list[RuntimeAdapter]):
         _validate_adapters(adapters)
@@ -225,6 +248,7 @@ class RuntimePool:
 def load_runtimes() -> list[RuntimeAdapter]:
     values = [RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM), ("openai-compatible",))]
     values.append(CodexRuntimeAdapter(CodexProvider.detected()))
+    values.append(PiRuntimeAdapter(PiProvider.detected()))
     return values
 
 
@@ -236,6 +260,15 @@ def _codex_descriptor(provider: CodexProvider) -> RuntimeDescriptor:
         provider.resolved_path, provider.last_checked_at, provider.status,
         ("non-interactive", "resume", "model-select",
          "reasoning-select", "workspace", "auth-probe"), provider.reason,
+    )
+
+
+def _pi_descriptor(provider: PiProvider) -> RuntimeDescriptor:
+    return RuntimeDescriptor(
+        "pi", REALM, "Pi CLI", "pi", provider.version, "path", provider.path,
+        provider.resolved_path, provider.last_checked_at, provider.status,
+        ("rpc", "streaming", "resume", "model-select", "reasoning-select",
+         "workspace", "native-tools"), provider.reason,
     )
 
 
@@ -257,5 +290,8 @@ def _validate_adapters(adapters: list[RuntimeAdapter]) -> None:
     keys = [(item.descriptor.id, item.descriptor.realm) for item in adapters]
     if len(keys) != len(set(keys)):
         raise ValueError("runtime id and realm must be unique")
-    if any(item.descriptor.id == "codex" and not isinstance(item, CodexRuntimeAdapter) for item in adapters):
-        raise ValueError("codex runtime requires CodexRuntimeAdapter")
+    required = {"codex": CodexRuntimeAdapter, "pi": PiRuntimeAdapter}
+    for item in adapters:
+        expected = required.get(item.descriptor.id)
+        if expected is not None and not isinstance(item, expected):
+            raise ValueError(f"{item.descriptor.id} runtime requires {expected.__name__}")
