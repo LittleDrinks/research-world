@@ -1,5 +1,5 @@
 # Research World
-单问题研究控制面：SQLite 图谱是唯一真源，artifact 按 SHA-256 寻址；节点上的对话经 orchestrator 决策为 workflow，双审准入。
+单问题研究控制面：SQLite Fact Graph 保存当前研究状态，Artifact 按 SHA-256 寻址；主 Agent 动态编排 Workflow，Graph CLI 写入或删除图谱，Trajectory 记录工作过程。
 ## Start
 ```bash
 docker compose up --build -d
