@@ -59,9 +59,12 @@ services:
     build:
       context: ..
       dockerfile: runtime/Dockerfile
+    user: "1000:1000"
     env_file:
       - ../.env
     environment:
+      HOME: /home/runtime
+      PI_CODING_AGENT_DIR: /home/runtime/.pi/agent
       RUNTIME_API_BASE: ${baseurl:-}
       RUNTIME_API_KEY: ${apikey:-}
       RUNTIME_ENDPOINTS: ${RUNTIME_ENDPOINTS:-}
@@ -79,6 +82,7 @@ services:
       - ${RW_PROJECTS_ROOT:-./projects}:/projects
       - ${HOME}/.codex:/codex-source:ro
       - ${HOME}/.agents/skills:/user-agent-skills:ro
+      - ${HOME}/.pi/agent:/home/runtime/.pi/agent
     networks: [control, worker-egress]
     depends_on:
       runner-controller:

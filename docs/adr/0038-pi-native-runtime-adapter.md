@@ -23,6 +23,6 @@ AgentSpec 的逻辑 Endpoint 为 `pi`，model 为 `default`；`default` 不生�
 Runtime Session id 与 Pi native session id 相同，不扫描文件时间、不猜 continuation、不用 `new_session.parentSession` 创建逐轮分叉。Pi 原生 JSONL 是 continuation source，Trajectory 是 Web inspect 与 UI projection；Runtime restart 后用相同 id 恢复。宿主终端继续原生 Session 后，下一次 Web prompt 继承新增上下文，但 Web 不反向补录终端消息。同一 native Session 只允许一个活跃 writer。
 Thread restart 创建新 Runtime/Pi Session；旧 Pi Session 与 Trajectory 均保留。Pi session path、native id、配置路径与凭据不进入公共投影。
 ## Compose
-Runtime 与宿主 Pi 读写共享同一个 Pi agent directory，Pi 子进程使用宿主 UID/GID 写入。Pi child environment 只保留运行所需的 HOME、Pi directory、locale 与固定 PATH，不继承 Runtime Endpoint 凭据。容器内 workspace path 与宿主不同时，`/resume` 在 All Sessions 中按名称或首条消息查找。
+Runtime 与宿主 Pi 读写共享同一个 Pi agent directory，Pi 子进程使用宿主 UID/GID 写入。Research Kernel 创建 Project workspace 时继承共享 projects 根目录的 owner/group，并保持 `0700`，使同一 UID 的 Runtime 可读写而其他 UID 不可进入。Pi child environment 只保留运行所需的 HOME、Pi directory、locale 与固定 PATH，不继承 Runtime Endpoint 凭据。容器内 workspace path 与宿主不同时，`/resume` 在 All Sessions 中按名称或首条消息查找。
 ## 失败
 版本不匹配、RPC ack 拒绝、invalid JSON、缺少 `agent_end`、模型错误、extension error、retry exhausted、timeout 与进程异常均显式失败，不切换 Runtime、不重放完整 Trajectory、不新建替代 Session。取消先发送 RPC `abort`，再有界终止进程组。
