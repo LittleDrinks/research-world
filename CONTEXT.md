@@ -25,7 +25,7 @@ _Avoid_: 裸路径、覆盖写
 _Avoid_: 强制双审、准入 Gate
 **Workflow**：主 Agent 围绕一个 Project 动态编排的子 Agent 工作；可并行探索、复核已有输出或沿反馈换方向。
 _Avoid_: 固定 stage 序列、状态机
-**Pipeline run**：主 Agent 一次 Project 工作的可引用投影，关联该工作选择的 lead / child Trajectory；它不驱动 Workflow，也不是 Agent Runtime。
+**Pipeline run**：主 Agent 一次 Project 工作的交付投影，引用选定的 lead / child Trajectory；它只服务编号、版本比较和报告，不是执行对象、Session 或 Agent Runtime。
 _Avoid_: Research Round、固定 Pipeline、运行实例
 **研究版本**：同一 Project 中两个有次序 Pipeline run 的确定性对比投影；V1 / V2 只标记比较切点，不拥有节点或事实。
 _Avoid_: Research Round、可变报告草稿
@@ -41,7 +41,7 @@ _Avoid_: Connector、MCP server、transport、模型函数名
 _Avoid_: Kernel 专用后端、前端 transport 表单
 **Preset**：可复用的 AgentSpec 草稿；引用 Tool id，不拥有安装、配置或执行逻辑，保存后不随 Preset 漂移。
 _Avoid_: 第二套 Agent 配置、隐式安装
-**识别**：Runtime 枚举工作区当前可选择的 Endpoint、Skill 与 Tool；AgentSpec 只能引用识别结果，缺失或未就绪能力阻止 Launch。
+**识别**：Agent Runtime 枚举工作区当前可选择的 Endpoint、Skill 与 Tool；AgentSpec 只能引用识别结果，缺失或未就绪能力阻止 Launch。
 _Avoid_: 手填 Endpoint、手填 Skill、手填 transport
 **渐进披露**：Skill 与节点正文默认不进入模型上下文；Agent 调用读取工具后，读取结果才进入 Session 与 Trajectory。
 _Avoid_: 全量投喂、字符串拼接钉入
