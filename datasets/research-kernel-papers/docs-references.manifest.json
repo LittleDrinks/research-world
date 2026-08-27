@@ -1,0 +1,3946 @@
+{
+  "version": 2,
+  "generated_at": "2026-08-27T08:01:29.388982+00:00",
+  "scope": {
+    "included": "docs 中指向论文、会议论文、学术文章或研究报告的来源，以及 #139 指定的一手固定源码和网页规范",
+    "excluded": "产品页、代码仓库、Issue、纯网页文档和社交媒体（#139 明确指定的固定来源除外）",
+    "pdf_conversion": "opendataloader-pdf -f markdown --image-output off",
+    "web_snapshot_conversion": "Python stdlib html.parser -> Markdown",
+    "html_output": false
+  },
+  "inputs": {
+    "docs_root": "docs",
+    "supplemental": "datasets/research-kernel-papers/issue-139.sources.json",
+    "supplemental_issue": 139,
+    "supplemental_source_list": "https://github.com/LittleDrinks/research-world/issues/139#issuecomment-5434636802"
+  },
+  "audit_exceptions": [
+    {
+      "path": "datasets/research-kernel-papers/snapshots/issue-139/pi-compaction.md",
+      "status": "expected-source-whitespace",
+      "reason": "固定 commit 的原始 Markdown 保留两处空行尾空格；SHA-256 按原始快照校验，.gitattributes 仅免除 diff whitespace 告警。"
+    }
+  ],
+  "entries": [
+    {
+      "id": "acl-2020.emnlp-main.609",
+      "kind": "acl",
+      "source_urls": [
+        "https://aclanthology.org/2020.emnlp-main.609/"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0020-graph-and-evidence.md",
+          "line": 21
+        },
+        {
+          "path": "docs/benchmarks/e3-error-cascade.md",
+          "line": 10
+        }
+      ],
+      "title": "人工纠正具体事实时新增带来源、绑定 claim/resource 的图谱证据，规划与执行 agent 不默认读取；只有可跨事实复用的检查步骤进入全局 Skill。[SciFact]( ) 把证据句绑定到具体主张，[SciFact-Open](https://doi.org/10.18653/v1/2022.findings-emnlp.347) 显示证据覆盖",
+      "origin": "docs",
+      "source_url": "https://aclanthology.org/2020.emnlp-main.609/",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://aclanthology.org/2020.emnlp-main.609.pdf",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/acl-2020.emnlp-main.609.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/acl-2020.emnlp-main.609.md",
+      "sha256": "e51a1fab569f2dcb00f7806fe95094e25a34c027140709725d3d05b7a0af9ac7",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id acl-2020.emnlp-main.609"
+    },
+    {
+      "id": "acl-2022.tacl-1.31",
+      "kind": "acl",
+      "source_urls": [
+        "https://aclanthology.org/2022.tacl-1.31/"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e3-error-cascade.md",
+          "line": 4
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://aclanthology.org/2022.tacl-1.31/",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://aclanthology.org/2022.tacl-1.31.pdf",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/acl-2022.tacl-1.31.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/acl-2022.tacl-1.31.md",
+      "sha256": "c0d8b89636bcbca4972b55ab68f014eb20f74c4b9a4fcf126ca68d7f2ec1e753",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id acl-2022.tacl-1.31"
+    },
+    {
+      "id": "acl-2026.acl-long.1686",
+      "kind": "acl",
+      "source_urls": [
+        "https://aclanthology.org/2026.acl-long.1686/"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0020-graph-and-evidence.md",
+          "line": 15
+        }
+      ],
+      "title": "请求由临时工作会话执行，产出交独立 agent 审核；通过后写入图谱并删除原会话，退修只回最小审核意见，重开由新会话依据图谱和最小驳回理由继续。Danus 将计划、失败路线与未验证发现留在共享 memory，只允许独立 verifier 接受的事实进入依赖图，支持用有界上下文累积长链论证 [danus]。同一会话对自身产物的再解释仍是[内源纠错](https",
+      "origin": "docs",
+      "source_url": "https://aclanthology.org/2026.acl-long.1686/",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://aclanthology.org/2026.acl-long.1686.pdf",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/acl-2026.acl-long.1686.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/acl-2026.acl-long.1686.md",
+      "sha256": "1e4ed80adac80455b4fe64de19d08144625a258add01265510007f43e127ed9a",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id acl-2026.acl-long.1686"
+    },
+    {
+      "id": "arxiv-2005.00707",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2005.00707"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e6-cold-replay.md",
+          "line": 4
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2005.00707",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2005.00707",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2005.00707.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2005.00707.md",
+      "sha256": "fbdd140ca579e28117736df44e99c3bbe0c30464316a3ed46d13a0c5306d344d",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2005.00707"
+    },
+    {
+      "id": "arxiv-2012.13048",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2012.13048"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e3-error-cascade.md",
+          "line": 6
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2012.13048",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2012.13048",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2012.13048.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2012.13048.md",
+      "sha256": "5b60878d1dcbc6a019a3d3d97edc9bbe62598fe1e6ae9847cb9e65bdfc33157d",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2012.13048"
+    },
+    {
+      "id": "arxiv-2303.11366",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2303.11366"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0023-rsi-layer.md",
+          "line": 14
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2303.11366",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2303.11366",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2303.11366.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2303.11366.md",
+      "sha256": "6059b6f89fea9959bd3dab553fbb97756a3dfb1b15e3cbab2fbf3ab6664333bd",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2303.11366"
+    },
+    {
+      "id": "arxiv-2305.01683",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/pdf/2305.01683v1",
+        "https://arxiv.org/abs/2305.01683v1"
+      ],
+      "locations": [
+        {
+          "path": "docs/submission-reference-manifest.json",
+          "line": 39
+        },
+        {
+          "path": "docs/submission-reference-manifest.json",
+          "line": 40
+        }
+      ],
+      "title": "\"url\": \" \",",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/pdf/2305.01683v1",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2305.01683v1",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2305.01683.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2305.01683.md",
+      "sha256": "c44419c0dfefba8492af1f648753d0ddd90313b64acffd31e56f8549a460d1c7",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2305.01683"
+    },
+    {
+      "id": "arxiv-2305.14259",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2305.14259"
+      ],
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "line": 549
+        }
+      ],
+      "title": "SciMON: Scientific Inspiration Machines Optimized for Novelty（重写阈值 0.6）. arXiv:2305.14259",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2305.14259",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2305.14259",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2305.14259.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2305.14259.md",
+      "sha256": "ab85873ed9fc62fa014555a07bc5f46ba623c444c549c39c27e863445dc6b3d8",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2305.14259"
+    },
+    {
+      "id": "arxiv-2307.03172",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2307.03172"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e7-scoped-evidence.md",
+          "line": 8
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2307.03172",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2307.03172",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2307.03172.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2307.03172.md",
+      "sha256": "653b29619eae2ae4b361d7bdcdc06db4bedcb1b0eabe31814036beca8c1af0b1",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2307.03172"
+    },
+    {
+      "id": "arxiv-2310.01798",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2310.01798"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0020-graph-and-evidence.md",
+          "line": 15
+        },
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 12
+        },
+        {
+          "path": "docs/adr/0023-rsi-layer.md",
+          "line": 17
+        }
+      ],
+      "title": "请求由临时工作会话执行，产出交独立 agent 审核；通过后写入图谱并删除原会话，退修只回最小审核意见，重开由新会话依据图谱和最小驳回理由继续。Danus 将计划、失败路线与未验证发现留在共享 memory，只允许独立 verifier 接受的事实进入依赖图，支持用有界上下文累积长链论证 [danus]。同一会话对自身产物的再解释仍是[内源纠错]( )；[长",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2310.01798",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2310.01798",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2310.01798.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2310.01798.md",
+      "sha256": "15e1731e255ec6b217792a1e077926807da77e8e46b69e6c57dda30d67794761",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2310.01798"
+    },
+    {
+      "id": "arxiv-2402.10669",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2402.10669"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e4-reviewer-calibration.md",
+          "line": 12
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2402.10669",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2402.10669",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2402.10669.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2402.10669.md",
+      "sha256": "47ae7d76edd51093525fd0a868987b626e46f891f065607b568057439de8b41f",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2402.10669"
+    },
+    {
+      "id": "arxiv-2409.04109",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2409.04109"
+      ],
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "line": 548
+        }
+      ],
+      "title": "Si et al. Can LLMs Generate Novel Research Ideas?（去重阈值 0.8 的人评实验） arXiv:2409.04109",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2409.04109",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2409.04109",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2409.04109.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2409.04109.md",
+      "sha256": "fc1d14afd403c19bebb1c8ede9e74ed9aa3de0ee3a1f8656a6dcd6c7da90f79c",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2409.04109"
+    },
+    {
+      "id": "arxiv-2409.11363",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2409.11363"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e6-cold-replay.md",
+          "line": 6
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2409.11363",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2409.11363",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2409.11363.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2409.11363.md",
+      "sha256": "1d1fbe8a3cf472fc468495e6a3bcd6b90224ba1eae3dac8d8174f98d666c3d76",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2409.11363"
+    },
+    {
+      "id": "arxiv-2410.13185",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2410.13185"
+      ],
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "line": 550
+        }
+      ],
+      "title": "Chain-of-Ideas / Idea Arena（成对判定一致率 ~70%）. arXiv:2410.13185",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2410.13185",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2410.13185",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2410.13185.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2410.13185.md",
+      "sha256": "5cfe26b00ed7fb9d9305fec04694070d40557c03377eb2f91a034f0129db3137",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2410.13185"
+    },
+    {
+      "id": "arxiv-2411.15114",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2411.15114"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e6-cold-replay.md",
+          "line": 8
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2411.15114",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2411.15114",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2411.15114.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2411.15114.md",
+      "sha256": "9d25c5ea6abfeeb40b5c8fa7a8e637cd8785d2a0f022f2798c33769af8d66992",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2411.15114"
+    },
+    {
+      "id": "arxiv-2412.06559",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2412.06559"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e4-reviewer-calibration.md",
+          "line": 10
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2412.06559",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2412.06559",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2412.06559.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2412.06559.md",
+      "sha256": "30a74dc4ed897e077a243b82326df8529c037db0352b0ac35817dd29262ca653",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2412.06559"
+    },
+    {
+      "id": "arxiv-2504.09762",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2504.09762"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0020-graph-and-evidence.md",
+          "line": 12
+        }
+      ],
+      "title": "Agent 原始对话轨迹沉淀到图谱后默认丢弃；计算实验保留代码、输入、配置、随机种子与产物哈希，质疑经独立 agent 确定性重跑处理，重跑差异与原结果并存；湿实验保留完整原始证据。依据：[HEP](https://arxiv.org/abs/2607.09195) 把假设和证据写成可回放事件，[held-out transfer](https://arxi",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2504.09762",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2504.09762",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2504.09762.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2504.09762.md",
+      "sha256": "1e03bd23d642780dc344b9b3f424f49cf011a0a16cfb8e221c4c04b78537e7fa",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2504.09762"
+    },
+    {
+      "id": "arxiv-2504.18736",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2504.18736"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e7-scoped-evidence.md",
+          "line": 14
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2504.18736",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2504.18736",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2504.18736.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2504.18736.md",
+      "sha256": "1dfde2e07b3b617e349b40c83750b216acac69585fd7afce72e32eb8f7b00bc9",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2504.18736"
+    },
+    {
+      "id": "arxiv-2505.03335",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2505.03335"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0023-rsi-layer.md",
+          "line": 23
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2505.03335",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2505.03335",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2505.03335.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2505.03335.md",
+      "sha256": "6217ccee964c70e42fba116004ae23400c11d2ecc687c37aed062c3689098e18",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2505.03335"
+    },
+    {
+      "id": "arxiv-2505.06914",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2505.06914"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e7-scoped-evidence.md",
+          "line": 10
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2505.06914",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2505.06914",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2505.06914.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2505.06914.md",
+      "sha256": "8df1c0a24310b437065c7aa93f02fab7051086636efd1e36b9635c9508688162",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2505.06914"
+    },
+    {
+      "id": "arxiv-2505.22954",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2505.22954"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0023-rsi-layer.md",
+          "line": 8
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2505.22954",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2505.22954",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2505.22954.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2505.22954.md",
+      "sha256": "13ff4abe0c7ad4a7dd3b4876d19a8bf940e39e70dabbf06065aa774a6c3457de",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2505.22954"
+    },
+    {
+      "id": "arxiv-2507.18901",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2507.18901"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e6-cold-replay.md",
+          "line": 12
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2507.18901",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2507.18901",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2507.18901.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2507.18901.md",
+      "sha256": "ba2349b012d5e852e5fe096e086d6b3b4ca24a55610a582404b434253a5cacff",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2507.18901"
+    },
+    {
+      "id": "arxiv-2507.19457",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2507.19457"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0023-rsi-layer.md",
+          "line": 5
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2507.19457",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2507.19457",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2507.19457.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2507.19457.md",
+      "sha256": "ab3a5139bac83f192ad67529368d77b84b0d807e95a8e4fd0daa8d45fd046bec",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2507.19457"
+    },
+    {
+      "id": "arxiv-2510.01171",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2510.01171"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0017-research-world-redesign.md",
+          "line": 20
+        },
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 18
+        },
+        {
+          "path": "docs/design-explainer.html",
+          "line": 544
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2510.01171",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2510.01171",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2510.01171.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2510.01171.md",
+      "sha256": "b93019722dcfd841279113c91d9fb812d71090e0158d30899db89c77a1900a64",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2510.01171"
+    },
+    {
+      "id": "arxiv-2510.05381",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2510.05381"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e7-scoped-evidence.md",
+          "line": 12
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2510.05381",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2510.05381",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2510.05381.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2510.05381.md",
+      "sha256": "bf264ad7a4e6fcd20153df7ddad571bf9fe6a340af6a7cbaf8629502b6dd06e5",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2510.05381"
+    },
+    {
+      "id": "arxiv-2510.15706",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2510.15706"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0017-research-world-redesign.md",
+          "line": 14
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2510.15706",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2510.15706",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2510.15706.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2510.15706.md",
+      "sha256": "1ad9697434b7e3e682d5015bc7adcae74d2e68da55cd2032238e31302cf32a13",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2510.15706"
+    },
+    {
+      "id": "arxiv-2510.21614",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2510.21614"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0023-rsi-layer.md",
+          "line": 11
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2510.21614",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2510.21614",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2510.21614.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2510.21614.md",
+      "sha256": "06cbf326c605e59777d3f8550e01d41e6b49f78bf0d850f2d173c9f06f6cc254",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2510.21614"
+    },
+    {
+      "id": "arxiv-2510.27598",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2510.27598"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e1-history-exploration.md",
+          "line": 20
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2510.27598",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2510.27598",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2510.27598.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2510.27598.md",
+      "sha256": "2eb8abd56fa7ea4e1187eb5cd347c7af18f26b9c57ab035ae6001b494bd4af6a",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2510.27598"
+    },
+    {
+      "id": "arxiv-2512.18552",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2512.18552"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0023-rsi-layer.md",
+          "line": 20
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2512.18552",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2512.18552",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2512.18552.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2512.18552.md",
+      "sha256": "dccc8543a0e603592b952e174f638299e73fae107bfc4273106631c34701c9bf",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2512.18552"
+    },
+    {
+      "id": "arxiv-2602.02475",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2602.02475"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0020-graph-and-evidence.md",
+          "line": 24
+        },
+        {
+          "path": "docs/benchmarks/e4-reviewer-calibration.md",
+          "line": 6
+        }
+      ],
+      "title": "审查分别呈现最早异常、关键根因和下游影响：时间线定位顺序，依赖图计算失效传播，不共用一个排序分数。[AgentRx]( ) 的根因标注显示首个异常、关键根因和最终失败可以不同。",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2602.02475",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2602.02475",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2602.02475.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2602.02475.md",
+      "sha256": "59680fd631934d6ad3046108a504195e8cd70066bdefbfb3561b7731f7d22923",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2602.02475"
+    },
+    {
+      "id": "arxiv-2602.06054",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2602.06054"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 18
+        }
+      ],
+      "title": "盲创会话不读已有路线与隔离记录，每会话只提交一个候选；需要披露重合点或沿已有工作修改时新建反思会话，只提供相关图谱切片与最小审核意见；任何历史披露即结束盲创状态。研究 agent 的候选会[向既有语义邻域收缩](https://arxiv.org/abs/2605.27905)，[采样机制不能伪装独立探索](https://arxiv.org/abs/251",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2602.06054",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2602.06054",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2602.06054.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2602.06054.md",
+      "sha256": "0c7d1be0d603a3d272e3d4b0da9719a8d10e30da5255b29c1ac2e26a2b5c7166",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2602.06054"
+    },
+    {
+      "id": "arxiv-2602.07621",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2602.07621"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e3-error-cascade.md",
+          "line": 8
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2602.07621",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2602.07621",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2602.07621.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2602.07621.md",
+      "sha256": "bce819e496c249a0c2d3086574205c929f2d26cdb7e8575cdf9da1c8c16e1105",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2602.07621"
+    },
+    {
+      "id": "arxiv-2602.11354",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2602.11354"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e6-cold-replay.md",
+          "line": 10
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2602.11354",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2602.11354",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2602.11354.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2602.11354.md",
+      "sha256": "4ffb3350a425e159eb85caebab2de8293348a2abb0e31619e1381065bf1145f3",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2602.11354"
+    },
+    {
+      "id": "arxiv-2602.22769",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2602.22769"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e5-graph-vs-dialogue.md",
+          "line": 8
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2602.22769",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2602.22769",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2602.22769.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2602.22769.md",
+      "sha256": "2bb21d3d335839da888c8f16543065d4964cf09b5ca2b39d92e80655bd8b7611",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2602.22769"
+    },
+    {
+      "id": "arxiv-2603.04474",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2603.04474"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e3-error-cascade.md",
+          "line": 12
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2603.04474",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2603.04474",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2603.04474.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2603.04474.md",
+      "sha256": "d7fd83cb7115b03f3d96e7fdf7e6e36f0cc3e8d6a54d8247b89f06dcfd7de7a5",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2603.04474"
+    },
+    {
+      "id": "arxiv-2603.08127",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2603.08127"
+      ],
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "line": 543
+        }
+      ],
+      "title": "EvoScientist. arXiv:2603.08127 Zotero 26YJUMP5",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2603.08127",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2603.08127",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2603.08127.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2603.08127.md",
+      "sha256": "cdf994f65e396a85189c9871637242722e57e878081bd21e8090cb237b281254",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2603.08127"
+    },
+    {
+      "id": "arxiv-2603.11337",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2603.11337"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e8-capability-isolation.md",
+          "line": 4
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2603.11337",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2603.11337",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2603.11337.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2603.11337.md",
+      "sha256": "b27d5f34337ac4ae4b93f7b7cf4eb399b73db591ac85f853a52b8f92fcb9f62f",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2603.11337"
+    },
+    {
+      "id": "arxiv-2604.12147",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2604.12147"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 15
+        }
+      ],
+      "title": "规划 agent 一次只提交一个候选行动，系统不因前沿为空而自行无界规划；行动通过独立审核后原子且幂等地创建一次执行；规划与执行使用不同会话。[计划遵循可在离散步骤上测量]( )，[在线监控与纠偏](https://arxiv.org/abs/2608.06701)以步骤为边界，[自主实验系统](https://www.nature.com/articles",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2604.12147",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2604.12147",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2604.12147.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2604.12147.md",
+      "sha256": "adc0ddcedc82b70ec4c0aaa097ca3d0058577e00fdbb0f21059fb28161f75a19",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2604.12147"
+    },
+    {
+      "id": "arxiv-2604.24658",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2604.24658"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0020-graph-and-evidence.md",
+          "line": 12
+        }
+      ],
+      "title": "Agent 原始对话轨迹沉淀到图谱后默认丢弃；计算实验保留代码、输入、配置、随机种子与产物哈希，质疑经独立 agent 确定性重跑处理，重跑差异与原结果并存；湿实验保留完整原始证据。依据：[HEP](https://arxiv.org/abs/2607.09195) 把假设和证据写成可回放事件，[held-out transfer](https://arxi",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2604.24658",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2604.24658",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2604.24658.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2604.24658.md",
+      "sha256": "c6418d4d62f49ce3fc267df62afd30f002007e2d0b1ed87e45ec6d4853895a4b",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2604.24658"
+    },
+    {
+      "id": "arxiv-2604.25850",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2604.25850"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 27
+        }
+      ],
+      "title": "注册 agent 时记录模型接口、工具、传输协议、上下文预算与执行资源，队列只调度满足能力的实现；SDK 名称或兼容 URL 不算能力证明，协议失败后空证据不是有效结果。[LongMemEval-V2](https://arxiv.org/abs/2605.12493) 把 memory 视为运行时接口，[harness 可靠性取决于模型外的工具与状态边界]",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2604.25850",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2604.25850",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2604.25850.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2604.25850.md",
+      "sha256": "299f2633b4c13db7bed52434b4db7c48ea621993581014d30e7bcd036d3464df",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2604.25850"
+    },
+    {
+      "id": "arxiv-2605.02964",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2605.02964"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e8-capability-isolation.md",
+          "line": 6
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2605.02964",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2605.02964",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2605.02964.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2605.02964.md",
+      "sha256": "92c2027816df588394d1188210a76e0dacbe0686094fa06f2d6432760ce1bc71",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2605.02964"
+    },
+    {
+      "id": "arxiv-2605.03042",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2605.03042"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 21
+        }
+      ],
+      "title": "机制重合审核与执行有效性审核分开，不由一个模型同时判新颖性、任务适配、泄漏、预算与可证伪性；机制审核保留带来源的 same/different/uncertain 局部判断，冲突进入人工队列。[ARIS]( ) 分阶段审计，[多维 verdict 混判会丢判定依据](https://arxiv.org/abs/2608.06422)。",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2605.03042",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2605.03042",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2605.03042.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2605.03042.md",
+      "sha256": "2f9e22ebacb7a56b43b9675441ab18465729f2ff6f3d34175560368a116ba382",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2605.03042"
+    },
+    {
+      "id": "arxiv-2605.12493",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2605.12493"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0020-graph-and-evidence.md",
+          "line": 15
+        },
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 27
+        },
+        {
+          "path": "docs/benchmarks/e5-graph-vs-dialogue.md",
+          "line": 6
+        },
+        {
+          "path": "docs/benchmarks/e7-scoped-evidence.md",
+          "line": 4
+        }
+      ],
+      "title": "请求由临时工作会话执行，产出交独立 agent 审核；通过后写入图谱并删除原会话，退修只回最小审核意见，重开由新会话依据图谱和最小驳回理由继续。Danus 将计划、失败路线与未验证发现留在共享 memory，只允许独立 verifier 接受的事实进入依赖图，支持用有界上下文累积长链论证 [danus]。同一会话对自身产物的再解释仍是[内源纠错](https",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2605.12493",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2605.12493",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2605.12493.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2605.12493.md",
+      "sha256": "5734ebfe844c4b8a846e2766fb7150aa8cbca62429c137935f3fbfc0ff2cd5c3",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2605.12493"
+    },
+    {
+      "id": "arxiv-2605.18421",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2605.18421"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e5-graph-vs-dialogue.md",
+          "line": 10
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2605.18421",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2605.18421",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2605.18421.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2605.18421.md",
+      "sha256": "cdb0e53b72222d6560edb2cbbc7ee9e0cef94989e7014eeeffe1b5068424c5a6",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2605.18421"
+    },
+    {
+      "id": "arxiv-2605.27905",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2605.27905"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0017-research-world-redesign.md",
+          "line": 17
+        },
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 18
+        },
+        {
+          "path": "docs/design-explainer.html",
+          "line": 542
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2605.27905",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2605.27905",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2605.27905.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2605.27905.md",
+      "sha256": "60757538ef6d602f439f0256773bbdecb88a5eefd32ed39fdb0b732e454990ed",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2605.27905"
+    },
+    {
+      "id": "arxiv-2605.28655",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2605.28655"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e1-history-exploration.md",
+          "line": 17
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2605.28655",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2605.28655",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2605.28655.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2605.28655.md",
+      "sha256": "863c8e683d914451e3f4400c2b652de5d3cccfe23c8b5cf7e15e27710d6dcf29",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2605.28655"
+    },
+    {
+      "id": "arxiv-2605.29253",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2605.29253"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e4-reviewer-calibration.md",
+          "line": 8
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2605.29253",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2605.29253",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2605.29253.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2605.29253.md",
+      "sha256": "ecf355018da5968a74689ce9f15adc0cc8df4ab7b7738838b09012b28aa8a3a9",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2605.29253"
+    },
+    {
+      "id": "arxiv-2606.02060",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2606.02060"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e4-reviewer-calibration.md",
+          "line": 4
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2606.02060",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2606.02060",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2606.02060.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2606.02060.md",
+      "sha256": "cf501782769204615fb0333bf7e84bd07a773012b59e31b2bfa8f97133448462",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2606.02060"
+    },
+    {
+      "id": "arxiv-2606.04329",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2606.04329"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e3-error-cascade.md",
+          "line": 16
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2606.04329",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2606.04329",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2606.04329.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2606.04329.md",
+      "sha256": "36999ed0cb2d15b93897fa1f8be9ff2291516b633889e16e377f19db4288f482",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2606.04329"
+    },
+    {
+      "id": "arxiv-2606.05408",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2606.05408"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e1-history-exploration.md",
+          "line": 14
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2606.05408",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2606.05408",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2606.05408.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2606.05408.md",
+      "sha256": "2d55e3af16ebdcf4bd64350115211d62493c98cb3cddb0325691a376a5177185",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2606.05408"
+    },
+    {
+      "id": "arxiv-2606.07591",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2606.07591"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0019-evaluation.md",
+          "line": 5
+        },
+        {
+          "path": "docs/benchmarks/design.md",
+          "line": 4
+        },
+        {
+          "path": "docs/benchmarks/e9-end-to-end.md",
+          "line": 4
+        }
+      ],
+      "title": "ResearchClawBench]( ) 测端到端研究产物，[Matbench](https://doi.org/10.1038/s41524-020-00406-3) 测受控材料预测，[科学能力基准](https://arxiv.org/abs/2607.11079) 按研究阶段诊断错误——三者不是同一输出。压成总分会隐含不可审计的权重，并可能用低成本指",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2606.07591",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2606.07591",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2606.07591.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2606.07591.md",
+      "sha256": "30389c1af9d445b1031e25da797b9645809d39f6bcb5a17a12fcb037054e94ef",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2606.07591"
+    },
+    {
+      "id": "arxiv-2606.10949",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2606.10949"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e7-scoped-evidence.md",
+          "line": 16
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2606.10949",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2606.10949",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2606.10949.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2606.10949.md",
+      "sha256": "228266de77e232bbd37179558db1b66df5965039fe5cc608822efc6bd773f457",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2606.10949"
+    },
+    {
+      "id": "arxiv-2606.11447",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2606.11447"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e6-cold-replay.md",
+          "line": 14
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2606.11447",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2606.11447",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2606.11447.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2606.11447.md",
+      "sha256": "a4c5b0a3383074e2aa4a963352e90a03c6a7eeafe98a2da183c5ca481e387e4a",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2606.11447"
+    },
+    {
+      "id": "arxiv-2606.12736",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2606.12736"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e9-end-to-end.md",
+          "line": 6
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2606.12736",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2606.12736",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2606.12736.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2606.12736.md",
+      "sha256": "8e4460337aae7be889f6b3ea7807701da465301999b8d78e500b4781e63af02e",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2606.12736"
+    },
+    {
+      "id": "arxiv-2606.18356",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2606.18356"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e8-capability-isolation.md",
+          "line": 10
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2606.18356",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2606.18356",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2606.18356.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2606.18356.md",
+      "sha256": "fa076ff53f82cd403a080fa9014c429bbb1257e3c4761055978d7d37f678516f",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2606.18356"
+    },
+    {
+      "id": "arxiv-2607.01071",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2607.01071"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e7-scoped-evidence.md",
+          "line": 6
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2607.01071",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2607.01071",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2607.01071.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2607.01071.md",
+      "sha256": "6a4c25d6c2ecdcf833740f42b29a54448ac741381d553c50e738180ec77c8d59",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2607.01071"
+    },
+    {
+      "id": "arxiv-2607.04108",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2607.04108"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e1-history-exploration.md",
+          "line": 11
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2607.04108",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2607.04108",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2607.04108.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2607.04108.md",
+      "sha256": "cbfa80a75326ad7fd103a40e87116f02cb9f28759f579a7759487bba545be7ea",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2607.04108"
+    },
+    {
+      "id": "arxiv-2607.06447",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2607.06447"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0020-graph-and-evidence.md",
+          "line": 7
+        },
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 7
+        },
+        {
+          "path": "docs/benchmarks/e5-graph-vs-dialogue.md",
+          "line": 4
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2607.06447",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2607.06447",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2607.06447.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2607.06447.md",
+      "sha256": "81ca4e95ea666d1f2c4f771170c55aeaf1227460fffcddd9e6e9899c5d7e7295",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2607.06447"
+    },
+    {
+      "id": "arxiv-2607.09195",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2607.09195"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0020-graph-and-evidence.md",
+          "line": 12
+        },
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 12
+        }
+      ],
+      "title": "Agent 原始对话轨迹沉淀到图谱后默认丢弃；计算实验保留代码、输入、配置、随机种子与产物哈希，质疑经独立 agent 确定性重跑处理，重跑差异与原结果并存；湿实验保留完整原始证据。依据：[HEP]( ) 把假设和证据写成可回放事件，[held-out transfer](https://arxiv.org/abs/2607.17100) 以冻结产物做独立评",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2607.09195",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2607.09195",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2607.09195.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2607.09195.md",
+      "sha256": "fd181d432367c5ef11fb075bfa0e7931e776d9bed214c8c34ec3cf39fe334ed5",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2607.09195"
+    },
+    {
+      "id": "arxiv-2607.10526",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2607.10526"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e3-error-cascade.md",
+          "line": 14
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2607.10526",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2607.10526",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2607.10526.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2607.10526.md",
+      "sha256": "ed8146a8c5a902ee96fb377becf81d98a3b216c23dae9af5ffc94e20a41fd2a9",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2607.10526"
+    },
+    {
+      "id": "arxiv-2607.11079",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2607.11079"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0019-evaluation.md",
+          "line": 5
+        }
+      ],
+      "title": "ResearchClawBench](https://arxiv.org/abs/2606.07591) 测端到端研究产物，[Matbench](https://doi.org/10.1038/s41524-020-00406-3) 测受控材料预测，[科学能力基准]( ) 按研究阶段诊断错误——三者不是同一输出。压成总分会隐含不可审计的权重，并可能用低成本指",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2607.11079",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2607.11079",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2607.11079.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2607.11079.md",
+      "sha256": "0098e84d1b6ac616678b3e703b61b21a1a30b9fb691f30767c95c5f6779c7501",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2607.11079"
+    },
+    {
+      "id": "arxiv-2607.17100",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2607.17100"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0020-graph-and-evidence.md",
+          "line": 12
+        },
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 24
+        }
+      ],
+      "title": "Agent 原始对话轨迹沉淀到图谱后默认丢弃；计算实验保留代码、输入、配置、随机种子与产物哈希，质疑经独立 agent 确定性重跑处理，重跑差异与原结果并存；湿实验保留完整原始证据。依据：[HEP](https://arxiv.org/abs/2607.09195) 把假设和证据写成可回放事件，[held-out transfer]( ) 以冻结产物做独立评",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2607.17100",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2607.17100",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2607.17100.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2607.17100.md",
+      "sha256": "2d79a7be8a9187a13bb35f2dd5511d634a83622f2fdafdcb56c31e8cf1f2ffb0",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2607.17100"
+    },
+    {
+      "id": "arxiv-2607.19321",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2607.19321"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e8-capability-isolation.md",
+          "line": 8
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2607.19321",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2607.19321",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2607.19321.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2607.19321.md",
+      "sha256": "5c62c725ebd45ac16948ad7932b596268e85206d8f717ffaa45d186ea803e61d",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2607.19321"
+    },
+    {
+      "id": "arxiv-2607.22368",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2607.22368"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e8-capability-isolation.md",
+          "line": 12
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2607.22368",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2607.22368",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2607.22368.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2607.22368.md",
+      "sha256": "121e175f40d47e474b1a0b90c9ce378dbaa2403f51d904794f8dbc7995abce7f",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2607.22368"
+    },
+    {
+      "id": "arxiv-2607.25637",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2607.25637"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 12
+        },
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 30
+        }
+      ],
+      "title": "行动与结果通过独立审核后才成为默认可检索内容；被驳回内容保留为隔离记录，只在后续入图审核时用于相似性匹配；执行 agent 只收到最小阻断理由，完整内容仅向审核 agent 和人工披露。Danus 把 verifier 作为唯一事实写入门，未验证计划与失败路线只作共享感知，不得成为后续证明的依赖 [danus]。[HEP](https://arxiv.org",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2607.25637",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2607.25637",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2607.25637.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2607.25637.md",
+      "sha256": "6ac3f04320fff68424adaa93c9bd2d530f5b8fed7ec9a1a9e7da0432ce9b025e",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2607.25637"
+    },
+    {
+      "id": "arxiv-2607.27080",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2607.27080"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e3-error-cascade.md",
+          "line": 18
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2607.27080",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2607.27080",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2607.27080.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2607.27080.md",
+      "sha256": "a596c1a913fff9ccd83b0b9844e49d9629cfd339e28a058b8e575abd774c14ab",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2607.27080"
+    },
+    {
+      "id": "arxiv-2607.28087",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2607.28087"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0017-research-world-redesign.md",
+          "line": 23
+        },
+        {
+          "path": "docs/design-explainer.html",
+          "line": 547
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2607.28087",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2607.28087",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2607.28087.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2607.28087.md",
+      "sha256": "0f61758fab71d17c861b1913d6b9f63a5696476bff7d7128c97f16e3bfe672de",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2607.28087"
+    },
+    {
+      "id": "arxiv-2608.05235",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2608.05235"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0020-graph-and-evidence.md",
+          "line": 12
+        },
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 24
+        }
+      ],
+      "title": "Agent 原始对话轨迹沉淀到图谱后默认丢弃；计算实验保留代码、输入、配置、随机种子与产物哈希，质疑经独立 agent 确定性重跑处理，重跑差异与原结果并存；湿实验保留完整原始证据。依据：[HEP](https://arxiv.org/abs/2607.09195) 把假设和证据写成可回放事件，[held-out transfer](https://arxi",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2608.05235",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2608.05235",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2608.05235.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2608.05235.md",
+      "sha256": "fecf3b561064284d829b93a06a0a3ee7a4ed085154abcb269600f76929201571",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2608.05235"
+    },
+    {
+      "id": "arxiv-2608.06422",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2608.06422"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 21
+        }
+      ],
+      "title": "机制重合审核与执行有效性审核分开，不由一个模型同时判新颖性、任务适配、泄漏、预算与可证伪性；机制审核保留带来源的 same/different/uncertain 局部判断，冲突进入人工队列。[ARIS](https://arxiv.org/abs/2605.03042) 分阶段审计，[多维 verdict 混判会丢判定依据]( )。",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2608.06422",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2608.06422",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2608.06422.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2608.06422.md",
+      "sha256": "53e9336e57307092d4684b9ffa09afd9a305d9c17e41f31311eae27fb4f4e4da",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2608.06422"
+    },
+    {
+      "id": "arxiv-2608.06701",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2608.06701"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 15
+        }
+      ],
+      "title": "规划 agent 一次只提交一个候选行动，系统不因前沿为空而自行无界规划；行动通过独立审核后原子且幂等地创建一次执行；规划与执行使用不同会话。[计划遵循可在离散步骤上测量](https://arxiv.org/abs/2604.12147)，[在线监控与纠偏]( )以步骤为边界，[自主实验系统](https://www.nature.com/articles",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2608.06701",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2608.06701",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2608.06701.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2608.06701.md",
+      "sha256": "fb8192827945d82004eedd4f411f92b393d981d89f3b7dd9904465e4ed4a2a6f",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2608.06701"
+    },
+    {
+      "id": "arxiv-2608.09153",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2608.09153"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0020-graph-and-evidence.md",
+          "line": 18
+        }
+      ],
+      "title": "图谱是唯一持久真源；审查视图从选定快照确定性生成状态分面、异常列表、ID 查找、依赖子图与失效影响范围，每个值能回到产生它的节点或事件，自由文本模型只解释查询结果。上游事实失效时按依赖边撤销全部后代，不重写无关分支 [danus]。[PROV](https://www.w3.org/TR/prov-dm/) 把事实定义为可查询关系，[Trrack](http",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2608.09153",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2608.09153",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2608.09153.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2608.09153.md",
+      "sha256": "6c379095fdaed4ab217d43585554696cdda9cbd4dfda77428a7cc9d8f625121a",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2608.09153"
+    },
+    {
+      "id": "arxiv-2608.11022",
+      "kind": "arxiv",
+      "source_urls": [
+        "https://arxiv.org/abs/2608.11022"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0020-graph-and-evidence.md",
+          "line": 18
+        }
+      ],
+      "title": "图谱是唯一持久真源；审查视图从选定快照确定性生成状态分面、异常列表、ID 查找、依赖子图与失效影响范围，每个值能回到产生它的节点或事件，自由文本模型只解释查询结果。上游事实失效时按依赖边撤销全部后代，不重写无关分支 [danus]。[PROV](https://www.w3.org/TR/prov-dm/) 把事实定义为可查询关系，[Trrack](http",
+      "origin": "docs",
+      "source_url": "https://arxiv.org/abs/2608.11022",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://arxiv.org/pdf/2608.11022",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/arxiv-2608.11022.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/arxiv-2608.11022.md",
+      "sha256": "f9fd9dacc554f34e5d7d262f5831886f30fa55fa00d964c4576986ab8bf1eb9e",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id arxiv-2608.11022"
+    },
+    {
+      "id": "ceur-vol-1155-paper-07",
+      "kind": "ceur",
+      "source_urls": [
+        "https://ceur-ws.org/Vol-1155/paper-07.pdf"
+      ],
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "line": 526
+        }
+      ],
+      "title": "Ruiz-Iniesta. 学术话语本体综述. CEUR-WS 1155",
+      "origin": "docs",
+      "source_url": "https://ceur-ws.org/Vol-1155/paper-07.pdf",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://ceur-ws.org/Vol-1155/paper-07.pdf",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/ceur-vol-1155-paper-07.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/ceur-vol-1155-paper-07.md",
+      "sha256": "99874be533c467f388ff3070ece5351526f963cf85206a6b66936131445d6e38",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id ceur-vol-1155-paper-07"
+    },
+    {
+      "id": "doi-10-1038-s41524-020-00406-3",
+      "kind": "doi",
+      "source_urls": [
+        "https://doi.org/10.1038/s41524-020-00406-3"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0019-evaluation.md",
+          "line": 5
+        },
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 24
+        }
+      ],
+      "title": "ResearchClawBench](https://arxiv.org/abs/2606.07591) 测端到端研究产物，[Matbench]( ) 测受控材料预测，[科学能力基准](https://arxiv.org/abs/2607.11079) 按研究阶段诊断错误——三者不是同一输出。压成总分会隐含不可审计的权重，并可能用低成本指标掩盖高影响错误；b",
+      "origin": "docs",
+      "source_url": "https://doi.org/10.1038/s41524-020-00406-3",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://www.nature.com/articles/s41524-020-00406-3.pdf",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/doi-10-1038-s41524-020-00406-3.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/doi-10-1038-s41524-020-00406-3.md",
+      "sha256": "003a1bf09c4f7e2959a5cabef0910ec7d91e739836c13cdcf575c4d121539830",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id doi-10-1038-s41524-020-00406-3"
+    },
+    {
+      "id": "doi-10-1109-vis47514-2020-00030",
+      "kind": "doi",
+      "source_urls": [
+        "https://doi.org/10.1109/vis47514.2020.00030"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0017-research-world-redesign.md",
+          "line": 26
+        },
+        {
+          "path": "docs/adr/0020-graph-and-evidence.md",
+          "line": 18
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://doi.org/10.1109/vis47514.2020.00030",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "http://xplorestaging.ieee.org/ielx7/9329359/9331017/09331264.pdf?arnumber=9331264",
+      "status": "failed",
+      "pdf_path": null,
+      "markdown_path": null,
+      "sha256": null,
+      "failure_stage": "download",
+      "failure_reason": "下载响应不是有效 PDF，响应头片段: '<!DOCTYPE html>\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\r\\n<APM_DO_NOT_TOUCH>\\r\\n\\r\\n<script type=\"text/javascript\">\\r\\n'",
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id doi-10-1109-vis47514-2020-00030"
+    },
+    {
+      "id": "doi-10-1126-sciadv-adn5290",
+      "kind": "doi",
+      "source_urls": [
+        "https://doi.org/10.1126/sciadv.adn5290"
+      ],
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "line": 551
+        }
+      ],
+      "title": "Doshi &amp; Hauser (2024). AI assistance lowers collective diversity. Science Advances. DOI",
+      "origin": "docs",
+      "source_url": "https://doi.org/10.1126/sciadv.adn5290",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://www.science.org/doi/pdf/10.1126/sciadv.adn5290",
+      "status": "failed",
+      "pdf_path": null,
+      "markdown_path": null,
+      "sha256": null,
+      "failure_stage": "download",
+      "failure_reason": "curl: (22) The requested URL returned error: 403 curl: (22) The requested URL returned error: 403 curl: (22) The requested URL returned error: 403 curl: (22) The requested URL returned error: 403 curl: (22) The requested URL returned error: 403 curl: (22) The requested URL returned error: 403",
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id doi-10-1126-sciadv-adn5290"
+    },
+    {
+      "id": "doi-10-18653-v1-2022-findings-emnlp-347",
+      "kind": "doi",
+      "source_urls": [
+        "https://doi.org/10.18653/v1/2022.findings-emnlp.347"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0020-graph-and-evidence.md",
+          "line": 21
+        }
+      ],
+      "title": "人工纠正具体事实时新增带来源、绑定 claim/resource 的图谱证据，规划与执行 agent 不默认读取；只有可跨事实复用的检查步骤进入全局 Skill。[SciFact](https://aclanthology.org/2020.emnlp-main.609/) 把证据句绑定到具体主张，[SciFact-Open]( ) 显示证据覆盖随语料变化。",
+      "origin": "docs",
+      "source_url": "https://doi.org/10.18653/v1/2022.findings-emnlp.347",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://aclanthology.org/2022.findings-emnlp.347.pdf",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/doi-10-18653-v1-2022-findings-emnlp-347.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/doi-10-18653-v1-2022-findings-emnlp-347.md",
+      "sha256": "dedc957c7a3696620b2682fe1fa4cc2e3703204ee1f4e4d4ca4475ada0a04a85",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id doi-10-18653-v1-2022-findings-emnlp-347"
+    },
+    {
+      "id": "iclr-2025-51fd9a7d1706",
+      "kind": "iclr",
+      "source_urls": [
+        "https://proceedings.iclr.cc/paper_files/paper/2025/hash/51fd9a7d1706023cb9f8210cc6ac357c-Abstract-Conference.html"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e1-history-exploration.md",
+          "line": 5
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://proceedings.iclr.cc/paper_files/paper/2025/hash/51fd9a7d1706023cb9f8210cc6ac357c-Abstract-Conference.html",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://proceedings.iclr.cc/paper_files/paper/2025/file/51fd9a7d1706023cb9f8210cc6ac357c-Paper-Conference.pdf",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/iclr-2025-51fd9a7d1706.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/iclr-2025-51fd9a7d1706.md",
+      "sha256": "7539c0297e75e849730b66256e42746b66dd93b8f6ed59aff63904b06598ab8d",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id iclr-2025-51fd9a7d1706"
+    },
+    {
+      "id": "iclr-2025-f12b4df26344",
+      "kind": "iclr",
+      "source_urls": [
+        "https://proceedings.iclr.cc/paper_files/paper/2025/file/f12b4df26344f3be803c06b555252efe-Paper-Conference.pdf"
+      ],
+      "locations": [
+        {
+          "path": "docs/benchmarks/e1-history-exploration.md",
+          "line": 8
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://proceedings.iclr.cc/paper_files/paper/2025/file/f12b4df26344f3be803c06b555252efe-Paper-Conference.pdf",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://proceedings.iclr.cc/paper_files/paper/2025/file/f12b4df26344f3be803c06b555252efe-Paper-Conference.pdf",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/iclr-2025-f12b4df26344.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/iclr-2025-f12b4df26344.md",
+      "sha256": "dbd8d388e3ea5cbf7d04eac631689169030c34cfd391e3c57bd13cde81b977fa",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id iclr-2025-f12b4df26344"
+    },
+    {
+      "id": "issue-139-claude-code-subagents",
+      "title": "Claude Code subagents",
+      "source_url": "https://code.claude.com/docs/en/sub-agents",
+      "download_url": "https://code.claude.com/docs/en/sub-agents",
+      "version": "Claude Code v2.1.247",
+      "accessed_at": "2026-08-27",
+      "version_status": "Issue #139 清单声明版本；页面 URL 本身可变",
+      "format": "webpage",
+      "snapshot_format": "markdown",
+      "local_path": "datasets/research-kernel-papers/snapshots/issue-139/claude-code-subagents.md",
+      "origin": "issue-139",
+      "kind": "webpage",
+      "source_urls": [
+        "https://code.claude.com/docs/en/sub-agents"
+      ],
+      "locations": [
+        {
+          "issue": 139
+        }
+      ],
+      "status": "ready",
+      "sha256": "ded669f55b1131abee88f4681d0e527ac8bef8ace101ab7def0edaa61474031a",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id issue-139-claude-code-subagents",
+      "markdown_path": "datasets/research-kernel-papers/snapshots/issue-139/claude-code-subagents.md"
+    },
+    {
+      "id": "issue-139-langgraph-routing",
+      "title": "LangGraph routing types",
+      "source_url": "https://github.com/langchain-ai/langgraph/blob/bdb8a9c7a4aa1390af225f6a5d292e5088659bd5/libs/langgraph/langgraph/types.py",
+      "download_url": "https://raw.githubusercontent.com/langchain-ai/langgraph/bdb8a9c7a4aa1390af225f6a5d292e5088659bd5/libs/langgraph/langgraph/types.py",
+      "version": "bdb8a9c7a4aa1390af225f6a5d292e5088659bd5",
+      "format": "source",
+      "snapshot_format": "python",
+      "local_path": "datasets/research-kernel-papers/snapshots/issue-139/langgraph-routing.py",
+      "origin": "issue-139",
+      "kind": "fixed-source",
+      "source_urls": [
+        "https://github.com/langchain-ai/langgraph/blob/bdb8a9c7a4aa1390af225f6a5d292e5088659bd5/libs/langgraph/langgraph/types.py"
+      ],
+      "locations": [
+        {
+          "issue": 139
+        }
+      ],
+      "status": "ready",
+      "sha256": "7204b467ed7e724ec16bbd2e3e7fac1c698742b12dda27cf2086f744128b1844",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id issue-139-langgraph-routing"
+    },
+    {
+      "id": "issue-139-langgraph-sqlite-checkpoint",
+      "title": "LangGraph SQLite checkpoint",
+      "source_url": "https://github.com/langchain-ai/langgraph/blob/bdb8a9c7a4aa1390af225f6a5d292e5088659bd5/libs/checkpoint-sqlite/langgraph/checkpoint/sqlite/__init__.py",
+      "download_url": "https://raw.githubusercontent.com/langchain-ai/langgraph/bdb8a9c7a4aa1390af225f6a5d292e5088659bd5/libs/checkpoint-sqlite/langgraph/checkpoint/sqlite/__init__.py",
+      "version": "bdb8a9c7a4aa1390af225f6a5d292e5088659bd5",
+      "format": "source",
+      "snapshot_format": "python",
+      "local_path": "datasets/research-kernel-papers/snapshots/issue-139/langgraph-sqlite-checkpoint.py",
+      "origin": "issue-139",
+      "kind": "fixed-source",
+      "source_urls": [
+        "https://github.com/langchain-ai/langgraph/blob/bdb8a9c7a4aa1390af225f6a5d292e5088659bd5/libs/checkpoint-sqlite/langgraph/checkpoint/sqlite/__init__.py"
+      ],
+      "locations": [
+        {
+          "issue": 139
+        }
+      ],
+      "status": "ready",
+      "sha256": "e8a986ba59e382181380ae72ae72e04951ff3594ea1d6b5a95a097396bbcbf1b",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id issue-139-langgraph-sqlite-checkpoint"
+    },
+    {
+      "id": "issue-139-openai-agents-handoffs",
+      "title": "OpenAI Agents SDK handoffs",
+      "source_url": "https://github.com/openai/openai-agents-python/blob/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/handoffs.md",
+      "download_url": "https://raw.githubusercontent.com/openai/openai-agents-python/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/handoffs.md",
+      "version": "10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e",
+      "format": "source",
+      "snapshot_format": "markdown",
+      "local_path": "datasets/research-kernel-papers/snapshots/issue-139/openai-agents-handoffs.md",
+      "origin": "issue-139",
+      "kind": "fixed-source",
+      "source_urls": [
+        "https://github.com/openai/openai-agents-python/blob/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/handoffs.md"
+      ],
+      "locations": [
+        {
+          "issue": 139
+        }
+      ],
+      "status": "ready",
+      "sha256": "63dd07234b5effdb3285d3ae9abf2d7b2e86b17e81d9151ac9f186bccc418fa5",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id issue-139-openai-agents-handoffs",
+      "markdown_path": "datasets/research-kernel-papers/snapshots/issue-139/openai-agents-handoffs.md"
+    },
+    {
+      "id": "issue-139-openai-agents-results",
+      "title": "OpenAI Agents SDK results",
+      "source_url": "https://github.com/openai/openai-agents-python/blob/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/results.md",
+      "download_url": "https://raw.githubusercontent.com/openai/openai-agents-python/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/results.md",
+      "version": "10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e",
+      "format": "source",
+      "snapshot_format": "markdown",
+      "local_path": "datasets/research-kernel-papers/snapshots/issue-139/openai-agents-results.md",
+      "origin": "issue-139",
+      "kind": "fixed-source",
+      "source_urls": [
+        "https://github.com/openai/openai-agents-python/blob/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/results.md"
+      ],
+      "locations": [
+        {
+          "issue": 139
+        }
+      ],
+      "status": "ready",
+      "sha256": "e60d508c3d8be51c2b0aeeac63d842eb932d5e7a411569eb6003698e71acdb8e",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id issue-139-openai-agents-results",
+      "markdown_path": "datasets/research-kernel-papers/snapshots/issue-139/openai-agents-results.md"
+    },
+    {
+      "id": "issue-139-openai-agents-sessions",
+      "title": "OpenAI Agents SDK sessions",
+      "source_url": "https://github.com/openai/openai-agents-python/blob/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/sessions/index.md",
+      "download_url": "https://raw.githubusercontent.com/openai/openai-agents-python/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/sessions/index.md",
+      "version": "10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e",
+      "format": "source",
+      "snapshot_format": "markdown",
+      "local_path": "datasets/research-kernel-papers/snapshots/issue-139/openai-agents-sessions.md",
+      "origin": "issue-139",
+      "kind": "fixed-source",
+      "source_urls": [
+        "https://github.com/openai/openai-agents-python/blob/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/sessions/index.md"
+      ],
+      "locations": [
+        {
+          "issue": 139
+        }
+      ],
+      "status": "ready",
+      "sha256": "24c6c4b2e990fbeb8387af78df345e507c01def677ad9a75060db85258df63db",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id issue-139-openai-agents-sessions",
+      "markdown_path": "datasets/research-kernel-papers/snapshots/issue-139/openai-agents-sessions.md"
+    },
+    {
+      "id": "issue-139-openai-agents-tracing",
+      "title": "OpenAI Agents SDK tracing",
+      "source_url": "https://github.com/openai/openai-agents-python/blob/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/tracing.md",
+      "download_url": "https://raw.githubusercontent.com/openai/openai-agents-python/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/tracing.md",
+      "version": "10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e",
+      "format": "source",
+      "snapshot_format": "markdown",
+      "local_path": "datasets/research-kernel-papers/snapshots/issue-139/openai-agents-tracing.md",
+      "origin": "issue-139",
+      "kind": "fixed-source",
+      "source_urls": [
+        "https://github.com/openai/openai-agents-python/blob/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/tracing.md"
+      ],
+      "locations": [
+        {
+          "issue": 139
+        }
+      ],
+      "status": "ready",
+      "sha256": "e4d4bc1062f4b1d27fb71f348fdad78178452342c857886024aa407297214293",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id issue-139-openai-agents-tracing",
+      "markdown_path": "datasets/research-kernel-papers/snapshots/issue-139/openai-agents-tracing.md"
+    },
+    {
+      "id": "issue-139-opentelemetry-genai-agent-spans",
+      "title": "OpenTelemetry GenAI agent spans",
+      "source_url": "https://github.com/open-telemetry/semantic-conventions-genai/blob/5f5ae69e52464c56eea4389fb793c2690caaea78/docs/gen-ai/gen-ai-agent-spans.md",
+      "download_url": "https://raw.githubusercontent.com/open-telemetry/semantic-conventions-genai/5f5ae69e52464c56eea4389fb793c2690caaea78/docs/gen-ai/gen-ai-agent-spans.md",
+      "version": "5f5ae69e52464c56eea4389fb793c2690caaea78",
+      "format": "source",
+      "snapshot_format": "markdown",
+      "local_path": "datasets/research-kernel-papers/snapshots/issue-139/opentelemetry-genai-agent-spans.md",
+      "origin": "issue-139",
+      "kind": "fixed-source",
+      "source_urls": [
+        "https://github.com/open-telemetry/semantic-conventions-genai/blob/5f5ae69e52464c56eea4389fb793c2690caaea78/docs/gen-ai/gen-ai-agent-spans.md"
+      ],
+      "locations": [
+        {
+          "issue": 139
+        }
+      ],
+      "status": "ready",
+      "sha256": "4d62e34973406b78996963085c4c7f15271d1035ea759073b49515af24e4c344",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id issue-139-opentelemetry-genai-agent-spans",
+      "markdown_path": "datasets/research-kernel-papers/snapshots/issue-139/opentelemetry-genai-agent-spans.md"
+    },
+    {
+      "id": "issue-139-pi-compaction",
+      "title": "Pi compaction",
+      "source_url": "https://github.com/earendil-works/pi/blob/e86823096c5bad39e1ca282ec24bc5eb9bec745b/packages/coding-agent/docs/compaction.md",
+      "download_url": "https://raw.githubusercontent.com/earendil-works/pi/e86823096c5bad39e1ca282ec24bc5eb9bec745b/packages/coding-agent/docs/compaction.md",
+      "version": "e86823096c5bad39e1ca282ec24bc5eb9bec745b",
+      "format": "source",
+      "snapshot_format": "markdown",
+      "local_path": "datasets/research-kernel-papers/snapshots/issue-139/pi-compaction.md",
+      "origin": "issue-139",
+      "kind": "fixed-source",
+      "source_urls": [
+        "https://github.com/earendil-works/pi/blob/e86823096c5bad39e1ca282ec24bc5eb9bec745b/packages/coding-agent/docs/compaction.md"
+      ],
+      "locations": [
+        {
+          "issue": 139
+        }
+      ],
+      "status": "ready",
+      "sha256": "43166749858e6292c85905df4f0f9f189c487a384ae17ddcbbd99053943d62ef",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id issue-139-pi-compaction",
+      "markdown_path": "datasets/research-kernel-papers/snapshots/issue-139/pi-compaction.md"
+    },
+    {
+      "id": "issue-139-pi-session-format",
+      "title": "Pi session JSONL format",
+      "source_url": "https://github.com/earendil-works/pi/blob/e86823096c5bad39e1ca282ec24bc5eb9bec745b/packages/coding-agent/docs/session-format.md",
+      "download_url": "https://raw.githubusercontent.com/earendil-works/pi/e86823096c5bad39e1ca282ec24bc5eb9bec745b/packages/coding-agent/docs/session-format.md",
+      "version": "e86823096c5bad39e1ca282ec24bc5eb9bec745b",
+      "format": "source",
+      "snapshot_format": "markdown",
+      "local_path": "datasets/research-kernel-papers/snapshots/issue-139/pi-session-format.md",
+      "origin": "issue-139",
+      "kind": "fixed-source",
+      "source_urls": [
+        "https://github.com/earendil-works/pi/blob/e86823096c5bad39e1ca282ec24bc5eb9bec745b/packages/coding-agent/docs/session-format.md"
+      ],
+      "locations": [
+        {
+          "issue": 139
+        }
+      ],
+      "status": "ready",
+      "sha256": "c0f25475ab08fb96e244e6bf433aeaa41b69bfb5a52de5c7b01b81c900a84a54",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id issue-139-pi-session-format",
+      "markdown_path": "datasets/research-kernel-papers/snapshots/issue-139/pi-session-format.md"
+    },
+    {
+      "id": "issue-139-pi-session-protocol",
+      "title": "Pi session protocol",
+      "source_url": "https://github.com/earendil-works/pi/blob/e86823096c5bad39e1ca282ec24bc5eb9bec745b/packages/protocol/README.md",
+      "download_url": "https://raw.githubusercontent.com/earendil-works/pi/e86823096c5bad39e1ca282ec24bc5eb9bec745b/packages/protocol/README.md",
+      "version": "e86823096c5bad39e1ca282ec24bc5eb9bec745b",
+      "format": "source",
+      "snapshot_format": "markdown",
+      "local_path": "datasets/research-kernel-papers/snapshots/issue-139/pi-session-protocol.md",
+      "origin": "issue-139",
+      "kind": "fixed-source",
+      "source_urls": [
+        "https://github.com/earendil-works/pi/blob/e86823096c5bad39e1ca282ec24bc5eb9bec745b/packages/protocol/README.md"
+      ],
+      "locations": [
+        {
+          "issue": 139
+        }
+      ],
+      "status": "ready",
+      "sha256": "51109043c3d0ccbdc4a741cfb25c296bff9eda12234669b018c0e277e2813ac4",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id issue-139-pi-session-protocol",
+      "markdown_path": "datasets/research-kernel-papers/snapshots/issue-139/pi-session-protocol.md"
+    },
+    {
+      "id": "issue-139-temporal-child-workflow",
+      "title": "Temporal Go SDK child workflow",
+      "source_url": "https://github.com/temporalio/sdk-go/blob/9e67f43b78c6f0174e06009a2eded936829de59c/workflow/doc.go",
+      "download_url": "https://raw.githubusercontent.com/temporalio/sdk-go/9e67f43b78c6f0174e06009a2eded936829de59c/workflow/doc.go",
+      "version": "9e67f43b78c6f0174e06009a2eded936829de59c",
+      "format": "source",
+      "snapshot_format": "go",
+      "local_path": "datasets/research-kernel-papers/snapshots/issue-139/temporal-child-workflow.go",
+      "origin": "issue-139",
+      "kind": "fixed-source",
+      "source_urls": [
+        "https://github.com/temporalio/sdk-go/blob/9e67f43b78c6f0174e06009a2eded936829de59c/workflow/doc.go"
+      ],
+      "locations": [
+        {
+          "issue": 139
+        }
+      ],
+      "status": "ready",
+      "sha256": "d6320d10eead83908e563e3d88b63647d9057c30f8da060761e975be8ebf28a9",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id issue-139-temporal-child-workflow"
+    },
+    {
+      "id": "issue-139-w3c-prov-dm",
+      "title": "W3C PROV-DM",
+      "source_url": "https://www.w3.org/TR/prov-dm/",
+      "download_url": "https://www.w3.org/TR/2013/REC-prov-dm-20130430/",
+      "version": "W3C Recommendation 2013-04-30",
+      "format": "webpage",
+      "snapshot_format": "markdown",
+      "local_path": "datasets/research-kernel-papers/snapshots/issue-139/w3c-prov-dm.md",
+      "origin": "issue-139",
+      "kind": "webpage",
+      "source_urls": [
+        "https://www.w3.org/TR/prov-dm/"
+      ],
+      "locations": [
+        {
+          "issue": 139
+        }
+      ],
+      "status": "ready",
+      "sha256": "49248b53f1695ee6a0a558c364a1a50fbedb1561956811008f0c77b807a9455c",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id issue-139-w3c-prov-dm",
+      "markdown_path": "datasets/research-kernel-papers/snapshots/issue-139/w3c-prov-dm.md"
+    },
+    {
+      "id": "joelchan-discourse-graphs",
+      "kind": "joelchan",
+      "source_urls": [
+        "https://joelchan.me/assets/pdf/Discourse_Graphs_for_Augmented_Knowledge_Synthesis_What_and_Why.pdf"
+      ],
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "line": 525
+        }
+      ],
+      "title": "Joel Chan. Discourse Graphs for Augmented Knowledge Synthesis. PDF",
+      "origin": "docs",
+      "source_url": "https://joelchan.me/assets/pdf/Discourse_Graphs_for_Augmented_Knowledge_Synthesis_What_and_Why.pdf",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://joelchan.me/assets/pdf/Discourse_Graphs_for_Augmented_Knowledge_Synthesis_What_and_Why.pdf",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/joelchan-discourse-graphs.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/joelchan-discourse-graphs.md",
+      "sha256": "1bd3a37c0fbba2837b86ab7e76114494df1bd954ab4adb4105a63f5a9feaac22",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id joelchan-discourse-graphs"
+    },
+    {
+      "id": "nature-s41586-023-06734-w",
+      "kind": "nature",
+      "source_urls": [
+        "https://www.nature.com/articles/s41586-023-06734-w"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 15
+        }
+      ],
+      "title": "规划 agent 一次只提交一个候选行动，系统不因前沿为空而自行无界规划；行动通过独立审核后原子且幂等地创建一次执行；规划与执行使用不同会话。[计划遵循可在离散步骤上测量](https://arxiv.org/abs/2604.12147)，[在线监控与纠偏](https://arxiv.org/abs/2608.06701)以步骤为边界，[自主实验系统](",
+      "origin": "docs",
+      "source_url": "https://www.nature.com/articles/s41586-023-06734-w",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://www.nature.com/articles/s41586-023-06734-w.pdf",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/nature-s41586-023-06734-w.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/nature-s41586-023-06734-w.md",
+      "sha256": "574b5523f857b544ffdf4eff00dd742977636ba90bb09798d413237724542f7e",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id nature-s41586-023-06734-w"
+    },
+    {
+      "id": "nature-s41598-024-52098-0",
+      "kind": "nature",
+      "source_urls": [
+        "https://www.nature.com/articles/s41598-024-52098-0.pdf",
+        "https://www.nature.com/articles/s41598-024-52098-0"
+      ],
+      "locations": [
+        {
+          "path": "docs/submission-reference-manifest.json",
+          "line": 68
+        },
+        {
+          "path": "docs/submission-reference-manifest.json",
+          "line": 69
+        }
+      ],
+      "title": "\"url\": \" \",",
+      "origin": "docs",
+      "source_url": "https://www.nature.com/articles/s41598-024-52098-0.pdf",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://www.nature.com/articles/s41598-024-52098-0.pdf",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/nature-s41598-024-52098-0.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/nature-s41598-024-52098-0.md",
+      "sha256": "709c8690107d4bf37fdf28ed358266308b6c94658ef74055ca7cd4ad94a0732b",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id nature-s41598-024-52098-0"
+    },
+    {
+      "id": "pmc-4530550",
+      "kind": "pmc",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC4530550/"
+      ],
+      "locations": [
+        {
+          "path": "docs/adr/0017-research-world-redesign.md",
+          "line": 8
+        },
+        {
+          "path": "docs/design-explainer.html",
+          "line": 521
+        }
+      ],
+      "title": "url",
+      "origin": "docs",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4530550/",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://europepmc.org/articles/PMC4530550?pdf=render",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/pmc-4530550.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/pmc-4530550.md",
+      "sha256": "f2d42a6509272218487b851bc5b26652985ece72e29f8c32da39e84ccc81a636",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id pmc-4530550"
+    },
+    {
+      "id": "pmc-4536833",
+      "kind": "pmc",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC4536833/"
+      ],
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "line": 522
+        }
+      ],
+      "title": "Ciccarese et al. (2008). The SWAN biomedical discourse ontology. PMC4536833",
+      "origin": "docs",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4536833/",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4536833/pdf/nihms486779.pdf",
+      "status": "failed",
+      "pdf_path": null,
+      "markdown_path": null,
+      "sha256": null,
+      "failure_stage": "download",
+      "failure_reason": "下载响应不是有效 PDF，响应头片段: '\\n\\n\\n\\n<html>\\n  <head>\\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\\n    <title>Preparing to d'",
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id pmc-4536833"
+    },
+    {
+      "id": "who-9789240062702",
+      "kind": "who",
+      "source_urls": [
+        "https://iris.who.int/server/api/core/bitstreams/e5cc3da6-f46e-4355-a352-8d16820e0dd1/content"
+      ],
+      "locations": [
+        {
+          "path": "docs/submission-reference-manifest.json",
+          "line": 15
+        }
+      ],
+      "title": "\"url\": \" \",",
+      "origin": "docs",
+      "source_url": "https://iris.who.int/server/api/core/bitstreams/e5cc3da6-f46e-4355-a352-8d16820e0dd1/content",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://iris.who.int/server/api/core/bitstreams/e5cc3da6-f46e-4355-a352-8d16820e0dd1/content",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/who-9789240062702.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/who-9789240062702.md",
+      "sha256": "dda0c28e3ff2b67ea9f1b8c4f552c7bc6eda323c6b1e25470d135a2ba08d55f5",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id who-9789240062702"
+    }
+  ],
+  "excluded_sources": [
+    {
+      "url": "https://www.w3.org/TR/prov-dm/",
+      "locations": [
+        {
+          "path": "docs/adr/0017-research-world-redesign.md",
+          "line": 5
+        },
+        {
+          "path": "docs/adr/0020-graph-and-evidence.md",
+          "line": 18
+        },
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 30
+        },
+        {
+          "path": "docs/adr/0037-research-graph-and-dynamic-workflow.md",
+          "line": 17
+        }
+      ],
+      "reason": "纯网页文档"
+    },
+    {
+      "url": "https://nanopub.net/guidelines/working_draft/",
+      "locations": [
+        {
+          "path": "docs/adr/0017-research-world-redesign.md",
+          "line": 11
+        },
+        {
+          "path": "docs/design-explainer.html",
+          "line": 523
+        }
+      ],
+      "reason": "纯网页文档"
+    },
+    {
+      "url": "https://help.aliyun.com/zh/model-studio/models",
+      "locations": [
+        {
+          "path": "docs/adr/0018-model-endpoints.md",
+          "line": 5
+        }
+      ],
+      "reason": "产品页或其他非论文网页"
+    },
+    {
+      "url": "https://a2a-protocol.org/latest/specification/",
+      "locations": [
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 27
+        }
+      ],
+      "reason": "纯网页文档"
+    },
+    {
+      "url": "https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final",
+      "locations": [
+        {
+          "path": "docs/adr/0021-review-pipeline.md",
+          "line": 30
+        }
+      ],
+      "reason": "纯网页文档"
+    },
+    {
+      "url": "https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/architecture.md",
+      "locations": [
+        {
+          "path": "docs/adr/0022-agent-spec.md",
+          "line": 5
+        },
+        {
+          "path": "docs/adr/0026-agent-runtime.md",
+          "line": 8
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://www.anthropic.com/research/claude-for-life-sciences",
+      "locations": [
+        {
+          "path": "docs/adr/0022-agent-spec.md",
+          "line": 8
+        }
+      ],
+      "reason": "产品页或其他非论文网页"
+    },
+    {
+      "url": "https://docs.anthropic.com/en/docs/mcp",
+      "locations": [
+        {
+          "path": "docs/adr/0022-agent-spec.md",
+          "line": 11
+        }
+      ],
+      "reason": "纯网页文档"
+    },
+    {
+      "url": "https://x.com/praveenisomer/status/2054947344479572325",
+      "locations": [
+        {
+          "path": "docs/adr/0025-kort-ascii-rendering.md",
+          "line": 4
+        }
+      ],
+      "reason": "产品页或其他非论文网页"
+    },
+    {
+      "url": "https://x.com/praveenisomer/status/2074820794136265142",
+      "locations": [
+        {
+          "path": "docs/adr/0025-kort-ascii-rendering.md",
+          "line": 5
+        }
+      ],
+      "reason": "产品页或其他非论文网页"
+    },
+    {
+      "url": "https://x.com/praveenisomer/status/2087990333523312765",
+      "locations": [
+        {
+          "path": "docs/adr/0025-kort-ascii-rendering.md",
+          "line": 6
+        }
+      ],
+      "reason": "产品页或其他非论文网页"
+    },
+    {
+      "url": "https://github.com/agentclientprotocol/python-sdk",
+      "locations": [
+        {
+          "path": "docs/adr/0026-agent-runtime.md",
+          "line": 5
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/Prism-Shadow/penguin-harness",
+      "locations": [
+        {
+          "path": "docs/adr/0026-agent-runtime.md",
+          "line": 11
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/EvidenceBench/EvidenceBench/tree/bf1d9633c694381c7b016fd56ee9f95f48593cc3",
+      "locations": [
+        {
+          "path": "docs/adr/0028-evidencebench-original-e5.md",
+          "line": 4
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://huggingface.co/intfloat/e5-large-v2/tree/f169b11e22de13617baa190a028a32f3493550b6",
+      "locations": [
+        {
+          "path": "docs/adr/0028-evidencebench-original-e5.md",
+          "line": 5
+        }
+      ],
+      "reason": "模型或数据仓库"
+    },
+    {
+      "url": "https://github.com/LittleDrinks/ai4sci/issues/64",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 5
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/LittleDrinks/ai4sci/issues/65",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 9
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/deepseek-ai/deepseek-harness/tree/b150a551b8d465e31e418e1b2eaf5e79bbb7d28e",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 13
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/deepseek-ai/deepseek-harness/blob/b150a551b8d465e31e418e1b2eaf5e79bbb7d28e/packages/client/ui-trajectory/README.md",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 19
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/deepseek-ai/deepseek-harness/blob/b150a551b8d465e31e418e1b2eaf5e79bbb7d28e/packages/client/ui-tool/README.md",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 24
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/deepseek-ai/deepseek-harness/blob/b150a551b8d465e31e418e1b2eaf5e79bbb7d28e/packages/client/ui-deliverables/README.md",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 29
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/deepseek-ai/deepseek-harness/blob/b150a551b8d465e31e418e1b2eaf5e79bbb7d28e/LICENSE",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 34
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/langchain-ai/docs/blob/db2f6400ffc467d464bf8c6f79d8cb11b6ddbc6a/src/langsmith/view-traces.mdx",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 39
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/langchain-ai/docs/blob/db2f6400ffc467d464bf8c6f79d8cb11b6ddbc6a/src/langsmith/cost-tracking.mdx",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 44
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/langchain-ai/docs/blob/db2f6400ffc467d464bf8c6f79d8cb11b6ddbc6a/src/langsmith/data-export.mdx",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 49
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/langchain-ai/docs/blob/db2f6400ffc467d464bf8c6f79d8cb11b6ddbc6a/src/langsmith/trace-query-syntax.mdx",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 54
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/langchain-ai/docs/blob/db2f6400ffc467d464bf8c6f79d8cb11b6ddbc6a/src/langsmith/mask-inputs-outputs.mdx",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 59
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/langchain-ai/docs/blob/db2f6400ffc467d464bf8c6f79d8cb11b6ddbc6a/LICENSE",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 64
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/Arize-ai/phoenix/blob/arize-phoenix-v20.3.0/docs/phoenix/tracing/concepts-tracing/what-are-traces.mdx",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 69
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/Arize-ai/phoenix/blob/arize-phoenix-v20.3.0/docs/phoenix/tracing/how-to-tracing/cost-tracking.mdx",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 74
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/Arize-ai/phoenix/blob/arize-phoenix-v20.3.0/docs/phoenix/tracing/how-to-tracing/importing-and-exporting-traces/extract-data-from-spans.mdx",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 79
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/Arize-ai/phoenix/blob/arize-phoenix-v20.3.0/docs/phoenix/tracing/how-to-tracing/setup-tracing/setup-sessions.mdx",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 84
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/Arize-ai/phoenix/blob/arize-phoenix-v20.3.0/docs/phoenix/tracing/how-to-tracing/advanced/modifying-spans.mdx",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 89
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/Arize-ai/phoenix/blob/arize-phoenix-v20.3.0/LICENSE",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 94
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/temporalio/ui/tree/v2.53.3",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 99
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/temporalio/ui/releases/tag/v2.53.3",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 104
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/temporalio/ui/blob/v2.53.3/tests/integration/workflow-event-history.spec.ts",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 109
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/temporalio/ui/blob/v2.53.3/src/lib/components/lines-and-dots/timeline-graph/timeline.svelte.test.ts",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 114
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/temporalio/ui/blob/v2.53.3/src/lib/utilities/export-history.ts",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 119
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/temporalio/ui/blob/v2.53.3/LICENSE",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 124
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "http://127.0.0.1:8095",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 247
+        },
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 98
+        }
+      ],
+      "reason": "本地服务地址"
+    },
+    {
+      "url": "https://github.com/LittleDrinks/ai4sci/issues/63",
+      "locations": [
+        {
+          "path": "docs/adr/0030-agent-cli-discovery.md",
+          "line": 5
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/multica-ai/multica/tree/v0.4.32",
+      "locations": [
+        {
+          "path": "docs/adr/0030-agent-cli-discovery.md",
+          "line": 9
+        },
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 20
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/MoonshotAI/kimi-code/releases/tag/%40moonshot-ai%2Fkimi-code%400.38.0",
+      "locations": [
+        {
+          "path": "docs/adr/0030-agent-cli-discovery.md",
+          "line": 13
+        },
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 61
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://university.aliyun.com/action/tzbjbgs2026",
+      "locations": [
+        {
+          "path": "docs/adr/0032-contest-loop-and-bounded-auto.md",
+          "line": 5
+        }
+      ],
+      "reason": "产品页或其他非论文网页"
+    },
+    {
+      "url": "https://developers.openai.com/codex/cli/reference",
+      "locations": [
+        {
+          "path": "docs/adr/0032-contest-loop-and-bounded-auto.md",
+          "line": 9
+        }
+      ],
+      "reason": "纯网页文档"
+    },
+    {
+      "url": "https://code.claude.com/docs/en/cli-usage",
+      "locations": [
+        {
+          "path": "docs/adr/0032-contest-loop-and-bounded-auto.md",
+          "line": 13
+        }
+      ],
+      "reason": "纯网页文档"
+    },
+    {
+      "url": "https://github.com/earendil-works/pi",
+      "locations": [
+        {
+          "path": "docs/adr/0032-contest-loop-and-bounded-auto.md",
+          "line": 17
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/MoonshotAI/kimi-cli",
+      "locations": [
+        {
+          "path": "docs/adr/0032-contest-loop-and-bounded-auto.md",
+          "line": 21
+        },
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 70
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/frenzymath/Danus/blob/7a51336e53cd1d558d0e766a61eb0fed46ebb05b/danus/core/DATA_MODEL.md",
+      "locations": [
+        {
+          "path": "docs/adr/0037-research-graph-and-dynamic-workflow.md",
+          "line": 5
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/earendil-works/pi/tree/e86823096c5bad39e1ca282ec24bc5eb9bec745b/packages/coding-agent/docs",
+      "locations": [
+        {
+          "path": "docs/adr/0037-research-graph-and-dynamic-workflow.md",
+          "line": 9
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://code.claude.com/docs/en/sub-agents",
+      "locations": [
+        {
+          "path": "docs/adr/0037-research-graph-and-dynamic-workflow.md",
+          "line": 13
+        }
+      ],
+      "reason": "纯网页文档"
+    },
+    {
+      "url": "https://github.com/nexu-io/open-design",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 11
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://open-design.ai",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 12
+        }
+      ],
+      "reason": "产品页或其他非论文网页"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/nexu-io/open-design/main/docs/screenshots/product-tour/home.png",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 13
+        }
+      ],
+      "reason": "代码仓库资产"
+    },
+    {
+      "url": "https://multica.ai",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 21
+        }
+      ],
+      "reason": "产品页或其他非论文网页"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/multica-ai/multica/main/apps/docs/public/images/docs/tutorial-runtime-detail.webp",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 22
+        }
+      ],
+      "reason": "代码仓库资产"
+    },
+    {
+      "url": "https://github.com/farion1231/cc-switch",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 29
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://ccswitch.io",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 30
+        }
+      ],
+      "reason": "产品页或其他非论文网页"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/farion1231/cc-switch/main/assets/screenshots/main-en.png",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 31
+        }
+      ],
+      "reason": "代码仓库资产"
+    },
+    {
+      "url": "https://www.conductor.build/changelog/0.82.0-conductor-mcp",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 38
+        }
+      ],
+      "reason": "产品页或其他非论文网页"
+    },
+    {
+      "url": "https://www.conductor.build/",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 39
+        },
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 40
+        }
+      ],
+      "reason": "产品页或其他非论文网页"
+    },
+    {
+      "url": "https://learn.chatgpt.com/docs/app",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 48
+        }
+      ],
+      "reason": "纯网页文档"
+    },
+    {
+      "url": "https://learn.chatgpt.com/docs/environments/git-worktrees",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 49
+        }
+      ],
+      "reason": "纯网页文档"
+    },
+    {
+      "url": "https://learn.chatgpt.com/docs/build-skills",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 50
+        }
+      ],
+      "reason": "纯网页文档"
+    },
+    {
+      "url": "https://github.com/openai/codex",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 51
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://openai.com/index/introducing-the-codex-app/",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 52
+        }
+      ],
+      "reason": "产品页或其他非论文网页"
+    },
+    {
+      "url": "https://github.com/MoonshotAI/kimi-code",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 60
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://moonshotai.github.io/kimi-code/en/",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 62
+        }
+      ],
+      "reason": "纯网页文档"
+    },
+    {
+      "url": "https://github.com/MoonshotAI/kimi-cli/releases/tag/1.49.0",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 71
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://moonshotai.github.io/kimi-cli/en/reference/kimi-web.html",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 72
+        },
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 73
+        }
+      ],
+      "reason": "纯网页文档"
+    },
+    {
+      "url": "https://github.com/smtg-ai/claude-squad",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 81
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/smtg-ai/claude-squad/main/assets/screenshot.png",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 82
+        }
+      ],
+      "reason": "代码仓库资产"
+    },
+    {
+      "url": "https://github.com/LittleDrinks/ai4sci/issues/41",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 87
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/LittleDrinks/ai4sci/issues/43",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 90
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/LittleDrinks/ai4sci/issues/54",
+      "locations": [
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 93
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://networkx.org/",
+      "locations": [
+        {
+          "path": "docs/benchmarks/design.md",
+          "line": 8
+        }
+      ],
+      "reason": "产品页或其他非论文网页"
+    },
+    {
+      "url": "https://github.com/xiaowu0162/LongMemEval-V2",
+      "locations": [
+        {
+          "path": "docs/benchmarks/design.md",
+          "line": 10
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/AMA-Bench/AMA-Bench",
+      "locations": [
+        {
+          "path": "docs/benchmarks/design.md",
+          "line": 12
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/microsoft/STATE-Bench",
+      "locations": [
+        {
+          "path": "docs/benchmarks/design.md",
+          "line": 14
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/ChicagoHAI/hypothesis-generation",
+      "locations": [
+        {
+          "path": "docs/benchmarks/design.md",
+          "line": 16
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/EvidenceBench/EvidenceBench",
+      "locations": [
+        {
+          "path": "docs/benchmarks/design.md",
+          "line": 18
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/allenai/asta-bench",
+      "locations": [
+        {
+          "path": "docs/benchmarks/design.md",
+          "line": 20
+        },
+        {
+          "path": "docs/benchmarks/e9-end-to-end.md",
+          "line": 8
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://inspect.aisi.org.uk/",
+      "locations": [
+        {
+          "path": "docs/benchmarks/design.md",
+          "line": 22
+        }
+      ],
+      "reason": "产品页或其他非论文网页"
+    },
+    {
+      "url": "https://github.com/METR/RE-Bench",
+      "locations": [
+        {
+          "path": "docs/benchmarks/design.md",
+          "line": 24
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/openai/mle-bench",
+      "locations": [
+        {
+          "path": "docs/benchmarks/design.md",
+          "line": 26
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/materialsproject/matbench",
+      "locations": [
+        {
+          "path": "docs/benchmarks/design.md",
+          "line": 28
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/NJU-LINK/DRIFT",
+      "locations": [
+        {
+          "path": "docs/benchmarks/design.md",
+          "line": 30
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/microsoft/AgentRx",
+      "locations": [
+        {
+          "path": "docs/benchmarks/design.md",
+          "line": 32
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/allenai/scifact",
+      "locations": [
+        {
+          "path": "docs/benchmarks/design.md",
+          "line": 34
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://www.researchobject.org/ro-crate/specification/1.3/",
+      "locations": [
+        {
+          "path": "docs/benchmarks/e6-cold-replay.md",
+          "line": 16
+        }
+      ],
+      "reason": "纯网页文档"
+    },
+    {
+      "url": "https://github.com/JonathanGabor/evilgenie_inspect",
+      "locations": [
+        {
+          "path": "docs/benchmarks/e8-capability-isolation.md",
+          "line": 14
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/sepio-framework/sepio-linkml",
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "line": 524
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://www.who.int/publications/i/item/9789240062702",
+      "locations": [
+        {
+          "path": "docs/submission-reference-manifest.json",
+          "line": 16
+        }
+      ],
+      "reason": "纯网页文档"
+    },
+    {
+      "url": "https://creativecommons.org/licenses/by-nc-sa/3.0/igo/",
+      "locations": [
+        {
+          "path": "docs/submission-reference-manifest.json",
+          "line": 18
+        }
+      ],
+      "reason": "许可证页面"
+    },
+    {
+      "url": "https://creativecommons.org/licenses/by/4.0/",
+      "locations": [
+        {
+          "path": "docs/submission-reference-manifest.json",
+          "line": 42
+        },
+        {
+          "path": "docs/submission-reference-manifest.json",
+          "line": 71
+        }
+      ],
+      "reason": "许可证页面"
+    }
+  ],
+  "unresolved_citations": [
+    {
+      "id": "design-ref-7",
+      "citation": "Takahara, Mizoguchi (2026). Toward Auditable AI Scientists: Hypothesis Evolution Protocol. Zotero AA2UBMVL",
+      "source_url": null,
+      "status": "unresolved",
+      "failure_stage": "source-discovery",
+      "failure_reason": "设计说明只保留 Zotero 条目或题名，没有可下载的原 URL",
+      "retry_command": "补录原 URL 后执行: python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json",
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "anchor": "ref-7"
+        }
+      ]
+    },
+    {
+      "id": "design-ref-8",
+      "citation": "Liu et al. (2026). The Last Human-Written Paper: Agent-Native Research Artifacts. Zotero I2YBY654",
+      "source_url": null,
+      "status": "unresolved",
+      "failure_stage": "source-discovery",
+      "failure_reason": "设计说明只保留 Zotero 条目或题名，没有可下载的原 URL",
+      "retry_command": "补录原 URL 后执行: python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json",
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "anchor": "ref-8"
+        }
+      ]
+    },
+    {
+      "id": "design-ref-9",
+      "citation": "Yang et al. (2026). ARIS: Autonomous Research via Adversarial Multi-Agent Collaboration. Zotero TRYPRM7J",
+      "source_url": null,
+      "status": "unresolved",
+      "failure_stage": "source-discovery",
+      "failure_reason": "设计说明只保留 Zotero 条目或题名，没有可下载的原 URL",
+      "retry_command": "补录原 URL 后执行: python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json",
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "anchor": "ref-9"
+        }
+      ]
+    },
+    {
+      "id": "design-ref-10",
+      "citation": "Zhuang et al. From Trajectories to Evidence: Auditable Experimental Records. Zotero",
+      "source_url": null,
+      "status": "unresolved",
+      "failure_stage": "source-discovery",
+      "failure_reason": "设计说明只保留 Zotero 条目或题名，没有可下载的原 URL",
+      "retry_command": "补录原 URL 后执行: python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json",
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "anchor": "ref-10"
+        }
+      ]
+    },
+    {
+      "id": "design-ref-11",
+      "citation": "Marchioro et al. Workflow Cards: Structured Summaries of Workflow Executions Using Provenance Data. Zotero",
+      "source_url": null,
+      "status": "unresolved",
+      "failure_stage": "source-discovery",
+      "failure_reason": "设计说明只保留 Zotero 条目或题名，没有可下载的原 URL",
+      "retry_command": "补录原 URL 后执行: python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json",
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "anchor": "ref-11"
+        }
+      ]
+    },
+    {
+      "id": "design-ref-12",
+      "citation": "Krebs. F(AI)²R: Who Did What, and Who Checked? Zotero",
+      "source_url": null,
+      "status": "unresolved",
+      "failure_stage": "source-discovery",
+      "failure_reason": "设计说明只保留 Zotero 条目或题名，没有可下载的原 URL",
+      "retry_command": "补录原 URL 后执行: python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json",
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "anchor": "ref-12"
+        }
+      ]
+    },
+    {
+      "id": "design-ref-13",
+      "citation": "Liu, Dehghan et al. From Plan to Action: How Well Do Agents Follow the Plan? Zotero",
+      "source_url": null,
+      "status": "unresolved",
+      "failure_stage": "source-discovery",
+      "failure_reason": "设计说明只保留 Zotero 条目或题名，没有可下载的原 URL",
+      "retry_command": "补录原 URL 后执行: python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json",
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "anchor": "ref-13"
+        }
+      ]
+    },
+    {
+      "id": "design-ref-14",
+      "citation": "Liu et al. LivePlan: Online Monitoring and Corrective Steering of Programming Agents. Zotero",
+      "source_url": null,
+      "status": "unresolved",
+      "failure_stage": "source-discovery",
+      "failure_reason": "设计说明只保留 Zotero 条目或题名，没有可下载的原 URL",
+      "retry_command": "补录原 URL 后执行: python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json",
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "anchor": "ref-14"
+        }
+      ]
+    },
+    {
+      "id": "design-ref-15",
+      "citation": "Kambhampati et al. Stop Anthropomorphizing Intermediate Tokens as Reasoning Traces. Zotero",
+      "source_url": null,
+      "status": "unresolved",
+      "failure_stage": "source-discovery",
+      "failure_reason": "设计说明只保留 Zotero 条目或题名，没有可下载的原 URL",
+      "retry_command": "补录原 URL 后执行: python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json",
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "anchor": "ref-15"
+        }
+      ]
+    },
+    {
+      "id": "design-ref-16",
+      "citation": "Bhambri et al. Interpretable Traces, Unexpected Outcomes. Zotero",
+      "source_url": null,
+      "status": "unresolved",
+      "failure_stage": "source-discovery",
+      "failure_reason": "设计说明只保留 Zotero 条目或题名，没有可下载的原 URL",
+      "retry_command": "补录原 URL 后执行: python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json",
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "anchor": "ref-16"
+        }
+      ]
+    },
+    {
+      "id": "design-ref-17",
+      "citation": "Sharding Prevents LLM Oversight Failures. Zotero",
+      "source_url": null,
+      "status": "unresolved",
+      "failure_stage": "source-discovery",
+      "failure_reason": "设计说明只保留 Zotero 条目或题名，没有可下载的原 URL",
+      "retry_command": "补录原 URL 后执行: python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json",
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "anchor": "ref-17"
+        }
+      ]
+    },
+    {
+      "id": "design-ref-18",
+      "citation": "Lin et al. Agentic Harness Engineering. Zotero",
+      "source_url": null,
+      "status": "unresolved",
+      "failure_stage": "source-discovery",
+      "failure_reason": "设计说明只保留 Zotero 条目或题名，没有可下载的原 URL",
+      "retry_command": "补录原 URL 后执行: python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json",
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "anchor": "ref-18"
+        }
+      ]
+    },
+    {
+      "id": "design-ref-19",
+      "citation": "Zhao et al. TRACE: Trajectory Attribution for Automated Context Engineering. Zotero",
+      "source_url": null,
+      "status": "unresolved",
+      "failure_stage": "source-discovery",
+      "failure_reason": "设计说明只保留 Zotero 条目或题名，没有可下载的原 URL",
+      "retry_command": "补录原 URL 后执行: python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json",
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "anchor": "ref-19"
+        }
+      ]
+    },
+    {
+      "id": "design-ref-20",
+      "citation": "Google (2026). Towards an AI co-scientist. Nature. Zotero PMQ38NSP",
+      "source_url": null,
+      "status": "unresolved",
+      "failure_stage": "source-discovery",
+      "failure_reason": "设计说明只保留 Zotero 条目或题名，没有可下载的原 URL",
+      "retry_command": "补录原 URL 后执行: python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json",
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "anchor": "ref-20"
+        }
+      ]
+    },
+    {
+      "id": "design-ref-21",
+      "citation": "Red Queen Gödel Machine: adversarial reviewer drift on AI-generated text. Zotero",
+      "source_url": null,
+      "status": "unresolved",
+      "failure_stage": "source-discovery",
+      "failure_reason": "设计说明只保留 Zotero 条目或题名，没有可下载的原 URL",
+      "retry_command": "补录原 URL 后执行: python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json",
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "anchor": "ref-21"
+        }
+      ]
+    },
+    {
+      "id": "design-ref-25",
+      "citation": "What Is Novel? A Knowledge-Driven Framework for Bias-Aware Literature Originality Evaluation. Zotero LULT2GFW",
+      "source_url": null,
+      "status": "unresolved",
+      "failure_stage": "source-discovery",
+      "failure_reason": "设计说明只保留 Zotero 条目或题名，没有可下载的原 URL",
+      "retry_command": "补录原 URL 后执行: python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json",
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "anchor": "ref-25"
+        }
+      ]
+    },
+    {
+      "id": "design-ref-26",
+      "citation": "GraphMind: Interactive Novelty Assessment System for Accelerating Scientific Discovery. Zotero 4B69JY2E",
+      "source_url": null,
+      "status": "unresolved",
+      "failure_stage": "source-discovery",
+      "failure_reason": "设计说明只保留 Zotero 条目或题名，没有可下载的原 URL",
+      "retry_command": "补录原 URL 后执行: python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json",
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "anchor": "ref-26"
+        }
+      ]
+    }
+  ]
+}
