@@ -1,0 +1,134 @@
+[
+  {
+    "id": "issue-139-temporal-child-workflow",
+    "title": "Temporal Go SDK child workflow",
+    "source_url": "https://github.com/temporalio/sdk-go/blob/9e67f43b78c6f0174e06009a2eded936829de59c/workflow/doc.go",
+    "download_url": "https://raw.githubusercontent.com/temporalio/sdk-go/9e67f43b78c6f0174e06009a2eded936829de59c/workflow/doc.go",
+    "version": "9e67f43b78c6f0174e06009a2eded936829de59c",
+    "format": "source",
+    "snapshot_format": "go",
+    "local_path": "datasets/research-kernel-papers/snapshots/issue-139/temporal-child-workflow.go"
+  },
+  {
+    "id": "issue-139-langgraph-routing",
+    "title": "LangGraph routing types",
+    "source_url": "https://github.com/langchain-ai/langgraph/blob/bdb8a9c7a4aa1390af225f6a5d292e5088659bd5/libs/langgraph/langgraph/types.py",
+    "download_url": "https://raw.githubusercontent.com/langchain-ai/langgraph/bdb8a9c7a4aa1390af225f6a5d292e5088659bd5/libs/langgraph/langgraph/types.py",
+    "version": "bdb8a9c7a4aa1390af225f6a5d292e5088659bd5",
+    "format": "source",
+    "snapshot_format": "python",
+    "local_path": "datasets/research-kernel-papers/snapshots/issue-139/langgraph-routing.py"
+  },
+  {
+    "id": "issue-139-langgraph-sqlite-checkpoint",
+    "title": "LangGraph SQLite checkpoint",
+    "source_url": "https://github.com/langchain-ai/langgraph/blob/bdb8a9c7a4aa1390af225f6a5d292e5088659bd5/libs/checkpoint-sqlite/langgraph/checkpoint/sqlite/__init__.py",
+    "download_url": "https://raw.githubusercontent.com/langchain-ai/langgraph/bdb8a9c7a4aa1390af225f6a5d292e5088659bd5/libs/checkpoint-sqlite/langgraph/checkpoint/sqlite/__init__.py",
+    "version": "bdb8a9c7a4aa1390af225f6a5d292e5088659bd5",
+    "format": "source",
+    "snapshot_format": "python",
+    "local_path": "datasets/research-kernel-papers/snapshots/issue-139/langgraph-sqlite-checkpoint.py"
+  },
+  {
+    "id": "issue-139-openai-agents-handoffs",
+    "title": "OpenAI Agents SDK handoffs",
+    "source_url": "https://github.com/openai/openai-agents-python/blob/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/handoffs.md",
+    "download_url": "https://raw.githubusercontent.com/openai/openai-agents-python/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/handoffs.md",
+    "version": "10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e",
+    "format": "source",
+    "snapshot_format": "markdown",
+    "local_path": "datasets/research-kernel-papers/snapshots/issue-139/openai-agents-handoffs.md"
+  },
+  {
+    "id": "issue-139-openai-agents-sessions",
+    "title": "OpenAI Agents SDK sessions",
+    "source_url": "https://github.com/openai/openai-agents-python/blob/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/sessions/index.md",
+    "download_url": "https://raw.githubusercontent.com/openai/openai-agents-python/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/sessions/index.md",
+    "version": "10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e",
+    "format": "source",
+    "snapshot_format": "markdown",
+    "local_path": "datasets/research-kernel-papers/snapshots/issue-139/openai-agents-sessions.md"
+  },
+  {
+    "id": "issue-139-openai-agents-results",
+    "title": "OpenAI Agents SDK results",
+    "source_url": "https://github.com/openai/openai-agents-python/blob/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/results.md",
+    "download_url": "https://raw.githubusercontent.com/openai/openai-agents-python/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/results.md",
+    "version": "10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e",
+    "format": "source",
+    "snapshot_format": "markdown",
+    "local_path": "datasets/research-kernel-papers/snapshots/issue-139/openai-agents-results.md"
+  },
+  {
+    "id": "issue-139-openai-agents-tracing",
+    "title": "OpenAI Agents SDK tracing",
+    "source_url": "https://github.com/openai/openai-agents-python/blob/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/tracing.md",
+    "download_url": "https://raw.githubusercontent.com/openai/openai-agents-python/10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e/docs/tracing.md",
+    "version": "10cdae4a3c30a29c6e96c8ec14e6bf1c5f02940e",
+    "format": "source",
+    "snapshot_format": "markdown",
+    "local_path": "datasets/research-kernel-papers/snapshots/issue-139/openai-agents-tracing.md"
+  },
+  {
+    "id": "issue-139-w3c-prov-dm",
+    "title": "W3C PROV-DM",
+    "source_url": "https://www.w3.org/TR/prov-dm/",
+    "download_url": "https://www.w3.org/TR/2013/REC-prov-dm-20130430/",
+    "version": "W3C Recommendation 2013-04-30",
+    "format": "webpage",
+    "snapshot_format": "markdown",
+    "local_path": "datasets/research-kernel-papers/snapshots/issue-139/w3c-prov-dm.md"
+  },
+  {
+    "id": "issue-139-opentelemetry-genai-agent-spans",
+    "title": "OpenTelemetry GenAI agent spans",
+    "source_url": "https://github.com/open-telemetry/semantic-conventions-genai/blob/5f5ae69e52464c56eea4389fb793c2690caaea78/docs/gen-ai/gen-ai-agent-spans.md",
+    "download_url": "https://raw.githubusercontent.com/open-telemetry/semantic-conventions-genai/5f5ae69e52464c56eea4389fb793c2690caaea78/docs/gen-ai/gen-ai-agent-spans.md",
+    "version": "5f5ae69e52464c56eea4389fb793c2690caaea78",
+    "format": "source",
+    "snapshot_format": "markdown",
+    "local_path": "datasets/research-kernel-papers/snapshots/issue-139/opentelemetry-genai-agent-spans.md"
+  },
+  {
+    "id": "issue-139-pi-compaction",
+    "title": "Pi compaction",
+    "source_url": "https://github.com/earendil-works/pi/blob/e86823096c5bad39e1ca282ec24bc5eb9bec745b/packages/coding-agent/docs/compaction.md",
+    "download_url": "https://raw.githubusercontent.com/earendil-works/pi/e86823096c5bad39e1ca282ec24bc5eb9bec745b/packages/coding-agent/docs/compaction.md",
+    "version": "e86823096c5bad39e1ca282ec24bc5eb9bec745b",
+    "format": "source",
+    "snapshot_format": "markdown",
+    "local_path": "datasets/research-kernel-papers/snapshots/issue-139/pi-compaction.md"
+  },
+  {
+    "id": "issue-139-pi-session-format",
+    "title": "Pi session JSONL format",
+    "source_url": "https://github.com/earendil-works/pi/blob/e86823096c5bad39e1ca282ec24bc5eb9bec745b/packages/coding-agent/docs/session-format.md",
+    "download_url": "https://raw.githubusercontent.com/earendil-works/pi/e86823096c5bad39e1ca282ec24bc5eb9bec745b/packages/coding-agent/docs/session-format.md",
+    "version": "e86823096c5bad39e1ca282ec24bc5eb9bec745b",
+    "format": "source",
+    "snapshot_format": "markdown",
+    "local_path": "datasets/research-kernel-papers/snapshots/issue-139/pi-session-format.md"
+  },
+  {
+    "id": "issue-139-pi-session-protocol",
+    "title": "Pi session protocol",
+    "source_url": "https://github.com/earendil-works/pi/blob/e86823096c5bad39e1ca282ec24bc5eb9bec745b/packages/protocol/README.md",
+    "download_url": "https://raw.githubusercontent.com/earendil-works/pi/e86823096c5bad39e1ca282ec24bc5eb9bec745b/packages/protocol/README.md",
+    "version": "e86823096c5bad39e1ca282ec24bc5eb9bec745b",
+    "format": "source",
+    "snapshot_format": "markdown",
+    "local_path": "datasets/research-kernel-papers/snapshots/issue-139/pi-session-protocol.md"
+  },
+  {
+    "id": "issue-139-claude-code-subagents",
+    "title": "Claude Code subagents",
+    "source_url": "https://code.claude.com/docs/en/sub-agents",
+    "download_url": "https://code.claude.com/docs/en/sub-agents",
+    "version": "Claude Code v2.1.247",
+    "accessed_at": "2026-08-27",
+    "version_status": "Issue #139 清单声明版本；页面 URL 本身可变",
+    "format": "webpage",
+    "snapshot_format": "markdown",
+    "local_path": "datasets/research-kernel-papers/snapshots/issue-139/claude-code-subagents.md"
+  }
+]
