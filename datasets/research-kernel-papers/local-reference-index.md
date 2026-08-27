@@ -15,7 +15,7 @@ sources:
 | 溯源与可观测性 | [PROV-DM](snapshots/issue-139/w3c-prov-dm.md)、[GenAI agent spans](snapshots/issue-139/opentelemetry-genai-agent-spans.md)、[Agents tracing](snapshots/issue-139/openai-agents-tracing.md)、[Trace ADR](../../docs/adr/0029-trace-ui.md) | Trace 是 Session 的模型事实源；来源、事件和父子关系保持可回放，凭证和私有运行元数据不进入公开投影。 |
 | 独立 agent 委派 | [Claude Code subagents](snapshots/issue-139/claude-code-subagents.md)、[Agents handoffs](snapshots/issue-139/openai-agents-handoffs.md)、[Agent Runtime ADR](../../docs/adr/0026-agent-runtime.md) | 子 agent 返回受限结果，主流程以明确边界接收；新 Session 承担恢复和权限隔离。 |
 ## 完整性
-- `docs` 论文型来源：84 条，81 条同时有本地 PDF 和 Markdown，3 条保留失败原因与重试命令。
+- `docs` 论文型来源：85 条，82 条同时有本地 PDF 和 Markdown，3 条保留失败原因与重试命令。
 - #139 补充来源：13 条；固定源码记录 commit，网页记录规范或产品版本与访问日，格式和 SHA-256 在 manifest 中。
 - 固定源码按原始快照校验；`pi-compaction.md` 的原始尾空格审计例外已在 manifest 明列，不作为下载失败。
-- 设计说明中 17 条无原 URL 的题名-only 引用保留在 `unresolved_citations`；产品页、代码仓库、Issue 和未纳入清单的纯网页文档保留在 `excluded_sources`。
+- 设计说明中 17 条无原 URL 的题名-only 引用保留在 `unresolved_citations`；产品页、代码仓库、Issue 和未纳入清单的纯网页文档 96 条保留在 `excluded_sources`。

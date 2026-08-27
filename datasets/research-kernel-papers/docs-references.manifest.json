@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generated_at": "2026-08-27T06:27:20.657542+00:00",
+  "generated_at": "2026-08-27T08:01:29.388982+00:00",
   "scope": {
     "included": "docs 中指向论文、会议论文、学术文章或研究报告的来源，以及 #139 指定的一手固定源码和网页规范",
     "excluded": "产品页、代码仓库、Issue、纯网页文档和社交媒体（#139 明确指定的固定来源除外）",
@@ -2507,6 +2507,32 @@
       "markdown_path": "datasets/research-kernel-papers/snapshots/issue-139/w3c-prov-dm.md"
     },
     {
+      "id": "joelchan-discourse-graphs",
+      "kind": "joelchan",
+      "source_urls": [
+        "https://joelchan.me/assets/pdf/Discourse_Graphs_for_Augmented_Knowledge_Synthesis_What_and_Why.pdf"
+      ],
+      "locations": [
+        {
+          "path": "docs/design-explainer.html",
+          "line": 525
+        }
+      ],
+      "title": "Joel Chan. Discourse Graphs for Augmented Knowledge Synthesis. PDF",
+      "origin": "docs",
+      "source_url": "https://joelchan.me/assets/pdf/Discourse_Graphs_for_Augmented_Knowledge_Synthesis_What_and_Why.pdf",
+      "version": null,
+      "format": "pdf+markdown",
+      "download_url": "https://joelchan.me/assets/pdf/Discourse_Graphs_for_Augmented_Knowledge_Synthesis_What_and_Why.pdf",
+      "status": "ready",
+      "pdf_path": "datasets/research-kernel-papers/references/joelchan-discourse-graphs.pdf",
+      "markdown_path": "datasets/research-kernel-papers/markdown/joelchan-discourse-graphs.md",
+      "sha256": "1bd3a37c0fbba2837b86ab7e76114494df1bd954ab4adb4105a63f5a9feaac22",
+      "failure_stage": null,
+      "failure_reason": null,
+      "retry_command": "python3 datasets/research-kernel-papers/scripts/archive_doc_references.py --supplemental datasets/research-kernel-papers/issue-139.sources.json --id joelchan-discourse-graphs"
+    },
+    {
       "id": "nature-s41586-023-06734-w",
       "kind": "nature",
       "source_urls": [
@@ -2661,6 +2687,24 @@
         {
           "path": "docs/adr/0021-review-pipeline.md",
           "line": 30
+        },
+        {
+          "path": "docs/adr/0037-research-graph-and-dynamic-workflow.md",
+          "line": 17
+        }
+      ],
+      "reason": "纯网页文档"
+    },
+    {
+      "url": "https://nanopub.net/guidelines/working_draft/",
+      "locations": [
+        {
+          "path": "docs/adr/0017-research-world-redesign.md",
+          "line": 11
+        },
+        {
+          "path": "docs/design-explainer.html",
+          "line": 523
         }
       ],
       "reason": "纯网页文档"
@@ -2788,6 +2832,16 @@
         }
       ],
       "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://huggingface.co/intfloat/e5-large-v2/tree/f169b11e22de13617baa190a028a32f3493550b6",
+      "locations": [
+        {
+          "path": "docs/adr/0028-evidencebench-original-e5.md",
+          "line": 5
+        }
+      ],
+      "reason": "模型或数据仓库"
     },
     {
       "url": "https://github.com/LittleDrinks/ai4sci/issues/64",
@@ -3040,6 +3094,20 @@
       "reason": "代码仓库或 Issue"
     },
     {
+      "url": "http://127.0.0.1:8095",
+      "locations": [
+        {
+          "path": "docs/adr/0029-trace-ui.md",
+          "line": 247
+        },
+        {
+          "path": "docs/agent-runtime-settings.md",
+          "line": 98
+        }
+      ],
+      "reason": "本地服务地址"
+    },
+    {
       "url": "https://github.com/LittleDrinks/ai4sci/issues/63",
       "locations": [
         {
@@ -3098,6 +3166,16 @@
       "reason": "纯网页文档"
     },
     {
+      "url": "https://code.claude.com/docs/en/cli-usage",
+      "locations": [
+        {
+          "path": "docs/adr/0032-contest-loop-and-bounded-auto.md",
+          "line": 13
+        }
+      ],
+      "reason": "纯网页文档"
+    },
+    {
       "url": "https://github.com/earendil-works/pi",
       "locations": [
         {
@@ -3120,6 +3198,36 @@
         }
       ],
       "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/frenzymath/Danus/blob/7a51336e53cd1d558d0e766a61eb0fed46ebb05b/danus/core/DATA_MODEL.md",
+      "locations": [
+        {
+          "path": "docs/adr/0037-research-graph-and-dynamic-workflow.md",
+          "line": 5
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://github.com/earendil-works/pi/tree/e86823096c5bad39e1ca282ec24bc5eb9bec745b/packages/coding-agent/docs",
+      "locations": [
+        {
+          "path": "docs/adr/0037-research-graph-and-dynamic-workflow.md",
+          "line": 9
+        }
+      ],
+      "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://code.claude.com/docs/en/sub-agents",
+      "locations": [
+        {
+          "path": "docs/adr/0037-research-graph-and-dynamic-workflow.md",
+          "line": 13
+        }
+      ],
+      "reason": "纯网页文档"
     },
     {
       "url": "https://github.com/nexu-io/open-design",
@@ -3542,6 +3650,40 @@
         }
       ],
       "reason": "代码仓库或 Issue"
+    },
+    {
+      "url": "https://www.who.int/publications/i/item/9789240062702",
+      "locations": [
+        {
+          "path": "docs/submission-reference-manifest.json",
+          "line": 16
+        }
+      ],
+      "reason": "纯网页文档"
+    },
+    {
+      "url": "https://creativecommons.org/licenses/by-nc-sa/3.0/igo/",
+      "locations": [
+        {
+          "path": "docs/submission-reference-manifest.json",
+          "line": 18
+        }
+      ],
+      "reason": "许可证页面"
+    },
+    {
+      "url": "https://creativecommons.org/licenses/by/4.0/",
+      "locations": [
+        {
+          "path": "docs/submission-reference-manifest.json",
+          "line": 42
+        },
+        {
+          "path": "docs/submission-reference-manifest.json",
+          "line": 71
+        }
+      ],
+      "reason": "许可证页面"
     }
   ],
   "unresolved_citations": [

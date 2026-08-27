@@ -36,15 +36,21 @@ RUNTIME_FIELDS = {
     "failure_reason",
 }
 WEB_DOC_HOSTS = {
+    "code.claude.com",
     "docs.anthropic.com",
     "developers.openai.com",
     "learn.chatgpt.com",
     "moonshotai.github.io",
+    "nanopub.net",
     "www.w3.org",
     "www.researchobject.org",
     "a2a-protocol.org",
     "csrc.nist.gov",
+    "www.who.int",
 }
+LICENSE_HOSTS = {"creativecommons.org"}
+MODEL_HOSTS = {"huggingface.co"}
+LOCAL_HOSTS = {"127.0.0.1", "localhost"}
 PRODUCT_HOSTS = {
     "networkx.org",
     "inspect.aisi.org.uk",
@@ -232,6 +238,7 @@ def source_kind(url):
         (host == "aclanthology.org" and re.fullmatch(r"/[\w.-]+/?", path), "acl"),
         (host == "proceedings.iclr.cc" and "/paper_files/paper/" in path, "iclr"),
         (host == "ceur-ws.org" and path.lower().endswith(".pdf"), "ceur"),
+        (host == "joelchan.me" and path.lower().endswith(".pdf"), "joelchan"),
         (host == "doi.org" and path.startswith("/10."), "doi"),
         (host in {"nature.com", "www.nature.com"} and re.fullmatch(r"/articles/s\d+-\d+-[\w-]+(?:\.pdf)?", path), "nature"),
         (host == "iris.who.int" and "/server/api/core/bitstreams/" in path, "who"),
@@ -248,6 +255,7 @@ def canonical_id(url, kind):
         digest = path.rsplit("/", 1)[-1].split("-", 1)[0]
         return f"iclr-2025-{digest[:12]}"
     if kind == "ceur": return "ceur-vol-1155-paper-07"
+    if kind == "joelchan": return "joelchan-discourse-graphs"
     if kind == "doi":
         doi = path.removeprefix("/").lower()
         return "doi-" + re.sub(r"[^a-z0-9]+", "-", doi).strip("-")
@@ -267,6 +275,12 @@ def context_title(lines, line_number, url):
 def exclusion_reason(url):
     parsed = urlparse(url)
     host = parsed.netloc.lower().split(":", 1)[0]
+    if host in LOCAL_HOSTS:
+        return "本地服务地址"
+    if host in LICENSE_HOSTS:
+        return "许可证页面"
+    if host in MODEL_HOSTS:
+        return "模型或数据仓库"
     if host == "github.com" or host.endswith(".github.com"):
         return "代码仓库或 Issue"
     if "/issues/" in parsed.path:
