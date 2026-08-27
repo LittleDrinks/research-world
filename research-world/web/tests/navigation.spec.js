@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { bootstrap, mockBase, project, threadDetail } from "./fixtures";
 
-const MAIN_BRAND = "“强国有我”思政案例库";
+const MAIN_BRAND = "Research World";
 
 
 async function mockShell(page) {

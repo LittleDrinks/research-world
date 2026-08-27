@@ -22,7 +22,7 @@ export function moduleOf(pathname) {
 
 function Brand() {
   return <div className="brand"><div className="brand-mark" aria-hidden="true">&gt;_</div>
-    <div><b>“强国有我”思政案例库</b><span>研究世界 · 工作台</span></div></div>;
+    <div><b>Research World</b><span>研究世界 · 工作台</span></div></div>;
 }
 
 

@@ -23,7 +23,7 @@ export function ProjectsPage() {
 
 
 function ProjectBar({ onNew }) {
-  return <header className="projects-bar"><div className="projects-brand"><span className="mono">&gt;_</span><div><b>“强国有我”思政案例库</b><small>选择研究项目</small></div></div>
+  return <header className="projects-bar"><div className="projects-brand"><span className="mono">&gt;_</span><div><b>Research World</b><small>选择研究项目</small></div></div>
     <div><ThemeButton /><button className="button primary" onClick={onNew}><Plus size={16} />新建项目</button></div></header>;
 }
 
