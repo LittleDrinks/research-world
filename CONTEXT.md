@@ -25,8 +25,8 @@ _Avoid_: 裸路径、覆盖写
 _Avoid_: 强制双审、准入 Gate
 **Workflow**：主 Agent 围绕一个 Project 动态编排的子 Agent 工作；可并行探索、复核已有输出或沿反馈换方向。
 _Avoid_: 固定 stage 序列、状态机
-**Pipeline run**：一个主 Agent 从启动到结束完成的 Project 工作，包含其动态 Workflow；按发生次序区分多次 run，不形成独立研究轮次。
-_Avoid_: Research Round、固定 Pipeline
+**Pipeline run**：主 Agent 一次 Project 工作的可引用投影，关联该工作选择的 lead / child Trajectory；它不驱动 Workflow，也不是 Agent Runtime。
+_Avoid_: Research Round、固定 Pipeline、运行实例
 **研究版本**：同一 Project 中两个有次序 Pipeline run 的确定性对比投影；V1 / V2 只标记比较切点，不拥有节点或事实。
 _Avoid_: Research Round、可变报告草稿
 **Thread**：Project 下的人机对话入口，只保存 Session 引用；节点可通过 `@node_id` 引用和钉入，节点不拥有对话。
