@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
-from .artifacts import ArtifactStore, now
+from .artifacts import ArtifactIntegrityError, ArtifactStore, now
 
 __all__ = [
     "Artifact",
@@ -14,7 +14,7 @@ __all__ = [
     "Message",
     "Project",
     "Session",
-    "SQLiteKernel",
+    "create_kernel",
 ]
 
 _SCHEMA = """
@@ -111,7 +111,11 @@ class KernelInterface(Protocol):
     def read_artifact(self, project_id: str, artifact_id: str) -> bytes: ...
 
 
-class SQLiteKernel(KernelInterface):
+def create_kernel(database: Path, artifacts: Path) -> KernelInterface:
+    return _SQLiteKernel(database, artifacts)
+
+
+class _SQLiteKernel(KernelInterface):
     def __init__(self, database: Path, artifacts: Path):
         self._database = Path(database)
         self._artifacts = Path(artifacts)
@@ -221,19 +225,28 @@ class SQLiteKernel(KernelInterface):
         if not isinstance(content, bytes):
             raise TypeError("artifact content must be bytes")
         _require_text(media_type, "artifact media type")
-        record = ArtifactStore(self._artifacts, project_id).add(
-            content, media_type.strip()
-        )
+        try:
+            record = ArtifactStore(self._artifacts, project_id).add(
+                content, media_type.strip()
+            )
+        except ArtifactIntegrityError:
+            raise ValueError("artifact operation failed") from None
         return _artifact_from_record(record)
 
     def get_artifact(self, project_id: str, artifact_id: str) -> Artifact:
         self.get_project(project_id)
-        record = ArtifactStore(self._artifacts, project_id).get(artifact_id)
+        try:
+            record = ArtifactStore(self._artifacts, project_id).get(artifact_id)
+        except ArtifactIntegrityError:
+            raise ValueError("artifact operation failed") from None
         return _artifact_from_record(record)
 
     def read_artifact(self, project_id: str, artifact_id: str) -> bytes:
         self.get_artifact(project_id, artifact_id)
-        return ArtifactStore(self._artifacts, project_id).read(artifact_id)
+        try:
+            return ArtifactStore(self._artifacts, project_id).read(artifact_id)
+        except ArtifactIntegrityError:
+            raise ValueError("artifact operation failed") from None
 
     def _initialize(self) -> None:
         with self._connect() as connection:

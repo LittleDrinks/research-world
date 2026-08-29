@@ -1,36 +1,46 @@
 import pytest
 
-from server.kernel_interface import SQLiteKernel
+from server.kernel_interface import KernelInterface, create_kernel
+
+
+def _kernel(tmp_path) -> KernelInterface:
+    return create_kernel(tmp_path / "kernel.db", tmp_path / "artifacts")
+
+
+def _project(kernel: KernelInterface):
+    return kernel.create_project(
+        "Orbit study", "Why do planetary orbits remain stable?"
+    )
+
+
+def _project_and_session(kernel: KernelInterface):
+    project = _project(kernel)
+    return project, kernel.create_session(project.id)
 
 
 def test_project_is_persisted_through_the_kernel_interface(tmp_path):
-    kernel = SQLiteKernel(tmp_path / "kernel.db", tmp_path / "artifacts")
+    kernel = _kernel(tmp_path)
 
-    project = kernel.create_project(
-        "Orbit study", "Why do planetary orbits remain stable?"
-    )
-    reopened = SQLiteKernel(tmp_path / "kernel.db", tmp_path / "artifacts")
+    project = _project(kernel)
+    reopened = _kernel(tmp_path)
 
     assert reopened.get_project(project.id) == project
     assert reopened.list_projects() == [project]
 
 
 def test_project_names_are_unique_at_the_kernel_interface(tmp_path):
-    kernel = SQLiteKernel(tmp_path / "kernel.db", tmp_path / "artifacts")
-    kernel.create_project("Orbit study", "Why do planetary orbits remain stable?")
+    kernel = _kernel(tmp_path)
+    _project(kernel)
 
     with pytest.raises(ValueError, match="project name already exists"):
         kernel.create_project("Orbit study", "A different question")
 
 
 def test_session_can_be_created_listed_and_read_for_a_project(tmp_path):
-    kernel = SQLiteKernel(tmp_path / "kernel.db", tmp_path / "artifacts")
-    project = kernel.create_project(
-        "Orbit study", "Why do planetary orbits remain stable?"
-    )
-
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
     session = kernel.create_session(project.id, "Orbit notes")
-    reopened = SQLiteKernel(tmp_path / "kernel.db", tmp_path / "artifacts")
+    reopened = _kernel(tmp_path)
 
     assert session.project_id == project.id
     assert session.messages == ()
@@ -39,14 +49,11 @@ def test_session_can_be_created_listed_and_read_for_a_project(tmp_path):
 
 
 def test_user_message_is_persisted_with_a_stable_id(tmp_path):
-    kernel = SQLiteKernel(tmp_path / "kernel.db", tmp_path / "artifacts")
-    project = kernel.create_project(
-        "Orbit study", "Why do planetary orbits remain stable?"
-    )
-    session = kernel.create_session(project.id)
+    kernel = _kernel(tmp_path)
+    project, session = _project_and_session(kernel)
 
     message = kernel.append_user_message(project.id, session.id, "Check the evidence")
-    reopened = SQLiteKernel(tmp_path / "kernel.db", tmp_path / "artifacts")
+    reopened = _kernel(tmp_path)
 
     assert message.id.startswith("message:")
     assert reopened.get_session(project.id, session.id).messages == (message,)
@@ -54,11 +61,8 @@ def test_user_message_is_persisted_with_a_stable_id(tmp_path):
 
 
 def test_repeated_message_persistence_reuses_the_same_association(tmp_path):
-    kernel = SQLiteKernel(tmp_path / "kernel.db", tmp_path / "artifacts")
-    project = kernel.create_project(
-        "Orbit study", "Why do planetary orbits remain stable?"
-    )
-    session = kernel.create_session(project.id)
+    kernel = _kernel(tmp_path)
+    project, session = _project_and_session(kernel)
 
     first = kernel.append_user_message(
         project.id, session.id, "Check the evidence", message_id="message:retry"
@@ -76,11 +80,8 @@ def test_repeated_message_persistence_reuses_the_same_association(tmp_path):
 
 
 def test_assistant_response_is_projected_onto_its_user_message(tmp_path):
-    kernel = SQLiteKernel(tmp_path / "kernel.db", tmp_path / "artifacts")
-    project = kernel.create_project(
-        "Orbit study", "Why do planetary orbits remain stable?"
-    )
-    session = kernel.create_session(project.id)
+    kernel = _kernel(tmp_path)
+    project, session = _project_and_session(kernel)
     message = kernel.append_user_message(project.id, session.id, "Check the evidence")
 
     projected = kernel.project_assistant_response(
@@ -92,25 +93,21 @@ def test_assistant_response_is_projected_onto_its_user_message(tmp_path):
 
 
 def test_artifact_is_captured_and_read_through_the_kernel_interface(tmp_path):
-    kernel = SQLiteKernel(tmp_path / "kernel.db", tmp_path / "artifacts")
-    project = kernel.create_project(
-        "Orbit study", "Why do planetary orbits remain stable?"
-    )
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
 
     artifact = kernel.capture_artifact(project.id, b"result", "text/plain")
 
     assert artifact.id == f"artifact:{artifact.sha256}"
     assert not hasattr(artifact, "path")
     assert kernel.get_artifact(project.id, artifact.id) == artifact
-    reopened = SQLiteKernel(tmp_path / "kernel.db", tmp_path / "artifacts")
+    reopened = _kernel(tmp_path)
     assert reopened.read_artifact(project.id, artifact.id) == b"result"
 
 
 def test_artifact_is_project_scoped_and_immutable(tmp_path):
-    kernel = SQLiteKernel(tmp_path / "kernel.db", tmp_path / "artifacts")
-    project = kernel.create_project(
-        "Orbit study", "Why do planetary orbits remain stable?"
-    )
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
     other = kernel.create_project("Other study", "Why do stars shine?")
 
     artifact = kernel.capture_artifact(project.id, b"result", "text/plain")
@@ -121,17 +118,15 @@ def test_artifact_is_project_scoped_and_immutable(tmp_path):
 
     assert same_content.id == artifact.id
     assert same_content.project_id == other.id
-    with pytest.raises(ValueError, match="metadata_conflict"):
+    with pytest.raises(ValueError) as captured:
         kernel.capture_artifact(project.id, b"result", "application/json")
+    assert type(captured.value) is ValueError
 
 
 def test_session_is_not_readable_from_another_project(tmp_path):
-    kernel = SQLiteKernel(tmp_path / "kernel.db", tmp_path / "artifacts")
-    project = kernel.create_project(
-        "Orbit study", "Why do planetary orbits remain stable?"
-    )
+    kernel = _kernel(tmp_path)
+    project, session = _project_and_session(kernel)
     other = kernel.create_project("Other study", "Why do stars shine?")
-    session = kernel.create_session(project.id)
 
     assert kernel.list_sessions(other.id) == []
     with pytest.raises(PermissionError, match="another project"):
@@ -139,11 +134,8 @@ def test_session_is_not_readable_from_another_project(tmp_path):
 
 
 def test_reprojecting_the_same_answer_is_idempotent_and_cannot_overwrite(tmp_path):
-    kernel = SQLiteKernel(tmp_path / "kernel.db", tmp_path / "artifacts")
-    project = kernel.create_project(
-        "Orbit study", "Why do planetary orbits remain stable?"
-    )
-    session = kernel.create_session(project.id)
+    kernel = _kernel(tmp_path)
+    project, session = _project_and_session(kernel)
     message = kernel.append_user_message(project.id, session.id, "Check the evidence")
 
     first = kernel.project_assistant_response(
@@ -159,11 +151,8 @@ def test_reprojecting_the_same_answer_is_idempotent_and_cannot_overwrite(tmp_pat
 
 
 def test_response_completion_order_does_not_reorder_session_messages(tmp_path):
-    kernel = SQLiteKernel(tmp_path / "kernel.db", tmp_path / "artifacts")
-    project = kernel.create_project(
-        "Orbit study", "Why do planetary orbits remain stable?"
-    )
-    session = kernel.create_session(project.id)
+    kernel = _kernel(tmp_path)
+    project, session = _project_and_session(kernel)
     first = kernel.append_user_message(project.id, session.id, "First")
     second = kernel.append_user_message(project.id, session.id, "Second")
 
