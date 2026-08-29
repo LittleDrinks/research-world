@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Response
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, StrictInt
 
 from .kernel_interface import KernelInterface, LocalMapQuery
 
@@ -26,7 +26,7 @@ class LocalMapRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     text: str | None = None
     record_id: str | None = None
-    limit: int = 20
+    limit: StrictInt = 20
 
 
 def kernel_graph_router(kernel: KernelInterface) -> APIRouter:

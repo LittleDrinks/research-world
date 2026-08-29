@@ -30,6 +30,12 @@ def create_app(
 
 
 def register_routes(app, kernel, graph_kernel: KernelInterface | None = None) -> None:
+    _register_world_routes(app, kernel)
+    _register_graph_routes(app, graph_kernel)
+    frontend_routes(app)
+
+
+def _register_world_routes(app, kernel) -> None:
     error_handlers(app)
     health_routes(app)
     project_routes(app, kernel)
@@ -47,9 +53,11 @@ def register_routes(app, kernel, graph_kernel: KernelInterface | None = None) ->
     pipeline_control_routes(app, kernel)
     library_routes(app)
     graph_tool_routes(app, kernel)
+
+
+def _register_graph_routes(app, graph_kernel: KernelInterface | None) -> None:
     if graph_kernel is not None:
         app.include_router(kernel_graph_router(graph_kernel))
-    frontend_routes(app)
 
 
 def error_handlers(app: FastAPI) -> None:
