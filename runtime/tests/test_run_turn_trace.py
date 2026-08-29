@@ -150,6 +150,14 @@ def test_runtime_requires_matching_nonempty_adapter_id(tmp_path, key, adapter_id
         Runtime(data_root=tmp_path, adapters={key: adapter})
 
 
+@pytest.mark.parametrize("method", ["start", "submit", "cancel"])
+def test_runtime_requires_async_adapter_methods(tmp_path, method):
+    adapter = FakeAdapter()
+    setattr(adapter, method, lambda *args: None)
+    with pytest.raises(TypeError):
+        Runtime(data_root=tmp_path, adapters={"fake": adapter})
+
+
 @pytest.mark.parametrize("data_root", [None, "string-path"])
 def test_runtime_requires_persistent_path(tmp_path, data_root):
     value = tmp_path if data_root == "string-path" else data_root

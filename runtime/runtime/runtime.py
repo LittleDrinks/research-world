@@ -9,7 +9,7 @@ from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from inspect import isawaitable
+from inspect import iscoroutinefunction
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Protocol
 
@@ -288,9 +288,7 @@ class Runtime:
         if turn.handle is None or turn.cancel_sent:
             return
         turn.cancel_sent = True
-        result = turn.adapter.cancel(turn.handle)
-        if isawaitable(result):
-            await result
+        await turn.adapter.cancel(turn.handle)
 
     def _record_context(self, turn: _Turn, result_text: str | None) -> None:
         run = self._runs[turn.request.run_id]
@@ -337,7 +335,7 @@ def _adapter_map(adapters) -> dict[str, RuntimeAdapter]:
 def _is_adapter(adapter):
     methods = ("start", "submit", "cancel")
     return (
-        all(callable(getattr(adapter, name, None)) for name in methods)
+        all(iscoroutinefunction(getattr(adapter, name, None)) for name in methods)
         and isinstance(getattr(adapter, "adapter_id", None), str)
         and bool(getattr(adapter, "adapter_id", None))
         and isinstance(getattr(adapter, "supports_multiple_writers", None), bool)
