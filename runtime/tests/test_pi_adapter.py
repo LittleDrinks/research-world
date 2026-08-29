@@ -1,0 +1,309 @@
+import asyncio
+import json
+import os
+import time
+
+import pytest
+from runtime.adapter.pi import PiAdapter
+from runtime.adapter.pi import PiAdapterError
+from runtime.adapter.pi import PiEventParser
+from runtime.runtime import Runtime
+
+
+FAKE_PI = r'''#!/usr/bin/env python3
+import json
+import os
+import sys
+import time
+from pathlib import Path
+
+log = Path.cwd() / "fake-pi-log.jsonl"
+
+def record(value):
+    with log.open("a", encoding="utf-8") as stream:
+        stream.write(json.dumps(value) + "\n")
+
+if "--version" in sys.argv:
+    print("0.84.3")
+    raise SystemExit
+
+record({
+    "argv": sys.argv[1:],
+    "api_key": os.environ.get("RUNTIME_API_KEY"),
+    "forbidden": {
+        name: os.environ.get(name)
+        for name in ("RUNTIME_API_BASE", "OPENAI_API_KEY", "PI_OFFLINE")
+    },
+    "home": os.environ.get("HOME"),
+    "pi_dir": os.environ.get("PI_CODING_AGENT_DIR"),
+})
+for line in sys.stdin:
+    command = json.loads(line)
+    record({"command": command})
+    if command["type"] == "abort":
+        raise SystemExit
+    if command["type"] != "prompt":
+        continue
+    if command["message"] == "reject":
+        print(json.dumps({
+            "id": command["id"],
+            "type": "response",
+            "command": "prompt",
+            "success": False,
+        }), flush=True)
+        continue
+    print(json.dumps({
+        "id": command["id"],
+        "type": "response",
+        "command": "prompt",
+        "success": True,
+    }), flush=True)
+    if command["message"] == "invalid":
+        print("not-json", flush=True)
+        continue
+    if command["message"] == "crash":
+        os._exit(7)
+    if command["message"] == "incomplete":
+        raise SystemExit
+    if command["message"] == "cancel":
+        continue
+    if command["message"] == "rich":
+        print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "thinking_start", "contentIndex": 0}}), flush=True)
+        print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "thinking_delta", "contentIndex": 0, "delta": "plan"}}), flush=True)
+        print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "thinking_end", "contentIndex": 0, "content": "plan"}}), flush=True)
+        print(json.dumps({"type": "tool_execution_start", "toolCallId": "tool-1", "toolName": "read", "args": {"path": "README.md"}}), flush=True)
+        print(json.dumps({"type": "tool_execution_update", "toolCallId": "tool-1", "toolName": "read", "args": {"path": "README.md"}, "partialResult": "part"}), flush=True)
+        print(json.dumps({"type": "tool_execution_end", "toolCallId": "tool-1", "toolName": "read", "result": "contents", "isError": False}), flush=True)
+    message = {"role": "assistant", "content": [{"type": "text", "text": "hello"}], "stopReason": "stop"}
+    print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "text_delta", "delta": "hel"}}), flush=True)
+    print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "text_delta", "delta": "lo"}}), flush=True)
+    print(json.dumps({"type": "agent_end", "messages": [message], "willRetry": False}), flush=True)
+    record({"stage": "agent_end"})
+    if command["message"] == "missing-settled":
+        raise SystemExit
+    if command["message"] == "timeout":
+        time.sleep(60)
+    if command["message"] == "settled":
+        time.sleep(0.1)
+        print(json.dumps({"type": "agent_settled"}), flush=True)
+        record({"stage": "agent_settled"})
+        continue
+    print(json.dumps({"type": "agent_settled"}), flush=True)
+'''
+
+
+def _fake_pi(tmp_path, version="0.84.3"):
+    path = tmp_path / "pi"
+    path.write_text(FAKE_PI.replace("0.84.3", version), encoding="utf-8")
+    path.chmod(0o755)
+    return path
+
+
+async def _events(runtime, turn_id):
+    return [event async for event in runtime.subscribe(turn_id)]
+
+
+def _records(tmp_path):
+    path = tmp_path / "fake-pi-log.jsonl"
+    if not path.exists():
+        return []
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+
+
+async def _wait_for_command(tmp_path, command_type):
+    for _ in range(100):
+        if any(item.get("command", {}).get("type") == command_type for item in _records(tmp_path)):
+            return
+        await asyncio.sleep(0.01)
+    raise AssertionError(f"fake pi did not receive {command_type}")
+
+
+async def _wait_for_stage(tmp_path, stage):
+    for _ in range(100):
+        if any(item.get("stage") == stage for item in _records(tmp_path)):
+            return
+        await asyncio.sleep(0.01)
+    raise AssertionError(f"fake pi did not reach {stage}")
+
+
+def _launch_records(tmp_path):
+    records = (tmp_path / "fake-pi-log.jsonl").read_text(encoding="utf-8").splitlines()
+    values = [json.loads(line) for line in records]
+    return values[0], next(value for value in values if "command" in value)
+
+
+def _assert_completed_events(observed):
+    actual = [(event["type"], event["data"]) for event in observed]
+    expected = [("turn_start", {"message_id": "m1", "input": "hello"}), ("delta", {"text": "hel"}), ("delta", {"text": "lo"}), ("turn_end", {"status": "completed", "result_text": "hello"})]
+    assert actual == expected
+
+
+def _assert_launch(launch, command):
+    assert launch["argv"] == ["--mode", "rpc", "--no-session", "--append-system-prompt", "system", "--thinking", "high"]
+    assert launch["api_key"] is None and launch["home"] == "/host-home" and launch["pi_dir"] == "/host-pi"
+    assert launch["forbidden"] == {"RUNTIME_API_BASE": None, "OPENAI_API_KEY": None, "PI_OFFLINE": None}
+    assert command["command"]["message"] == "hello"
+
+
+def _assert_rich_events(observed):
+    actual = [(event["type"], event["data"]) for event in observed]
+    expected = [
+        ("turn_start", {"message_id": "m1", "input": "rich"}),
+        ("reasoning", {"phase": "started", "content_index": 0, "text": ""}),
+        ("reasoning", {"phase": "updated", "content_index": 0, "text": "plan"}),
+        ("reasoning", {"phase": "completed", "content_index": 0, "text": "plan"}),
+        ("tool", {"phase": "started", "id": "tool-1", "name": "read", "arguments": {"path": "README.md"}}),
+        ("tool", {"phase": "updated", "id": "tool-1", "name": "read", "partial_result": "part"}),
+        ("tool", {"phase": "completed", "id": "tool-1", "name": "read", "result": "contents", "is_error": False}),
+        ("delta", {"text": "hel"}),
+        ("delta", {"text": "lo"}),
+        ("turn_end", {"status": "completed", "result_text": "hello"}),
+    ]
+    assert actual == expected
+
+
+async def test_pi_adapter_runs_fake_process_and_emits_normalized_delta(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    monkeypatch.setenv("RUNTIME_API_KEY", "runtime-secret")
+    monkeypatch.setenv("RUNTIME_API_BASE", "https://runtime.invalid")
+    monkeypatch.setenv("OPENAI_API_KEY", "provider-secret")
+    monkeypatch.setenv("PI_OFFLINE", "1")
+    monkeypatch.setenv("HOME", "/host-home")
+    monkeypatch.setenv("PI_CODING_AGENT_DIR", "/host-pi")
+    adapter = PiAdapter.detect()
+    runtime = Runtime(tmp_path / "data", {"pi": adapter})
+    run = await runtime.launch({"adapter": "pi", "model": "default", "instructions": "system", "thinking": "high", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "hello"})
+    observed = await _events(runtime, turn["id"])
+    launch, command = _launch_records(tmp_path)
+    _assert_launch(launch, command)
+    _assert_completed_events(observed)
+
+
+async def test_pi_adapter_normalizes_reasoning_and_tool_streams(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "rich"})
+    observed = await _events(runtime, turn["id"])
+    _assert_rich_events(observed)
+
+
+async def test_pi_waits_for_settled_after_agent_end(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "settled"})
+    events_task = asyncio.create_task(_events(runtime, turn["id"]))
+    await _wait_for_stage(tmp_path, "agent_end")
+    assert not events_task.done()
+    observed = await events_task
+    await _wait_for_stage(tmp_path, "agent_settled")
+    assert observed[-1]["data"] == {"status": "completed", "result_text": "hello"}
+
+
+async def test_pi_protocol_error_stops_the_fake_process(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "instructions": "system", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "invalid"})
+    observed = await _events(runtime, turn["id"])
+    await _wait_for_command(tmp_path, "abort")
+    assert observed[-1]["data"]["status"] == "error"
+
+
+async def test_pi_rejected_prompt_is_an_explicit_protocol_error(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "reject"})
+    observed = await _events(runtime, turn["id"])
+    await _wait_for_command(tmp_path, "abort")
+    assert observed[-1]["data"] == {
+        "status": "error",
+        "result_text": None,
+        "error": "pi_protocol: pi rejected the prompt command",
+    }
+
+
+async def test_pi_adapter_cancels_a_turn_through_runtime(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "cancel"})
+    await _wait_for_command(tmp_path, "prompt")
+    result = await runtime.cancel(turn["id"])
+    observed = await _events(runtime, turn["id"])
+    await _wait_for_command(tmp_path, "abort")
+    assert result["status"] == "cancelled"
+    assert observed[-1]["data"] == {"status": "cancelled", "result_text": None}
+
+
+async def test_pi_process_exit_is_an_explicit_turn_error(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "crash"})
+    observed = await _events(runtime, turn["id"])
+    assert observed[-1]["data"] == {"status": "error", "result_text": None, "error": "pi_process: pi exited with status 7"}
+
+
+async def test_pi_eof_before_agent_end_is_a_protocol_error(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "incomplete"})
+    observed = await _events(runtime, turn["id"])
+    assert observed[-1]["data"] == {"status": "error", "result_text": None, "error": "pi_protocol: pi exited before agent_end"}
+
+
+async def test_pi_eof_after_agent_end_requires_settled(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "missing-settled"})
+    observed = await _events(runtime, turn["id"])
+    assert observed[-1]["data"] == {"status": "error", "result_text": None, "error": "pi_protocol: pi exited before agent_settled"}
+
+
+async def test_pi_settled_wait_is_bounded(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect(timeout=0.05)})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "timeout"})
+    started = time.monotonic()
+    observed = await _events(runtime, turn["id"])
+    assert time.monotonic() - started < 1
+    assert observed[-1]["data"] == {
+        "status": "error",
+        "result_text": None,
+        "error": "pi_process: pi timed out after 0.05s",
+    }
+
+
+def test_pi_detection_reports_missing_executable(monkeypatch):
+    monkeypatch.setenv("PATH", "")
+    with pytest.raises(PiAdapterError, match="pi_not_found"):
+        PiAdapter.detect()
+
+
+def test_pi_detection_reports_incompatible_version(tmp_path, monkeypatch):
+    _fake_pi(tmp_path, "0.85.0")
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    with pytest.raises(PiAdapterError, match="pi_configuration: unsupported pi version: 0.85.0"):
+        PiAdapter.detect()
+
+
+def test_pi_parser_rejects_unknown_event_type():
+    with pytest.raises(PiAdapterError, match="pi_protocol: unsupported pi event: unknown"):
+        PiEventParser().consume(b'{"type":"unknown"}\n')

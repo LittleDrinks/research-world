@@ -11,39 +11,9 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from inspect import iscoroutinefunction
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Protocol
+from typing import Any
 
-
-class RuntimeAdapter(Protocol):
-    adapter_id: str
-    supports_multiple_writers: bool
-
-    async def start(self, request: TurnRequest) -> Any: ...
-
-    async def submit(
-        self,
-        handle: Any,
-        request: TurnRequest,
-        emit: Callable[[dict[str, Any]], Awaitable[None]],
-    ) -> AdapterResult: ...
-
-    async def cancel(self, handle: Any, request: TurnRequest) -> Any: ...
-
-
-@dataclass(frozen=True)
-class TurnRequest:
-    run_id: str
-    turn_id: str
-    message_id: str
-    input: Any
-    context: tuple[dict[str, Any], ...]
-    agent_snapshot: dict[str, Any]
-
-
-@dataclass(frozen=True)
-class AdapterResult:
-    status: str = "completed"
-    result_text: str | None = None
+from .adapter import AdapterResult, RuntimeAdapter, TurnRequest
 
 
 class TraceLedger:
