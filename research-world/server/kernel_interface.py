@@ -389,7 +389,12 @@ class _SQLiteKernel(KernelInterface):
         self.get_record(project_id, source_id)
         self.get_record(project_id, target_id)
         relation = _new_relation(project_id, source_id, target_id, relation_type)
-        self._insert_relation(relation)
+        try:
+            self._insert_relation(relation)
+        except sqlite3.IntegrityError as error:
+            if error.sqlite_errorcode != sqlite3.SQLITE_CONSTRAINT_UNIQUE:
+                raise
+            raise ValueError("relation already exists") from None
         return relation
 
     def _insert_relation(self, relation: Relation) -> None:

@@ -195,6 +195,19 @@ def test_existing_records_can_be_connected_through_the_kernel_interface(tmp_path
     assert reopened.list_relations(project.id) == [relation]
 
 
+def test_duplicate_connect_is_a_domain_error(tmp_path):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+    source = kernel.record(project.id, "source", {"title": "Study"})
+    direction = kernel.record(project.id, "direction", {"text": "Candidate"})
+    relation = kernel.connect(project.id, source.id, direction.id, "supports")
+
+    with pytest.raises(ValueError, match="relation already exists"):
+        kernel.connect(project.id, source.id, direction.id, "supports")
+
+    assert kernel.list_relations(project.id) == [relation]
+
+
 def test_connect_rejects_invalid_relation_types_and_cross_project_records(tmp_path):
     kernel = _kernel(tmp_path)
     project = _project(kernel)

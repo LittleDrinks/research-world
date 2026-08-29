@@ -54,6 +54,20 @@ def test_http_records_and_rejects_cross_project_connections(tmp_path):
     assert connected.status_code == 201
 
 
+def test_http_duplicate_connect_returns_domain_validation_error(tmp_path):
+    kernel, client = _client(tmp_path)
+    project = _project(kernel)
+    source = _record(client, project.id, "source", {"title": "Study"})
+    direction = _record(client, project.id, "direction", {"text": "Candidate"})
+    first = _connect(client, project.id, source["id"], direction["id"])
+
+    repeated = _connect(client, project.id, source["id"], direction["id"])
+
+    assert (first.status_code, repeated.status_code) == (201, 422)
+    relations = client.get(f"/api/v1/projects/{project.id}/relations")
+    assert relations.json() == [first.json()]
+
+
 def test_http_remove_relation_preserves_records(tmp_path):
     kernel, client = _client(tmp_path)
     project = _project(kernel)
