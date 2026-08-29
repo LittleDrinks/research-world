@@ -24,25 +24,51 @@ class FakeAdapter:
         self._handles = {}
         self.event = _UNSET
         self.result = _UNSET
+        self.start_gate = None
+        self.start_cancel_release = None
+        self.start_entered = asyncio.Event()
+        self.start_cancelled = asyncio.Event()
+        self.start_stopped = asyncio.Event()
+        self.submit_stopped = asyncio.Event()
+        self.cancel_error = None
+        self.start_cancel_error = None
 
     async def start(self, request):
-        handle = FakeHandle(request, asyncio.Event())
-        self._handles[request.turn_id] = handle
-        return handle
+        self.start_entered.set()
+        try:
+            if self.start_gate is not None:
+                await self.start_gate.wait()
+            handle = FakeHandle(request, asyncio.Event())
+            self._handles[request.turn_id] = handle
+            return handle
+        except asyncio.CancelledError:
+            self.start_cancelled.set()
+            if self.start_cancel_release is not None:
+                await self.start_cancel_release.wait()
+            if self.start_cancel_error is not None:
+                raise self.start_cancel_error
+            raise
+        finally:
+            self.start_stopped.set()
 
     async def submit(self, handle, request, emit):
-        await handle.released.wait()
-        if handle.cancelled:
-            return AdapterResult(status="cancelled")
-        event = self.event
-        if event is _UNSET:
-            event = {"type": "delta", "data": {"text": handle.output}}
-        await emit(event)
-        if self.result is _UNSET:
-            return AdapterResult(result_text=handle.output)
-        return self.result
+        try:
+            await handle.released.wait()
+            if handle.cancelled:
+                return AdapterResult(status="cancelled")
+            event = self.event
+            if event is _UNSET:
+                event = {"type": "delta", "data": {"text": handle.output}}
+            await emit(event)
+            if self.result is _UNSET:
+                return AdapterResult(result_text=handle.output)
+            return self.result
+        finally:
+            self.submit_stopped.set()
 
     async def cancel(self, handle):
+        if self.cancel_error is not None:
+            raise self.cancel_error
         handle.cancelled = True
         handle.released.set()
 
@@ -112,6 +138,40 @@ async def _complete_concurrent(runtime, adapter, first, second):
     return await asyncio.gather(
         events(runtime, first["id"]), events(runtime, second["id"])
     )
+
+
+async def _blocked_start_turn(tmp_path):
+    runtime, adapter = _make_runtime(tmp_path)
+    adapter.start_gate = asyncio.Event()
+    adapter.start_cancel_release = asyncio.Event()
+    run = await launch(runtime)
+    turn = await runtime.submit(run["id"], message("m1", "one"))
+    await asyncio.wait_for(adapter.start_entered.wait(), timeout=1)
+    return runtime, adapter, turn
+
+
+async def _begin_cancel(runtime, turn):
+    subscription = runtime.subscribe(turn["id"])
+    assert (await anext(subscription))["type"] == "turn_start"
+    cancellation = asyncio.create_task(runtime.cancel(turn["id"]))
+    return subscription, cancellation
+
+
+async def _wait_for_start_cancel(adapter, cancellation, subscription):
+    try:
+        await asyncio.wait_for(adapter.start_cancelled.wait(), timeout=1)
+    except asyncio.TimeoutError:
+        adapter.start_gate.set()
+        await asyncio.wait_for(adapter.start_stopped.wait(), timeout=1)
+        await cancellation
+        await subscription.aclose()
+        raise AssertionError("Runtime did not cancel pending adapter start")
+
+
+async def _pending_terminal(subscription):
+    terminal = asyncio.create_task(anext(subscription))
+    await asyncio.sleep(0)
+    return terminal
 
 
 async def _adapter_trace(tmp_path, *, event=_UNSET, result=_UNSET):
@@ -281,6 +341,72 @@ async def test_main_and_child_runs_can_cancel_one_turn(tmp_path, child):
         "result_text": "still running",
     }
     assert sum(event["type"] == "turn_end" for event in cancelled_events) == 1
+
+
+@pytest.mark.asyncio
+async def test_cancel_waits_for_blocked_adapter_start(tmp_path):
+    runtime, adapter, turn = await _blocked_start_turn(tmp_path)
+    subscription, cancellation = await _begin_cancel(runtime, turn)
+    await _wait_for_start_cancel(adapter, cancellation, subscription)
+    terminal = await _pending_terminal(subscription)
+    assert not terminal.done()
+    adapter.start_cancel_release.set()
+    result = await cancellation
+    ended = await terminal
+    await subscription.aclose()
+    assert result["status"] == ended["data"]["status"] == "cancelled"
+    assert adapter.start_stopped.is_set()
+
+
+@pytest.mark.asyncio
+async def test_cancel_start_cleanup_failure_emits_error(tmp_path):
+    runtime, adapter, turn = await _blocked_start_turn(tmp_path)
+    adapter.start_cancel_error = RuntimeError("adapter start cleanup failed")
+    _subscription, cancellation = await _begin_cancel(runtime, turn)
+    await _wait_for_start_cancel(adapter, cancellation, _subscription)
+    adapter.start_cancel_release.set()
+    result = await cancellation
+    await _subscription.aclose()
+    observed = await events(runtime, turn["id"])
+    assert result["status"] == observed[-1]["data"]["status"] == "error"
+    assert observed[-1]["data"]["error"] == "adapter start cleanup failed"
+
+
+@pytest.mark.asyncio
+async def test_cancel_failure_emits_one_error_terminal(tmp_path):
+    runtime, adapter = _make_runtime(tmp_path)
+    adapter.cancel_error = RuntimeError("adapter cancel failed")
+    run = await launch(runtime)
+    turn = await runtime.submit(run["id"], message("m1", "one"))
+    await adapter.wait_for_handles(1)
+    result = await runtime.cancel(turn["id"])
+    observed = await events(runtime, turn["id"])
+    terminals = [event for event in observed if event["type"] == "turn_end"]
+    assert result["status"] == "error"
+    assert adapter.submit_stopped.is_set()
+    assert len(terminals) == 1
+    assert terminals[0]["data"] == {
+        "status": "error",
+        "result_text": None,
+        "error": "adapter cancel failed",
+    }
+
+
+@pytest.mark.asyncio
+async def test_concurrent_cancel_calls_share_one_terminal(tmp_path):
+    runtime, adapter = _make_runtime(tmp_path)
+    adapter.cancel_error = RuntimeError("adapter cancel failed")
+    run = await launch(runtime)
+    turn = await runtime.submit(run["id"], message("m1", "one"))
+    await adapter.wait_for_handles(1)
+    results = await asyncio.gather(
+        runtime.cancel(turn["id"]), runtime.cancel(turn["id"])
+    )
+    observed = await events(runtime, turn["id"])
+    terminals = [event for event in observed if event["type"] == "turn_end"]
+    assert [result["status"] for result in results] == ["error", "error"]
+    assert len(terminals) == 1
+    assert terminals[0]["data"]["status"] == "error"
 
 
 @pytest.mark.asyncio
