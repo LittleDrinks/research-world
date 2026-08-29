@@ -240,23 +240,32 @@ class Runtime:
 
     async def _execute(self, turn: _Turn) -> None:
         try:
-            if turn.cancel_requested:
-                return
-            turn.handle = await turn.adapter.start(turn.request)
-            if turn.handle is None:
-                raise RuntimeError("adapter start must return an execution handle")
-            if turn.cancel_requested:
-                return
-            result = await turn.adapter.submit(
-                turn.handle, turn.request, lambda value: self._emit(turn, value)
-            )
-            await self._finish(turn, *_result(result))
-        except asyncio.CancelledError:
-            return
+            await self._run_adapter(turn)
+        except asyncio.CancelledError as error:
+            await self._handle_cancelled(turn, error)
         except Exception as error:
             await self._finish(
                 turn, "error", None, str(error), force=turn.cancel_requested
             )
+
+    async def _run_adapter(self, turn: _Turn) -> None:
+        if turn.cancel_requested:
+            return
+        turn.handle = await turn.adapter.start(turn.request)
+        if turn.handle is None:
+            raise RuntimeError("adapter start must return an execution handle")
+        if turn.cancel_requested:
+            return
+        result = await turn.adapter.submit(
+            turn.handle, turn.request, lambda value: self._emit(turn, value)
+        )
+        await self._finish(turn, *_result(result))
+
+    async def _handle_cancelled(
+        self, turn: _Turn, error: asyncio.CancelledError
+    ) -> None:
+        if not turn.cancel_requested:
+            await self._finish(turn, "error", None, _cancel_detail(error), force=True)
 
     async def _emit(self, turn: _Turn, value: Any) -> None:
         event_type, data = _adapter_event(value)
@@ -278,9 +287,11 @@ class Runtime:
         force=False,
     ) -> None:
         async with turn.event_lock:
-            if turn.status != "running" or (turn.cancel_requested and not force):
+            if turn.status != "running":
                 return
             status = _status(status)
+            if turn.cancel_requested and not force and status != "error":
+                return
             turn.status, turn.result_text = status, result_text
             self._append_end(turn, status, result_text, error)
             if status in {"completed", "limit"}:
@@ -298,7 +309,10 @@ class Runtime:
         if turn.handle is None or turn.cancel_sent:
             return
         turn.cancel_sent = True
-        await turn.adapter.cancel(turn.handle)
+        try:
+            await turn.adapter.cancel(turn.handle)
+        except asyncio.CancelledError as error:
+            raise RuntimeError(_cancel_detail(error)) from error
 
     async def _stop_execution(self, turn: _Turn) -> None:
         if turn.task is None:
@@ -440,6 +454,10 @@ def _result(value: AdapterResult):
     if not isinstance(value, AdapterResult):
         raise TypeError("adapter submit must return AdapterResult")
     return value.status, value.result_text
+
+
+def _cancel_detail(error: asyncio.CancelledError) -> str:
+    return str(error) or "adapter operation was cancelled"
 
 
 def _status(status):

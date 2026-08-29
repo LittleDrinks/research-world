@@ -31,6 +31,7 @@ class FakeAdapter:
         self.start_stopped = asyncio.Event()
         self.submit_stopped = asyncio.Event()
         self.cancel_error = None
+        self.cancel_result = None
         self.start_cancel_error = None
 
     async def start(self, request):
@@ -55,7 +56,7 @@ class FakeAdapter:
         try:
             await handle.released.wait()
             if handle.cancelled:
-                return AdapterResult(status="cancelled")
+                return self.cancel_result or AdapterResult(status="cancelled")
             event = self.event
             if event is _UNSET:
                 event = {"type": "delta", "data": {"text": handle.output}}
@@ -96,6 +97,10 @@ class FakeAdapter:
 
 def message(message_id, content):
     return {"id": message_id, "content": content}
+
+
+async def _cancelled_adapter_call(*args):
+    raise asyncio.CancelledError("adapter operation cancelled unexpectedly")
 
 
 async def events(runtime, turn_id, after_seq=-1):
@@ -166,6 +171,28 @@ async def _wait_for_start_cancel(adapter, cancellation, subscription):
         await cancellation
         await subscription.aclose()
         raise AssertionError("Runtime did not cancel pending adapter start")
+
+
+async def _terminal_events(runtime, turn_id):
+    return await asyncio.wait_for(events(runtime, turn_id), timeout=1)
+
+
+async def _cancel_with_cancelled_adapter_cleanup(runtime, adapter, turn):
+    try:
+        return await runtime.cancel(turn["id"])
+    except asyncio.CancelledError:
+        adapter.complete(turn["id"], "cleanup")
+        await asyncio.wait_for(adapter.submit_stopped.wait(), timeout=1)
+        return None
+
+
+async def _trigger_unexpected_cancel(runtime, adapter, turn, method):
+    if method == "cancel":
+        await adapter.wait_for_handles(1)
+        setattr(adapter, method, _cancelled_adapter_call)
+        return await _cancel_with_cancelled_adapter_cleanup(runtime, adapter, turn)
+    await _terminal_events(runtime, turn["id"])
+    return await runtime.submit(turn["run_id"], message("m1", "again"))
 
 
 async def _pending_terminal(subscription):
@@ -390,6 +417,42 @@ async def test_cancel_failure_emits_one_error_terminal(tmp_path):
         "result_text": None,
         "error": "adapter cancel failed",
     }
+
+
+@pytest.mark.asyncio
+async def test_cancel_preserves_active_adapter_error(tmp_path):
+    runtime, adapter = _make_runtime(tmp_path)
+    adapter.cancel_result = AdapterResult(status="error")
+    run = await launch(runtime)
+    turn = await runtime.submit(run["id"], message("m1", "one"))
+    await adapter.wait_for_handles(1)
+
+    result = await runtime.cancel(turn["id"])
+    observed = await events(runtime, turn["id"])
+    terminals = [event for event in observed if event["type"] == "turn_end"]
+
+    assert result["status"] == "error"
+    assert adapter.submit_stopped.is_set()
+    assert len(terminals) == 1
+    assert terminals[0]["data"]["status"] == "error"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("method", ["start", "submit", "cancel"])
+async def test_unexpected_adapter_cancelled_error_is_terminal(tmp_path, method):
+    runtime, adapter = _make_runtime(tmp_path)
+    run = await launch(runtime)
+    if method != "cancel":
+        setattr(adapter, method, _cancelled_adapter_call)
+    turn = await runtime.submit(run["id"], message("m1", "one"))
+    result = await _trigger_unexpected_cancel(runtime, adapter, turn, method)
+    observed = await _terminal_events(runtime, turn["id"])
+    terminals = [event for event in observed if event["type"] == "turn_end"]
+
+    assert result is not None
+    assert result["status"] == "error"
+    assert len(terminals) == 1
+    assert terminals[0]["data"]["status"] == "error"
 
 
 @pytest.mark.asyncio
