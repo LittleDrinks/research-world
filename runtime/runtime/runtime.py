@@ -255,6 +255,8 @@ class Runtime:
         turn.handle = await turn.adapter.start(turn.request)
         if turn.handle is None:
             raise RuntimeError("adapter start must return an execution handle")
+        if not turn.adapter.supports_multiple_writers and self._handle_in_use(turn):
+            raise RuntimeError("adapter returned a handle used by an active turn")
         if turn.cancel_requested:
             return
         result = await turn.adapter.submit(
@@ -333,6 +335,15 @@ class Runtime:
         turn.task_cancel_requested = True
         turn.task.cancel()
         await self._wait_execution(turn)
+
+    def _handle_in_use(self, turn: _Turn) -> bool:
+        return any(
+            other is not turn
+            and other.status == "running"
+            and other.adapter is turn.adapter
+            and other.handle is turn.handle
+            for other in self._turns.values()
+        )
 
     async def _wait_execution(self, turn: _Turn) -> None:
         if turn.task is None:

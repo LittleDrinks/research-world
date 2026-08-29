@@ -98,6 +98,19 @@ class FakeAdapter:
         return self._handles[turn_id].cancelled
 
 
+class SharedHandleAdapter(FakeAdapter):
+    supports_multiple_writers = False
+
+    def __init__(self):
+        super().__init__()
+        self.shared_handle = FakeHandle(None, asyncio.Event())
+
+    async def start(self, request):
+        self._handles[request.turn_id] = self.shared_handle
+        self.shared_handle.request = request
+        return self.shared_handle
+
+
 def message(message_id, content):
     return {"id": message_id, "content": content}
 
@@ -473,6 +486,40 @@ async def test_non_serializable_result_text_is_error(tmp_path):
     assert repeated["status"] == "error"
     assert len(terminals) == 1
     assert terminals[0]["data"]["status"] == "error"
+
+
+async def _shared_handle_outcomes(runtime, run, first, second):
+    second_events = await _terminal_events(runtime, second["id"])
+    second_view = await runtime.submit(run["id"], message("m2", "again"))
+    first_result = await runtime.cancel(first["id"])
+    first_events = await events(runtime, first["id"])
+    return (
+        first_result,
+        second_view,
+        [event for event in first_events if event["type"] == "turn_end"],
+        [event for event in second_events if event["type"] == "turn_end"],
+    )
+
+
+@pytest.mark.asyncio
+async def test_non_multi_writer_handle_reuse_is_rejected(tmp_path):
+    adapter = SharedHandleAdapter()
+    runtime = Runtime(data_root=tmp_path, adapters={"fake": adapter})
+    run = await launch(runtime)
+    first, second = await asyncio.gather(
+        runtime.submit(run["id"], message("m1", "one")),
+        runtime.submit(run["id"], message("m2", "two")),
+    )
+
+    first_result, second_view, first_terminals, second_terminals = (
+        await _shared_handle_outcomes(runtime, run, first, second)
+    )
+
+    assert first_result["status"] == "cancelled"
+    assert second_view["status"] == "error"
+    assert first_terminals[-1]["data"]["status"] == "cancelled"
+    assert second_terminals[-1]["data"]["status"] == "error"
+    assert len(first_terminals) == len(second_terminals) == 1
 
 
 @pytest.mark.asyncio
