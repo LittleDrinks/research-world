@@ -389,6 +389,13 @@ async def test_submit_requires_persisted_message_shape(tmp_path, submitted, cont
     assert adapter.handle_count() == 0
 
 
+@pytest.mark.parametrize("after_seq", [None, True, 0.0, "0", []])
+def test_subscribe_rejects_non_integer_after_seq(tmp_path, after_seq):
+    runtime, _adapter = _make_runtime(tmp_path)
+    with pytest.raises(TypeError, match="after_seq must be an integer"):
+        runtime.subscribe("missing-turn", after_seq)
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "event",

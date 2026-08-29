@@ -521,9 +521,7 @@ def _end_data(status, result_text, error):
 
 
 def _after_seq(value):
-    if value is None:
-        return -1
-    if not isinstance(value, int):
+    if not isinstance(value, int) or isinstance(value, bool):
         raise TypeError("after_seq must be an integer")
     return value
 
