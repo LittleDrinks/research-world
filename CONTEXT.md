@@ -26,6 +26,7 @@ _Avoid_: Claim 节点、Direction 等于结论
 _Avoid_: 撤销、审核 Gate、静默改写
 **Graph CLI**：主 Agent 与人类读写或删除 Research Graph 的命令接口；不理解审核策略。
 **LocalMap**：Kernel 按 Project 隔离、数量限制和文本或节点引用查询得到的局部图投影，包含匹配记录、直接关系和关联 Artifact。
+**SQLite FTS5**：SQLite 提供的词法全文检索，用于候选检索；不是向量余弦语义检索。
 **双审**：主 Agent Skill/prompt 中的两个独立审查步骤；完整意见留在相应 Agent Trace，主 Agent 决定是否调用 Graph CLI。
 _Avoid_: 图谱状态机、强制数据库 Gate
 **Session**：Project 下用户可读的对话，保存用户消息及主 Agent 的最终回答；它属于 Research Kernel，与 Runtime 的 Run、Trace 分离。
