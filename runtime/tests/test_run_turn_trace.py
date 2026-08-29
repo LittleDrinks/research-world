@@ -34,6 +34,7 @@ class FakeAdapter:
         self.cancel_result = None
         self.submit_cancel_error = None
         self.start_cancel_error = None
+        self.submit_error = None
 
     async def start(self, request):
         self.start_entered.set()
@@ -56,6 +57,8 @@ class FakeAdapter:
     async def submit(self, handle, request, emit):
         try:
             await handle.released.wait()
+            if self.submit_error is not None:
+                raise self.submit_error
             if handle.cancelled:
                 if self.submit_cancel_error is not None:
                     raise self.submit_cancel_error
@@ -113,6 +116,18 @@ class SharedHandleAdapter(FakeAdapter):
         self._handles[request.turn_id] = self.shared_handle
         self.shared_handle.request = request
         return self.shared_handle
+
+
+class SingleWriterAdapter(FakeAdapter):
+    supports_multiple_writers = False
+
+    def __init__(self):
+        super().__init__()
+        self.started_message_ids = []
+
+    async def start(self, request):
+        self.started_message_ids.append(request.message_id)
+        return await super().start(request)
 
 
 class MultiWriterSharedHandleAdapter:
@@ -232,6 +247,28 @@ async def _wait_for_start_cancel(adapter, cancellation, subscription):
 
 async def _terminal_events(runtime, turn_id):
     return await asyncio.wait_for(events(runtime, turn_id), timeout=1)
+
+
+async def _finish_single_writer_turn(runtime, adapter, turn, outcome):
+    if outcome == "completion":
+        adapter.complete(turn["id"], "answer one")
+    elif outcome == "error":
+        adapter.submit_error = RuntimeError("adapter failed")
+        adapter.complete(turn["id"], "unused")
+    else:
+        assert (await runtime.cancel(turn["id"]))["status"] == "cancelled"
+    result = await _terminal_events(runtime, turn["id"])
+    adapter.submit_error = None
+    return result
+
+
+async def _complete_later_single_writer_turn(runtime, adapter, run):
+    later = await runtime.submit(run["id"], message("m3", "three"))
+    assert later["status"] == "running"
+    await adapter.wait_for_handles(2)
+    assert adapter.started_message_ids == ["m1", "m3"]
+    adapter.complete(later["id"], "answer three")
+    return await _terminal_events(runtime, later["id"])
 
 
 async def _cancel_with_cancelled_adapter_cleanup(runtime, adapter, turn):
@@ -583,6 +620,28 @@ async def test_back_to_back_non_multi_writer_submits_keep_first_turn(tmp_path):
         "result_text": "answer one",
     }
     assert second_events[-1]["data"]["status"] == "error"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("outcome", "expected_status"),
+    [("completion", "completed"), ("error", "error"), ("cancellation", "cancelled")],
+)
+async def test_single_writer_reservation_releases_after_terminal_outcome(
+    tmp_path, outcome, expected_status
+):
+    adapter = SingleWriterAdapter()
+    runtime = Runtime(data_root=tmp_path, adapters={"fake": adapter})
+    run = await launch(runtime)
+    first = await runtime.submit(run["id"], message("m1", "one"))
+    await adapter.wait_for_handles(1)
+    first_events = await _finish_single_writer_turn(runtime, adapter, first, outcome)
+    assert first_events[-1]["data"]["status"] == expected_status
+    later_events = await _complete_later_single_writer_turn(runtime, adapter, run)
+    assert later_events[-1]["data"] == {
+        "status": "completed",
+        "result_text": "answer three",
+    }
 
 
 async def _multi_writer_outcomes(runtime, adapter, run, first, second):

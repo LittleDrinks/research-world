@@ -180,20 +180,27 @@ class Runtime:
     ) -> dict[str, Any]:
         message_id, payload = _message(message)
         async with self._registry_lock:
-            run = self._require_run(run_id)
-            if existing := run.turns.get(message_id):
-                return _turn_view(existing)
-            turn_id = f"t-{uuid.uuid4().hex}"
-            request = _request(run, turn_id, message_id, payload)
-            turn = _Turn(request, run.adapter)
-            run.turns[message_id] = turn
-            self._turns[turn_id] = turn
-            self._trace.append(turn_id, "turn_start", _start_data(request), run.id)
-            if self._reserve_adapter(turn):
-                turn.task = asyncio.create_task(self._execute(turn))
-            else:
-                self._reject_turn(turn)
+            turn = self._register_turn(run_id, message_id, payload)
         return _turn_view(turn)
+
+    def _register_turn(self, run_id, message_id, payload):
+        run = self._require_run(run_id)
+        if existing := run.turns.get(message_id):
+            return existing
+        turn_id = f"t-{uuid.uuid4().hex}"
+        request = _request(run, turn_id, message_id, payload)
+        turn = _Turn(request, run.adapter)
+        run.turns[message_id] = turn
+        self._turns[turn_id] = turn
+        self._trace.append(turn_id, "turn_start", _start_data(request), run.id)
+        self._start_turn(turn)
+        return turn
+
+    def _start_turn(self, turn):
+        if self._reserve_adapter(turn):
+            turn.task = asyncio.create_task(self._execute(turn))
+        else:
+            self._reject_turn(turn)
 
     def subscribe(self, turn_id: str, after_seq: int = -1):
         return self._subscribe(turn_id, _after_seq(after_seq))
@@ -292,16 +299,19 @@ class Runtime:
         force=False,
     ) -> None:
         async with turn.event_lock:
-            if turn.status != "running":
-                return
-            status = _status(status)
-            if turn.cancel_requested and not force and status != "error":
-                return
-            turn.status, turn.result_text = status, result_text
-            self._append_end(turn, status, result_text, error)
-            self._release_adapter(turn)
-            if status in {"completed", "limit"}:
-                self._record_context(turn, result_text)
+            self._finish_locked(turn, status, result_text, error, force)
+
+    def _finish_locked(self, turn, status, result_text, error, force) -> None:
+        if turn.status != "running":
+            return
+        status = _status(status)
+        if turn.cancel_requested and not force and status != "error":
+            return
+        turn.status, turn.result_text = status, result_text
+        self._append_end(turn, status, result_text, error)
+        self._release_adapter(turn)
+        if status in {"completed", "limit"}:
+            self._record_context(turn, result_text)
 
     def _append_end(self, turn, status, result_text, error):
         self._trace.append(
