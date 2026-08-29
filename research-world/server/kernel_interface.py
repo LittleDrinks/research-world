@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import secrets
 import sqlite3
 from dataclasses import dataclass
@@ -13,6 +14,8 @@ __all__ = [
     "KernelInterface",
     "Message",
     "Project",
+    "Record",
+    "Relation",
     "Session",
     "create_kernel",
 ]
@@ -38,6 +41,28 @@ CREATE TABLE IF NOT EXISTS kernel_messages(
   assistant_response TEXT,
   created_at TEXT NOT NULL,
   UNIQUE(session_id, sequence)
+);
+CREATE TABLE IF NOT EXISTS kernel_records(
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES kernel_projects(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK(type IN ('question','source','direction','experiment')),
+  content TEXT NOT NULL,
+  artifact_ids TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE(project_id, id)
+);
+CREATE TABLE IF NOT EXISTS kernel_relations(
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES kernel_projects(id) ON DELETE CASCADE,
+  source_id TEXT NOT NULL,
+  target_id TEXT NOT NULL,
+  type TEXT NOT NULL CHECK(type IN ('supports','refutes','depends_on')),
+  created_at TEXT NOT NULL,
+  UNIQUE(project_id, source_id, target_id, type),
+  FOREIGN KEY(project_id, source_id)
+    REFERENCES kernel_records(project_id, id) ON DELETE CASCADE,
+  FOREIGN KEY(project_id, target_id)
+    REFERENCES kernel_records(project_id, id) ON DELETE CASCADE
 )
 """
 
@@ -65,6 +90,26 @@ class Artifact:
     sha256: str
     media_type: str
     size: int
+    created_at: str
+
+
+@dataclass(frozen=True, slots=True)
+class Record:
+    id: str
+    project_id: str
+    type: str
+    content: dict
+    artifact_ids: tuple[str, ...]
+    created_at: str
+
+
+@dataclass(frozen=True, slots=True)
+class Relation:
+    id: str
+    project_id: str
+    source_id: str
+    target_id: str
+    type: str
     created_at: str
 
 
@@ -109,6 +154,34 @@ class KernelInterface(Protocol):
     def get_artifact(self, project_id: str, artifact_id: str) -> Artifact: ...
 
     def read_artifact(self, project_id: str, artifact_id: str) -> bytes: ...
+
+    def record(
+        self,
+        project_id: str,
+        record_type: str,
+        content: dict,
+        artifact_ids: tuple[str, ...] = (),
+    ) -> Record: ...
+
+    def get_record(self, project_id: str, record_id: str) -> Record: ...
+
+    def list_records(self, project_id: str) -> list[Record]: ...
+
+    def remove_record(self, project_id: str, record_id: str) -> None: ...
+
+    def connect(
+        self,
+        project_id: str,
+        source_id: str,
+        target_id: str,
+        relation_type: str,
+    ) -> Relation: ...
+
+    def get_relation(self, project_id: str, relation_id: str) -> Relation: ...
+
+    def list_relations(self, project_id: str) -> list[Relation]: ...
+
+    def remove_relation(self, project_id: str, relation_id: str) -> None: ...
 
 
 def create_kernel(database: Path, artifacts: Path) -> KernelInterface:
@@ -248,6 +321,119 @@ class _SQLiteKernel(KernelInterface):
         except ArtifactIntegrityError:
             raise ValueError("artifact operation failed") from None
 
+    def record(
+        self,
+        project_id: str,
+        record_type: str,
+        content: dict,
+        artifact_ids: tuple[str, ...] = (),
+    ) -> Record:
+        self.get_project(project_id)
+        _validate_record(record_type, content, artifact_ids)
+        for artifact_id in artifact_ids:
+            self.get_artifact(project_id, artifact_id)
+        value = _new_record(project_id, record_type, content, artifact_ids)
+        self._insert_record(value)
+        return value
+
+    def _insert_record(self, record: Record) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                "INSERT INTO kernel_records VALUES(?,?,?,?,?,?)",
+                _record_values(record),
+            )
+
+    def get_record(self, project_id: str, record_id: str) -> Record:
+        self.get_project(project_id)
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM kernel_records WHERE id=?", (record_id,)
+            ).fetchone()
+        if row is None:
+            raise KeyError(record_id)
+        if row["project_id"] != project_id:
+            raise PermissionError("record belongs to another project")
+        return _record_from_row(row)
+
+    def list_records(self, project_id: str) -> list[Record]:
+        self.get_project(project_id)
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT * FROM kernel_records WHERE project_id=? "
+                "ORDER BY created_at,id",
+                (project_id,),
+            ).fetchall()
+        return list(map(_record_from_row, rows))
+
+    def remove_record(self, project_id: str, record_id: str) -> None:
+        self.get_project(project_id)
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT project_id FROM kernel_records WHERE id=?", (record_id,)
+            ).fetchone()
+            _require_owned(row, record_id, project_id, "record")
+            connection.execute(
+                "DELETE FROM kernel_records WHERE project_id=? AND id=?",
+                (project_id, record_id),
+            )
+
+    def connect(
+        self,
+        project_id: str,
+        source_id: str,
+        target_id: str,
+        relation_type: str,
+    ) -> Relation:
+        if relation_type not in {"supports", "refutes", "depends_on"}:
+            raise ValueError("invalid relation type")
+        self.get_record(project_id, source_id)
+        self.get_record(project_id, target_id)
+        relation = _new_relation(project_id, source_id, target_id, relation_type)
+        try:
+            self._insert_relation(relation)
+        except sqlite3.IntegrityError as error:
+            if error.sqlite_errorcode != sqlite3.SQLITE_CONSTRAINT_UNIQUE:
+                raise
+            raise ValueError("relation already exists") from None
+        return relation
+
+    def _insert_relation(self, relation: Relation) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                "INSERT INTO kernel_relations VALUES(?,?,?,?,?,?)",
+                _relation_values(relation),
+            )
+
+    def get_relation(self, project_id: str, relation_id: str) -> Relation:
+        self.get_project(project_id)
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM kernel_relations WHERE id=?", (relation_id,)
+            ).fetchone()
+        if row is None:
+            raise KeyError(relation_id)
+        if row["project_id"] != project_id:
+            raise PermissionError("relation belongs to another project")
+        return _relation_from_row(row)
+
+    def list_relations(self, project_id: str) -> list[Relation]:
+        self.get_project(project_id)
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT * FROM kernel_relations WHERE project_id=? "
+                "ORDER BY created_at,id",
+                (project_id,),
+            ).fetchall()
+        return list(map(_relation_from_row, rows))
+
+    def remove_relation(self, project_id: str, relation_id: str) -> None:
+        self.get_relation(project_id, relation_id)
+        with self._connect() as connection:
+            connection.execute(
+                "DELETE FROM kernel_relations WHERE project_id=? AND id=?",
+                (project_id, relation_id),
+            )
+
     def _initialize(self) -> None:
         with self._connect() as connection:
             connection.executescript(_SCHEMA)
@@ -266,6 +452,91 @@ def _new_id(kind: str) -> str:
 def _require_text(value: str, label: str) -> None:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{label} must be non-empty text")
+
+
+def _require_owned(row, value_id: str, project_id: str, label: str) -> None:
+    if row is None:
+        raise KeyError(value_id)
+    if row["project_id"] != project_id:
+        raise PermissionError(f"{label} belongs to another project")
+
+
+def _validate_record(record_type: str, content: dict, artifact_ids: tuple) -> None:
+    if record_type not in {"question", "source", "direction", "experiment"}:
+        raise ValueError("invalid record type")
+    if not isinstance(content, dict) or not content:
+        raise ValueError("record content must be a non-empty object")
+    if not isinstance(artifact_ids, tuple) or not all(
+        isinstance(value, str) for value in artifact_ids
+    ):
+        raise ValueError("record artifact ids must be a unique tuple")
+    if len(set(artifact_ids)) != len(artifact_ids):
+        raise ValueError("record artifact ids must be a unique tuple")
+    try:
+        json.dumps(content)
+    except (TypeError, ValueError):
+        raise ValueError("record content must be JSON serializable") from None
+
+
+def _new_record(project_id, record_type, content, artifact_ids) -> Record:
+    return Record(
+        _new_id("record"), project_id, record_type, content, artifact_ids, now()
+    )
+
+
+def _new_relation(project_id, source_id, target_id, relation_type) -> Relation:
+    return Relation(
+        _new_id("relation"),
+        project_id,
+        source_id,
+        target_id,
+        relation_type,
+        now(),
+    )
+
+
+def _record_values(record: Record) -> tuple:
+    return (
+        record.id,
+        record.project_id,
+        record.type,
+        json.dumps(record.content),
+        json.dumps(record.artifact_ids),
+        record.created_at,
+    )
+
+
+def _record_from_row(row: sqlite3.Row) -> Record:
+    return Record(
+        row["id"],
+        row["project_id"],
+        row["type"],
+        json.loads(row["content"]),
+        tuple(json.loads(row["artifact_ids"])),
+        row["created_at"],
+    )
+
+
+def _relation_from_row(row: sqlite3.Row) -> Relation:
+    return Relation(
+        row["id"],
+        row["project_id"],
+        row["source_id"],
+        row["target_id"],
+        row["type"],
+        row["created_at"],
+    )
+
+
+def _relation_values(relation: Relation) -> tuple:
+    return (
+        relation.id,
+        relation.project_id,
+        relation.source_id,
+        relation.target_id,
+        relation.type,
+        relation.created_at,
+    )
 
 
 def _session_from_row(connection: sqlite3.Connection, row: sqlite3.Row) -> Session:
