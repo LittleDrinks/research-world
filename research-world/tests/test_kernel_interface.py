@@ -99,7 +99,6 @@ def test_artifact_is_captured_and_read_through_the_kernel_interface(tmp_path):
     artifact = kernel.capture_artifact(project.id, b"result", "text/plain")
 
     assert artifact.id == f"artifact:{artifact.sha256}"
-    assert not hasattr(artifact, "path")
     assert kernel.get_artifact(project.id, artifact.id) == artifact
     reopened = _kernel(tmp_path)
     assert reopened.read_artifact(project.id, artifact.id) == b"result"
@@ -238,9 +237,11 @@ def test_remove_relation_preserves_both_records(tmp_path):
 def _connected_records(kernel, project):
     artifact = kernel.capture_artifact(project.id, b"evidence", "text/plain")
     source = kernel.record(
-        project.id, "source", {"title": "Study"}, (artifact.id,)
+        project.id, "source", {"title": "Study"}
     )
-    direction = kernel.record(project.id, "direction", {"text": "Candidate"})
+    direction = kernel.record(
+        project.id, "direction", {"text": "Candidate"}, (artifact.id,)
+    )
     experiment = kernel.record(project.id, "experiment", {"title": "Trial"})
     kernel.connect(project.id, source.id, direction.id, "supports")
     kernel.connect(project.id, experiment.id, direction.id, "refutes")

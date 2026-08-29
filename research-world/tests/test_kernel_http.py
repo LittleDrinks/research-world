@@ -90,8 +90,10 @@ def test_http_remove_record_cascades_relation_and_preserves_artifact(tmp_path):
     kernel, client = _client(tmp_path)
     project = _project(kernel)
     artifact = kernel.capture_artifact(project.id, b"evidence", "text/plain")
-    source = _record(client, project.id, "source", {"title": "Study"}, [artifact.id])
-    direction = _record(client, project.id, "direction", {"text": "Candidate"})
+    source = _record(client, project.id, "source", {"title": "Study"})
+    direction = _record(
+        client, project.id, "direction", {"text": "Candidate"}, [artifact.id]
+    )
     _connect(client, project.id, source["id"], direction["id"])
 
     response = client.delete(
