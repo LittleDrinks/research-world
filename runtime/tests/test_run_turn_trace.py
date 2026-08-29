@@ -3,7 +3,9 @@ from dataclasses import dataclass
 
 import pytest
 
-from runtime.runtime import Runtime
+from runtime.runtime import AdapterResult, Runtime
+
+_UNSET = object()
 
 
 @dataclass
@@ -20,6 +22,8 @@ class FakeAdapter:
 
     def __init__(self):
         self._handles = {}
+        self.event = _UNSET
+        self.result = _UNSET
 
     async def start(self, request):
         handle = FakeHandle(request, asyncio.Event())
@@ -29,9 +33,14 @@ class FakeAdapter:
     async def submit(self, handle, request, emit):
         await handle.released.wait()
         if handle.cancelled:
-            return {"status": "cancelled"}
-        await emit({"type": "delta", "data": {"text": handle.output}})
-        return {"status": "completed", "result_text": handle.output}
+            return AdapterResult(status="cancelled")
+        event = self.event
+        if event is _UNSET:
+            event = {"type": "delta", "data": {"text": handle.output}}
+        await emit(event)
+        if self.result is _UNSET:
+            return AdapterResult(result_text=handle.output)
+        return self.result
 
     async def cancel(self, handle):
         handle.cancelled = True
@@ -73,7 +82,7 @@ async def launch(runtime, agent_id="main"):
 
 def _make_runtime(tmp_path):
     adapter = FakeAdapter()
-    return Runtime(data_root=tmp_path, adapters=[adapter]), adapter
+    return Runtime(data_root=tmp_path, adapters={"fake": adapter}), adapter
 
 
 async def _run_for(runtime, child):
@@ -105,9 +114,119 @@ async def _complete_concurrent(runtime, adapter, first, second):
     )
 
 
+async def _adapter_trace(tmp_path, *, event=_UNSET, result=_UNSET):
+    runtime, adapter = _make_runtime(tmp_path)
+    run = await _run_for(runtime, False)
+    turn = await runtime.submit(run["id"], message("m1", "one"))
+    await adapter.wait_for_handles(1)
+    if event is not _UNSET:
+        adapter.event = event
+    if result is not _UNSET:
+        adapter.result = result
+    adapter.complete(turn["id"], "done")
+    return await events(runtime, turn["id"])
+
+
 def _assert_empty_context(adapter, first, second):
     assert adapter.request_for(first["id"]).context == ()
     assert adapter.request_for(second["id"]).context == ()
+
+
+@pytest.mark.parametrize("adapters", ["list", "single"])
+def test_runtime_requires_explicit_adapter_mapping(tmp_path, adapters):
+    adapter = FakeAdapter()
+    value = [adapter] if adapters == "list" else adapter
+    with pytest.raises(TypeError):
+        Runtime(data_root=tmp_path, adapters=value)
+
+
+@pytest.mark.parametrize(
+    ("key", "adapter_id"), [("alias", "fake"), ("fake", "")]
+)
+def test_runtime_requires_matching_nonempty_adapter_id(tmp_path, key, adapter_id):
+    adapter = FakeAdapter()
+    adapter.adapter_id = adapter_id
+    with pytest.raises((TypeError, ValueError)):
+        Runtime(data_root=tmp_path, adapters={key: adapter})
+
+
+@pytest.mark.parametrize("data_root", [None, "string-path"])
+def test_runtime_requires_persistent_path(tmp_path, data_root):
+    value = tmp_path if data_root == "string-path" else data_root
+    if data_root == "string-path":
+        value = str(value)
+    with pytest.raises(TypeError):
+        Runtime(data_root=value, adapters={"fake": FakeAdapter()})
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "spec", [{}, {"runtime": {"id": "fake"}}, {"adapter": "missing"}]
+)
+async def test_launch_requires_explicit_adapter_id(tmp_path, spec):
+    runtime, adapter = _make_runtime(tmp_path)
+    with pytest.raises((TypeError, ValueError)):
+        await runtime.launch(spec)
+    assert adapter.handle_count() == 0
+
+
+@pytest.mark.asyncio
+async def test_launch_cannot_create_child_with_parent_argument(tmp_path):
+    runtime, adapter = _make_runtime(tmp_path)
+    parent = await launch(runtime)
+    with pytest.raises(TypeError):
+        await runtime.launch({"adapter": "fake"}, parent_run_id=parent["id"])
+    assert adapter.handle_count() == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("submitted", "content"),
+    [
+        ("m1", "one"),
+        ({"message_id": "m1", "content": "one"}, None),
+        ({"id": "m1", "input": "one"}, None),
+        ({"id": "m1", "content": "one", "message_id": "old"}, None),
+    ],
+)
+async def test_submit_requires_persisted_message_shape(tmp_path, submitted, content):
+    runtime, adapter = _make_runtime(tmp_path)
+    run = await launch(runtime)
+    with pytest.raises((TypeError, ValueError)):
+        if content is None:
+            await runtime.submit(run["id"], submitted)
+        else:
+            await runtime.submit(run["id"], submitted, content)
+    assert adapter.handle_count() == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "event",
+    [
+        None,
+        "delta",
+        {},
+        {"type": "delta"},
+        {"type": "", "data": {}},
+        {"type": "delta", "data": "raw"},
+        {"text": "raw"},
+        {"type": "delta", "data": {}, "extra": True},
+    ],
+)
+async def test_adapter_events_require_normalized_shape(tmp_path, event):
+    trace = await _adapter_trace(tmp_path, event=event)
+    assert trace[-1]["data"]["status"] == "error"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "result", [None, "done", {"status": "completed", "result_text": "done"},
+                {"output": "done"}, {"result": "done"}],
+)
+async def test_adapter_results_require_adapter_result(tmp_path, result):
+    trace = await _adapter_trace(tmp_path, result=result)
+    assert trace[-1]["data"]["status"] == "error"
 
 
 @pytest.mark.asyncio
@@ -177,8 +296,7 @@ async def test_main_and_child_runs_reconnect_from_last_sequence(tmp_path, child)
 
 @pytest.mark.asyncio
 async def test_subscription_drains_events_written_while_paused(tmp_path):
-    adapter = FakeAdapter()
-    runtime = Runtime(data_root=tmp_path, adapters=[adapter])
+    runtime, adapter = _make_runtime(tmp_path)
     run = await launch(runtime)
     turn = await runtime.submit(run["id"], message("m1", "one"))
     await adapter.wait_for_handles(1)
@@ -235,8 +353,7 @@ async def test_concurrent_duplicate_submits_create_one_turn(tmp_path, child):
 
 @pytest.mark.asyncio
 async def test_submit_freezes_only_completed_context(tmp_path):
-    adapter = FakeAdapter()
-    runtime = Runtime(data_root=tmp_path, adapters=[adapter])
+    runtime, adapter = _make_runtime(tmp_path)
     run = await launch(runtime)
     first = await runtime.submit(run["id"], message("m1", "one"))
     await adapter.wait_for_handles(1)
@@ -257,8 +374,7 @@ async def test_submit_freezes_only_completed_context(tmp_path):
 
 @pytest.mark.asyncio
 async def test_trace_is_replayable_after_runtime_restarts(tmp_path):
-    adapter = FakeAdapter()
-    runtime = Runtime(data_root=tmp_path, adapters=[adapter])
+    runtime, adapter = _make_runtime(tmp_path)
     run = await launch(runtime)
     turn = await runtime.submit(run["id"], message("m1", "one"))
     await adapter.wait_for_handles(1)
@@ -266,7 +382,7 @@ async def test_trace_is_replayable_after_runtime_restarts(tmp_path):
     original = await events(runtime, turn["id"])
 
     restarted_adapter = FakeAdapter()
-    restarted = Runtime(data_root=tmp_path, adapters=[restarted_adapter])
+    restarted = Runtime(data_root=tmp_path, adapters={"fake": restarted_adapter})
     replayed = await events(restarted, turn["id"])
 
     assert replayed == original

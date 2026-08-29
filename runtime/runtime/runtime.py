@@ -5,12 +5,13 @@ import json
 import threading
 import uuid
 from collections import defaultdict
+from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from inspect import isawaitable
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Awaitable, Callable, Protocol
 
 
 class RuntimeAdapter(Protocol):
@@ -19,7 +20,12 @@ class RuntimeAdapter(Protocol):
 
     async def start(self, request: TurnRequest) -> Any: ...
 
-    async def submit(self, handle: Any, request: TurnRequest, emit) -> Any: ...
+    async def submit(
+        self,
+        handle: Any,
+        request: TurnRequest,
+        emit: Callable[[dict[str, Any]], Awaitable[None]],
+    ) -> AdapterResult: ...
 
     async def cancel(self, handle: Any) -> Any: ...
 
@@ -41,10 +47,9 @@ class AdapterResult:
 
 
 class TraceLedger:
-    def __init__(self, root: Path | None = None):
-        self.root = Path(root) if root else None
-        if self.root:
-            self.root.mkdir(parents=True, exist_ok=True)
+    def __init__(self, root: Path):
+        self.root = root
+        self.root.mkdir(parents=True, exist_ok=True)
         self._events: dict[str, list[dict[str, Any]]] = {}
         self._locks: defaultdict[str, threading.Lock] = defaultdict(threading.Lock)
         self._watchers: defaultdict[str, set[asyncio.Queue]] = defaultdict(set)
@@ -84,7 +89,7 @@ class TraceLedger:
         if turn_id in self._events:
             return self._events[turn_id]
         path = self._path(turn_id)
-        if not path or not path.exists():
+        if not path.exists():
             events: list[dict[str, Any]] = []
         else:
             events = [
@@ -97,15 +102,11 @@ class TraceLedger:
 
     def _write(self, turn_id: str, event: dict[str, Any]) -> None:
         path = self._path(turn_id)
-        if not path:
-            return
         with path.open("a", encoding="utf-8") as stream:
             stream.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")))
             stream.write("\n")
 
-    def _path(self, turn_id: str) -> Path | None:
-        if not self.root:
-            return None
+    def _path(self, turn_id: str) -> Path:
         if Path(turn_id).name != turn_id:
             raise ValueError("invalid turn id")
         return self.root / f"{turn_id}.jsonl"
@@ -138,27 +139,25 @@ class _Turn:
 class Runtime:
     def __init__(
         self,
-        adapters: RuntimeAdapter | list[RuntimeAdapter] | dict[str, RuntimeAdapter],
-        *,
-        data_root: Path | None = None,
+        data_root: Path,
+        adapters: dict[str, RuntimeAdapter],
     ):
+        _require_data_root(data_root)
         self._adapters = _adapter_map(adapters)
-        trace_root = Path(data_root) / "traces" if data_root else None
-        self._trace = TraceLedger(trace_root)
+        self._trace = TraceLedger(data_root / "traces")
         self._runs: dict[str, _Run] = {}
         self._turns: dict[str, _Turn] = {}
         self._registry_lock = asyncio.Lock()
 
     async def launch(
         self,
-        agent_spec: dict[str, Any],
+        agent_spec: Mapping[str, Any],
         *,
         session_id: str | None = None,
-        parent_run_id: str | None = None,
     ) -> dict[str, Any]:
         snapshot = _snapshot(agent_spec)
         async with self._registry_lock:
-            run = self._register_run(snapshot, session_id, parent_run_id)
+            run = self._register_run(snapshot, session_id, None)
         return _run_view(run)
 
     def _register_run(self, snapshot, session_id, parent_run_id):
@@ -174,10 +173,9 @@ class Runtime:
     async def submit(
         self,
         run_id: str,
-        message: dict[str, Any] | str,
-        content: Any = None,
+        message: Mapping[str, Any],
     ) -> dict[str, Any]:
-        message_id, payload = _message(message, content)
+        message_id, payload = _message(message)
         async with self._registry_lock:
             run = self._require_run(run_id)
             if existing := run.turns.get(message_id):
@@ -227,11 +225,13 @@ class Runtime:
     async def delegate(
         self,
         parent_run_id: str,
-        agent_spec: dict[str, Any],
+        agent_spec: Mapping[str, Any],
     ) -> dict[str, Any]:
+        snapshot = _snapshot(agent_spec)
         async with self._registry_lock:
             self._require_run(parent_run_id)
-        return await self.launch(agent_spec, parent_run_id=parent_run_id)
+            run = self._register_run(snapshot, None, parent_run_id)
+        return _run_view(run)
 
     async def _execute(self, turn: _Turn) -> None:
         try:
@@ -323,67 +323,59 @@ class Runtime:
 
 
 def _adapter_map(adapters) -> dict[str, RuntimeAdapter]:
-    values = (
-        list(adapters.items())
-        if isinstance(adapters, dict)
-        else _adapter_values(adapters)
+    if not isinstance(adapters, dict):
+        raise TypeError("adapters must be a dict")
+    if any(not isinstance(key, str) or not key for key in adapters):
+        raise TypeError("adapter ids must be nonempty strings")
+    if any(not _is_adapter(adapter) for adapter in adapters.values()):
+        raise TypeError("adapters must implement RuntimeAdapter")
+    if any(adapter.adapter_id != key for key, adapter in adapters.items()):
+        raise ValueError("adapter registry key must match adapter_id")
+    return dict(adapters)
+
+
+def _is_adapter(adapter):
+    methods = ("start", "submit", "cancel")
+    return (
+        all(callable(getattr(adapter, name, None)) for name in methods)
+        and isinstance(getattr(adapter, "adapter_id", None), str)
+        and bool(getattr(adapter, "adapter_id", None))
+        and isinstance(getattr(adapter, "supports_multiple_writers", None), bool)
     )
-    result = dict(values)
-    if len(result) != len(values):
-        raise ValueError("adapter ids must be unique")
-    return result
 
 
-def _adapter_values(adapters):
-    if hasattr(adapters, "start"):
-        adapters = [adapters]
-    values = list(adapters)
-    return [(_adapter_id(adapter), adapter) for adapter in values]
-
-
-def _adapter_id(adapter) -> str:
-    if value := getattr(adapter, "adapter_id", None):
-        return value
-    descriptor = getattr(adapter, "descriptor", None)
-    if descriptor and getattr(descriptor, "id", None):
-        return descriptor.id
-    raise ValueError("runtime adapter must declare adapter_id")
+def _require_data_root(data_root):
+    if not isinstance(data_root, Path):
+        raise TypeError("data_root must be a Path")
 
 
 def _select_adapter(adapters, snapshot):
-    requested = snapshot.get("adapter")
-    runtime = snapshot.get("runtime")
-    if requested is None and isinstance(runtime, dict):
-        requested = runtime.get("id")
-    if requested:
-        try:
-            return adapters[requested]
-        except KeyError:
-            raise ValueError(f"runtime adapter is unavailable: {requested}") from None
-    if len(adapters) == 1:
-        return next(iter(adapters.values()))
-    raise ValueError("agent spec must select a runtime adapter")
+    adapter_id = snapshot["adapter"]
+    try:
+        return adapters[adapter_id]
+    except KeyError:
+        raise ValueError(f"runtime adapter is unavailable: {adapter_id}") from None
 
 
-def _snapshot(agent_spec) -> dict[str, Any]:
-    if hasattr(agent_spec, "snapshot"):
-        agent_spec = agent_spec.snapshot()
-    if not isinstance(agent_spec, dict):
+def _snapshot(agent_spec: Mapping[str, Any]) -> dict[str, Any]:
+    if not isinstance(agent_spec, Mapping):
         raise TypeError("agent spec must be a mapping")
-    return deepcopy(agent_spec)
+    snapshot = deepcopy(dict(agent_spec))
+    if "runtime" in snapshot:
+        raise ValueError("agent spec must use adapter")
+    adapter_id = snapshot.get("adapter")
+    if not isinstance(adapter_id, str) or not adapter_id:
+        raise ValueError("agent spec must select an adapter")
+    return snapshot
 
 
-def _message(message, content):
-    if isinstance(message, dict):
-        message_id = message.get("id") or message.get("message_id")
-        payload = message.get("content", message.get("input"))
-    elif isinstance(message, str) and content is not None:
-        message_id, payload = message, content
-    else:
-        raise TypeError("submit requires a message id and content")
+def _message(message: Mapping[str, Any]):
+    if not isinstance(message, Mapping) or set(message) != {"id", "content"}:
+        raise TypeError("submit requires an id/content message mapping")
+    message_id = message["id"]
     if not isinstance(message_id, str) or not message_id:
         raise ValueError("message must have an id")
-    return message_id, deepcopy(payload)
+    return message_id, deepcopy(message["content"])
 
 
 def _request(run, turn_id, message_id, payload):
@@ -402,30 +394,25 @@ def _start_data(request):
 
 
 def _adapter_event(value):
-    if isinstance(value, str):
-        return value, {}
-    if not isinstance(value, dict):
-        raise TypeError("adapter events must be mappings")
-    event_type = value.get("type", "adapter_event")
-    data = value.get("data")
-    return event_type, deepcopy(data if isinstance(data, dict) else value)
+    if not isinstance(value, dict) or set(value) != {"type", "data"}:
+        raise TypeError("adapter events must be type/data mappings")
+    event_type, data = value["type"], value["data"]
+    if not isinstance(event_type, str) or not event_type:
+        raise ValueError("adapter event type must be nonempty")
+    if not isinstance(data, dict):
+        raise TypeError("adapter event data must be a dict")
+    return event_type, deepcopy(data)
 
 
-def _result(value):
-    if isinstance(value, AdapterResult):
-        return value.status, value.result_text
-    if isinstance(value, dict):
-        return value.get("status", "completed"), value.get(
-            "result_text", value.get("output", value.get("result"))
-        )
-    if isinstance(value, str):
-        return "completed", value
-    return "completed", None
+def _result(value: AdapterResult):
+    if not isinstance(value, AdapterResult):
+        raise TypeError("adapter submit must return AdapterResult")
+    return value.status, value.result_text
 
 
 def _status(status):
     if status not in {"completed", "limit", "error", "cancelled"}:
-        return "error"
+        raise ValueError(f"invalid turn status: {status}")
     return status
 
 
