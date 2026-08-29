@@ -29,12 +29,60 @@ class LocalMapRequest(BaseModel):
     limit: StrictInt = 20
 
 
+class ProjectRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str
+    question: str
+
+
 def kernel_graph_router(kernel: KernelInterface) -> APIRouter:
     router = APIRouter()
+    _add_project_routes(router, kernel)
     _add_record_routes(router, kernel)
     _add_relation_routes(router, kernel)
     _add_local_map_route(router, kernel)
     return router
+
+
+def _add_project_routes(router: APIRouter, kernel: KernelInterface) -> None:
+    path = "/api/v1/projects"
+    router.add_api_route(path, _projects(kernel), methods=["GET"])
+    router.add_api_route(path, _create_project(kernel), methods=["POST"], status_code=201)
+    router.add_api_route("/api/v1/bootstrap", _bootstrap(kernel), methods=["GET"])
+
+
+def _projects(kernel: KernelInterface):
+    def endpoint():
+        return kernel.list_projects()
+
+    return endpoint
+
+
+def _create_project(kernel: KernelInterface):
+    def endpoint(request: ProjectRequest):
+        return _kernel_call(kernel.create_project, request.name, request.question)
+
+    return endpoint
+
+
+def _bootstrap(kernel: KernelInterface):
+    def endpoint(project_id: str | None = None):
+        projects = kernel.list_projects()
+        selected = _kernel_call(_select_project, kernel, projects, project_id)
+        return _bootstrap_value(projects, selected)
+
+    return endpoint
+
+
+def _select_project(kernel, projects, project_id):
+    return kernel.get_project(project_id) if project_id else (projects[0] if projects else None)
+
+
+def _bootstrap_value(projects, selected):
+    return {
+        "projects": projects,
+        "active_project_id": selected.id if selected else None,
+    }
 
 
 def _add_record_routes(router: APIRouter, kernel: KernelInterface) -> None:

@@ -31,14 +31,16 @@ def create_app(
 
 def register_routes(app, kernel, graph_kernel: KernelInterface | None = None) -> None:
     _register_world_routes(app, kernel)
-    _register_graph_routes(app, graph_kernel)
+    if graph_kernel is None:
+        project_routes(app, kernel)
+    else:
+        app.include_router(kernel_graph_router(graph_kernel))
     frontend_routes(app)
 
 
 def _register_world_routes(app, kernel) -> None:
     error_handlers(app)
     health_routes(app)
-    project_routes(app, kernel)
     project_state_routes(app, kernel)
     graph_node_routes(app, kernel)
     graph_evidence_routes(app, kernel)
@@ -53,11 +55,6 @@ def _register_world_routes(app, kernel) -> None:
     pipeline_control_routes(app, kernel)
     library_routes(app)
     graph_tool_routes(app, kernel)
-
-
-def _register_graph_routes(app, graph_kernel: KernelInterface | None) -> None:
-    if graph_kernel is not None:
-        app.include_router(kernel_graph_router(graph_kernel))
 
 
 def error_handlers(app: FastAPI) -> None:
@@ -95,6 +92,10 @@ def project_routes(app, kernel) -> None:
             KernelCommand("create_project", values=await request.json())
         )
 
+    @app.get("/api/v1/bootstrap")
+    async def bootstrap(project_id: str | None = None):
+        return await kernel.query(KernelQuery("bootstrap", project_id))
+
 
 def project_state_routes(app, kernel) -> None:
     @app.patch("/api/v1/projects/{project_id}")
@@ -103,10 +104,6 @@ def project_state_routes(app, kernel) -> None:
         return await kernel.command(
             KernelCommand("set_auto", project_id, {"enabled": value["auto"]})
         )
-
-    @app.get("/api/v1/bootstrap")
-    async def bootstrap(project_id: str | None = None):
-        return await kernel.query(KernelQuery("bootstrap", project_id))
 
 
 def graph_node_routes(app, kernel) -> None:

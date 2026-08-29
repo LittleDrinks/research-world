@@ -17,6 +17,42 @@ def _client(tmp_path):
     return kernel, TestClient(app)
 
 
+def _application_client(tmp_path):
+    graph_kernel = create_kernel(tmp_path / "kernel.db", tmp_path / "artifacts")
+    world = World(tmp_path / "world.db", tmp_path / "world-artifacts")
+    app_kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
+    return TestClient(create_app(app_kernel, graph_kernel=graph_kernel))
+
+
+def _create_application_project(client):
+    response = client.post(
+        "/api/v1/projects",
+        json={"name": "Map assembly", "question": "How does the map share its project?"},
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+def _application_graph(client, project):
+    source = _record(client, project["id"], "source", {"text": "shared map evidence"})
+    direction = _record(client, project["id"], "direction", {"text": "shared map route"})
+    relation = _connect(client, project["id"], source["id"], direction["id"])
+    local_map = client.post(
+        f"/api/v1/projects/{project['id']}/local-map",
+        json={"text": "shared map", "limit": 5},
+    )
+    return source, direction, relation, local_map
+
+
+def _assert_application_map(local_map, source, direction, relation):
+    result = local_map.json()
+    assert [record["id"] for record in result["records"]] == [
+        source["id"],
+        direction["id"],
+    ]
+    assert result["relations"] == [relation.json()]
+
+
 def _project(kernel, name="Orbit study"):
     return kernel.create_project(name, "Why do planetary orbits remain stable?")
 
@@ -171,21 +207,21 @@ def test_http_local_map_rejects_non_domain_queries(tmp_path, payload):
     assert response.status_code == 422
 
 
-def test_local_map_route_is_available_in_the_application(tmp_path):
-    graph_kernel = create_kernel(tmp_path / "kernel.db", tmp_path / "artifacts")
-    project = _project(graph_kernel)
-    record = graph_kernel.record(project.id, "direction", {"text": "Orbit route"})
-    world = World(tmp_path / "world.db", tmp_path / "world-artifacts")
-    app_kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
-    client = TestClient(create_app(app_kernel, graph_kernel=graph_kernel))
+def test_application_project_bootstrap_and_local_map_share_kernel_owner(tmp_path):
+    client = _application_client(tmp_path)
+    project = _create_application_project(client)
+    bootstrap = client.get("/api/v1/bootstrap", params={"project_id": project["id"]})
+    assert bootstrap.status_code == 200
+    body = bootstrap.json()
+    assert body["projects"] == [project]
+    assert set(body) == {"projects", "active_project_id"}
+    assert body["active_project_id"] == project["id"]
 
-    response = client.post(
-        f"/api/v1/projects/{project.id}/local-map",
-        json={"text": "orbit", "limit": 5},
-    )
+    source, direction, relation, local_map = _application_graph(client, project)
 
-    assert response.status_code == 200
-    assert [item["id"] for item in response.json()["records"]] == [record.id]
+    assert relation.status_code == 201
+    assert local_map.status_code == 200
+    _assert_application_map(local_map, source, direction, relation)
 
 
 @pytest.mark.parametrize(
