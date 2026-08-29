@@ -164,3 +164,82 @@ def test_response_completion_order_does_not_reorder_session_messages(tmp_path):
     )
 
     assert kernel.get_session(project.id, session.id).messages == (first, second)
+
+
+def test_record_is_immediately_readable_through_the_kernel_interface(tmp_path):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+
+    record = kernel.record(
+        project.id,
+        "direction",
+        {"text": "Orbital resonance prevents close encounters."},
+    )
+    reopened = _kernel(tmp_path)
+
+    assert reopened.get_record(project.id, record.id) == record
+    assert reopened.list_records(project.id) == [record]
+    assert not {"pending", "admitted", "ghost", "life_state"} & set(dir(record))
+
+
+def test_existing_records_can_be_connected_through_the_kernel_interface(tmp_path):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+    source = kernel.record(project.id, "source", {"title": "Resonance study"})
+    direction = kernel.record(project.id, "direction", {"text": "Candidate"})
+
+    relation = kernel.connect(project.id, source.id, direction.id, "supports")
+    reopened = _kernel(tmp_path)
+
+    assert reopened.get_relation(project.id, relation.id) == relation
+    assert reopened.list_relations(project.id) == [relation]
+
+
+def test_connect_rejects_invalid_relation_types_and_cross_project_records(tmp_path):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+    other = kernel.create_project("Other study", "Why do stars shine?")
+    source = kernel.record(project.id, "source", {"title": "Study"})
+    direction = kernel.record(project.id, "direction", {"text": "Candidate"})
+    foreign = kernel.record(other.id, "direction", {"text": "Foreign"})
+
+    with pytest.raises(ValueError, match="invalid relation type"):
+        kernel.connect(project.id, source.id, direction.id, "reviews")
+    with pytest.raises(PermissionError, match="another project"):
+        kernel.connect(project.id, source.id, foreign.id, "supports")
+
+
+def test_remove_relation_preserves_both_records(tmp_path):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+    source = kernel.record(project.id, "source", {"title": "Study"})
+    direction = kernel.record(project.id, "direction", {"text": "Candidate"})
+    relation = kernel.connect(project.id, source.id, direction.id, "supports")
+
+    kernel.remove_relation(project.id, relation.id)
+
+    assert kernel.list_relations(project.id) == []
+    assert kernel.get_record(project.id, source.id) == source
+    assert kernel.get_record(project.id, direction.id) == direction
+
+
+def test_remove_record_cascades_direct_relations_and_preserves_artifact(tmp_path):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+    artifact = kernel.capture_artifact(project.id, b"evidence", "text/plain")
+    source = kernel.record(
+        project.id, "source", {"title": "Study"}, (artifact.id,)
+    )
+    direction = kernel.record(project.id, "direction", {"text": "Candidate"})
+    experiment = kernel.record(project.id, "experiment", {"title": "Trial"})
+    kernel.connect(project.id, source.id, direction.id, "supports")
+    kernel.connect(project.id, experiment.id, direction.id, "refutes")
+    remaining = kernel.connect(project.id, source.id, experiment.id, "depends_on")
+
+    kernel.remove_record(project.id, direction.id)
+
+    assert kernel.list_records(project.id) == [source, experiment]
+    assert kernel.list_relations(project.id) == [remaining]
+    assert kernel.read_artifact(project.id, artifact.id) == b"evidence"
+    with pytest.raises(KeyError):
+        kernel.get_record(project.id, direction.id)
