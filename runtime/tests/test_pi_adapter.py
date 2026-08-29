@@ -61,6 +61,13 @@ for line in sys.stdin:
             "success": False,
         }), flush=True)
         continue
+    if command["message"] == "foreign-response":
+        print(json.dumps({
+            "id": "foreign-prompt",
+            "type": "response",
+            "command": "foreign-command",
+            "success": True,
+        }), flush=True)
     print(json.dumps({
         "id": command["id"],
         "type": "response",
@@ -70,6 +77,14 @@ for line in sys.stdin:
     if command["message"] == "invalid":
         print("not-json", flush=True)
         continue
+    if command["message"] == "settled-crash":
+        message = {"role": "assistant", "content": [{"type": "text", "text": "hello"}], "stopReason": "stop"}
+        print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "text_delta", "delta": "hello"}}), flush=True)
+        print(json.dumps({"type": "agent_end", "messages": [message], "willRetry": False}), flush=True)
+        record({"stage": "agent_end"})
+        print(json.dumps({"type": "agent_settled"}), flush=True)
+        record({"stage": "agent_settled"})
+        os._exit(7)
     if command["message"] == "crash":
         os._exit(7)
     if command["message"] == "incomplete":
@@ -279,6 +294,42 @@ async def test_pi_waits_for_settled_after_agent_end(tmp_path, monkeypatch):
     observed = await events_task
     await _wait_for_stage(tmp_path, "agent_settled")
     assert observed[-1]["data"] == {"status": "completed", "result_text": "hello"}
+
+
+async def test_pi_process_exit_after_settled_is_an_explicit_turn_error(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "settled-crash"})
+    observed = await _events(runtime, turn["id"])
+    assert observed[-1]["data"] == {
+        "status": "error",
+        "result_text": None,
+        "error": "pi_process: pi exited with status 7",
+    }
+    assert not any(
+        event["type"] == "turn_end" and event["data"]["status"] == "completed"
+        for event in observed
+    )
+
+
+async def test_pi_rejects_a_foreign_response_before_normal_sequence(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "foreign-response"})
+    observed = await _events(runtime, turn["id"])
+    assert observed[-1]["data"] == {
+        "status": "error",
+        "result_text": None,
+        "error": "pi_protocol: pi response does not match prompt command",
+    }
+    assert not any(
+        event["type"] == "turn_end" and event["data"]["status"] == "completed"
+        for event in observed
+    )
 
 
 async def test_pi_continues_after_intermediate_overflow_error(tmp_path, monkeypatch):

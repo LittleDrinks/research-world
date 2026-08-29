@@ -157,7 +157,7 @@ class PiEventParser:
 
     def _response(self, event: dict[str, Any]) -> None:
         if event.get("id") != PROMPT_ID or event.get("command") != "prompt":
-            return
+            raise PiAdapterError("pi_protocol", "pi response does not match prompt command")
         if event.get("success") is not True:
             raise PiAdapterError("pi_protocol", "pi rejected the prompt command")
         self.acknowledged = True
@@ -258,6 +258,8 @@ async def _close_completed(handle: PiHandle) -> None:
         await asyncio.wait_for(handle.process.wait(), TERMINATE_TIMEOUT)
     except asyncio.TimeoutError:
         await _stop(handle.process)
+    if handle.process.returncode not in (None, 0):
+        raise _exit_error(handle.process, True)
     await _finish_stderr(handle.stderr_task)
 
 
