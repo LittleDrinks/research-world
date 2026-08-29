@@ -149,6 +149,7 @@ class Runtime:
         self._trace = TraceLedger(data_root / "traces")
         self._runs: dict[str, _Run] = {}
         self._turns: dict[str, _Turn] = {}
+        self._adapter_reservations: dict[int, _Turn] = {}
         self._registry_lock = asyncio.Lock()
 
     async def launch(
@@ -188,7 +189,10 @@ class Runtime:
             run.turns[message_id] = turn
             self._turns[turn_id] = turn
             self._trace.append(turn_id, "turn_start", _start_data(request), run.id)
-            turn.task = asyncio.create_task(self._execute(turn))
+            if self._reserve_adapter(turn):
+                turn.task = asyncio.create_task(self._execute(turn))
+            else:
+                self._reject_turn(turn)
         return _turn_view(turn)
 
     def subscribe(self, turn_id: str, after_seq: int = -1):
@@ -252,8 +256,6 @@ class Runtime:
     async def _run_adapter(self, turn: _Turn) -> None:
         if turn.cancel_requested:
             return
-        if not turn.adapter.supports_multiple_writers and self._active_turn_exists(turn):
-            raise RuntimeError("adapter does not support overlapping active turns")
         turn.handle = await turn.adapter.start(turn.request)
         if turn.handle is None:
             raise RuntimeError("adapter start must return an execution handle")
@@ -297,6 +299,7 @@ class Runtime:
                 return
             turn.status, turn.result_text = status, result_text
             self._append_end(turn, status, result_text, error)
+            self._release_adapter(turn)
             if status in {"completed", "limit"}:
                 self._record_context(turn, result_text)
 
@@ -336,12 +339,27 @@ class Runtime:
         turn.task.cancel()
         await self._wait_execution(turn)
 
-    def _active_turn_exists(self, turn: _Turn) -> bool:
-        return any(
-            other is not turn
-            and other.status == "running"
-            and other.adapter is turn.adapter
-            for other in self._turns.values()
+    def _reserve_adapter(self, turn: _Turn) -> bool:
+        if turn.adapter.supports_multiple_writers:
+            return True
+        adapter_key = id(turn.adapter)
+        if adapter_key in self._adapter_reservations:
+            return False
+        self._adapter_reservations[adapter_key] = turn
+        return True
+
+    def _release_adapter(self, turn: _Turn) -> None:
+        adapter_key = id(turn.adapter)
+        if self._adapter_reservations.get(adapter_key) is turn:
+            del self._adapter_reservations[adapter_key]
+
+    def _reject_turn(self, turn: _Turn) -> None:
+        turn.status = "error"
+        self._append_end(
+            turn,
+            "error",
+            None,
+            "adapter does not support overlapping active turns",
         )
 
     async def _wait_execution(self, turn: _Turn) -> None:

@@ -563,6 +563,28 @@ async def test_non_multi_writer_handle_reuse_is_rejected(tmp_path):
     assert len(first_terminals) == len(second_terminals) == 1
 
 
+@pytest.mark.asyncio
+async def test_back_to_back_non_multi_writer_submits_keep_first_turn(tmp_path):
+    adapter = SharedHandleAdapter()
+    runtime = Runtime(data_root=tmp_path, adapters={"fake": adapter})
+    run = await launch(runtime)
+    first = await runtime.submit(run["id"], message("m1", "one"))
+    second = await runtime.submit(run["id"], message("m2", "two"))
+
+    adapter.shared_handle.output = "answer one"
+    adapter.shared_handle.released.set()
+    first_events, second_events = await asyncio.gather(
+        events(runtime, first["id"]), events(runtime, second["id"])
+    )
+    assert adapter.started_message_ids == ["m1"]
+    assert second["status"] == "error"
+    assert first_events[-1]["data"] == {
+        "status": "completed",
+        "result_text": "answer one",
+    }
+    assert second_events[-1]["data"]["status"] == "error"
+
+
 async def _multi_writer_outcomes(runtime, adapter, run, first, second):
     result = await runtime.cancel(first["id"])
     second_view = await runtime.submit(run["id"], message("m2", "again"))
