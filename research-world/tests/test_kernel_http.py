@@ -1,14 +1,15 @@
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
-from server.kernel_http import kernel_graph_routes
+from server.kernel_http import kernel_graph_router
 from server.kernel_interface import create_kernel
 
 
 def _client(tmp_path):
     kernel = create_kernel(tmp_path / "kernel.db", tmp_path / "artifacts")
     app = FastAPI()
-    kernel_graph_routes(app, kernel)
+    app.include_router(kernel_graph_router(kernel))
     return kernel, TestClient(app)
 
 
@@ -97,10 +98,56 @@ def test_http_record_rejects_storage_and_internal_state_inputs(tmp_path):
         json={
             "type": "direction",
             "content": {"text": "Candidate"},
-            "sql": "DELETE FROM kernel_records",
-            "table": "kernel_records",
+            "sql": "opaque",
+            "table": "opaque",
             "pending": True,
         },
     )
 
     assert response.status_code == 422
+
+
+def test_router_preserves_an_existing_value_error_handler(tmp_path):
+    kernel = create_kernel(tmp_path / "kernel.db", tmp_path / "artifacts")
+    app = FastAPI()
+
+    @app.exception_handler(ValueError)
+    async def existing_handler(_request, error):
+        return JSONResponse({"existing": str(error)}, status_code=409)
+
+    app.include_router(kernel_graph_router(kernel))
+
+    @app.get("/value-error")
+    def value_error():
+        raise ValueError("unchanged")
+
+    response = TestClient(app).get("/value-error")
+    assert (response.status_code, response.json()) == (409, {"existing": "unchanged"})
+
+
+def test_router_included_before_fallback_handles_graph_requests(tmp_path):
+    kernel = create_kernel(tmp_path / "kernel.db", tmp_path / "artifacts")
+    project = _project(kernel)
+    app = FastAPI()
+    app.include_router(kernel_graph_router(kernel))
+
+    @app.get("/{path:path}")
+    def fallback(path: str):
+        return {"fallback": path}
+
+    response = TestClient(app).get(f"/api/v1/projects/{project.id}/records")
+    assert (response.status_code, response.json()) == (200, [])
+
+
+def test_http_maps_kernel_errors_at_the_endpoint(tmp_path):
+    kernel, client = _client(tmp_path)
+    project = _project(kernel)
+    source = _record(client, project.id, "source", {"title": "Study"})
+    direction = _record(client, project.id, "direction", {"text": "Candidate"})
+
+    missing = client.delete(f"/api/v1/projects/{project.id}/records/missing")
+    invalid = _connect(
+        client, project.id, source["id"], direction["id"], "reviews"
+    )
+
+    assert (missing.status_code, invalid.status_code) == (404, 422)

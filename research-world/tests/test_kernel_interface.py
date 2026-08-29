@@ -223,9 +223,7 @@ def test_remove_relation_preserves_both_records(tmp_path):
     assert kernel.get_record(project.id, direction.id) == direction
 
 
-def test_remove_record_cascades_direct_relations_and_preserves_artifact(tmp_path):
-    kernel = _kernel(tmp_path)
-    project = _project(kernel)
+def _connected_records(kernel, project):
     artifact = kernel.capture_artifact(project.id, b"evidence", "text/plain")
     source = kernel.record(
         project.id, "source", {"title": "Study"}, (artifact.id,)
@@ -235,6 +233,14 @@ def test_remove_record_cascades_direct_relations_and_preserves_artifact(tmp_path
     kernel.connect(project.id, source.id, direction.id, "supports")
     kernel.connect(project.id, experiment.id, direction.id, "refutes")
     remaining = kernel.connect(project.id, source.id, experiment.id, "depends_on")
+    return artifact, source, direction, experiment, remaining
+
+
+def test_remove_record_cascades_direct_relations_and_preserves_artifact(tmp_path):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+    values = _connected_records(kernel, project)
+    artifact, source, direction, experiment, remaining = values
 
     kernel.remove_record(project.id, direction.id)
 
