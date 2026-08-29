@@ -2,7 +2,7 @@
 围绕单个科学问题积累可审核、可复现、可追溯的研究对象与 Agent 工作过程。
 ## Ownership
 **Research Kernel（研究内核）**：Project 研究状态的唯一所有者，拥有 Project、Session、Artifact、Research Graph 记录与关系以及 LocalMap；不拥有 Agent 执行事实。
-**Runtime**：Agent 执行的唯一所有者，拥有 Run、Turn、Trace、Skills、Tools、delegation 与 Runtime Adapters；不拥有 Session、Project、Artifact 或 Research Graph 记录。
+**Runtime**：Agent 执行的唯一所有者，拥有 Run、Turn、Trace、Skills、Tools、delegation、Runtime Adapters 及 Agent 执行快照（Adapter、model、instructions、skills、tools、params）；不拥有 Session、Project、Artifact 或 Research Graph 记录。
 ## Language
 **Project**：一个科学问题及其研究状态；id 是稳定、不承载业务语义的标识符。
 _Avoid_: 课题、任务
@@ -38,7 +38,7 @@ _Avoid_: Trajectory、Research event
 _Avoid_: Handoff 实体、Outcome 实体
 **Delegation**：主 Agent 为明确目标创建 Child Agent Run，并接收其结果的 Runtime 行为；Child Agent 不直接写入用户 Session。
 **主 Agent**：直接与用户对话、决定研究方向、委派 Child Agent 并作出 Research Graph 写入决定的 Agent。
-**Child Agent**：由主 Agent 通过 Delegation 启动、拥有独立 Run 的 Agent；不直接与用户对话或写入 Session。
+**Child Agent**：由主 Agent 通过 Delegation 启动、拥有独立 Run 的 Agent；可通过 Kernel Interface 读写 Research Graph 记录与关系，但不直接与用户对话或写入 Session。
 **AgentSpec**：启动一个 Runtime Run 所需的 Runtime Adapter 绑定、模型、Instructions、Skills、Tool id 与执行参数声明；启动时快照。
 **Skill**：Runtime 内可选择的可复用 Agent 行为声明；可选择调用 Tool operation。
 **Tool**：Runtime 提供给 Agent 的稳定能力；一个 Tool 可向模型展开多个 operation，AgentSpec 只保存 Tool id。
