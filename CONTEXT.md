@@ -44,6 +44,8 @@ _Avoid_: Handoff 实体、Outcome 实体
 **Skill**：Runtime 内可选择的可复用 Agent 行为声明；可选择调用 Tool operation。
 **Tool**：Runtime 提供给 Agent 的稳定能力；一个 Tool 可向模型展开多个 operation，AgentSpec 只保存 Tool id。
 **Runtime Adapter**：Runtime 内部负责识别、启动、提交、取消 Agent 执行并产生规范化事件的可插拔 Adapter；不越过 Runtime 边界持有 Kernel 数据。
+**Adapter 执行句柄**：Adapter 为一个 Turn 返回、代表该 Turn 活跃执行的句柄；非 multiple-writers 的 Adapter 同时只允许一个活跃 Turn。
+**Multiple writers**：Runtime Adapter 明确允许多个活跃 Turn 共享底层 harness 的能力；共享执行的取消必须携带目标 Turn 身份。
 **Pi Adapter**：复用宿主机已安装 Pi、认证和偏好的 Runtime Adapter；只用于开发端到端验证，不进入 Docker 交付。
 **Penguin Harness Adapter**：由 Runtime 直接启动、使用用户提供模型访问配置的 Runtime Adapter；与 Pi Adapter 同级，当前不提供实现或 fallback。
 **Tool Adapter**：Runtime 内部把本地函数、MCP、CLI、浏览器、数据库或计算设施投影为 Tool 的可插拔实现；位置、协议、生命周期、配置与凭证不越过 Runtime。
