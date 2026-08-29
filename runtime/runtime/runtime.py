@@ -27,7 +27,7 @@ class RuntimeAdapter(Protocol):
         emit: Callable[[dict[str, Any]], Awaitable[None]],
     ) -> AdapterResult: ...
 
-    async def cancel(self, handle: Any) -> Any: ...
+    async def cancel(self, handle: Any, request: TurnRequest) -> Any: ...
 
 
 @dataclass(frozen=True)
@@ -252,11 +252,11 @@ class Runtime:
     async def _run_adapter(self, turn: _Turn) -> None:
         if turn.cancel_requested:
             return
+        if not turn.adapter.supports_multiple_writers and self._active_turn_exists(turn):
+            raise RuntimeError("adapter does not support overlapping active turns")
         turn.handle = await turn.adapter.start(turn.request)
         if turn.handle is None:
             raise RuntimeError("adapter start must return an execution handle")
-        if not turn.adapter.supports_multiple_writers and self._handle_in_use(turn):
-            raise RuntimeError("adapter returned a handle used by an active turn")
         if turn.cancel_requested:
             return
         result = await turn.adapter.submit(
@@ -313,7 +313,7 @@ class Runtime:
             return
         turn.cancel_sent = True
         try:
-            await turn.adapter.cancel(turn.handle)
+            await turn.adapter.cancel(turn.handle, turn.request)
         except asyncio.CancelledError as error:
             raise RuntimeError(_cancel_detail(error)) from error
 
@@ -336,12 +336,11 @@ class Runtime:
         turn.task.cancel()
         await self._wait_execution(turn)
 
-    def _handle_in_use(self, turn: _Turn) -> bool:
+    def _active_turn_exists(self, turn: _Turn) -> bool:
         return any(
             other is not turn
             and other.status == "running"
             and other.adapter is turn.adapter
-            and other.handle is turn.handle
             for other in self._turns.values()
         )
 

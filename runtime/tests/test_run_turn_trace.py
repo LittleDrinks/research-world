@@ -18,7 +18,7 @@ class FakeHandle:
 
 class FakeAdapter:
     adapter_id = "fake"
-    supports_multiple_writers = False
+    supports_multiple_writers = True
 
     def __init__(self):
         self._handles = {}
@@ -70,7 +70,7 @@ class FakeAdapter:
         finally:
             self.submit_stopped.set()
 
-    async def cancel(self, handle):
+    async def cancel(self, handle, request):
         if self.cancel_error is not None:
             raise self.cancel_error
         handle.cancelled = True
@@ -104,11 +104,52 @@ class SharedHandleAdapter(FakeAdapter):
     def __init__(self):
         super().__init__()
         self.shared_handle = FakeHandle(None, asyncio.Event())
+        self.started_message_ids = []
+        self.first_started = asyncio.Event()
 
     async def start(self, request):
+        self.started_message_ids.append(request.message_id)
+        self.first_started.set()
         self._handles[request.turn_id] = self.shared_handle
         self.shared_handle.request = request
         return self.shared_handle
+
+
+class MultiWriterSharedHandleAdapter:
+    adapter_id = "multi"
+    supports_multiple_writers = True
+
+    def __init__(self):
+        self.shared_handle = {"harness": "shared"}
+        self._releases = {}
+        self.started_requests = []
+        self.cancelled_requests = []
+
+    async def start(self, request):
+        self.started_requests.append(request)
+        self._releases[request.turn_id] = asyncio.Event()
+        return self.shared_handle
+
+    async def submit(self, handle, request, emit):
+        await self._releases[request.turn_id].wait()
+        if request.turn_id in self.cancelled_requests:
+            return AdapterResult(status="cancelled")
+        await emit({"type": "delta", "data": {"text": request.input}})
+        return AdapterResult(result_text=request.input)
+
+    async def cancel(self, handle, request):
+        self.cancelled_requests.append(request.turn_id)
+        self._releases[request.turn_id].set()
+
+    async def wait_for_turns(self, count):
+        await asyncio.wait_for(self._wait_for_turns(count), timeout=1)
+
+    async def _wait_for_turns(self, count):
+        while len(self.started_requests) < count:
+            await asyncio.sleep(0)
+
+    def complete(self, turn_id):
+        self._releases[turn_id].set()
 
 
 def message(message_id, content):
@@ -506,10 +547,9 @@ async def test_non_multi_writer_handle_reuse_is_rejected(tmp_path):
     adapter = SharedHandleAdapter()
     runtime = Runtime(data_root=tmp_path, adapters={"fake": adapter})
     run = await launch(runtime)
-    first, second = await asyncio.gather(
-        runtime.submit(run["id"], message("m1", "one")),
-        runtime.submit(run["id"], message("m2", "two")),
-    )
+    first = await runtime.submit(run["id"], message("m1", "one"))
+    await adapter.first_started.wait()
+    second = await runtime.submit(run["id"], message("m2", "two"))
 
     first_result, second_view, first_terminals, second_terminals = (
         await _shared_handle_outcomes(runtime, run, first, second)
@@ -517,9 +557,50 @@ async def test_non_multi_writer_handle_reuse_is_rejected(tmp_path):
 
     assert first_result["status"] == "cancelled"
     assert second_view["status"] == "error"
+    assert adapter.started_message_ids == ["m1"]
     assert first_terminals[-1]["data"]["status"] == "cancelled"
     assert second_terminals[-1]["data"]["status"] == "error"
     assert len(first_terminals) == len(second_terminals) == 1
+
+
+async def _multi_writer_outcomes(runtime, adapter, run, first, second):
+    result = await runtime.cancel(first["id"])
+    second_view = await runtime.submit(run["id"], message("m2", "again"))
+    adapter.complete(second["id"])
+    first_events, second_events = await asyncio.gather(
+        events(runtime, first["id"]), events(runtime, second["id"])
+    )
+    return result, second_view, first_events, second_events
+
+
+def _assert_multi_writer_outcome(
+    result, second_view, adapter, first, first_events, second_events
+):
+    assert result["status"] == "cancelled"
+    assert second_view["status"] == "running"
+    assert adapter.cancelled_requests == [first["id"]]
+    assert first_events[-1]["data"]["status"] == "cancelled"
+    assert second_events[-1]["data"] == {
+        "status": "completed",
+        "result_text": "two",
+    }
+
+
+@pytest.mark.asyncio
+async def test_multi_writer_shared_handle_cancel_targets_one_turn(tmp_path):
+    adapter = MultiWriterSharedHandleAdapter()
+    runtime = Runtime(data_root=tmp_path, adapters={"multi": adapter})
+    run = await runtime.launch({"id": "main", "adapter": "multi"})
+    first = await runtime.submit(run["id"], message("m1", "one"))
+    second = await runtime.submit(run["id"], message("m2", "two"))
+    await adapter.wait_for_turns(2)
+
+    result, second_view, first_events, second_events = await _multi_writer_outcomes(
+        runtime, adapter, run, first, second
+    )
+    _assert_multi_writer_outcome(
+        result, second_view, adapter, first, first_events, second_events
+    )
 
 
 @pytest.mark.asyncio
