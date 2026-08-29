@@ -9,20 +9,23 @@ const LABELS = { question: "问题", source: "来源", direction: "方向", expe
   uncertain: "不确定", approve: "通过", reject: "驳回", support: "支持方", challenge: "质疑方", mechanical: "机械校验" };
 
 
-export function Inspector({ node, nodes, edges, run, onSelect, onStart, onOpen }) {
+export function Inspector({ node, nodes, edges, artifacts = [], run, onSelect, onStart, onOpen }) {
   if (!node) return <aside className="inspector inspector-empty">选择节点查看上下文。</aside>;
   return <aside className="inspector"><div className="inspector-scroll"><NodeHeader node={node} run={run} onStart={onStart} onOpen={onOpen} />
     <NodeRecord node={node} /><Relations node={node} nodes={nodes} edges={edges} onSelect={onSelect} />
-    <Claims node={node} /><Reviews node={node} />{node.life_state === "admitted" && <NodeIdEntry node={node} />}</div></aside>;
+    <Claims node={node} /><Reviews node={node} /><Artifacts node={node} artifacts={artifacts} />
+    {(node.life_state === "admitted" || node.type) && <NodeIdEntry node={node} />}</div></aside>;
 }
 
 
 function NodeHeader({ node, run, onStart, onOpen }) {
+  const kind = node.kind || node.type;
+  const lifeState = node.life_state ? LABELS[node.life_state] : "";
   const title = nodeText(node);
-  return <header className="inspector-header"><div className="eyebrow"><span>{LABELS[node.kind]}</span><span>{LABELS[node.life_state]}</span>{node.direction_status && <span>{LABELS[node.direction_status]}</span>}</div>
+  return <header className="inspector-header"><div className="eyebrow"><span>{LABELS[kind] || kind}</span>{lifeState && <span>{lifeState}</span>}{node.direction_status && <span>{LABELS[node.direction_status]}</span>}</div>
     <h1>{title}</h1>{node.rejection_reason && <p className="rejection-reason">{node.rejection_reason}</p>}
     {run && <button className="button primary workflow-start" onClick={() => onOpen(run)}><Activity size={16} />{RUN_STATUS[run.status] || run.status} · 查看轨迹</button>}
-    {!run && node.life_state === "admitted" && <PipelineLauncher node={node} onStart={onStart} />}</header>;
+    {!run && node.life_state === "admitted" && onStart && <PipelineLauncher node={node} onStart={onStart} />}</header>;
 }
 
 
@@ -42,20 +45,31 @@ function PipelineLauncher({ node, onStart }) {
 
 
 function NodeRecord({ node }) {
-  const entries = Object.entries(node.payload || {}).filter(([, value]) => value !== null && typeof value !== "object");
+  const entries = Object.entries(node.payload || node.content || {}).filter(([, value]) => value !== null && typeof value !== "object");
   return <section className="inspector-section"><h2>节点记录</h2><dl className="node-record">{entries.map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{String(value)}</dd></div>)}</dl></section>;
 }
 
 
 function Relations({ node, nodes, edges, onSelect }) {
   const byId = new Map(nodes.map((item) => [item.id, item]));
-  const related = edges.filter((edge) => edge.source === node.id || edge.target === node.id).map((edge) => ({ edge, node: byId.get(edge.source === node.id ? edge.target : edge.source) })).filter((item) => item.node);
-  return <section className="inspector-section"><h2><GitBranch size={15} />证据关系</h2>{related.length ? <ul className="relation-list">{related.map(({ edge, node: item }) => <li key={`${edge.source}:${edge.target}:${edge.polarity}`}><button onClick={() => onSelect(item.id)}><span className={`polarity ${edge.polarity}`}>{edge.polarity === "supports" ? "支持" : "反驳"}</span><b>{nodeText(item)}</b></button></li>)}</ul> : <p className="muted">暂无关系</p>}</section>;
+  const related = edges.filter((edge) => edge.source === node.id || edge.target === node.id).map((edge) => ({ edge, node: relatedNode(edge, node, byId) }));
+  return <section className="inspector-section"><h2><GitBranch size={15} />直接关系</h2>{related.length ? <ul className="relation-list">{related.map(({ edge, node: item }) => <li key={`${edge.source}:${edge.target}:${edge.polarity}`}><button onClick={() => onSelect(item.id)}><span className={`polarity ${edge.polarity}`}>{relationLabel(edge.polarity)}</span><b>{nodeText(item)}</b></button></li>)}</ul> : <p className="muted">暂无关系</p>}</section>;
+}
+
+
+function relatedNode(edge, node, byId) {
+  const id = edge.source === node.id ? edge.target : edge.source;
+  return byId.get(id) || { id, type: "record", content: { title: id } };
+}
+
+
+function relationLabel(type) {
+  return { supports: "支持", refutes: "反驳", depends_on: "依赖" }[type] || type;
 }
 
 
 function Claims({ node }) {
-  const values = node.payload?.claims;
+  const values = (node.payload || node.content)?.claims;
   const claims = Array.isArray(values) ? values.filter(isClaim) : [];
   if (!claims.length) return null;
   return <section className="inspector-section"><h2>原子主张</h2><ol className="claim-list">
@@ -84,6 +98,16 @@ function Evidence({ values = [] }) {
   const items = Array.isArray(values) ? values.filter(text) : [];
   if (!items.length) return null;
   return <ul className="audit-evidence">{items.map((value, index) => <li key={`${value}:${index}`} className="mono">{String(value)}</li>)}</ul>;
+}
+
+
+function Artifacts({ node, artifacts }) {
+  const ids = Array.isArray(node.artifact_ids) ? node.artifact_ids : [];
+  const byId = new Map(artifacts.map((artifact) => [artifact.id, artifact]));
+  if (!ids.length) return null;
+  return <section className="inspector-section"><h2>关联 Artifact</h2><ul className="audit-evidence">
+    {ids.map((id) => <li key={id} className="mono">{byId.get(id)?.media_type || id} · {id}</li>)}
+  </ul></section>;
 }
 
 

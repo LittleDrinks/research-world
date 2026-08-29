@@ -3,8 +3,11 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
+from server.app import create_app
+from server.kernel import ResearchKernel
 from server.kernel_http import kernel_graph_router
 from server.kernel_interface import create_kernel
+from server.world import World
 
 
 def _client(tmp_path):
@@ -104,6 +107,82 @@ def test_http_remove_record_cascades_relation_and_preserves_artifact(tmp_path):
     assert client.get(f"/api/v1/projects/{project.id}/relations").json() == []
     assert client.get(f"/api/v1/projects/{project.id}/records").json() == [source]
     assert kernel.read_artifact(project.id, artifact.id) == b"evidence"
+
+
+def test_http_local_map_returns_records_relations_and_artifacts(tmp_path):
+    kernel, client = _client(tmp_path)
+    project = _project(kernel)
+    artifact = kernel.capture_artifact(project.id, b"evidence", "text/plain")
+    source = _record(client, project.id, "source", {"title": "Study"})
+    direction = _record(
+        client, project.id, "direction", {"text": "Candidate"}, [artifact.id]
+    )
+    relation = _connect(client, project.id, source["id"], direction["id"]).json()
+
+    response = client.post(
+        f"/api/v1/projects/{project.id}/local-map",
+        json={"record_id": direction["id"], "limit": 5},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "records": [direction],
+        "relations": [relation],
+        "artifacts": [
+            {
+                "id": artifact.id,
+                "project_id": artifact.project_id,
+                "sha256": artifact.sha256,
+                "media_type": artifact.media_type,
+                "size": artifact.size,
+                "created_at": artifact.created_at,
+            }
+        ],
+    }
+
+
+@pytest.mark.parametrize(
+    "payload",
+    (
+        {},
+        {"text": " ", "record_id": " "},
+        {"text": "orbit", "record_id": "record:any", "limit": 5},
+        {"text": "orbit", "limit": 0},
+        {"text": "orbit", "limit": -1},
+        {"text": "orbit", "sql": "SELECT 1"},
+        {"text": "orbit", "cypher": "MATCH (n)"},
+        {"text": "orbit", "fts": "node_fts"},
+        {"text": "orbit", "embedding": [0.1]},
+        {"text": "orbit", "mmr": True},
+        {"text": "orbit", "reviewer": "review"},
+    ),
+)
+def test_http_local_map_rejects_non_domain_queries(tmp_path, payload):
+    kernel, client = _client(tmp_path)
+    project = _project(kernel)
+
+    response = client.post(
+        f"/api/v1/projects/{project.id}/local-map", json=payload
+    )
+
+    assert response.status_code == 422
+
+
+def test_local_map_route_is_available_in_the_application(tmp_path):
+    graph_kernel = create_kernel(tmp_path / "kernel.db", tmp_path / "artifacts")
+    project = _project(graph_kernel)
+    record = graph_kernel.record(project.id, "direction", {"text": "Orbit route"})
+    world = World(tmp_path / "world.db", tmp_path / "world-artifacts")
+    app_kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
+    client = TestClient(create_app(app_kernel, graph_kernel=graph_kernel))
+
+    response = client.post(
+        f"/api/v1/projects/{project.id}/local-map",
+        json={"text": "orbit", "limit": 5},
+    )
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()["records"]] == [record.id]
 
 
 @pytest.mark.parametrize(

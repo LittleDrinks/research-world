@@ -14,6 +14,7 @@ function Handles({ type }) {
 
 
 function statusBadge(data) {
+  if (!data.life_state) return null;
   if (data.working) return { className: "state-running", label: "运行中" };
   if (data.life_state === "ghost") return { className: "state-muted", label: "已驳回" };
   if (data.life_state === "pending") return { className: "", label: "待审查" };
@@ -25,14 +26,15 @@ function statusBadge(data) {
 
 
 export function ResearchNode({ data, selected }) {
-  const Icon = ICONS[data.kind] || Compass;
+  const kind = data.kind || data.type;
+  const Icon = ICONS[kind] || Compass;
   const title = nodeText(data);
   const badge = statusBadge(data);
-  return <article className={`research-node kind-${data.kind} life-${data.life_state} ${data.working ? "is-working" : ""} ${data.justCompleted ? "just-completed" : ""} ${selected ? "selected" : ""}`}>
+  return <article className={`research-node kind-${kind} ${data.life_state ? `life-${data.life_state}` : ""} ${data.working ? "is-working" : ""} ${data.justCompleted ? "just-completed" : ""} ${selected ? "selected" : ""}`}>
     <Handles type="target" />
-    <header><span className="node-kind-icon" role="img" aria-label={`${LABELS[data.kind]}图标`}><Icon size={19} /></span>
-      <div><span>{LABELS[data.kind]}</span><h3>{title}</h3></div>
-      <span className={`node-status-badge ${badge.className}`}>{badge.label}</span></header>
+    <header><span className="node-kind-icon" role="img" aria-label={`${LABELS[kind] || kind}图标`}><Icon size={19} /></span>
+      <div><span>{LABELS[kind] || kind}</span><h3>{title}</h3></div>
+      {badge && <span className={`node-status-badge ${badge.className}`}>{badge.label}</span>}</header>
     <footer><div className="node-meta"><span>{String(data.id || "").slice(0, 12)}</span></div>
       {Boolean(data.working) && <LoaderCircle className="spin" size={14} />}{data.life_state === "ghost" && <X size={13} />}</footer>
     <Handles type="source" />

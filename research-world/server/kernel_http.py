@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel, ConfigDict
 
-from .kernel_interface import KernelInterface
+from .kernel_interface import KernelInterface, LocalMapQuery
 
 __all__ = ["kernel_graph_router"]
 
@@ -22,10 +22,18 @@ class RelationRequest(BaseModel):
     type: str
 
 
+class LocalMapRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    text: str | None = None
+    record_id: str | None = None
+    limit: int = 20
+
+
 def kernel_graph_router(kernel: KernelInterface) -> APIRouter:
     router = APIRouter()
     _add_record_routes(router, kernel)
     _add_relation_routes(router, kernel)
+    _add_local_map_route(router, kernel)
     return router
 
 
@@ -44,6 +52,12 @@ def _add_relation_routes(router: APIRouter, kernel: KernelInterface) -> None:
     router.add_api_route(path, _relations(kernel), methods=["GET"])
     router.add_api_route(
         f"{path}/{{relation_id}}", _remove_relation(kernel), methods=["DELETE"]
+    )
+
+
+def _add_local_map_route(router: APIRouter, kernel: KernelInterface) -> None:
+    router.add_api_route(
+        "/api/v1/projects/{project_id}/local-map", _local_map(kernel), methods=["POST"]
     )
 
 
@@ -93,6 +107,14 @@ def _remove_relation(kernel: KernelInterface):
     def endpoint(project_id: str, relation_id: str):
         _kernel_call(kernel.remove_relation, project_id, relation_id)
         return Response(status_code=204)
+
+    return endpoint
+
+
+def _local_map(kernel: KernelInterface):
+    def endpoint(project_id: str, request: LocalMapRequest):
+        query = LocalMapQuery(request.text, request.record_id, request.limit)
+        return _kernel_call(kernel.local_map, project_id, query)
 
     return endpoint
 

@@ -12,6 +12,8 @@ from .artifacts import ArtifactIntegrityError, ArtifactStore, now
 __all__ = [
     "Artifact",
     "KernelInterface",
+    "LocalMap",
+    "LocalMapQuery",
     "Message",
     "Project",
     "Record",
@@ -114,6 +116,20 @@ class Relation:
 
 
 @dataclass(frozen=True, slots=True)
+class LocalMapQuery:
+    text: str | None = None
+    record_id: str | None = None
+    limit: int = 20
+
+
+@dataclass(frozen=True, slots=True)
+class LocalMap:
+    records: tuple[Record, ...]
+    relations: tuple[Relation, ...]
+    artifacts: tuple[Artifact, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class Session:
     id: str
     project_id: str
@@ -182,6 +198,8 @@ class KernelInterface(Protocol):
     def list_relations(self, project_id: str) -> list[Relation]: ...
 
     def remove_relation(self, project_id: str, relation_id: str) -> None: ...
+
+    def local_map(self, project_id: str, query: LocalMapQuery) -> LocalMap: ...
 
 
 def create_kernel(database: Path, artifacts: Path) -> KernelInterface:
@@ -434,6 +452,14 @@ class _SQLiteKernel(KernelInterface):
                 (project_id, relation_id),
             )
 
+    def local_map(self, project_id: str, query: LocalMapQuery) -> LocalMap:
+        self.get_project(project_id)
+        _validate_local_map_query(query)
+        records = _local_map_records(self, project_id, query)
+        relations = _local_map_relations(self, project_id, records)
+        artifacts = _local_map_artifacts(self, project_id, records)
+        return LocalMap(records, relations, artifacts)
+
     def _initialize(self) -> None:
         with self._connect() as connection:
             connection.executescript(_SCHEMA)
@@ -476,6 +502,54 @@ def _validate_record(record_type: str, content: dict, artifact_ids: tuple) -> No
         json.dumps(content)
     except (TypeError, ValueError):
         raise ValueError("record content must be JSON serializable") from None
+
+
+def _validate_local_map_query(query: LocalMapQuery) -> None:
+    if not isinstance(query, LocalMapQuery):
+        raise TypeError("local map query must be a LocalMapQuery")
+    has_text = isinstance(query.text, str) and bool(query.text.strip())
+    has_record = isinstance(query.record_id, str) and bool(query.record_id.strip())
+    if has_text == has_record:
+        raise ValueError("local map query requires text or record id")
+    if isinstance(query.limit, bool) or not isinstance(query.limit, int) or query.limit < 1:
+        raise ValueError("local map limit must be a positive integer")
+
+
+def _record_matches(record: Record, text: str | None) -> bool:
+    return text.strip().casefold() in _content_text(record.content).casefold()
+
+
+def _content_text(value) -> str:
+    if isinstance(value, dict):
+        return " ".join(_content_text(item) for item in value.values())
+    if isinstance(value, list):
+        return " ".join(_content_text(item) for item in value)
+    return str(value) if value is not None else ""
+
+
+def _local_map_records(kernel, project_id: str, query: LocalMapQuery) -> tuple[Record, ...]:
+    if isinstance(query.record_id, str) and query.record_id.strip():
+        return (kernel.get_record(project_id, query.record_id),)
+    records = kernel.list_records(project_id)
+    return tuple(record for record in records if _record_matches(record, query.text))[
+        : query.limit
+    ]
+
+
+def _local_map_relations(kernel, project_id: str, records: tuple[Record, ...]) -> tuple[Relation, ...]:
+    ids = {record.id for record in records}
+    return tuple(
+        relation
+        for relation in kernel.list_relations(project_id)
+        if relation.source_id in ids or relation.target_id in ids
+    )
+
+
+def _local_map_artifacts(kernel, project_id: str, records: tuple[Record, ...]) -> tuple[Artifact, ...]:
+    ids = dict.fromkeys(
+        artifact_id for record in records for artifact_id in record.artifact_ids
+    )
+    return tuple(kernel.get_artifact(project_id, artifact_id) for artifact_id in ids)
 
 
 def _new_record(project_id, record_type, content, artifact_ids) -> Record:

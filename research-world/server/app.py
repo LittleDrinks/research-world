@@ -13,19 +13,23 @@ from fastapi.responses import (
     StreamingResponse,
 )
 
-from .config import ROOT
+from .config import ROOT, load_settings
 from .kernel import KernelCommand, KernelQuery, ResearchKernel, default_kernel
+from .kernel_http import kernel_graph_router
+from .kernel_interface import KernelInterface, create_kernel
 from .library import list_packages
 from .world import ReportNameTaken
 
 
-def create_app(kernel: ResearchKernel) -> FastAPI:
+def create_app(
+    kernel: ResearchKernel, *, graph_kernel: KernelInterface | None = None
+) -> FastAPI:
     app = FastAPI(title="Research World", version="2")
-    register_routes(app, kernel)
+    register_routes(app, kernel, graph_kernel)
     return app
 
 
-def register_routes(app, kernel) -> None:
+def register_routes(app, kernel, graph_kernel: KernelInterface | None = None) -> None:
     error_handlers(app)
     health_routes(app)
     project_routes(app, kernel)
@@ -43,6 +47,8 @@ def register_routes(app, kernel) -> None:
     pipeline_control_routes(app, kernel)
     library_routes(app)
     graph_tool_routes(app, kernel)
+    if graph_kernel is not None:
+        app.include_router(kernel_graph_router(graph_kernel))
     frontend_routes(app)
 
 
@@ -378,4 +384,6 @@ def frontend_routes(app: FastAPI) -> None:
 
 
 kernel = default_kernel()
-app = create_app(kernel)
+settings = load_settings()
+graph_kernel = create_kernel(settings.database, settings.artifacts)
+app = create_app(kernel, graph_kernel=graph_kernel)

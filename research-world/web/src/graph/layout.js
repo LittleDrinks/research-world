@@ -27,7 +27,7 @@ function inputGraph(nodes, edges) {
   const ids = new Set(nodes.map((node) => node.id));
   return { id: "research-graph", layoutOptions: OPTIONS,
     children: nodes.map((node) => ({ id: node.id, width: NODE_WIDTH, height: NODE_HEIGHT,
-      layoutOptions: { "elk.partitioning.partition": String(KIND_ORDER.indexOf(node.kind)) } })),
+      layoutOptions: { "elk.partitioning.partition": String(KIND_ORDER.indexOf(node.kind || node.type)) } })),
     edges: validEdges(edges, ids) };
 }
 

@@ -10,8 +10,10 @@
 .map-toolbar { min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 14px; border-bottom: 1px solid var(--line); background: var(--app-topbar); }
 .map-toolbar > div:first-child { min-width: 0; }
 .map-toolbar > div:first-child b, .map-toolbar > div:first-child span { display: block; }
+.map-toolbar > div:first-child b { display: flex; align-items: center; gap: 7px; }
 .map-toolbar > div:first-child span { margin-top: 2px; color: var(--text-muted); font-size: 12px; }
-.map-tools { display: flex; align-items: center; gap: 10px; }
+.map-search { display: flex; align-items: center; gap: 6px; }
+.map-search input { width: min(320px, 36vw); min-height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
 .auto-toggle { min-height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
 .auto-toggle input { width: 30px; min-height: 18px; accent-color: var(--state-running); }
 .map-toolbar .auto-toggle span { display: inline; color: var(--text-muted); font-size: 13px; font-weight: 600; }
