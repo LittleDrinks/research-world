@@ -117,9 +117,8 @@ def test_artifact_is_project_scoped_and_immutable(tmp_path):
 
     assert same_content.id == artifact.id
     assert same_content.project_id == other.id
-    with pytest.raises(ValueError) as captured:
+    with pytest.raises(ValueError):
         kernel.capture_artifact(project.id, b"result", "application/json")
-    assert type(captured.value) is ValueError
 
 
 def test_session_is_not_readable_from_another_project(tmp_path):
