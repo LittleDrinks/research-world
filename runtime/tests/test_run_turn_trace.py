@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from runtime import Runtime
+from runtime.runtime import Runtime
 
 
 @dataclass
@@ -71,29 +71,56 @@ async def launch(runtime, agent_id="main"):
     return await runtime.launch({"id": agent_id, "adapter": "fake"})
 
 
-@pytest.mark.asyncio
-@pytest.mark.parametrize("child", [False, True])
-async def test_main_and_child_runs_keep_concurrent_turns_independent(tmp_path, child):
+def _make_runtime(tmp_path):
     adapter = FakeAdapter()
-    runtime = Runtime(data_root=tmp_path, adapters=[adapter])
-    parent = await launch(runtime)
-    run = (
-        await runtime.delegate(parent["id"], {"id": "child", "adapter": "fake"})
-        if child
-        else parent
-    )
+    return Runtime(data_root=tmp_path, adapters=[adapter]), adapter
 
+
+async def _run_for(runtime, child):
+    parent = await launch(runtime)
+    if child:
+        return await runtime.delegate(parent["id"], {"id": "child", "adapter": "fake"})
+    return parent
+
+
+async def _submit_concurrent(runtime, adapter, run):
     first = await runtime.submit(run["id"], message("m1", "one"))
     second = await runtime.submit(run["id"], message("m2", "two"))
     await adapter.wait_for_handles()
+    return first, second
 
+
+async def _submit_cancel_pair(runtime, adapter, run):
+    cancelled = await runtime.submit(run["id"], message("cancel", "stop"))
+    alive = await runtime.submit(run["id"], message("alive", "continue"))
+    await adapter.wait_for_handles()
+    return cancelled, alive
+
+
+async def _complete_concurrent(runtime, adapter, first, second):
+    adapter.complete(second["id"], "answer two")
+    adapter.complete(first["id"], "answer one")
+    return await asyncio.gather(
+        events(runtime, first["id"]), events(runtime, second["id"])
+    )
+
+
+def _assert_empty_context(adapter, first, second):
     assert adapter.request_for(first["id"]).context == ()
     assert adapter.request_for(second["id"]).context == ()
 
-    adapter.complete(second["id"], "answer two")
-    adapter.complete(first["id"], "answer one")
-    first_events, second_events = await asyncio.gather(
-        events(runtime, first["id"]), events(runtime, second["id"])
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("child", [False, True])
+async def test_main_and_child_runs_keep_concurrent_turns_independent(tmp_path, child):
+    runtime, adapter = _make_runtime(tmp_path)
+    run = await _run_for(runtime, child)
+    first, second = await _submit_concurrent(runtime, adapter, run)
+
+    _assert_empty_context(adapter, first, second)
+
+    first_events, second_events = await _complete_concurrent(
+        runtime, adapter, first, second
     )
 
     assert first_events[-1]["data"] == {
@@ -109,18 +136,9 @@ async def test_main_and_child_runs_keep_concurrent_turns_independent(tmp_path, c
 @pytest.mark.asyncio
 @pytest.mark.parametrize("child", [False, True])
 async def test_main_and_child_runs_can_cancel_one_turn(tmp_path, child):
-    adapter = FakeAdapter()
-    runtime = Runtime(data_root=tmp_path, adapters=[adapter])
-    parent = await launch(runtime)
-    run = (
-        await runtime.delegate(parent["id"], {"id": "child", "adapter": "fake"})
-        if child
-        else parent
-    )
-
-    cancelled = await runtime.submit(run["id"], message("cancel", "stop"))
-    alive = await runtime.submit(run["id"], message("alive", "continue"))
-    await adapter.wait_for_handles()
+    runtime, adapter = _make_runtime(tmp_path)
+    run = await _run_for(runtime, child)
+    cancelled, alive = await _submit_cancel_pair(runtime, adapter, run)
 
     result = await runtime.cancel(cancelled["id"])
     adapter.complete(alive["id"], "still running")
@@ -141,14 +159,8 @@ async def test_main_and_child_runs_can_cancel_one_turn(tmp_path, child):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("child", [False, True])
 async def test_main_and_child_runs_reconnect_from_last_sequence(tmp_path, child):
-    adapter = FakeAdapter()
-    runtime = Runtime(data_root=tmp_path, adapters=[adapter])
-    parent = await launch(runtime)
-    run = (
-        await runtime.delegate(parent["id"], {"id": "child", "adapter": "fake"})
-        if child
-        else parent
-    )
+    runtime, adapter = _make_runtime(tmp_path)
+    run = await _run_for(runtime, child)
     turn = await runtime.submit(run["id"], message("m1", "one"))
     await adapter.wait_for_handles(1)
 
@@ -164,10 +176,31 @@ async def test_main_and_child_runs_reconnect_from_last_sequence(tmp_path, child)
 
 
 @pytest.mark.asyncio
-async def test_submit_is_idempotent_for_the_kernel_message_id(tmp_path):
+async def test_subscription_drains_events_written_while_paused(tmp_path):
     adapter = FakeAdapter()
     runtime = Runtime(data_root=tmp_path, adapters=[adapter])
     run = await launch(runtime)
+    turn = await runtime.submit(run["id"], message("m1", "one"))
+    await adapter.wait_for_handles(1)
+    subscription = runtime.subscribe(turn["id"])
+
+    started = await anext(subscription)
+    adapter.complete(turn["id"], "done")
+    await asyncio.sleep(0)
+    delta = await anext(subscription)
+    ended = await anext(subscription)
+    await subscription.aclose()
+
+    assert started["type"] == "turn_start"
+    assert delta["type"] == "delta"
+    assert ended["type"] == "turn_end"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("child", [False, True])
+async def test_submit_is_idempotent_for_the_kernel_message_id(tmp_path, child):
+    runtime, adapter = _make_runtime(tmp_path)
+    run = await _run_for(runtime, child)
 
     first = await runtime.submit(run["id"], message("same", "first"))
     duplicate = await runtime.submit(run["id"], message("same", "changed"))
@@ -183,10 +216,10 @@ async def test_submit_is_idempotent_for_the_kernel_message_id(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_concurrent_duplicate_submits_create_one_turn(tmp_path):
-    adapter = FakeAdapter()
-    runtime = Runtime(data_root=tmp_path, adapters=[adapter])
-    run = await launch(runtime)
+@pytest.mark.parametrize("child", [False, True])
+async def test_concurrent_duplicate_submits_create_one_turn(tmp_path, child):
+    runtime, adapter = _make_runtime(tmp_path)
+    run = await _run_for(runtime, child)
 
     first, duplicate = await asyncio.gather(
         runtime.submit(run["id"], message("same", "first")),

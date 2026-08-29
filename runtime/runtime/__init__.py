@@ -1,3 +1,3 @@
-from .runtime import Runtime
+from .service import Runtime
 
 __all__ = ["Runtime"]

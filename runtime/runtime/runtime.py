@@ -158,18 +158,18 @@ class Runtime:
     ) -> dict[str, Any]:
         snapshot = _snapshot(agent_spec)
         async with self._registry_lock:
-            if parent_run_id:
-                self._require_run(parent_run_id)
-            adapter = _select_adapter(self._adapters, snapshot)
-            run = _Run(
-                f"r-{uuid.uuid4().hex}",
-                snapshot,
-                adapter,
-                parent_run_id,
-                session_id,
-            )
-            self._runs[run.id] = run
+            run = self._register_run(snapshot, session_id, parent_run_id)
         return _run_view(run)
+
+    def _register_run(self, snapshot, session_id, parent_run_id):
+        if parent_run_id:
+            self._require_run(parent_run_id)
+        adapter = _select_adapter(self._adapters, snapshot)
+        run = _Run(
+            f"r-{uuid.uuid4().hex}", snapshot, adapter, parent_run_id, session_id
+        )
+        self._runs[run.id] = run
+        return run
 
     async def submit(
         self,
@@ -195,8 +195,7 @@ class Runtime:
         return self._subscribe(turn_id, _after_seq(after_seq))
 
     async def _subscribe(self, turn_id: str, after_seq: int):
-        if not self._trace.exists(turn_id):
-            raise KeyError(f"turn not found: {turn_id}")
+        self._require_trace(turn_id)
         queue = self._trace.watch(turn_id)
         cursor = after_seq
         try:
@@ -207,6 +206,8 @@ class Runtime:
                     yield event
                     if event["type"] == "turn_end":
                         return
+                if values:
+                    continue
                 if self._trace.terminal(turn_id):
                     return
                 await queue.get()
@@ -261,27 +262,27 @@ class Runtime:
 
     async def _finish(
         self,
-        turn: _Turn,
-        status: str,
-        result_text: str | None,
-        error: str | None = None,
+        turn,
+        status,
+        result_text,
+        error=None,
     ) -> None:
         async with turn.event_lock:
             if turn.status != "running":
                 return
-            status = "cancelled" if turn.cancel_requested else _status(status)
+            status = _finish_status(turn, status)
             turn.status, turn.result_text = status, result_text
-            data = {
-                "status": status,
-                "result_text": None if status == "cancelled" else result_text,
-            }
-            if error:
-                data["error"] = error
-            self._trace.append(
-                turn.request.turn_id, "turn_end", data, turn.request.run_id
-            )
+            self._append_end(turn, status, result_text, error)
             if status in {"completed", "limit"}:
                 self._record_context(turn, result_text)
+
+    def _append_end(self, turn, status, result_text, error):
+        self._trace.append(
+            turn.request.turn_id,
+            "turn_end",
+            _end_data(status, result_text, error),
+            turn.request.run_id,
+        )
 
     async def _cancel_handle(self, turn: _Turn) -> None:
         if turn.handle is None or turn.cancel_sent:
@@ -303,6 +304,10 @@ class Runtime:
                 {"role": "assistant", "content": result_text or ""},
             )
         )
+
+    def _require_trace(self, turn_id: str) -> None:
+        if not self._trace.exists(turn_id):
+            raise KeyError(f"turn not found: {turn_id}")
 
     def _require_run(self, run_id: str) -> _Run:
         try:
@@ -422,6 +427,20 @@ def _status(status):
     if status not in {"completed", "limit", "error", "cancelled"}:
         return "error"
     return status
+
+
+def _finish_status(turn, status):
+    return "cancelled" if turn.cancel_requested else _status(status)
+
+
+def _end_data(status, result_text, error):
+    data = {
+        "status": status,
+        "result_text": None if status == "cancelled" else result_text,
+    }
+    if error:
+        data["error"] = error
+    return data
 
 
 def _after_seq(value):
