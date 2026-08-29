@@ -36,6 +36,15 @@ record({
     },
     "home": os.environ.get("HOME"),
     "pi_dir": os.environ.get("PI_CODING_AGENT_DIR"),
+    "locale": {
+        name: os.environ.get(name)
+        for name in (
+            "LANG", "LANGUAGE", "LC_ALL", "LC_CTYPE", "LC_COLLATE",
+            "LC_MESSAGES", "LC_MONETARY", "LC_NUMERIC", "LC_TIME",
+        )
+        if os.environ.get(name) is not None
+    },
+    "unsafe_locale": os.environ.get("LC_UNSAFE"),
 })
 for line in sys.stdin:
     command = json.loads(line)
@@ -74,6 +83,26 @@ for line in sys.stdin:
         print(json.dumps({"type": "tool_execution_start", "toolCallId": "tool-1", "toolName": "read", "args": {"path": "README.md"}}), flush=True)
         print(json.dumps({"type": "tool_execution_update", "toolCallId": "tool-1", "toolName": "read", "args": {"path": "README.md"}, "partialResult": "part"}), flush=True)
         print(json.dumps({"type": "tool_execution_end", "toolCallId": "tool-1", "toolName": "read", "result": "contents", "isError": False}), flush=True)
+    if command["message"] == "overflow-retry":
+        error = {"role": "assistant", "content": [], "stopReason": "error", "errorMessage": "context window exceeded"}
+        print(json.dumps({"type": "agent_end", "messages": [error], "willRetry": False}), flush=True)
+        record({"stage": "intermediate_error"})
+        print(json.dumps({"type": "compaction_start", "reason": "overflow"}), flush=True)
+        print(json.dumps({"type": "compaction_end", "reason": "overflow", "aborted": False, "willRetry": True}), flush=True)
+        message = {"role": "assistant", "content": [{"type": "text", "text": "recovered"}], "stopReason": "stop"}
+        print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "text_delta", "delta": "recovered"}}), flush=True)
+        print(json.dumps({"type": "agent_end", "messages": [message], "willRetry": False}), flush=True)
+        record({"stage": "successful_agent_end"})
+        print(json.dumps({"type": "agent_settled"}), flush=True)
+        record({"stage": "agent_settled"})
+        continue
+    if command["message"] == "final-error":
+        error = {"role": "assistant", "content": [], "stopReason": "error", "errorMessage": "provider unavailable"}
+        print(json.dumps({"type": "agent_end", "messages": [error], "willRetry": False}), flush=True)
+        record({"stage": "final_error_agent_end"})
+        print(json.dumps({"type": "agent_settled"}), flush=True)
+        record({"stage": "agent_settled"})
+        continue
     message = {"role": "assistant", "content": [{"type": "text", "text": "hello"}], "stopReason": "stop"}
     print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "text_delta", "delta": "hel"}}), flush=True)
     print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "text_delta", "delta": "lo"}}), flush=True)
@@ -91,12 +120,32 @@ for line in sys.stdin:
     print(json.dumps({"type": "agent_settled"}), flush=True)
 '''
 
+LOCALE_ENVIRONMENT = {
+    "LANG": "zh_CN.UTF-8",
+    "LANGUAGE": "zh_CN:en",
+    "LC_ALL": "zh_CN.UTF-8",
+    "LC_CTYPE": "zh_CN.UTF-8",
+    "LC_MESSAGES": "zh_CN.UTF-8",
+    "LC_UNSAFE": "should-not-pass",
+    "RUNTIME_API_KEY": "runtime-secret",
+    "RUNTIME_API_BASE": "https://runtime.invalid",
+    "OPENAI_API_KEY": "provider-secret",
+}
+
 
 def _fake_pi(tmp_path, version="0.84.3"):
     path = tmp_path / "pi"
     path.write_text(FAKE_PI.replace("0.84.3", version), encoding="utf-8")
     path.chmod(0o755)
     return path
+
+
+def _fake_runtime(tmp_path, monkeypatch, environment=None):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    for name, value in (environment or {}).items():
+        monkeypatch.setenv(name, value)
+    return Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
 
 
 async def _events(runtime, turn_id):
@@ -130,6 +179,33 @@ def _launch_records(tmp_path):
     records = (tmp_path / "fake-pi-log.jsonl").read_text(encoding="utf-8").splitlines()
     values = [json.loads(line) for line in records]
     return values[0], next(value for value in values if "command" in value)
+
+
+def _command_sequence(records):
+    return [
+        "prompt" if item.get("command", {}).get("type") == "prompt" else
+        "abort" if item.get("command", {}).get("type") == "abort" else
+        item["stage"]
+        for item in records
+        if "stage" in item or "command" in item
+    ]
+
+
+def _assert_locale_filtering(launch):
+    assert launch["locale"] == {
+        "LANG": "zh_CN.UTF-8",
+        "LANGUAGE": "zh_CN:en",
+        "LC_ALL": "zh_CN.UTF-8",
+        "LC_CTYPE": "zh_CN.UTF-8",
+        "LC_MESSAGES": "zh_CN.UTF-8",
+    }
+    assert launch["unsafe_locale"] is None
+    assert launch["api_key"] is None
+    assert launch["forbidden"] == {
+        "RUNTIME_API_BASE": None,
+        "OPENAI_API_KEY": None,
+        "PI_OFFLINE": None,
+    }
 
 
 def _assert_completed_events(observed):
@@ -203,6 +279,47 @@ async def test_pi_waits_for_settled_after_agent_end(tmp_path, monkeypatch):
     observed = await events_task
     await _wait_for_stage(tmp_path, "agent_settled")
     assert observed[-1]["data"] == {"status": "completed", "result_text": "hello"}
+
+
+async def test_pi_continues_after_intermediate_overflow_error(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "overflow-retry"})
+    observed = await _events(runtime, turn["id"])
+    records = _records(tmp_path)
+    stages = [item["stage"] for item in records if "stage" in item]
+    commands = [item["command"]["type"] for item in records if "command" in item]
+    assert stages == ["intermediate_error", "successful_agent_end", "agent_settled"]
+    assert "abort" not in commands
+    assert observed[-1]["data"] == {"status": "completed", "result_text": "recovered"}
+
+
+async def test_pi_inherits_host_locale_without_runtime_credentials(tmp_path, monkeypatch):
+    runtime = _fake_runtime(tmp_path, monkeypatch, LOCALE_ENVIRONMENT)
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "hello"})
+    await _events(runtime, turn["id"])
+    launch, _ = _launch_records(tmp_path)
+    _assert_locale_filtering(launch)
+
+
+async def test_pi_keeps_final_error_after_settled(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "final-error"})
+    observed = await _events(runtime, turn["id"])
+    assert _command_sequence(_records(tmp_path)) == [
+        "prompt", "final_error_agent_end", "agent_settled", "abort"
+    ]
+    assert observed[-1]["data"] == {
+        "status": "error",
+        "result_text": None,
+        "error": "pi_process: pi model request failed",
+    }
 
 
 async def test_pi_protocol_error_stops_the_fake_process(tmp_path, monkeypatch):

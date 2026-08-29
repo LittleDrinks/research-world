@@ -17,6 +17,11 @@ PI_VERSION = "0.84.3"
 PROMPT_ID = "prompt-1"
 ABORT_TIMEOUT = 0.1
 TERMINATE_TIMEOUT = 2.0
+LOCALE_KEYS = (
+    "LANG", "LANGUAGE", "LC_ALL", "LC_CTYPE", "LC_COLLATE", "LC_MONETARY",
+    "LC_NUMERIC", "LC_TIME", "LC_MESSAGES", "LC_PAPER", "LC_NAME",
+    "LC_ADDRESS", "LC_TELEPHONE", "LC_MEASUREMENT", "LC_IDENTIFICATION",
+)
 REASONING_PHASES = {
     "thinking_start": "started",
     "thinking_delta": "updated",
@@ -129,6 +134,7 @@ class PiEventParser:
     def __init__(self):
         self.acknowledged = False
         self.agent_ended = False
+        self.agent_error: PiAdapterError | None = None
         self.finished = False
         self.result_text = ""
 
@@ -162,11 +168,21 @@ class PiEventParser:
         if event.get("willRetry") is True:
             return
         message = _last_assistant(event.get("messages"))
-        _validate_stop_reason(message)
+        try:
+            _validate_stop_reason(message)
+        except PiAdapterError as error:
+            if error.code != "pi_process":
+                raise
+            self.agent_error = error
+            self.agent_ended = False
+            return
         self.result_text = _message_text(message)
+        self.agent_error = None
         self.agent_ended = True
 
     def _settled(self) -> None:
+        if self.agent_error is not None:
+            raise self.agent_error
         if not self.agent_ended:
             raise PiAdapterError("pi_protocol", "pi settled before agent_end")
         self.finished = True
@@ -210,7 +226,7 @@ async def _read(process, parser, emit) -> None:
         line = await process.stdout.readline()
         if not line:
             await process.wait()
-            raise _exit_error(process, parser.agent_ended)
+            raise _exit_error(process, parser.agent_ended or parser.agent_error is not None)
         for event in parser.consume(line):
             await emit(event)
 
@@ -431,13 +447,16 @@ def _setting(snapshot: dict[str, Any], name: str, default: str) -> str:
 def _environment() -> dict[str, str]:
     home = os.environ.get("HOME") or str(Path.home())
     agent_dir = os.environ.get("PI_CODING_AGENT_DIR") or str(Path(home) / ".pi" / "agent")
-    return {
-        "HOME": home,
-        "PI_CODING_AGENT_DIR": agent_dir,
-        "PI_TELEMETRY": "0",
-        "LANG": "C.UTF-8",
-        "PATH": os.environ.get("PATH", os.defpath),
-    }
+    environment = {key: os.environ[key] for key in LOCALE_KEYS if key in os.environ}
+    environment.update(
+        {
+            "HOME": home,
+            "PI_CODING_AGENT_DIR": agent_dir,
+            "PI_TELEMETRY": "0",
+            "PATH": os.environ.get("PATH", os.defpath),
+        }
+    )
+    return environment
 
 
 def _exit_error(process, agent_ended: bool = False) -> PiAdapterError:
