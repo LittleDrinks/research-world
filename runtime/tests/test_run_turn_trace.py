@@ -32,6 +32,7 @@ class FakeAdapter:
         self.submit_stopped = asyncio.Event()
         self.cancel_error = None
         self.cancel_result = None
+        self.submit_cancel_error = None
         self.start_cancel_error = None
 
     async def start(self, request):
@@ -56,6 +57,8 @@ class FakeAdapter:
         try:
             await handle.released.wait()
             if handle.cancelled:
+                if self.submit_cancel_error is not None:
+                    raise self.submit_cancel_error
                 return self.cancel_result or AdapterResult(status="cancelled")
             event = self.event
             if event is _UNSET:
@@ -433,6 +436,41 @@ async def test_cancel_preserves_active_adapter_error(tmp_path):
 
     assert result["status"] == "error"
     assert adapter.submit_stopped.is_set()
+    assert len(terminals) == 1
+    assert terminals[0]["data"]["status"] == "error"
+
+
+@pytest.mark.asyncio
+async def test_adapter_submit_cancelled_after_runtime_cancel_is_error(tmp_path):
+    runtime, adapter = _make_runtime(tmp_path)
+    adapter.submit_cancel_error = asyncio.CancelledError("adapter submit cancelled")
+    run = await launch(runtime)
+    turn = await runtime.submit(run["id"], message("m1", "one"))
+    await adapter.wait_for_handles(1)
+
+    result = await runtime.cancel(turn["id"])
+    observed = await events(runtime, turn["id"])
+    terminals = [event for event in observed if event["type"] == "turn_end"]
+
+    assert result["status"] == "error"
+    assert len(terminals) == 1
+    assert terminals[0]["data"]["error"] == "adapter submit cancelled"
+
+
+@pytest.mark.asyncio
+async def test_non_serializable_result_text_is_error(tmp_path):
+    runtime, adapter = _make_runtime(tmp_path)
+    adapter.result = AdapterResult(result_text=object())
+    run = await launch(runtime)
+    turn = await runtime.submit(run["id"], message("m1", "one"))
+    await adapter.wait_for_handles(1)
+    adapter.complete(turn["id"], "done")
+
+    observed = await _terminal_events(runtime, turn["id"])
+    repeated = await runtime.submit(run["id"], message("m1", "again"))
+    terminals = [event for event in observed if event["type"] == "turn_end"]
+
+    assert repeated["status"] == "error"
     assert len(terminals) == 1
     assert terminals[0]["data"]["status"] == "error"
 

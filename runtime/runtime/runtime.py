@@ -131,6 +131,7 @@ class _Turn:
     result_text: str | None = None
     handle: Any = None
     cancel_requested: bool = False
+    task_cancel_requested: bool = False
     cancel_sent: bool = False
     task: asyncio.Task | None = None
     cancel_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
@@ -264,7 +265,7 @@ class Runtime:
     async def _handle_cancelled(
         self, turn: _Turn, error: asyncio.CancelledError
     ) -> None:
-        if not turn.cancel_requested:
+        if not turn.task_cancel_requested:
             await self._finish(turn, "error", None, _cancel_detail(error), force=True)
 
     async def _emit(self, turn: _Turn, value: Any) -> None:
@@ -318,16 +319,19 @@ class Runtime:
         if turn.task is None:
             return
         if turn.handle is None:
-            turn.task.cancel()
-            await self._wait_execution(turn)
+            await self._cancel_execution_task(turn)
         if turn.handle is None:
             return
         try:
             await self._cancel_handle(turn)
         except Exception:
-            turn.task.cancel()
-            await self._wait_execution(turn)
+            await self._cancel_execution_task(turn)
             raise
+        await self._wait_execution(turn)
+
+    async def _cancel_execution_task(self, turn: _Turn) -> None:
+        turn.task_cancel_requested = True
+        turn.task.cancel()
         await self._wait_execution(turn)
 
     async def _wait_execution(self, turn: _Turn) -> None:
@@ -453,6 +457,8 @@ def _adapter_event(value):
 def _result(value: AdapterResult):
     if not isinstance(value, AdapterResult):
         raise TypeError("adapter submit must return AdapterResult")
+    if value.result_text is not None and not isinstance(value.result_text, str):
+        raise TypeError("adapter result_text must be a string or None")
     return value.status, value.result_text
 
 
