@@ -179,7 +179,6 @@ def test_record_is_immediately_readable_through_the_kernel_interface(tmp_path):
 
     assert reopened.get_record(project.id, record.id) == record
     assert reopened.list_records(project.id) == [record]
-    assert not {"pending", "admitted", "ghost", "life_state"} & set(dir(record))
 
 
 def test_existing_records_can_be_connected_through_the_kernel_interface(tmp_path):

@@ -1,3 +1,4 @@
+import pytest
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
@@ -103,21 +104,35 @@ def test_http_remove_record_cascades_relation_and_preserves_artifact(tmp_path):
     assert kernel.read_artifact(project.id, artifact.id) == b"evidence"
 
 
-def test_http_record_rejects_storage_and_internal_state_inputs(tmp_path):
+@pytest.mark.parametrize(
+    "extra_field",
+    (
+        "action",
+        "admission",
+        "pipeline",
+        "auto",
+        "sql",
+        "cypher",
+        "table",
+        "review",
+        "review_state",
+        "life_state",
+        "pending",
+        "admitted",
+        "ghost",
+    ),
+)
+def test_http_record_rejects_non_domain_inputs(tmp_path, extra_field):
     kernel, client = _client(tmp_path)
     project = _project(kernel)
-
     response = client.post(
         f"/api/v1/projects/{project.id}/records",
         json={
             "type": "direction",
             "content": {"text": "Candidate"},
-            "sql": "opaque",
-            "table": "opaque",
-            "pending": True,
+            extra_field: "opaque",
         },
     )
-
     assert response.status_code == 422
 
 
