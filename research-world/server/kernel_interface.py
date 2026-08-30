@@ -507,9 +507,15 @@ def _validate_record(record_type: str, content: dict, artifact_ids: tuple) -> No
 def _validate_local_map_query(query: LocalMapQuery) -> None:
     if not isinstance(query, LocalMapQuery):
         raise TypeError("local map query must be a LocalMapQuery")
-    has_text = isinstance(query.text, str) and bool(query.text.strip())
-    has_record = isinstance(query.record_id, str) and bool(query.record_id.strip())
-    if has_text == has_record:
+    if query.text is not None and (
+        not isinstance(query.text, str) or not query.text.strip()
+    ):
+        raise ValueError("local map query text must be None or non-empty text")
+    if query.record_id is not None and (
+        not isinstance(query.record_id, str) or not query.record_id.strip()
+    ):
+        raise ValueError("local map query record id must be None or non-empty text")
+    if (query.text is None) == (query.record_id is None):
         raise ValueError("local map query requires text or record id")
     if isinstance(query.limit, bool) or not isinstance(query.limit, int) or query.limit < 1:
         raise ValueError("local map limit must be a positive integer")

@@ -294,6 +294,35 @@ def test_local_map_node_reference_returns_relations_and_artifacts(tmp_path):
     assert result == LocalMap((direction,), (relation,), (artifact,))
 
 
+@pytest.mark.parametrize(
+    ("invalid_field", "invalid_value"), (("text", 123), ("record_id", 123))
+)
+def test_local_map_rejects_wrong_query_field_types(tmp_path, invalid_field, invalid_value):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+    record = kernel.record(project.id, "source", {"title": "Orbit"})
+    values = {"text": "orbit", "record_id": record.id}
+    values[invalid_field] = invalid_value
+
+    with pytest.raises(ValueError, match="local map query"):
+        kernel.local_map(project.id, LocalMapQuery(**values, limit=5))
+
+
+@pytest.mark.parametrize(
+    ("invalid_field", "invalid_value"),
+    (("text", ""), ("text", "  "), ("record_id", ""), ("record_id", "  ")),
+)
+def test_local_map_rejects_empty_query_fields(tmp_path, invalid_field, invalid_value):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+    record = kernel.record(project.id, "source", {"title": "Orbit"})
+    values = {"text": "orbit", "record_id": record.id}
+    values[invalid_field] = invalid_value
+
+    with pytest.raises(ValueError, match="local map query"):
+        kernel.local_map(project.id, LocalMapQuery(**values, limit=5))
+
+
 def test_local_map_text_query_matches_content_values_only(tmp_path):
     kernel = _kernel(tmp_path)
     project = _project(kernel)
