@@ -162,6 +162,19 @@ for line in sys.stdin:
         print(json.dumps({"type": "agent_end", "messages": [message], "willRetry": False}), flush=True)
         print(json.dumps({"type": "agent_settled"}), flush=True)
         continue
+    if command["message"] == "thinking-final":
+        message = {
+            "role": "assistant",
+            "content": [
+                {"type": "thinking", "thinking": "plan", "thinkingSignature": "sig"},
+                {"type": "text", "text": "OK"},
+            ],
+            "stopReason": "stop",
+        }
+        print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "text_delta", "delta": "OK"}}), flush=True)
+        print(json.dumps({"type": "agent_end", "messages": [message], "willRetry": False}), flush=True)
+        print(json.dumps({"type": "agent_settled"}), flush=True)
+        continue
     if command["message"] == "non-string-content":
         message = {"role": "assistant", "content": [{"type": "text", "text": 7}], "stopReason": "stop"}
         print(json.dumps({"type": "agent_end", "messages": [message], "willRetry": False}), flush=True)
@@ -329,6 +342,16 @@ async def test_pi_adapter_normalizes_reasoning_and_tool_streams(tmp_path, monkey
     turn = await runtime.submit(run["id"], {"id": "m1", "content": "rich"})
     observed = await _events(runtime, turn["id"])
     _assert_rich_events(observed)
+
+
+async def test_pi_completes_final_message_with_thinking_and_text_blocks(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "thinking-final"})
+    observed = await _events(runtime, turn["id"])
+    assert observed[-1]["data"] == {"status": "completed", "result_text": "OK"}
 
 
 async def test_pi_waits_for_settled_after_agent_end(tmp_path, monkeypatch):

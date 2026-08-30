@@ -427,13 +427,25 @@ def _message_text(message: dict[str, Any]) -> str:
         raise PiAdapterError("pi_protocol", "pi assistant content is invalid")
     values = []
     for item in content:
-        if not isinstance(item, dict) or item.get("type") != "text":
-            raise PiAdapterError("pi_protocol", "pi assistant content block is invalid")
-        value = item.get("text")
-        if not isinstance(value, str):
-            raise PiAdapterError("pi_protocol", "pi assistant text is invalid")
-        values.append(value)
+        if isinstance(item, dict) and item.get("type") == "thinking":
+            _validate_thinking_block(item)
+            continue
+        values.append(_text_value(item))
     return "".join(values)
+
+
+def _validate_thinking_block(item: dict[str, Any]) -> None:
+    if not isinstance(item.get("thinking"), str) or not isinstance(item.get("thinkingSignature"), str):
+        raise PiAdapterError("pi_protocol", "pi assistant thinking block is invalid")
+
+
+def _text_value(item: Any) -> str:
+    if not isinstance(item, dict) or item.get("type") != "text":
+        raise PiAdapterError("pi_protocol", "pi assistant content block is invalid")
+    value = item.get("text")
+    if not isinstance(value, str):
+        raise PiAdapterError("pi_protocol", "pi assistant text is invalid")
+    return value
 
 
 def _validate_stop_reason(message: dict[str, Any]) -> None:
