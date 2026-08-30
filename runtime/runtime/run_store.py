@@ -408,6 +408,7 @@ def _validate_turn(turn_id, turn, runs):
     _validate_context_value(turn.get("context"))
     if turn.get("result_text") is not None and not isinstance(turn["result_text"], str):
         raise RunStoreError("runtime store result is invalid")
+    _validate_result(turn["status"], turn.get("result_text"))
     if turn.get("error") is not None and not isinstance(turn["error"], str):
         raise RunStoreError("runtime store error is invalid")
 
@@ -518,6 +519,7 @@ def _validate_child_result_event(event, value):
     link = value["delegations"].get(data.get("child_run_id"))
     if set(data) - allowed or not {"child_run_id", "child_turn_id", "status", "result_text"} <= set(data):
         raise RunStoreError("runtime store child result shape is invalid")
+    _validate_result(data["status"], data["result_text"])
     if child is None or link is None or child["run_id"] != data["child_run_id"] or link["parent_turn_id"] != event["turn_id"]:
         raise RunStoreError("runtime store child result association is invalid")
     if child["status"] == "running" or data["status"] != child["status"] or data["result_text"] != child["result_text"]:
@@ -549,6 +551,7 @@ def _validate_end(turn, event):
     data = event["data"]
     if set(data) - {"status", "result_text", "error"} or not {"status", "result_text"} <= set(data):
         raise RunStoreError("runtime store turn end shape is invalid")
+    _validate_result(data["status"], data["result_text"])
     if data.get("status") != turn["status"] or data.get("result_text") != turn["result_text"]:
         raise RunStoreError("runtime store turn end is inconsistent")
     if (turn["error"] is None) != ("error" not in data) or data.get("error") != turn["error"]:
@@ -587,6 +590,11 @@ def _validate_context_pair(pair):
         raise RunStoreError("runtime store user context is invalid")
     if set(pair[1]) != {"role", "content"} or pair[1]["role"] != "assistant" or not isinstance(pair[1]["content"], str):
         raise RunStoreError("runtime store assistant context is invalid")
+
+
+def _validate_result(status, result_text):
+    if status == "cancelled" and result_text is not None:
+        raise RunStoreError("runtime store cancelled result is invalid")
 
 
 def _validate_snapshot_fields(value):

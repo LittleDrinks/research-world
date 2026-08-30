@@ -542,6 +542,86 @@ asyncio.run(main())
 '''
 
 
+_CANCELLED_MAIN_RESULT_PROCESS = r'''
+import asyncio, json, sys
+from pathlib import Path
+from runtime.adapter import AdapterResult
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    async def start(self, request): return object()
+    async def submit(self, handle, request, emit):
+        return AdapterResult(status="cancelled", result_text="discard-me")
+    async def cancel(self, handle, request): return None
+
+async def collect(runtime, turn_id):
+    return [event async for event in runtime.subscribe(turn_id)]
+
+async def main():
+    runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
+    run = await runtime.launch({"adapter": "fake"})
+    turn = await runtime.submit(run["id"], {"id": "main", "content": "work"})
+    events = await collect(runtime, turn["id"])
+    print(json.dumps({"turn_id": turn["id"], "events": events}))
+
+asyncio.run(main())
+'''
+
+
+_CORRUPT_CANCELLED_RESULT_PROCESS = r'''
+import json, sqlite3, sys
+from pathlib import Path
+
+root, value = Path(sys.argv[1]), json.loads(sys.argv[2])
+turn_id = value.get("turn_id") or value["child"][0]["turn_id"]
+parent_turn = value.get("parent_turn") or (value["parent"][0]["turn_id"] if "parent" in value else None)
+bad_result = "corrupt-cancelled-result"
+connection = sqlite3.connect(root / "runs.sqlite3")
+connection.execute("UPDATE turns SET result_text = ? WHERE id = ?", (bad_result, turn_id))
+seq, raw = connection.execute("SELECT seq, data FROM events WHERE turn_id = ? AND type = 'turn_end'", (turn_id,)).fetchone()
+data = json.loads(raw)
+data["result_text"] = bad_result
+connection.execute("UPDATE events SET data = ? WHERE turn_id = ? AND seq = ?", (json.dumps(data), turn_id, seq))
+if parent_turn is not None:
+    rows = connection.execute("SELECT seq, data FROM events WHERE turn_id = ? AND type = 'child_result'", (parent_turn,)).fetchall()
+    for seq, raw in rows:
+        data = json.loads(raw)
+        if data["child_turn_id"] == turn_id:
+            data["result_text"] = bad_result
+            connection.execute("UPDATE events SET data = ? WHERE turn_id = ? AND seq = ?", (json.dumps(data), parent_turn, seq))
+            break
+connection.commit()
+connection.close()
+'''
+
+
+_REJECT_CORRUPT_RECOVERY_PROCESS = r'''
+import json, sys
+from pathlib import Path
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    def __init__(self): self.calls = []
+    async def start(self, request): self.calls.append("start")
+    async def submit(self, handle, request, emit): self.calls.append("submit")
+    async def cancel(self, handle, request): self.calls.append("cancel")
+
+root = Path(sys.argv[1])
+before = (root / "runs.sqlite3").read_bytes()
+adapter = Adapter()
+try:
+    Runtime(root, {"fake": adapter})
+except Exception as error:
+    print(json.dumps({"error": type(error).__name__ + ":" + str(error), "calls": adapter.calls, "unchanged": (root / "runs.sqlite3").read_bytes() == before}))
+else:
+    print(json.dumps({"constructed": True, "calls": adapter.calls, "unchanged": (root / "runs.sqlite3").read_bytes() == before}))
+'''
+
+
 _RECOVER_CANCELLED_RESULT_PROCESS = r'''
 import asyncio, json, sys
 from pathlib import Path
@@ -711,6 +791,15 @@ def _output(result):
     return json.loads(result.stdout)
 
 
+def _assert_corrupt_cancelled_result_fails(tmp_path, seed):
+    created = _output(_run_process(seed, tmp_path))
+    _run_process(_CORRUPT_CANCELLED_RESULT_PROCESS, tmp_path, json.dumps(created))
+    attempts = [_output(_run_process(_REJECT_CORRUPT_RECOVERY_PROCESS, tmp_path)) for _ in range(2)]
+    assert all(attempt["error"].startswith("RunStoreError:runtime store") for attempt in attempts)
+    assert all(attempt["calls"] == [] and attempt["unchanged"] for attempt in attempts)
+    assert attempts[0] == attempts[1]
+
+
 def test_completed_run_recovers_in_a_fresh_interpreter(tmp_path):
     created = _output(_run_process(_COMPLETED_PROCESS, tmp_path))
     recovered = _output(_run_process(_RECOVER_COMPLETED_PROCESS, tmp_path, created["run_id"], created["turn_id"]))
@@ -792,6 +881,14 @@ def test_cancelled_adapter_result_is_identical_before_and_after_restart(tmp_path
     assert created["duplicate"]["result_text"] is None
     assert created["child"][-1]["data"] == {"status": "cancelled", "result_text": None}
     assert created["parent"][1]["data"]["result_text"] is None
+
+
+def test_corrupt_cancelled_main_result_fails_before_fresh_recovery(tmp_path):
+    _assert_corrupt_cancelled_result_fails(tmp_path, _CANCELLED_MAIN_RESULT_PROCESS)
+
+
+def test_corrupt_cancelled_child_result_fails_before_fresh_recovery(tmp_path):
+    _assert_corrupt_cancelled_result_fails(tmp_path, _CANCELLED_RESULT_PROCESS)
 
 
 @pytest.mark.parametrize("parent_status", ["completed", "limit"])
