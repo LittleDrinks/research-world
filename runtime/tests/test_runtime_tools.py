@@ -1,8 +1,22 @@
 import asyncio
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
+from kernel_contract import LocalMapQuery
 
 from runtime.runtime import AdapterResult, Runtime
+
+
+def test_runtime_tools_loads_without_the_server_source_path():
+    result = subprocess.run(
+        [sys.executable, "-c", "from runtime.runtime_tools import RuntimeTools"],
+        cwd=Path(__file__).parents[1],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 _KERNEL_OPERATIONS = (
@@ -127,7 +141,7 @@ def _assert_kernel_operations(kernel):
         ("connect", "project-2", "source-1", "direction-1", "supports"),
         ("remove_record", "project-1", "record-1"),
         ("remove_relation", "project-2", "relation-1"),
-        ("local_map", "project-1", {"text": "orbit", "limit": 5}),
+        ("local_map", "project-1", LocalMapQuery(text="orbit", limit=5)),
     ]
 
 

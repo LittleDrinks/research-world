@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any, Protocol
 
+from kernel_contract import LocalMapQuery
+
 from .mmr import select_mmr
 
 
@@ -27,7 +29,7 @@ class KernelInterface(Protocol):
 
     def remove_relation(self, project_id: str, relation_id: str) -> None: ...
 
-    def local_map(self, project_id: str, query: object) -> object: ...
+    def local_map(self, project_id: str, query: LocalMapQuery) -> object: ...
 
 
 class RuntimeTools:
@@ -92,4 +94,5 @@ class RuntimeTools:
         )
 
     def _local_map(self, values):
-        return self._kernel.local_map(values["project_id"], values["query"])
+        query = LocalMapQuery(**values["query"])
+        return self._kernel.local_map(values["project_id"], query)

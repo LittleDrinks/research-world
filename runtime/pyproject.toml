@@ -11,6 +11,7 @@ dependencies = [
   "jsonschema==4.25.1",
   "mcp>=1.0,<2",
   "pyyaml==6.0.3",
+  "research-kernel-contract==0.1.0",
 ]
 
 [dependency-groups]
@@ -19,6 +20,9 @@ dev = [
   "pytest-asyncio==1.1.0",
   "respx==0.23.1",
 ]
+
+[tool.uv.sources]
+research-kernel-contract = { path = "../research-world/kernel-contract" }
 
 [tool.pytest.ini_options]
 pythonpath = [".", "../research-world"]
