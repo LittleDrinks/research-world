@@ -51,17 +51,16 @@ IGNORED_EVENTS = {
     "session_before_switch", "session_before_tree", "session_compact",
     "session_info_changed", "session_shutdown", "session_start", "session_tree",
 }
-_EXPECTED_CANCEL_ERRORS = {
-    "pi_process: pi model request aborted",
-    "pi_protocol: pi exited before agent_end",
-    "pi_protocol: pi exited before agent_settled",
-}
 
 
 class PiAdapterError(RuntimeError):
     def __init__(self, code: str, message: str):
         self.code = code
         super().__init__(f"{code}: {message}")
+
+
+class _PiCancelled(Exception):
+    pass
 
 
 @dataclass
@@ -124,11 +123,10 @@ class PiAdapter:
     async def submit(self, handle, request, emit) -> AdapterResult:
         try:
             return await _submit(handle, request, emit, self.timeout)
-        except PiAdapterError as error:
-            expected = _is_expected_cancel(handle, error)
+        except _PiCancelled:
+            return AdapterResult(status="cancelled")
+        except PiAdapterError:
             await _cleanup(handle)
-            if expected:
-                return AdapterResult(status="cancelled")
             raise
 
     async def cancel(self, handle: PiHandle, request: TurnRequest) -> None:
@@ -229,36 +227,30 @@ def _handle_auto_retry_end(event: dict[str, Any]) -> None:
     raise PiAdapterError("pi_protocol", "unsupported pi event: auto_retry_end")
 
 
-def _is_expected_cancel(handle: PiHandle, error: PiAdapterError) -> bool:
-    if not handle.cancelled:
-        return False
-    if str(error) in _EXPECTED_CANCEL_ERRORS:
-        return True
-    return error.code == "pi_process" and handle.process.returncode in {
-        -signal.SIGTERM,
-        -signal.SIGKILL,
-    }
-
-
 async def _submit(handle, request, emit, timeout: float) -> AdapterResult:
     if not isinstance(request.input, str):
         raise PiAdapterError("pi_input", "pi prompt must be a string")
     parser = PiEventParser()
     await _send(handle.process, {"id": PROMPT_ID, "type": "prompt", "message": request.input})
     try:
-        await asyncio.wait_for(_read(handle.process, parser, emit), timeout)
+        await asyncio.wait_for(_read(handle, parser, emit), timeout)
     except asyncio.TimeoutError as error:
         raise PiAdapterError("pi_process", f"pi timed out after {timeout:g}s") from error
     await _close_completed(handle)
     return AdapterResult(result_text=parser.result_text)
 
 
-async def _read(process, parser, emit) -> None:
+async def _read(handle, parser, emit) -> None:
+    process = handle.process
     while not parser.finished:
         line = await process.stdout.readline()
         if not line:
             await process.wait()
-            raise _exit_error(process, parser.agent_ended or parser.agent_error is not None)
+            if parser.agent_error is not None:
+                raise parser.agent_error
+            if handle.cancelled:
+                raise _PiCancelled()
+            raise _exit_error(process, parser.agent_ended)
         for event in parser.consume(line):
             await emit(event)
 

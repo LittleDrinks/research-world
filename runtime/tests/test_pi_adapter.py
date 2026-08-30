@@ -6,7 +6,6 @@ import time
 import pytest
 from runtime.adapter.pi import PiAdapter
 from runtime.adapter.pi import PiAdapterError
-from runtime.adapter.pi import PiEventParser
 from runtime.runtime import Runtime
 
 
@@ -138,6 +137,11 @@ for line in sys.stdin:
         print(json.dumps({"type": "agent_settled"}), flush=True)
         record({"stage": "agent_settled"})
         continue
+    if command["message"] == "final-error-before-settled":
+        error = {"role": "assistant", "content": [], "stopReason": "error", "errorMessage": "provider unavailable before settled"}
+        print(json.dumps({"type": "agent_end", "messages": [error], "willRetry": False}), flush=True)
+        record({"stage": "final_error_before_settled"})
+        time.sleep(60)
     if command["message"] == "retry-error":
         error = {"role": "assistant", "content": [], "stopReason": "error", "errorMessage": "provider quota exhausted"}
         print(json.dumps({"type": "agent_end", "messages": [error], "willRetry": False}), flush=True)
@@ -150,6 +154,9 @@ for line in sys.stdin:
         continue
     if command["message"] == "unknown-ui":
         print(json.dumps({"type": "extension_ui_request", "id": "ui-1", "method": "mystery"}), flush=True)
+    if command["message"] == "unknown":
+        print(json.dumps({"type": "unknown"}), flush=True)
+        continue
     if command["message"] == "unknown-content":
         message = {"role": "assistant", "content": [{"type": "image", "url": "image"}], "stopReason": "stop"}
         print(json.dumps({"type": "agent_end", "messages": [message], "willRetry": False}), flush=True)
@@ -427,6 +434,25 @@ async def test_pi_keeps_final_error_after_settled(tmp_path, monkeypatch):
     }
 
 
+async def test_pi_preserves_final_error_when_cancelled_before_settled(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(
+        run["id"], {"id": "m1", "content": "final-error-before-settled"}
+    )
+    await _wait_for_stage(tmp_path, "final_error_before_settled")
+    result = await runtime.cancel(turn["id"])
+    observed = await _events(runtime, turn["id"])
+    assert result["status"] == "error"
+    assert observed[-1]["data"] == {
+        "status": "error",
+        "result_text": None,
+        "error": "pi_process: provider unavailable before settled",
+    }
+
+
 async def test_pi_preserves_automatic_retry_error_detail(tmp_path, monkeypatch):
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
@@ -501,6 +527,21 @@ async def test_pi_protocol_error_stops_the_fake_process(tmp_path, monkeypatch):
     observed = await _events(runtime, turn["id"])
     await _wait_for_command(tmp_path, "abort")
     assert observed[-1]["data"]["status"] == "error"
+
+
+async def test_pi_rejects_unknown_event_through_runtime(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "unknown"})
+    observed = await _events(runtime, turn["id"])
+    assert observed[-1]["data"] == {
+        "status": "error",
+        "result_text": None,
+        "error": "pi_protocol: unsupported pi event: unknown",
+    }
+    await _wait_for_command(tmp_path, "abort")
 
 
 async def test_pi_rejected_prompt_is_an_explicit_protocol_error(tmp_path, monkeypatch):
@@ -608,8 +649,3 @@ def test_pi_detection_reports_incompatible_version(tmp_path, monkeypatch):
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     with pytest.raises(PiAdapterError, match="pi_configuration: unsupported pi version: 0.85.0"):
         PiAdapter.detect()
-
-
-def test_pi_parser_rejects_unknown_event_type():
-    with pytest.raises(PiAdapterError, match="pi_protocol: unsupported pi event: unknown"):
-        PiEventParser().consume(b'{"type":"unknown"}\n')
