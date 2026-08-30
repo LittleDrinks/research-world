@@ -88,6 +88,13 @@ async function createArtifact(page, project, token) {
 }
 
 
+async function downloadBytes(download) {
+  const chunks = [];
+  for await (const chunk of await download.createReadStream()) chunks.push(chunk);
+  return Buffer.concat(chunks);
+}
+
+
 async function createRecord(page, project, type, token, artifactIds = []) {
   const response = await page.request.post(`/api/v1/projects/${project}/records`, {
     data: { type, content: typeof token === "string" ? { title: `${type} ${token}`, text: token } : token, artifact_ids: artifactIds },
@@ -112,6 +119,7 @@ async function assertKernelInspector(page, graph) {
   const inspector = page.locator(".inspector");
   await expect(inspector.locator(".node-record")).toContainText(graph.source.content.text);
   await expect(inspector.locator(".inspector-section", { hasText: "直接关系" })).toContainText(graph.direction.id);
+  await expect(inspector.locator(".artifact-download")).toHaveCount(0);
   await expect(inspector.getByText("原子主张")).toHaveCount(0);
   await expect(inspector.getByText("审计意见")).toHaveCount(0);
   await expect(inspector.locator(".pipeline-launcher, .workflow-start, .claim-list, .review-grid, .rejection-reason")).toHaveCount(0);
@@ -216,7 +224,13 @@ async function deleteRelationFromInspector(page, relation, requests) {
 
 
 async function assertArtifactInInspector(page, artifact) {
-  await expect(page.locator(".inspector-section", { hasText: "关联 Artifact" })).toContainText(artifact.id);
+  const section = page.locator(".inspector-section", { hasText: "关联 Artifact" });
+  await expect(section).toContainText(`${artifact.media_type} · ${artifact.id}`);
+  const root = `/api/v1/projects/${encodeURIComponent(artifact.project_id)}/artifacts/${encodeURIComponent(artifact.id)}`;
+  await expect(section.getByRole("link", { name: `查看 Artifact ${artifact.id}` })).toHaveAttribute("href", root);
+  await expect(section.getByRole("link", { name: `下载 Artifact ${artifact.id}` })).toHaveAttribute("href", `${root}?download=true`);
+  await expect(section.locator("a")).toHaveCount(2);
+  await expect(section.locator("input, textarea, button")).toHaveCount(0);
 }
 
 
@@ -350,6 +364,25 @@ test("retains a shared Artifact when deleting one Record", async ({ page }) => {
     await page.reload();
     await expect(page.locator(".research-node")).toHaveCount(1);
     await assertArtifactInInspector(page, graph.artifact);
+  } finally { await removeGraph(page, graph); }
+});
+
+
+test("views and downloads the selected Record Artifact through the real backend", async ({ page }) => {
+  const graph = await seedSharedArtifactGraph(page);
+  try {
+    await page.goto(`/map?node=${encodeURIComponent(graph.survivor.id)}`);
+    await assertArtifactInInspector(page, graph.artifact);
+    const viewPromise = page.waitForEvent("popup");
+    await page.getByRole("link", { name: `查看 Artifact ${graph.artifact.id}` }).click();
+    const view = await viewPromise;
+    await expect(view.locator("body")).toContainText(`Shared evidence ${graph.token}`);
+    await view.close();
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("link", { name: `下载 Artifact ${graph.artifact.id}` }).click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe(`artifact-${graph.artifact.sha256}.bin`);
+    expect(await downloadBytes(download)).toEqual(Buffer.from(`Shared evidence ${graph.token}`));
   } finally { await removeGraph(page, graph); }
 });
 

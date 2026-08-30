@@ -1,9 +1,12 @@
+from pathlib import Path
+
 import pytest
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
 from server.app import create_app
+from server.artifacts import ArtifactStore
 from server.kernel import ResearchKernel
 from server.kernel_http import kernel_graph_router
 from server.kernel_interface import create_kernel
@@ -111,6 +114,16 @@ def _local_map(client, project_id, record_id):
     )
 
 
+def _artifact_url(project_id, artifact_id, download=False):
+    suffix = "?download=true" if download else ""
+    return f"/api/v1/projects/{project_id}/artifacts/{artifact_id}{suffix}"
+
+
+def _tamper_artifact(tmp_path, project_id, artifact_id):
+    store = ArtifactStore(tmp_path / "artifacts", project_id)
+    Path(store.get(artifact_id)["path"]).write_bytes(b"tampered")
+
+
 def _artifact_view(artifact):
     return {
         "id": artifact.id,
@@ -209,6 +222,51 @@ def test_http_local_map_returns_records_relations_and_artifacts(tmp_path):
     )
     relation = _connect(client, project.id, source["id"], direction["id"]).json()
     _assert_local_map(_local_map(client, project.id, direction["id"]), direction, relation, artifact)
+
+
+def test_http_artifact_view_and_download_return_kernel_bytes_and_metadata(tmp_path):
+    kernel, client = _client(tmp_path)
+    project = _project(kernel)
+    content = b"raw artifact\x00bytes"
+    artifact = kernel.capture_artifact(project.id, content, "text/plain")
+
+    view = client.get(_artifact_url(project.id, artifact.id))
+    download = client.get(_artifact_url(project.id, artifact.id, download=True))
+
+    assert (view.status_code, download.status_code) == (200, 200)
+    assert view.content == download.content == content
+    assert view.headers["content-type"].startswith(artifact.media_type)
+    assert download.headers["content-type"].startswith(artifact.media_type)
+    assert "content-disposition" not in view.headers
+    assert download.headers["content-disposition"] == f'attachment; filename="artifact-{artifact.sha256}.bin"'
+
+
+def test_http_artifact_download_rejects_unknown_and_foreign_artifacts(tmp_path):
+    kernel, client = _client(tmp_path)
+    project = _project(kernel)
+    other = _project(kernel, "Other study")
+    artifact = kernel.capture_artifact(project.id, b"private bytes", "text/plain")
+
+    unknown = client.get(_artifact_url(project.id, "artifact:" + "f" * 64, True))
+    foreign = client.get(_artifact_url(other.id, artifact.id, True))
+
+    assert (unknown.status_code, foreign.status_code) == (404, 404)
+    assert b"private bytes" not in unknown.content + foreign.content
+    assert artifact.media_type not in unknown.text + foreign.text
+
+
+def test_http_artifact_download_reports_corrupt_content_without_bytes(tmp_path):
+    kernel, client = _client(tmp_path)
+    project = _project(kernel)
+    content = b"private bytes"
+    artifact = kernel.capture_artifact(project.id, content, "text/plain")
+    _tamper_artifact(tmp_path, project.id, artifact.id)
+
+    response = client.get(_artifact_url(project.id, artifact.id, True))
+
+    assert response.status_code == 422
+    assert content not in response.content
+    assert "content-disposition" not in response.headers
 
 
 @pytest.mark.parametrize(
