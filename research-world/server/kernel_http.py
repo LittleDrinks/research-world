@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Response
+from kernel_contract import LocalMapQuery
 from pydantic import BaseModel, ConfigDict, StrictInt
 
-from .kernel_interface import KernelInterface, LocalMapQuery
+from .kernel_interface import KernelInterface
 
 __all__ = ["kernel_graph_router"]
 

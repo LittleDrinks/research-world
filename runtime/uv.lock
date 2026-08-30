@@ -582,6 +582,7 @@ dependencies = [
     { name = "jsonschema" },
     { name = "mcp" },
     { name = "pyyaml" },
+    { name = "research-kernel-contract" },
 ]
 
 [package.dev-dependencies]
@@ -600,6 +601,7 @@ requires-dist = [
     { name = "jsonschema", specifier = "==4.25.1" },
     { name = "mcp", specifier = ">=1.0,<2" },
     { name = "pyyaml", specifier = "==6.0.3" },
+    { name = "research-kernel-contract", directory = "../research-world/kernel-contract" },
 ]
 
 [package.metadata.requires-dev]
@@ -608,6 +610,11 @@ dev = [
     { name = "pytest-asyncio", specifier = "==1.1.0" },
     { name = "respx", specifier = "==0.23.1" },
 ]
+
+[[package]]
+name = "research-kernel-contract"
+version = "0.1.0"
+source = { directory = "../research-world/kernel-contract" }
 
 [[package]]
 name = "respx"

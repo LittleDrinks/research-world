@@ -7,13 +7,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+from kernel_contract import LocalMapQuery
+
 from .artifacts import ArtifactIntegrityError, ArtifactStore, now
 
 __all__ = [
     "Artifact",
     "KernelInterface",
     "LocalMap",
-    "LocalMapQuery",
     "Message",
     "Project",
     "Record",
@@ -113,13 +114,6 @@ class Relation:
     target_id: str
     type: str
     created_at: str
-
-
-@dataclass(frozen=True, slots=True)
-class LocalMapQuery:
-    text: str | None = None
-    record_id: str | None = None
-    limit: int = 20
 
 
 @dataclass(frozen=True, slots=True)

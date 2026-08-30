@@ -1,6 +1,6 @@
 import pytest
 
-from server.kernel_interface import LocalMapQuery, create_kernel
+from server.kernel_interface import create_kernel
 
 from runtime.runtime import AdapterResult, Runtime
 
@@ -9,7 +9,7 @@ def _read_local_map(tools, project_id):
     return tools.invoke(
         "kernel",
         "local_map",
-        {"project_id": project_id, "query": LocalMapQuery(text="shared", limit=5)},
+        {"project_id": project_id, "query": {"text": "shared", "limit": 5}},
     )
 
 
@@ -56,6 +56,32 @@ class KernelIntegrationAdapter:
         return None
 
 
+class InvalidLocalMapAdapter:
+    adapter_id = "invalid"
+    supports_multiple_writers = True
+
+    def __init__(self, project_id, record_id):
+        self.project_id = project_id
+        self.record_id = record_id
+
+    async def start(self, request):
+        return request
+
+    async def submit(self, handle, request, emit):
+        request.tools.invoke(
+            "kernel",
+            "local_map",
+            {
+                "project_id": self.project_id,
+                "query": {"text": "shared", "record_id": self.record_id},
+            },
+        )
+        return AdapterResult(result_text="unreachable")
+
+    async def cancel(self, handle, request):
+        return None
+
+
 async def _events(runtime, turn_id):
     return [event async for event in runtime.subscribe(turn_id)]
 
@@ -87,3 +113,20 @@ async def test_runtime_kernel_tool_uses_public_project_scoped_interface(tmp_path
     }
     assert adapter.local_map.records == (record,)
     assert isinstance(adapter.cross_project_error, PermissionError)
+
+
+@pytest.mark.asyncio
+async def test_runtime_kernel_tool_preserves_local_map_domain_errors(tmp_path):
+    kernel, project, _, record = _kernel_fixture(tmp_path)
+    adapter = InvalidLocalMapAdapter(project.id, record.id)
+    runtime = Runtime(tmp_path / "runtime", {"invalid": adapter}, kernel=kernel)
+    run = await runtime.launch({"adapter": "invalid", "tools": ["kernel"]})
+    turn = await runtime.submit(run["id"], {"id": "message-1", "content": "inspect"})
+
+    trace = await _events(runtime, turn["id"])
+
+    assert trace[-1]["data"] == {
+        "status": "error",
+        "result_text": None,
+        "error": "local map query requires text or record id",
+    }

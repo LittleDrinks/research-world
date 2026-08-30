@@ -1,6 +1,7 @@
 import pytest
+from kernel_contract import LocalMapQuery
 
-from server.kernel_interface import KernelInterface, LocalMap, LocalMapQuery, create_kernel
+from server.kernel_interface import KernelInterface, LocalMap, create_kernel
 
 
 def _kernel(tmp_path) -> KernelInterface:
