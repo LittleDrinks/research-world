@@ -101,6 +101,15 @@ class FakeAdapter:
         return self._handles[turn_id].cancelled
 
 
+@dataclass
+class RunFixture:
+    view: dict
+    parent_turn_id: str | None = None
+
+    def __getitem__(self, key):
+        return self.view[key]
+
+
 class SharedHandleAdapter(FakeAdapter):
     supports_multiple_writers = False
 
@@ -191,21 +200,37 @@ def _make_runtime(tmp_path):
 async def _run_for(runtime, child):
     parent = await launch(runtime)
     if child:
-        return await runtime.delegate(parent["id"], {"id": "child", "adapter": "fake"})
-    return parent
+        parent_turn = await runtime.submit(parent["id"], message("parent", "delegate"))
+        child_run = await runtime.delegate(
+            parent["id"],
+            {"id": "child", "adapter": "fake"},
+            parent_turn_id=parent_turn["id"],
+        )
+        return RunFixture(child_run, parent_turn["id"])
+    return RunFixture(parent)
+
+
+def _expected_handles(run, child_handles):
+    return child_handles + int(run.parent_turn_id is not None)
+
+
+async def _cancel_parent(runtime, run):
+    if run.parent_turn_id is not None:
+        result = await runtime.cancel(run.parent_turn_id)
+        assert result["status"] == "cancelled"
 
 
 async def _submit_concurrent(runtime, adapter, run):
     first = await runtime.submit(run["id"], message("m1", "one"))
     second = await runtime.submit(run["id"], message("m2", "two"))
-    await adapter.wait_for_handles()
+    await adapter.wait_for_handles(_expected_handles(run, 2))
     return first, second
 
 
 async def _submit_cancel_pair(runtime, adapter, run):
     cancelled = await runtime.submit(run["id"], message("cancel", "stop"))
     alive = await runtime.submit(run["id"], message("alive", "continue"))
-    await adapter.wait_for_handles()
+    await adapter.wait_for_handles(_expected_handles(run, 2))
     return cancelled, alive
 
 
@@ -311,6 +336,38 @@ async def _adapter_trace(tmp_path, *, event=_UNSET, result=_UNSET):
 def _assert_empty_context(adapter, first, second):
     assert adapter.request_for(first["id"]).context == ()
     assert adapter.request_for(second["id"]).context == ()
+
+
+def _assert_concurrent_results(first_events, second_events):
+    assert first_events[-1]["data"] == {
+        "status": "completed",
+        "result_text": "answer one",
+    }
+    assert second_events[-1]["data"] == {
+        "status": "completed",
+        "result_text": "answer two",
+    }
+
+
+async def _cancel_pair_outcome(runtime, adapter, run):
+    cancelled, alive = await _submit_cancel_pair(runtime, adapter, run)
+    result = await runtime.cancel(cancelled["id"])
+    adapter.complete(alive["id"], "still running")
+    cancelled_events, alive_events = await asyncio.gather(
+        events(runtime, cancelled["id"]), events(runtime, alive["id"])
+    )
+    return result, cancelled, cancelled_events, alive_events
+
+
+def _assert_cancel_pair(result, adapter, cancelled, cancelled_events, alive_events):
+    assert result["status"] == "cancelled"
+    assert adapter.was_cancelled(cancelled["id"]) is True
+    assert cancelled_events[-1]["data"]["status"] == "cancelled"
+    assert alive_events[-1]["data"] == {
+        "status": "completed",
+        "result_text": "still running",
+    }
+    assert sum(event["type"] == "turn_end" for event in cancelled_events) == 1
 
 
 @pytest.mark.parametrize("adapters", ["list", "single"])
@@ -430,22 +487,15 @@ async def test_adapter_results_require_adapter_result(tmp_path, result):
 async def test_main_and_child_runs_keep_concurrent_turns_independent(tmp_path, child):
     runtime, adapter = _make_runtime(tmp_path)
     run = await _run_for(runtime, child)
-    first, second = await _submit_concurrent(runtime, adapter, run)
-
-    _assert_empty_context(adapter, first, second)
-
-    first_events, second_events = await _complete_concurrent(
-        runtime, adapter, first, second
-    )
-
-    assert first_events[-1]["data"] == {
-        "status": "completed",
-        "result_text": "answer one",
-    }
-    assert second_events[-1]["data"] == {
-        "status": "completed",
-        "result_text": "answer two",
-    }
+    try:
+        first, second = await _submit_concurrent(runtime, adapter, run)
+        _assert_empty_context(adapter, first, second)
+        first_events, second_events = await _complete_concurrent(
+            runtime, adapter, first, second
+        )
+        _assert_concurrent_results(first_events, second_events)
+    finally:
+        await _cancel_parent(runtime, run)
 
 
 @pytest.mark.asyncio
@@ -453,22 +503,13 @@ async def test_main_and_child_runs_keep_concurrent_turns_independent(tmp_path, c
 async def test_main_and_child_runs_can_cancel_one_turn(tmp_path, child):
     runtime, adapter = _make_runtime(tmp_path)
     run = await _run_for(runtime, child)
-    cancelled, alive = await _submit_cancel_pair(runtime, adapter, run)
-
-    result = await runtime.cancel(cancelled["id"])
-    adapter.complete(alive["id"], "still running")
-    cancelled_events, alive_events = await asyncio.gather(
-        events(runtime, cancelled["id"]), events(runtime, alive["id"])
-    )
-
-    assert result["status"] == "cancelled"
-    assert adapter.was_cancelled(cancelled["id"]) is True
-    assert cancelled_events[-1]["data"]["status"] == "cancelled"
-    assert alive_events[-1]["data"] == {
-        "status": "completed",
-        "result_text": "still running",
-    }
-    assert sum(event["type"] == "turn_end" for event in cancelled_events) == 1
+    try:
+        result, cancelled, cancelled_events, alive_events = await _cancel_pair_outcome(
+            runtime, adapter, run
+        )
+        _assert_cancel_pair(result, adapter, cancelled, cancelled_events, alive_events)
+    finally:
+        await _cancel_parent(runtime, run)
 
 
 @pytest.mark.asyncio
@@ -731,18 +772,19 @@ async def test_concurrent_cancel_calls_share_one_terminal(tmp_path):
 async def test_main_and_child_runs_reconnect_from_last_sequence(tmp_path, child):
     runtime, adapter = _make_runtime(tmp_path)
     run = await _run_for(runtime, child)
-    turn = await runtime.submit(run["id"], message("m1", "one"))
-    await adapter.wait_for_handles(1)
-
-    subscription = runtime.subscribe(turn["id"])
-    started = await anext(subscription)
-    await subscription.aclose()
-    adapter.complete(turn["id"], "done")
-
-    remaining = await events(runtime, turn["id"], started["seq"])
-
-    assert [event["type"] for event in remaining] == ["delta", "turn_end"]
-    assert adapter.handle_count() == 1
+    try:
+        turn = await runtime.submit(run["id"], message("m1", "one"))
+        expected_handles = _expected_handles(run, 1)
+        await adapter.wait_for_handles(expected_handles)
+        subscription = runtime.subscribe(turn["id"])
+        started = await anext(subscription)
+        await subscription.aclose()
+        adapter.complete(turn["id"], "done")
+        remaining = await events(runtime, turn["id"], started["seq"])
+        assert [event["type"] for event in remaining] == ["delta", "turn_end"]
+        assert adapter.handle_count() == expected_handles
+    finally:
+        await _cancel_parent(runtime, run)
 
 
 @pytest.mark.asyncio
@@ -770,18 +812,20 @@ async def test_subscription_drains_events_written_while_paused(tmp_path):
 async def test_submit_is_idempotent_for_the_kernel_message_id(tmp_path, child):
     runtime, adapter = _make_runtime(tmp_path)
     run = await _run_for(runtime, child)
-
-    first = await runtime.submit(run["id"], message("same", "first"))
-    duplicate = await runtime.submit(run["id"], message("same", "changed"))
-    await adapter.wait_for_handles(1)
-
-    assert duplicate == first
-    assert adapter.handle_count() == 1
-    adapter.complete(first["id"], "done")
-    completed = await events(runtime, first["id"])
-    repeated = await runtime.submit(run["id"], message("same", "changed again"))
-    assert repeated["id"] == first["id"]
-    assert repeated["status"] == completed[-1]["data"]["status"] == "completed"
+    try:
+        first = await runtime.submit(run["id"], message("same", "first"))
+        duplicate = await runtime.submit(run["id"], message("same", "changed"))
+        expected_handles = _expected_handles(run, 1)
+        await adapter.wait_for_handles(expected_handles)
+        assert duplicate == first
+        assert adapter.handle_count() == expected_handles
+        adapter.complete(first["id"], "done")
+        completed = await events(runtime, first["id"])
+        repeated = await runtime.submit(run["id"], message("same", "changed again"))
+        assert repeated["id"] == first["id"]
+        assert repeated["status"] == completed[-1]["data"]["status"] == "completed"
+    finally:
+        await _cancel_parent(runtime, run)
 
 
 @pytest.mark.asyncio
@@ -789,17 +833,19 @@ async def test_submit_is_idempotent_for_the_kernel_message_id(tmp_path, child):
 async def test_concurrent_duplicate_submits_create_one_turn(tmp_path, child):
     runtime, adapter = _make_runtime(tmp_path)
     run = await _run_for(runtime, child)
-
-    first, duplicate = await asyncio.gather(
-        runtime.submit(run["id"], message("same", "first")),
-        runtime.submit(run["id"], message("same", "first")),
-    )
-
-    assert duplicate == first
-    await adapter.wait_for_handles(1)
-    assert adapter.handle_count() == 1
-    adapter.complete(first["id"], "done")
-    await events(runtime, first["id"])
+    try:
+        first, duplicate = await asyncio.gather(
+            runtime.submit(run["id"], message("same", "first")),
+            runtime.submit(run["id"], message("same", "first")),
+        )
+        assert duplicate == first
+        expected_handles = _expected_handles(run, 1)
+        await adapter.wait_for_handles(expected_handles)
+        assert adapter.handle_count() == expected_handles
+        adapter.complete(first["id"], "done")
+        await events(runtime, first["id"])
+    finally:
+        await _cancel_parent(runtime, run)
 
 
 @pytest.mark.asyncio
@@ -848,8 +894,279 @@ async def test_launch_freezes_agent_snapshot_and_delegate_links_parent(tmp_path)
 
     parent = await runtime.launch(spec, session_id="session-1")
     spec["params"]["mode"] = "changed"
-    child = await runtime.delegate(parent["id"], {"id": "child", "adapter": "fake"})
+    parent_turn = await runtime.submit(parent["id"], message("parent", "delegate"))
+    child = await runtime.delegate(
+        parent["id"],
+        {"id": "child", "adapter": "fake"},
+        parent_turn_id=parent_turn["id"],
+    )
 
     assert parent["agent_snapshot"]["params"] == {"mode": "fast"}
     assert parent["session_id"] == "session-1"
     assert child["parent_run_id"] == parent["id"]
+    assert (await runtime.cancel(parent_turn["id"]))["status"] == "cancelled"
+
+
+@pytest.mark.asyncio
+async def test_delegate_rejects_terminal_parent_turn(tmp_path):
+    runtime, adapter = _make_runtime(tmp_path)
+    parent = await launch(runtime)
+    parent_turn = await runtime.submit(parent["id"], message("parent", "delegate"))
+    await adapter.wait_for_handles(1)
+    adapter.complete(parent_turn["id"], "parent answer")
+    await events(runtime, parent_turn["id"])
+
+    with pytest.raises(ValueError, match="parent turn must be running"):
+        await runtime.delegate(
+            parent["id"],
+            {"id": "child", "adapter": "fake"},
+            parent_turn_id=parent_turn["id"],
+        )
+
+
+async def _delegation_trace_setup(tmp_path):
+    runtime, adapter = _make_runtime(tmp_path)
+    parent = await launch(runtime)
+    first_parent_turn = await runtime.submit(parent["id"], message("m1", "first"))
+    second_parent_turn = await runtime.submit(parent["id"], message("m2", "second"))
+    child = await runtime.delegate(
+        parent["id"],
+        {"id": "child", "adapter": "fake"}, parent_turn_id=first_parent_turn["id"]
+    )
+    child_turn = await runtime.submit(child["id"], message("child-m1", "child task"))
+    await adapter.wait_for_handles(3)
+    return runtime, adapter, parent, first_parent_turn, second_parent_turn, child, child_turn
+
+
+def _assert_delegation_trace(parent, first_parent_turn, child, child_turn, child_events, first_events):
+    child_result = first_events[1]
+    assert child["parent_run_id"] == parent["id"]
+    assert child["session_id"] is None
+    assert "parent_turn_id" not in child
+    assert child_events[-1]["data"] == {"status": "completed", "result_text": "child answer"}
+    assert child_result["type"] == "child_result"
+    assert child_result["run_id"] == parent["id"]
+    assert child_result["turn_id"] == first_parent_turn["id"]
+    assert child_result["data"] == {
+        "child_run_id": child["id"],
+        "child_turn_id": child_turn["id"],
+        "status": "completed",
+        "result_text": "child answer",
+    }
+
+
+@pytest.mark.asyncio
+async def test_delegate_routes_child_result_to_explicit_parent_turn(tmp_path):
+    setup = await _delegation_trace_setup(tmp_path)
+    runtime, adapter, parent, first, second, child, child_turn = setup
+
+    adapter.complete(child_turn["id"], "child answer")
+    child_events = await events(runtime, child_turn["id"])
+    adapter.complete(first["id"], "first answer")
+    adapter.complete(second["id"], "second answer")
+    first_events, second_events = await asyncio.gather(
+        events(runtime, first["id"]), events(runtime, second["id"])
+    )
+    _assert_delegation_trace(parent, first, child, child_turn, child_events, first_events)
+    assert [event["type"] for event in second_events] == [
+        "turn_start",
+        "delta",
+        "turn_end",
+    ]
+
+
+async def _delegated_parent_turn(tmp_path):
+    runtime, adapter = _make_runtime(tmp_path)
+    parent = await launch(runtime)
+    parent_turn = await runtime.submit(parent["id"], message("parent", "delegate"))
+    child = await runtime.delegate(
+        parent["id"], {"id": "child", "adapter": "fake"}, parent_turn_id=parent_turn["id"]
+    )
+    child_turn = await runtime.submit(child["id"], message("child", "task"))
+    await adapter.wait_for_handles(2)
+    return runtime, adapter, parent_turn, child_turn
+
+
+@pytest.mark.asyncio
+async def test_parent_waits_for_child_result_before_turn_end(tmp_path):
+    runtime, adapter, parent_turn, child_turn = await _delegated_parent_turn(tmp_path)
+    subscription = runtime.subscribe(parent_turn["id"])
+    assert (await anext(subscription))["type"] == "turn_start"
+    adapter.complete(parent_turn["id"], "parent answer")
+    assert (await anext(subscription))["type"] == "delta"
+    terminal = asyncio.create_task(anext(subscription))
+    await asyncio.sleep(0)
+    assert not terminal.done()
+    adapter.complete(child_turn["id"], "child answer")
+    await _terminal_events(runtime, child_turn["id"])
+    child_result, ended = await terminal, await anext(subscription)
+    await subscription.aclose()
+    assert [child_result["type"], ended["type"]] == ["child_result", "turn_end"]
+
+
+@pytest.mark.asyncio
+async def test_completed_parent_rejects_submit_to_unstarted_child(tmp_path):
+    runtime, adapter = _make_runtime(tmp_path)
+    parent = await launch(runtime)
+    parent_turn = await runtime.submit(parent["id"], message("parent", "delegate"))
+    child = await runtime.delegate(
+        parent["id"], {"id": "child", "adapter": "fake"}, parent_turn_id=parent_turn["id"]
+    )
+    await adapter.wait_for_handles(1)
+    adapter.complete(parent_turn["id"], "parent answer")
+    await _terminal_events(runtime, parent_turn["id"])
+    with pytest.raises(ValueError, match="parent turn is no longer accepting child turns"):
+        await runtime.submit(child["id"], message("child", "task"))
+
+
+@pytest.mark.asyncio
+async def test_force_cancel_parent_drops_late_child_result(tmp_path):
+    runtime, adapter, parent_turn, child_turn = await _delegated_parent_turn(tmp_path)
+    result = await runtime.cancel(parent_turn["id"])
+    parent_events = await _terminal_events(runtime, parent_turn["id"])
+    terminal_seq = parent_events[-1]["seq"]
+    assert result["status"] == "cancelled"
+    assert adapter.was_cancelled(child_turn["id"]) is False
+    adapter.complete(child_turn["id"], "child answer")
+    child_events = await _terminal_events(runtime, child_turn["id"])
+    late_events = await events(runtime, parent_turn["id"], terminal_seq)
+    assert child_events[-1]["data"]["result_text"] == "child answer"
+    assert late_events == []
+
+
+@pytest.mark.asyncio
+async def test_cancel_cleanup_failure_drops_late_child_result(tmp_path):
+    runtime, adapter, parent_turn, child_turn = await _delegated_parent_turn(tmp_path)
+    adapter.cancel_error = RuntimeError("cleanup failed")
+    result = await runtime.cancel(parent_turn["id"])
+    parent_events = await _terminal_events(runtime, parent_turn["id"])
+    terminal_seq = parent_events[-1]["seq"]
+    assert result["status"] == "error"
+    assert parent_events[-1]["data"]["error"] == "cleanup failed"
+    assert adapter.was_cancelled(child_turn["id"]) is False
+    adapter.complete(child_turn["id"], "child answer")
+    await _terminal_events(runtime, child_turn["id"])
+    assert await events(runtime, parent_turn["id"], terminal_seq) == []
+
+
+async def _delegated_parent_with_two_children(tmp_path):
+    runtime, adapter = _make_runtime(tmp_path)
+    parent = await launch(runtime)
+    parent_turn = await runtime.submit(parent["id"], message("parent", "delegate"))
+    child = await runtime.delegate(
+        parent["id"], {"id": "child", "adapter": "fake"}, parent_turn_id=parent_turn["id"]
+    )
+    first = await runtime.submit(child["id"], message("child-1", "one"))
+    second = await runtime.submit(child["id"], message("child-2", "two"))
+    await adapter.wait_for_handles(3)
+    return runtime, adapter, parent_turn, first, second
+
+
+def _assert_all_child_results(results, ended, first, second):
+    assert [event["type"] for event in results] + [ended["type"]] == [
+        "child_result",
+        "child_result",
+        "turn_end",
+    ]
+    assert {event["data"]["child_turn_id"] for event in results} == {
+        first["id"],
+        second["id"],
+    }
+
+
+@pytest.mark.asyncio
+async def test_parent_waits_for_all_active_child_results(tmp_path):
+    runtime, adapter, parent_turn, first, second = await _delegated_parent_with_two_children(tmp_path)
+    subscription = runtime.subscribe(parent_turn["id"])
+    await anext(subscription)
+    adapter.complete(parent_turn["id"], "parent answer")
+    assert (await anext(subscription))["type"] == "delta"
+    terminal = asyncio.create_task(anext(subscription))
+    await asyncio.sleep(0)
+    assert not terminal.done()
+    adapter.complete(second["id"], "answer two")
+    adapter.complete(first["id"], "answer one")
+    await _terminal_events(runtime, first["id"])
+    await _terminal_events(runtime, second["id"])
+    results = [await terminal, await anext(subscription)]
+    ended = await anext(subscription)
+    await subscription.aclose()
+    _assert_all_child_results(results, ended, first, second)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", ["error", "limit"])
+async def test_parent_error_or_limit_waits_for_child_result(tmp_path, status):
+    runtime, adapter, parent_turn, child_turn = await _delegated_parent_turn(tmp_path)
+    adapter.result = AdapterResult(status=status, result_text="parent result")
+    subscription = runtime.subscribe(parent_turn["id"])
+    assert (await anext(subscription))["type"] == "turn_start"
+    adapter.complete(parent_turn["id"], "parent output")
+    assert (await anext(subscription))["type"] == "delta"
+    terminal = asyncio.create_task(anext(subscription))
+    await asyncio.sleep(0)
+    assert not terminal.done()
+    adapter.complete(child_turn["id"], "child answer")
+    await _terminal_events(runtime, child_turn["id"])
+    child_result, ended = await terminal, await anext(subscription)
+    await subscription.aclose()
+    assert [child_result["type"], ended["type"]] == ["child_result", "turn_end"]
+    assert ended["data"]["status"] == status
+
+
+@pytest.mark.asyncio
+async def test_parent_adapter_exception_waits_for_child_result(tmp_path):
+    runtime, adapter, parent_turn, child_turn = await _delegated_parent_turn(tmp_path)
+    adapter.submit_error = RuntimeError("parent adapter failed")
+    subscription = runtime.subscribe(parent_turn["id"])
+    assert (await anext(subscription))["type"] == "turn_start"
+    adapter.complete(parent_turn["id"], "unused")
+    terminal = asyncio.create_task(anext(subscription))
+    await asyncio.sleep(0)
+    assert not terminal.done()
+    adapter.complete(child_turn["id"], "child answer")
+    await _terminal_events(runtime, child_turn["id"])
+    child_result, ended = await terminal, await anext(subscription)
+    await subscription.aclose()
+    assert [child_result["type"], ended["type"]] == ["child_result", "turn_end"]
+    assert ended["data"] == {
+        "status": "error",
+        "result_text": None,
+        "error": "parent adapter failed",
+    }
+
+
+async def _waiting_parent_with_unstarted_child(tmp_path):
+    runtime, adapter = _make_runtime(tmp_path)
+    parent = await launch(runtime)
+    parent_turn = await runtime.submit(parent["id"], message("parent", "delegate"))
+    child = await runtime.delegate(
+        parent["id"], {"id": "child", "adapter": "fake"}, parent_turn_id=parent_turn["id"]
+    )
+    child_turn = await runtime.submit(child["id"], message("child", "task"))
+    unstarted = await runtime.delegate(
+        parent["id"], {"id": "unstarted", "adapter": "fake"}, parent_turn_id=parent_turn["id"]
+    )
+    await adapter.wait_for_handles(2)
+    subscription = runtime.subscribe(parent_turn["id"])
+    await anext(subscription)
+    adapter.complete(parent_turn["id"], "parent answer")
+    await anext(subscription)
+    terminal = asyncio.create_task(anext(subscription))
+    await asyncio.sleep(0)
+    return runtime, adapter, parent, parent_turn, child, child_turn, unstarted, subscription, terminal
+
+
+@pytest.mark.asyncio
+async def test_waiting_parent_rejects_new_delegate_and_child_submit(tmp_path):
+    setup = await _waiting_parent_with_unstarted_child(tmp_path)
+    runtime, adapter, parent, parent_turn, _child, child_turn, unstarted, subscription, terminal = setup
+    assert not terminal.done()
+    with pytest.raises(ValueError, match="parent turn is no longer accepting child turns"):
+        await runtime.delegate(parent["id"], {"adapter": "fake"}, parent_turn_id=parent_turn["id"])
+    with pytest.raises(ValueError, match="parent turn is no longer accepting child turns"):
+        await runtime.submit(unstarted["id"], message("late-child", "task"))
+    adapter.complete(child_turn["id"], "child answer")
+    await _terminal_events(runtime, child_turn["id"])
+    await terminal
+    await subscription.aclose()
