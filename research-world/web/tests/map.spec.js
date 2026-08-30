@@ -79,9 +79,18 @@ async function createProjectInBrowser(page) {
 }
 
 
-async function createRecord(page, project, type, token) {
+async function createArtifact(page, project, token) {
+  const response = await page.request.post(`/api/test-fixtures/projects/${project}/artifacts`, {
+    data: { content: `Shared evidence ${token}`, media_type: "text/plain" },
+  });
+  expect(response.status()).toBe(201);
+  return response.json();
+}
+
+
+async function createRecord(page, project, type, token, artifactIds = []) {
   const response = await page.request.post(`/api/v1/projects/${project}/records`, {
-    data: { type, content: typeof token === "string" ? { title: `${type} ${token}`, text: token } : token },
+    data: { type, content: typeof token === "string" ? { title: `${type} ${token}`, text: token } : token, artifact_ids: artifactIds },
   });
   expect(response.status()).toBe(201);
   return response.json();
@@ -139,6 +148,18 @@ async function seedGraph(page) {
 }
 
 
+async function seedSharedArtifactGraph(page) {
+  const token = uniqueToken();
+  const project = await createProject(page);
+  const artifact = await createArtifact(page, project.id, token);
+  const deleted = await createRecord(page, project.id, "source", { title: `Deleted ${token}`, text: token }, [artifact.id]);
+  const survivor = await createRecord(page, project.id, "direction", { title: `Survivor ${token}`, text: token }, [artifact.id]);
+  expect(deleted.artifact_ids).toEqual([artifact.id]);
+  expect(survivor.artifact_ids).toEqual([artifact.id]);
+  return { ...project, token, artifact, deleted, survivor, records: [deleted, survivor], relations: [] };
+}
+
+
 async function removeGraph(page, graph) {
   for (const relation of graph.relations) {
     await page.request.delete(`/api/v1/projects/${graph.project}/relations/${relation.id}`);
@@ -191,6 +212,11 @@ async function deleteRelationFromInspector(page, relation, requests) {
   await page.getByRole("button", { name: `删除 Relation ${relation.id}` }).click({ timeout: 5000 });
   await confirmDeletion(page, "Relation", relation.id, requests);
   await expect(page).not.toHaveURL(/node=/);
+}
+
+
+async function assertArtifactInInspector(page, artifact) {
+  await expect(page.locator(".inspector-section", { hasText: "关联 Artifact" })).toContainText(artifact.id);
 }
 
 
@@ -306,6 +332,25 @@ test("deletes Records and Relations through confirmed Kernel HTTP and refreshes"
   const graph = await seedRecords(page, [["source", token], ["direction", token], ["experiment", token]], [[0, 1], [1, 2, "depends_on"], [2, 1, "refutes"]]);
   const requests = trackMapRequests(page);
   try { await deleteGraphItems(page, graph, token, requests); } finally { await removeGraph(page, graph); }
+});
+
+
+test("retains a shared Artifact when deleting one Record", async ({ page }) => {
+  const graph = await seedSharedArtifactGraph(page);
+  const requests = trackMapRequests(page);
+  try {
+    await page.goto(`/map?text=${encodeURIComponent(graph.token)}`);
+    await expect(page.locator(".research-node")).toHaveCount(2);
+    await page.locator(`.react-flow__node[data-id="${graph.deleted.id}"]`).click();
+    await deleteRecordFromInspector(page, graph.deleted, requests);
+    await expect(page.locator(".research-node")).toHaveCount(1);
+    await page.locator(`.react-flow__node[data-id="${graph.survivor.id}"]`).click();
+    await expect(page).toHaveURL(new RegExp(`node=${encodeURIComponent(graph.survivor.id)}`));
+    await assertArtifactInInspector(page, graph.artifact);
+    await page.reload();
+    await expect(page.locator(".research-node")).toHaveCount(1);
+    await assertArtifactInInspector(page, graph.artifact);
+  } finally { await removeGraph(page, graph); }
 });
 
 
