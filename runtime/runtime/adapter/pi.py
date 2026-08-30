@@ -51,6 +51,11 @@ IGNORED_EVENTS = {
     "session_before_switch", "session_before_tree", "session_compact",
     "session_info_changed", "session_shutdown", "session_start", "session_tree",
 }
+_EXPECTED_CANCEL_ERRORS = {
+    "pi_process: pi model request aborted",
+    "pi_protocol: pi exited before agent_end",
+    "pi_protocol: pi exited before agent_settled",
+}
 
 
 class PiAdapterError(RuntimeError):
@@ -119,10 +124,11 @@ class PiAdapter:
     async def submit(self, handle, request, emit) -> AdapterResult:
         try:
             return await _submit(handle, request, emit, self.timeout)
-        except PiAdapterError:
-            if handle.cancelled:
-                return AdapterResult(status="cancelled")
+        except PiAdapterError as error:
+            expected = _is_expected_cancel(handle, error)
             await _cleanup(handle)
+            if expected:
+                return AdapterResult(status="cancelled")
             raise
 
     async def cancel(self, handle: PiHandle, request: TurnRequest) -> None:
@@ -190,11 +196,9 @@ class PiEventParser:
     def _auxiliary(self, kind: str, event: dict[str, Any]) -> None:
         if kind == "extension_error" or kind == "session_compact_failed":
             raise PiAdapterError("pi_process", f"pi reported {kind}")
-        if kind == "auto_retry_end" and event.get("success") is False:
-            raise PiAdapterError(
-                "pi_process",
-                _error_detail(event.get("finalError"), "pi automatic retry failed"),
-            )
+        if kind == "auto_retry_end":
+            _handle_auto_retry_end(event)
+            return
         if kind == "extension_ui_request":
             method = event.get("method")
             if method in {"select", "confirm", "input", "editor"}:
@@ -212,6 +216,28 @@ def _interactive_detail(kind: str, event: dict[str, Any]) -> str:
     method = event.get("method")
     suffix = f": {method}" if isinstance(method, str) and method else ""
     return f"pi requested unsupported interactive input{suffix} ({kind})"
+
+
+def _handle_auto_retry_end(event: dict[str, Any]) -> None:
+    if event.get("success") is True:
+        return
+    if event.get("success") is False:
+        raise PiAdapterError(
+            "pi_process",
+            _error_detail(event.get("finalError"), "pi automatic retry failed"),
+        )
+    raise PiAdapterError("pi_protocol", "unsupported pi event: auto_retry_end")
+
+
+def _is_expected_cancel(handle: PiHandle, error: PiAdapterError) -> bool:
+    if not handle.cancelled:
+        return False
+    if str(error) in _EXPECTED_CANCEL_ERRORS:
+        return True
+    return error.code == "pi_process" and handle.process.returncode in {
+        -signal.SIGTERM,
+        -signal.SIGKILL,
+    }
 
 
 async def _submit(handle, request, emit, timeout: float) -> AdapterResult:
@@ -408,11 +434,15 @@ def _message_text(message: dict[str, Any]) -> str:
     content = message.get("content")
     if not isinstance(content, list):
         raise PiAdapterError("pi_protocol", "pi assistant content is invalid")
-    return "".join(
-        item.get("text", "")
-        for item in content
-        if isinstance(item, dict) and item.get("type") == "text"
-    )
+    values = []
+    for item in content:
+        if not isinstance(item, dict) or item.get("type") != "text":
+            raise PiAdapterError("pi_protocol", "pi assistant content block is invalid")
+        value = item.get("text")
+        if not isinstance(value, str):
+            raise PiAdapterError("pi_protocol", "pi assistant text is invalid")
+        values.append(value)
+    return "".join(values)
 
 
 def _validate_stop_reason(message: dict[str, Any]) -> None:

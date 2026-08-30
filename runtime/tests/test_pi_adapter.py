@@ -46,13 +46,18 @@ record({
     },
     "unsafe_locale": os.environ.get("LC_UNSAFE"),
 })
+active_message = None
 for line in sys.stdin:
     command = json.loads(line)
     record({"command": command})
     if command["type"] == "abort":
+        if active_message == "cancel-protocol-error":
+            print(json.dumps({"type": "unknown"}), flush=True)
+            continue
         raise SystemExit
     if command["type"] != "prompt":
         continue
+    active_message = command["message"]
     if command["message"] == "reject":
         print(json.dumps({
             "id": command["id"],
@@ -91,6 +96,9 @@ for line in sys.stdin:
         raise SystemExit
     if command["message"] == "cancel":
         continue
+    if command["message"] == "cancel-protocol-error":
+        record({"stage": "cancel-ready"})
+        continue
     if command["message"] == "rich":
         print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "thinking_start", "contentIndex": 0}}), flush=True)
         print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "thinking_delta", "contentIndex": 0, "delta": "plan"}}), flush=True)
@@ -104,6 +112,18 @@ for line in sys.stdin:
         record({"stage": "intermediate_error"})
         print(json.dumps({"type": "compaction_start", "reason": "overflow"}), flush=True)
         print(json.dumps({"type": "compaction_end", "reason": "overflow", "aborted": False, "willRetry": True}), flush=True)
+        message = {"role": "assistant", "content": [{"type": "text", "text": "recovered"}], "stopReason": "stop"}
+        print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "text_delta", "delta": "recovered"}}), flush=True)
+        print(json.dumps({"type": "agent_end", "messages": [message], "willRetry": False}), flush=True)
+        record({"stage": "successful_agent_end"})
+        print(json.dumps({"type": "agent_settled"}), flush=True)
+        record({"stage": "agent_settled"})
+        continue
+    if command["message"] == "auto-retry":
+        error = {"role": "assistant", "content": [], "stopReason": "error", "errorMessage": "transient provider error"}
+        print(json.dumps({"type": "agent_end", "messages": [error], "willRetry": True}), flush=True)
+        record({"stage": "retrying"})
+        print(json.dumps({"type": "auto_retry_end", "success": True}), flush=True)
         message = {"role": "assistant", "content": [{"type": "text", "text": "recovered"}], "stopReason": "stop"}
         print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "text_delta", "delta": "recovered"}}), flush=True)
         print(json.dumps({"type": "agent_end", "messages": [message], "willRetry": False}), flush=True)
@@ -130,6 +150,16 @@ for line in sys.stdin:
         continue
     if command["message"] == "unknown-ui":
         print(json.dumps({"type": "extension_ui_request", "id": "ui-1", "method": "mystery"}), flush=True)
+    if command["message"] == "unknown-content":
+        message = {"role": "assistant", "content": [{"type": "image", "url": "image"}], "stopReason": "stop"}
+        print(json.dumps({"type": "agent_end", "messages": [message], "willRetry": False}), flush=True)
+        print(json.dumps({"type": "agent_settled"}), flush=True)
+        continue
+    if command["message"] == "non-string-content":
+        message = {"role": "assistant", "content": [{"type": "text", "text": 7}], "stopReason": "stop"}
+        print(json.dumps({"type": "agent_end", "messages": [message], "willRetry": False}), flush=True)
+        print(json.dumps({"type": "agent_settled"}), flush=True)
+        continue
     message = {"role": "assistant", "content": [{"type": "text", "text": "hello"}], "stopReason": "stop"}
     print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "text_delta", "delta": "hel"}}), flush=True)
     print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "text_delta", "delta": "lo"}}), flush=True)
@@ -359,6 +389,18 @@ async def test_pi_continues_after_intermediate_overflow_error(tmp_path, monkeypa
     assert observed[-1]["data"] == {"status": "completed", "result_text": "recovered"}
 
 
+async def test_pi_accepts_successful_automatic_retry(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "auto-retry"})
+    observed = await _events(runtime, turn["id"])
+    stages = [item["stage"] for item in _records(tmp_path) if "stage" in item]
+    assert stages == ["retrying", "successful_agent_end", "agent_settled"]
+    assert observed[-1]["data"] == {"status": "completed", "result_text": "recovered"}
+
+
 async def test_pi_inherits_host_locale_without_runtime_credentials(tmp_path, monkeypatch):
     runtime = _fake_runtime(tmp_path, monkeypatch, LOCALE_ENVIRONMENT)
     run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
@@ -428,6 +470,28 @@ async def test_pi_rejects_unknown_extension_ui_method(tmp_path, monkeypatch):
     await _wait_for_command(tmp_path, "abort")
 
 
+@pytest.mark.parametrize(
+    ("prompt", "detail"),
+    [
+        ("unknown-content", "pi assistant content block is invalid"),
+        ("non-string-content", "pi assistant text is invalid"),
+    ],
+)
+async def test_pi_rejects_invalid_assistant_content(tmp_path, monkeypatch, prompt, detail):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": prompt})
+    observed = await _events(runtime, turn["id"])
+    assert observed[-1]["data"] == {
+        "status": "error",
+        "result_text": None,
+        "error": f"pi_protocol: {detail}",
+    }
+    await _wait_for_command(tmp_path, "abort")
+
+
 async def test_pi_protocol_error_stops_the_fake_process(tmp_path, monkeypatch):
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
@@ -466,6 +530,25 @@ async def test_pi_adapter_cancels_a_turn_through_runtime(tmp_path, monkeypatch):
     await _wait_for_command(tmp_path, "abort")
     assert result["status"] == "cancelled"
     assert observed[-1]["data"] == {"status": "cancelled", "result_text": None}
+
+
+async def test_pi_preserves_protocol_error_during_cancel(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(
+        run["id"], {"id": "m1", "content": "cancel-protocol-error"}
+    )
+    await _wait_for_stage(tmp_path, "cancel-ready")
+    result = await runtime.cancel(turn["id"])
+    observed = await _events(runtime, turn["id"])
+    assert result["status"] == "error"
+    assert observed[-1]["data"] == {
+        "status": "error",
+        "result_text": None,
+        "error": "pi_protocol: unsupported pi event: unknown",
+    }
 
 
 async def test_pi_process_exit_is_an_explicit_turn_error(tmp_path, monkeypatch):
