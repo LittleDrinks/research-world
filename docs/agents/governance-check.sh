@@ -52,7 +52,8 @@ for needle in \
   'Runtime owns Session' \
   'Kernel 拥有 Run' \
   'Research Kernel 拥有 Run' \
-  'Runtime 在调用 start 前拒绝同一 Adapter'; do
+  'Runtime 在调用 start 前拒绝同一 Adapter' \
+  'Child Agent'; do
   if rg -n -F -i -- "$needle" "${current[@]}"; then
     printf 'forbidden current-governance text: %s\n' "$needle" >&2
     exit 1
@@ -70,6 +71,7 @@ for term in \
   'Run' \
   'Turn' \
   'Trace' \
+  'Message' \
   'Runtime Adapter' \
   'Pi Adapter' \
   'Penguin Harness Adapter' \
@@ -80,6 +82,21 @@ for term in \
   'LocalMap'; do
   require_text CONTEXT.md "$term"
 done
+
+for term in \
+  '**Message**：' \
+  '**Research Graph（研究图谱）**：' \
+  '**Subagent**：' \
+  '**Child Run**：' \
+  '**Child Turn**：'; do
+  require_text CONTEXT.md "$term"
+done
+
+require_text CONTEXT.md '拥有 Project、Session、Message、Artifact、Record、Relation 与 LocalMap'
+require_text CONTEXT.md '覆盖 Project、Session、Message、Artifact、Record、Connect、Remove 与 LocalMap'
+require_text docs/adr/0033-runtime-adapters-and-event-delivery.md 'Research Kernel 拥有 Project、Session、Message、Artifact、Record、Relation 与 LocalMap'
+require_text docs/adr/0034-direct-kernel-fact-recording.md 'Research Kernel 是 Project 研究状态的唯一深模块，拥有 Project、Session、Message、Artifact、Record、Relation 与 LocalMap'
+require_text docs/adr/0034-direct-kernel-fact-recording.md 'Kernel Interface 只接受 Project、Session、Message、Artifact、Record、Connect、Remove 与 LocalMap'
 
 for term in \
   'Agent 不持有模型访问配置或 Runtime Adapter 绑定' \
@@ -95,7 +112,7 @@ require_text AGENTS.md 'Pi'
 
 require_text docs/adr/0033-runtime-adapters-and-event-delivery.md 'status: accepted'
 require_text docs/adr/0033-runtime-adapters-and-event-delivery.md 'supersedes:'
-for term in Launch Submit Subscribe Cancel Delegate 'Trace `seq`' 'Last-Event-ID' EventSource 'Runtime 不得因为底层 harness 的实现方式把同一 Run 的重叠 Turn 改为互斥或拒绝' '@ai-sdk/react useChat' 'Pydantic AI UI Adapter' 'Penguin Harness Adapter'; do
+for term in Launch Submit Subscribe Cancel Delegate 'Message id' 'Trace `seq`' 'Last-Event-ID' EventSource 'Runtime 不得因为底层 harness 的实现方式把同一 Run 的重叠 Turn 改为互斥或拒绝' '@ai-sdk/react useChat' 'Pydantic AI UI Adapter' 'Penguin Harness Adapter'; do
   require_text docs/adr/0033-runtime-adapters-and-event-delivery.md "$term"
 done
 

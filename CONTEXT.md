@@ -1,7 +1,7 @@
 # Research World
 围绕单个科学问题积累可审核、可复现、可追溯的研究状态。
 ## Ownership
-**Research Kernel（研究内核）**：Project 研究状态的唯一所有者，拥有 Project、Session、Artifact、Record、Relation 与 LocalMap；不拥有 Agent 执行事实。
+**Research Kernel（研究内核）**：Project 研究状态的唯一所有者，拥有 Project、Session、Message、Artifact、Record、Relation 与 LocalMap；不拥有 Agent 执行事实。
 **Runtime**：Agent 执行的唯一所有者，拥有模型访问配置、Run、Turn、Trace、Skill、Tool、委派、Runtime Adapter 与执行快照；不拥有 Session、Project、Artifact 或 Research Graph 记录。
 **对话协调**：服务器组合层将用户消息写入 Session、提交 Turn，并将主 Agent 终态回答投影回同一消息；不拥有 Project、Run 或 Trace。
 ## Language
@@ -14,6 +14,7 @@ _Avoid_: 课题、任务
 **Q001-Q125 Project corpus**：用于展示系统研究状态的固定科学问题集合；“125 问”与“《Science》125 个前沿科学问题”均指此集合。
 _Avoid_: Benchmark
 **Record**：Research Kernel 中可直接记录、检索和关联的研究对象；MVP 固定为 question、source、direction、experiment 四类，实验结果进入 experiment 内容。
+**Research Graph（研究图谱）**：Research Kernel 在 Project 内由 Record、Relation 与关联 Artifact 构成的研究状态；不包含 Session 对话或 Runtime Trace。
 **Relation**：同一 Project 中两个 Record 之间的有向关联。
 **Artifact**：Research Kernel 管理的 Project 内按 SHA-256 寻址的不可变 Agent 产物；MVP 中协作学习者可查看和下载，不从浏览器上传。
 _Avoid_: 裸路径、覆盖写、跨 Project 可见性
@@ -22,7 +23,7 @@ _Avoid_: Claim 节点、Direction 等于结论
 **证据关系**：连接 Record 的 `supports`、`refutes`、`depends_on` 等关系；关系不把 Direction 自动变成结论。
 **复核**：人或 Agent 基于 LocalMap 检查 Record 或 Relation；发现错误时调用 Remove，不形成写入门或持久审核状态。
 _Avoid_: 准入、pending、双审 Gate
-**Kernel Interface**：Research Kernel 的公共接口，覆盖 Project、Session、Artifact、Record、Connect、Remove 与 LocalMap；调用方不接触 SQLite、文件路径、表名或检索实现。
+**Kernel Interface**：Research Kernel 的公共接口，覆盖 Project、Session、Message、Artifact、Record、Connect、Remove 与 LocalMap；调用方不接触 SQLite、文件路径、表名或检索实现。
 **Connect**：Kernel 将同一 Project 中已存在的 Record 以有效关系类型相连。
 **Remove**：Kernel 移除 Record 或 Relation；移除 Record 时一并移除其直接 Relation，但保留关联 Artifact。
 **LocalMap**：Kernel 按 Project 隔离、数量限制和 LocalMap Query 即时取得的匹配 Record、直接 Relation 与关联 Artifact 投影，不是第二张持久图。
@@ -33,10 +34,13 @@ _Avoid_: 准入、pending、双审 Gate
 **MMR Tool operation**：Brainstorm Skill 可调用的确定性 Runtime Tool operation，用于从候选中选择多样内容；不承担 LocalMap 检索、写入或正确性判定。
 **Session**：Project 下用户可读的一段主 Agent 对话；一个 Project 可有多个 Session，Runtime 为每个 Session 关联独立主 Run。Session 保存用户消息和与其 Turn 配对的主 Agent 最终回答，回答固定在对应用户消息之后，不因完成顺序改变；不持有 Adapter 绑定、原生 harness 状态或 Trace。
 _Avoid_: Thread、执行 Session、节点消息表
+**Message**：Research Kernel 在 Session 中保存的一条用户消息及其可选的主 Agent 最终回答；`message_id` 是稳定标识，Runtime 只按它关联 Submit 与已有 Turn，不拥有消息内容。
 **Agent**：可被启动并完成工作的助手定义；MVP 只有一个协作学习者可见的主 Agent 配置，包含角色提示词、选中的 Skill 与 Tool。创建 Session 时提交配置，Runtime 在 Launch 时冻结执行快照；修改配置创建新 Session。Agent 不持有模型访问配置或 Runtime Adapter 绑定。
 _Avoid_: Research Graph 节点、可变持久 Agent、模型配置
 **主 Agent**：唯一直接与协作学习者对话的 Agent；理解意图、给出回应，并决定是否委派工作。
 **Subagent**：主 Agent 为明确工作目标启动的 Agent；拥有独立 Run，可通过 Kernel Interface 读写 Research Graph，完成后把结果交回主 Agent，不写 Session，也不直接替代主 Agent 对话。
+**Child Run**：Runtime 为 Subagent 委派创建、只通过 parent Run 关联的执行 Run；它表示 Runtime 的父子执行关系，不是另一种 Agent 名称。
+**Child Turn**：Child Run 上的一次 Turn；其终态通过 `child_result` 关联回父 Turn，不写 Session。
 **委派 (Delegate)**：主 Agent 向 Runtime 提交目标与必要上下文，由 Runtime 创建 Subagent 并把结果关联回父 Turn 的行为。
 **Skill**：Runtime 内可选择的可复用 Agent 行为声明；可选择调用 Tool operation。
 **Tool**：科研人员为 Agent 选择的稳定能力；一个 Tool 可向模型展开多个 operation，Agent 只保存 Tool id。
