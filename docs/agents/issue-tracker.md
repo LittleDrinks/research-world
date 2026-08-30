@@ -1,5 +1,5 @@
-# Issue 跟踪
-问题记录在 `LittleDrinks/research-world` 的 GitHub Issues。
-在本克隆中使用 `gh issue create`、`gh issue view <number> --comments`、`gh issue list`、`gh issue comment`、`gh issue edit` 与 `gh issue close`。
-PR 不作为需求入口。
-技能发布到 Issue 时创建 GitHub Issue；读取工单时运行 `gh issue view <number> --comments`。
+# Issue tracker
+Issues and specs live in `LittleDrinks/research-world` GitHub Issues; use `gh` inside this clone.
+Read a ticket with `gh issue view <number> --comments` and keep its acceptance criteria as the implementation boundary.
+An issue owns one `feat/<issue>-<slug>` branch. A PR references the issue and is reviewed from the committed branch; a PR is not a requirements source.
+Issue creation, comments, labels and closure use the repository's `gh issue` commands.
