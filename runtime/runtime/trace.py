@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import re
 import threading
 from collections import defaultdict
+from copy import deepcopy
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -25,6 +27,59 @@ CREDENTIAL_FIELDS = {
     "clientsecret", "token", "tokens", "baseurl", "endpoint",
     "cookie", "cookies", "setcookie", "dsn", "databaseurl", "databaseuri",
 }
+
+
+class TraceLedger:
+    def __init__(self, store):
+        self.store = store
+        self._watchers: defaultdict[str, set[asyncio.Queue]] = defaultdict(set)
+
+    def create_turn(self, run_id, turn_id, message_id, payload, context):
+        event = _runtime_event(run_id, turn_id, 0, "turn_start", {"message_id": message_id, "input": payload})
+        submit_seq = self.store.create_turn(run_id, turn_id, message_id, payload, context, event)
+        self._publish(turn_id, event)
+        return submit_seq
+
+    def append(self, turn_id, event_type, data, run_id):
+        event = _runtime_event(run_id, turn_id, self.store.next_seq(turn_id), event_type, data)
+        self.store.append_event(event)
+        self._publish(turn_id, event)
+        return deepcopy(event)
+
+    def finish(self, run_id, turn_id, terminal_data, context, parent=None):
+        terminal = _runtime_event(run_id, turn_id, self.store.next_seq(turn_id), "turn_end", terminal_data)
+        parent_event = self._parent_event(parent)
+        events = self.store.finish_turn(run_id, turn_id, terminal_data["status"], terminal_data["result_text"], terminal_data.get("error"), terminal, context, parent_event)
+        for event in events:
+            self._publish(event["turn_id"], event)
+        return events
+
+    def _parent_event(self, parent):
+        if parent is None:
+            return None
+        run_id, turn_id, data = parent
+        return _runtime_event(run_id, turn_id, self.store.next_seq(turn_id), "child_result", data)
+
+    def read(self, turn_id, after_seq=-1):
+        return [deepcopy(event) for event in self.store.read_events(turn_id) if event["seq"] > after_seq]
+
+    def exists(self, turn_id):
+        return self.store.has_turn(turn_id)
+
+    def terminal(self, turn_id):
+        return self.store.is_terminal(turn_id)
+
+    def watch(self, turn_id):
+        queue = asyncio.Queue()
+        self._watchers[turn_id].add(queue)
+        return queue
+
+    def unwatch(self, turn_id, queue):
+        self._watchers[turn_id].discard(queue)
+
+    def _publish(self, turn_id, event):
+        for queue in tuple(self._watchers[turn_id]):
+            queue.put_nowait(deepcopy(event))
 
 
 class TraceStore:
@@ -200,6 +255,17 @@ def _event(session_id, seq, event_type, data, turn_id):
     if turn_id:
         event["turn_id"] = turn_id
     return event
+
+
+def _runtime_event(run_id, turn_id, seq, event_type, data):
+    return {
+        "run_id": run_id,
+        "turn_id": turn_id,
+        "seq": seq,
+        "type": event_type,
+        "time": datetime.now(UTC).isoformat(),
+        "data": deepcopy(data),
+    }
 
 
 def _write_once(path: Path, event: dict[str, Any]) -> None:
