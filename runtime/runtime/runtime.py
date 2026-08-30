@@ -11,42 +11,14 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from inspect import iscoroutinefunction
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Protocol
+from typing import Any
 
+from .adapter import (
+    AdapterResult as _AdapterResult,
+    RuntimeAdapter as _RuntimeAdapter,
+    TurnRequest as _TurnRequest,
+)
 from .runtime_tools import KernelInterface, RuntimeTools
-
-
-class RuntimeAdapter(Protocol):
-    adapter_id: str
-    supports_multiple_writers: bool
-
-    async def start(self, request: TurnRequest) -> Any: ...
-
-    async def submit(
-        self,
-        handle: Any,
-        request: TurnRequest,
-        emit: Callable[[dict[str, Any]], Awaitable[None]],
-    ) -> AdapterResult: ...
-
-    async def cancel(self, handle: Any, request: TurnRequest) -> Any: ...
-
-
-@dataclass(frozen=True)
-class TurnRequest:
-    run_id: str
-    turn_id: str
-    message_id: str
-    input: Any
-    context: tuple[dict[str, Any], ...]
-    agent_snapshot: dict[str, Any]
-    tools: RuntimeTools
-
-
-@dataclass(frozen=True)
-class AdapterResult:
-    status: str = "completed"
-    result_text: str | None = None
 
 
 class TraceLedger:
@@ -119,7 +91,7 @@ class TraceLedger:
 class _Run:
     id: str
     agent_snapshot: dict[str, Any]
-    adapter: RuntimeAdapter
+    adapter: _RuntimeAdapter
     parent_run_id: str | None
     session_id: str | None
     tools: RuntimeTools
@@ -129,8 +101,8 @@ class _Run:
 
 @dataclass
 class _Turn:
-    request: TurnRequest
-    adapter: RuntimeAdapter
+    request: _TurnRequest
+    adapter: _RuntimeAdapter
     status: str = "running"
     result_text: str | None = None
     handle: Any = None
@@ -150,7 +122,7 @@ class Runtime:
     def __init__(
         self,
         data_root: Path,
-        adapters: dict[str, RuntimeAdapter],
+        adapters: dict[str, _RuntimeAdapter],
         *,
         kernel: KernelInterface | None = None,
     ):
@@ -524,7 +496,7 @@ class Runtime:
             raise KeyError(f"turn not found: {turn_id}") from None
 
 
-def _adapter_map(adapters) -> dict[str, RuntimeAdapter]:
+def _adapter_map(adapters) -> dict[str, _RuntimeAdapter]:
     if not isinstance(adapters, dict):
         raise TypeError("adapters must be a dict")
     if any(not isinstance(key, str) or not key for key in adapters):
@@ -581,7 +553,7 @@ def _message(message: Mapping[str, Any]):
 
 
 def _request(run, turn_id, message_id, payload):
-    return TurnRequest(
+    return _TurnRequest(
         run.id,
         turn_id,
         message_id,
@@ -607,8 +579,8 @@ def _adapter_event(value):
     return event_type, deepcopy(data)
 
 
-def _result(value: AdapterResult):
-    if not isinstance(value, AdapterResult):
+def _result(value: _AdapterResult):
+    if not isinstance(value, _AdapterResult):
         raise TypeError("adapter submit must return AdapterResult")
     if value.result_text is not None and not isinstance(value.result_text, str):
         raise TypeError("adapter result_text must be a string or None")

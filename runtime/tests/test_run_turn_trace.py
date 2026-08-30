@@ -3,9 +3,19 @@ from dataclasses import dataclass
 
 import pytest
 
-from runtime.runtime import AdapterResult, Runtime
+from runtime.adapter import AdapterResult
+from runtime.runtime import Runtime
 
 _UNSET = object()
+
+
+def test_runtime_module_does_not_export_adapter_contracts():
+    import runtime.runtime as runtime_module
+
+    assert not any(
+        hasattr(runtime_module, name)
+        for name in ("AdapterResult", "RuntimeAdapter", "TurnRequest")
+    )
 
 
 @dataclass

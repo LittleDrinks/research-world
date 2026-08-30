@@ -6,7 +6,8 @@ from pathlib import Path
 import pytest
 from kernel_contract import LocalMapQuery
 
-from runtime.runtime import AdapterResult, Runtime
+from runtime.adapter import AdapterResult
+from runtime.runtime import Runtime
 
 
 def test_runtime_tools_loads_without_the_server_source_path():

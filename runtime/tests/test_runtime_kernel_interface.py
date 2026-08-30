@@ -2,7 +2,8 @@ import pytest
 
 from server.kernel_interface import create_kernel
 
-from runtime.runtime import AdapterResult, Runtime
+from runtime.adapter import AdapterResult
+from runtime.runtime import Runtime
 
 
 def _read_local_map(tools, project_id):
