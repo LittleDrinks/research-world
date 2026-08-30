@@ -202,11 +202,13 @@ def test_persistence_failure_keeps_internal_artifact_without_visible_records(wor
     assert ArtifactStore(world.artifacts_root, project["id"]).get(stored[-1])["id"] == stored[-1]
 
 
-def test_persistence_insert_failure_has_no_publication_content_url(world, project, tmp_path, monkeypatch):
+def test_persistence_insert_failure_has_no_publication_content_url(
+    world, project, tmp_path, monkeypatch, graph_kernel
+):
     value, thread = kernel(world, tmp_path), report_thread(world, project)
     admitted_evidence(world, project)
     monkeypatch.setattr(world, "publish_report", lambda *_: (_ for _ in ()).throw(sqlite3.OperationalError("insert failed")))
-    client = TestClient(create_app(value))
+    client = TestClient(create_app(value, graph_kernel=graph_kernel))
     response = client.post(f"/api/v1/threads/{thread['id']}/report/publish", json={"title": "Orbit"})
     assert response.status_code == 422 and response.json()["status"] == "failed"
     assert response.json()["stages"][-1] == {"name": "persistence", "status": "failed"}
@@ -372,11 +374,13 @@ def test_report_content_rejects_foreign_thread(world, project, tmp_path):
         read(value, project, second, publication)
 
 
-def test_http_thread_publication_save_and_scoped_download(world, project, tmp_path):
+def test_http_thread_publication_save_and_scoped_download(
+    world, project, tmp_path, graph_kernel
+):
     value = kernel(world, tmp_path)
     admitted_evidence(world, project)
     thread = world.create_thread(project["id"], "chat", "session:1", "research-assistant")
-    client = TestClient(create_app(value))
+    client = TestClient(create_app(value, graph_kernel=graph_kernel))
     publish = client.post(f"/api/v1/threads/{thread['id']}/report/publish", json={"title": "Orbit"})
     publication = publish.json()["publication"]
     save = client.post(f"/api/v1/threads/{thread['id']}/report/save", json={"title": "V1", "publication_id": publication["id"]})
@@ -388,10 +392,10 @@ def test_http_thread_publication_save_and_scoped_download(world, project, tmp_pa
     assert client.post(f"/api/v1/threads/{thread['id']}/report/save", json={"title": "V1", "publication_id": publication["id"]}).status_code == 409
 
 
-def test_http_failed_publication_is_not_created(world, project, tmp_path):
+def test_http_failed_publication_is_not_created(world, project, tmp_path, graph_kernel):
     value = kernel(world, tmp_path)
     thread = report_thread(world, project)
-    response = TestClient(create_app(value)).post(f"/api/v1/threads/{thread['id']}/report/publish", json={"title": "Orbit"})
+    response = TestClient(create_app(value, graph_kernel=graph_kernel)).post(f"/api/v1/threads/{thread['id']}/report/publish", json={"title": "Orbit"})
     assert response.status_code == 422
     assert response.json()["status"] == "failed"
     assert response.json()["stages"] == [{"name": "projection", "status": "failed"}]
@@ -464,9 +468,11 @@ def test_failed_publication_keeps_concurrently_captured_content(world, project, 
     assert ArtifactStore(world.artifacts_root, project["id"]).get(captured["id"])["id"] == captured["id"]
 
 
-def test_http_rejects_body_thread_and_cross_thread_save(world, project, tmp_path):
+def test_http_rejects_body_thread_and_cross_thread_save(
+    world, project, tmp_path, graph_kernel
+):
     value = kernel(world, tmp_path)
-    client = TestClient(create_app(value))
+    client = TestClient(create_app(value, graph_kernel=graph_kernel))
     admitted_evidence(world, project)
     first, second = report_thread(world, project), world.create_thread(project["id"], "two", "s-two", "research-assistant")
     path = f"/api/v1/threads/{first['id']}/report/publish"
@@ -477,13 +483,17 @@ def test_http_rejects_body_thread_and_cross_thread_save(world, project, tmp_path
     assert not value._world.reports(project["id"], second["id"])
 
 
-def test_http_report_content_rejects_a_get_body(world, project, tmp_path):
+def test_http_report_content_rejects_a_get_body(
+    world, project, tmp_path, graph_kernel
+):
     value = kernel(world, tmp_path)
     admitted_evidence(world, project)
     thread = report_thread(world, project)
     publication = publish_thread(value, project, thread)
     path = f"/api/v1/threads/{thread['id']}/report/{publication['id']}/content"
-    response = TestClient(create_app(value)).request("GET", path, content=b"{}")
+    response = TestClient(
+        create_app(value, graph_kernel=graph_kernel)
+    ).request("GET", path, content=b"{}")
     assert response.status_code == 400
     assert response.json()["detail"] == "report content request accepts no body"
 

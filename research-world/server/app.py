@@ -13,22 +13,29 @@ from fastapi.responses import (
     StreamingResponse,
 )
 
-from .config import ROOT
+from .config import ROOT, load_settings
 from .kernel import KernelCommand, KernelQuery, ResearchKernel, default_kernel
+from .kernel_http import kernel_graph_router
+from .kernel_interface import KernelInterface, create_kernel
 from .library import list_packages
 from .world import ReportNameTaken
 
 
-def create_app(kernel: ResearchKernel) -> FastAPI:
+def create_app(kernel: ResearchKernel, *, graph_kernel: KernelInterface) -> FastAPI:
     app = FastAPI(title="Research World", version="2")
-    register_routes(app, kernel)
+    register_routes(app, kernel, graph_kernel)
     return app
 
 
-def register_routes(app, kernel) -> None:
+def register_routes(app, kernel, graph_kernel: KernelInterface) -> None:
+    _register_world_routes(app, kernel)
+    app.include_router(kernel_graph_router(graph_kernel))
+    frontend_routes(app)
+
+
+def _register_world_routes(app, kernel) -> None:
     error_handlers(app)
     health_routes(app)
-    project_routes(app, kernel)
     project_state_routes(app, kernel)
     graph_node_routes(app, kernel)
     graph_evidence_routes(app, kernel)
@@ -43,7 +50,6 @@ def register_routes(app, kernel) -> None:
     pipeline_control_routes(app, kernel)
     library_routes(app)
     graph_tool_routes(app, kernel)
-    frontend_routes(app)
 
 
 def error_handlers(app: FastAPI) -> None:
@@ -70,18 +76,6 @@ def health_routes(app) -> None:
         return {"ok": True}
 
 
-def project_routes(app, kernel) -> None:
-    @app.get("/api/v1/projects")
-    async def projects():
-        return await kernel.query(KernelQuery("projects"))
-
-    @app.post("/api/v1/projects", status_code=201)
-    async def create_project(request: Request):
-        return await kernel.command(
-            KernelCommand("create_project", values=await request.json())
-        )
-
-
 def project_state_routes(app, kernel) -> None:
     @app.patch("/api/v1/projects/{project_id}")
     async def update_project(project_id: str, request: Request):
@@ -89,10 +83,6 @@ def project_state_routes(app, kernel) -> None:
         return await kernel.command(
             KernelCommand("set_auto", project_id, {"enabled": value["auto"]})
         )
-
-    @app.get("/api/v1/bootstrap")
-    async def bootstrap(project_id: str | None = None):
-        return await kernel.query(KernelQuery("bootstrap", project_id))
 
 
 def graph_node_routes(app, kernel) -> None:
@@ -378,4 +368,6 @@ def frontend_routes(app: FastAPI) -> None:
 
 
 kernel = default_kernel()
-app = create_app(kernel)
+settings = load_settings()
+graph_kernel = create_kernel(settings.database, settings.artifacts)
+app = create_app(kernel, graph_kernel=graph_kernel)

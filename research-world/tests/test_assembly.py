@@ -9,9 +9,9 @@ from server.library import DEFAULT_ASSEMBLY, resolve_assembly
 
 
 @pytest.fixture
-def client(world, tmp_path):
+def client(world, tmp_path, graph_kernel):
     kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
-    return TestClient(create_app(kernel))
+    return TestClient(create_app(kernel, graph_kernel=graph_kernel))
 
 
 def hook(arguments: dict) -> dict:
@@ -40,12 +40,6 @@ def test_resolve_assembly_returns_package_definitions():
 def test_library_endpoint_lists_builtin_packages(client):
     packages = client.get("/api/v1/library").json()
     assert {"fs", "graph-query"} <= {package["name"] for package in packages}
-
-
-def test_create_project_api_rejects_unknown_package(client, tmp_path):
-    response = client.post("/api/v1/projects", json={
-        "name": "bad-api", "root": str(tmp_path), "question": "Why?", "assembly": ["nope"]})
-    assert response.status_code == 400
 
 
 def test_graph_query_get_returns_full_payload(client, world, project):

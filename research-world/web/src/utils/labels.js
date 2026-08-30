@@ -6,8 +6,15 @@ export const REASONING_EFFORTS = ["low", "medium", "high"];
 
 
 export function nodeText(node) {
-  const values = [node?.payload?.title, node?.payload?.text, node?.payload?.summary];
+  const payload = node?.payload || {};
+  const values = [payload.title, payload.text, payload.summary];
   return values.find((value) => typeof value === "string" && value.trim()) || "未命名节点";
+}
+
+
+export function recordText(record) {
+  const values = [record.content.title, record.content.text, record.content.summary];
+  return values.find((value) => typeof value === "string" && value.trim()) || "未命名记录";
 }
 
 

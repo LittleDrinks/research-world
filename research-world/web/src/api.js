@@ -16,7 +16,6 @@ const enc = encodeURIComponent;
 
 export const getBootstrap = (projectId) => fetch(`/api/v1/bootstrap${projectId ? `?project_id=${enc(projectId)}` : ""}`).then(decode);
 export const createProject = (body) => fetch("/api/v1/projects", json("POST", body)).then(decode);
-export const setProjectAuto = (projectId, auto) => fetch(`/api/v1/projects/${enc(projectId)}`, json("PATCH", { auto })).then(decode);
 
 export const listThreads = (projectId) => fetch(`/api/v1/projects/${enc(projectId)}/threads`).then(decode);
 export const createThread = (projectId, body) => fetch(`/api/v1/projects/${enc(projectId)}/threads`, json("POST", body)).then(decode);
@@ -69,6 +68,7 @@ function emitFrame(frame, onEvent) {
 
 export const searchNodes = (projectId, query) => fetch("/api/v1/tools/graph-query", json("POST", { arguments: { action: "search", project_id: projectId, query } })).then(decode);
 export const getNode = (nodeId) => fetch(`/api/v1/nodes/${enc(nodeId)}`).then(decode);
+export const getLocalMap = (projectId, query) => fetch(`/api/v1/projects/${enc(projectId)}/local-map`, json("POST", query)).then(decode);
 
 export const getCatalog = (projectId) => fetch(`/api/v1/runtime/catalog?project_id=${enc(projectId)}`).then(decode);
 export const getSession = (sessionId) => fetch(`/api/v1/runtime/sessions/${enc(sessionId)}`).then(decode);

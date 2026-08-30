@@ -29,6 +29,7 @@ class TurnRequest:
     input: Any
     context: tuple[dict[str, Any], ...]
     agent_snapshot: dict[str, Any]
+    tools: Any
 
 
 @dataclass(frozen=True)

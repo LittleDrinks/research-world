@@ -18,6 +18,7 @@ from .adapter import (
     RuntimeAdapter as _RuntimeAdapter,
     TurnRequest as _TurnRequest,
 )
+from .runtime_tools import KernelInterface, RuntimeTools
 
 
 class TraceLedger:
@@ -93,6 +94,7 @@ class _Run:
     adapter: _RuntimeAdapter
     parent_run_id: str | None
     session_id: str | None
+    tools: RuntimeTools
     context: list[dict[str, Any]] = field(default_factory=list)
     turns: dict[str, _Turn] = field(default_factory=dict)
 
@@ -108,8 +110,12 @@ class _Turn:
     task_cancel_requested: bool = False
     cancel_sent: bool = False
     task: asyncio.Task | None = None
+    adapter_finished: bool = False
+    accepting_children: bool = True
+    waiting_for_children: bool = False
+    child_turn_ids: set[str] = field(default_factory=set)
+    terminal_event: asyncio.Event = field(default_factory=asyncio.Event)
     cancel_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
-    event_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 
 class Runtime:
@@ -117,12 +123,16 @@ class Runtime:
         self,
         data_root: Path,
         adapters: dict[str, _RuntimeAdapter],
+        *,
+        kernel: KernelInterface | None = None,
     ):
         _require_data_root(data_root)
         self._adapters = _adapter_map(adapters)
+        self._kernel = kernel
         self._trace = TraceLedger(data_root / "traces")
         self._runs: dict[str, _Run] = {}
         self._turns: dict[str, _Turn] = {}
+        self._delegations: dict[str, tuple[str, str]] = {}
         self._adapter_reservations: dict[int, _Turn] = {}
         self._registry_lock = asyncio.Lock()
 
@@ -142,7 +152,12 @@ class Runtime:
             self._require_run(parent_run_id)
         adapter = _select_adapter(self._adapters, snapshot)
         run = _Run(
-            f"r-{uuid.uuid4().hex}", snapshot, adapter, parent_run_id, session_id
+            f"r-{uuid.uuid4().hex}",
+            snapshot,
+            adapter,
+            parent_run_id,
+            session_id,
+            RuntimeTools(self._kernel, snapshot.get("tools", ())),
         )
         self._runs[run.id] = run
         return run
@@ -161,11 +176,13 @@ class Runtime:
         run = self._require_run(run_id)
         if existing := run.turns.get(message_id):
             return existing
+        self._require_child_submit(run)
         turn_id = f"t-{uuid.uuid4().hex}"
         request = _request(run, turn_id, message_id, payload)
         turn = _Turn(request, run.adapter)
         run.turns[message_id] = turn
         self._turns[turn_id] = turn
+        self._track_child_turn(run, turn)
         self._trace.append(turn_id, "turn_start", _start_data(request), run.id)
         self._start_turn(turn)
         return turn
@@ -202,9 +219,11 @@ class Runtime:
     async def cancel(self, turn_id: str) -> dict[str, Any]:
         turn = self._turn(turn_id)
         async with turn.cancel_lock:
-            if turn.status != "running":
-                return _turn_view(turn)
-            turn.cancel_requested = True
+            async with self._registry_lock:
+                if turn.status != "running":
+                    return _turn_view(turn)
+                turn.cancel_requested = True
+                turn.accepting_children = False
             try:
                 await self._stop_execution(turn)
             except Exception as error:
@@ -217,19 +236,24 @@ class Runtime:
         self,
         parent_run_id: str,
         agent_spec: Mapping[str, Any],
+        *,
+        parent_turn_id: str,
     ) -> dict[str, Any]:
         snapshot = _snapshot(agent_spec)
         async with self._registry_lock:
-            self._require_run(parent_run_id)
+            self._require_parent_turn(parent_run_id, parent_turn_id)
             run = self._register_run(snapshot, None, parent_run_id)
+            self._delegations[run.id] = (parent_run_id, parent_turn_id)
         return _run_view(run)
 
     async def _execute(self, turn: _Turn) -> None:
         try:
             await self._run_adapter(turn)
         except asyncio.CancelledError as error:
+            await self._mark_adapter_finished(turn)
             await self._handle_cancelled(turn, error)
         except Exception as error:
+            await self._mark_adapter_finished(turn)
             await self._finish(
                 turn, "error", None, str(error), force=turn.cancel_requested
             )
@@ -245,35 +269,64 @@ class Runtime:
         result = await turn.adapter.submit(
             turn.handle, turn.request, lambda value: self._emit(turn, value)
         )
-        await self._finish(turn, *_result(result))
+        await self._mark_adapter_finished(turn)
+        status, result_text = _result(result)
+        await self._finish(turn, status, result_text)
+
+    async def _mark_adapter_finished(self, turn: _Turn) -> None:
+        async with self._registry_lock:
+            turn.adapter_finished = True
 
     async def _handle_cancelled(
         self, turn: _Turn, error: asyncio.CancelledError
     ) -> None:
         if not turn.task_cancel_requested:
-            await self._finish(turn, "error", None, _cancel_detail(error), force=True)
+            await self._finish(
+                turn,
+                "error",
+                None,
+                _cancel_detail(error),
+                force=turn.cancel_requested,
+            )
 
     async def _emit(self, turn: _Turn, value: Any) -> None:
         event_type, data = _adapter_event(value)
         if event_type == "turn_end":
             raise RuntimeError("adapter cannot emit a terminal event")
-        async with turn.event_lock:
+        async with self._registry_lock:
             if turn.status == "running":
                 self._trace.append(
                     turn.request.turn_id, event_type, data, turn.request.run_id
                 )
 
     async def _finish(
-        self,
-        turn,
-        status,
-        result_text,
-        error=None,
-        *,
-        force=False,
+        self, turn, status, result_text, error=None, *, force=False
     ) -> None:
-        async with turn.event_lock:
-            self._finish_locked(turn, status, result_text, error, force)
+        async with self._registry_lock:
+            status = self._prepare_finish(turn, status, force)
+            if status is None:
+                return
+            children = self._children_to_wait(turn, force)
+            if not children:
+                self._finish_locked(turn, status, result_text, error, force)
+                return
+        await self._wait_for_children(children)
+        await self._finish_after_children(turn, status, result_text, error, force)
+
+    def _prepare_finish(self, turn, status, force):
+        if turn.status != "running":
+            return None
+        status = _status(status)
+        if turn.cancel_requested and not force and status != "error":
+            return None
+        return status
+
+    async def _finish_after_children(
+        self, turn, status, result_text, error, force
+    ) -> None:
+        async with self._registry_lock:
+            if turn.status == "running":
+                self._finish_locked(turn, status, result_text, error, force)
 
     def _finish_locked(self, turn, status, result_text, error, force) -> None:
         if turn.status != "running":
@@ -282,10 +335,13 @@ class Runtime:
         if turn.cancel_requested and not force and status != "error":
             return
         turn.status, turn.result_text = status, result_text
+        turn.waiting_for_children = False
         self._append_end(turn, status, result_text, error)
+        self._record_child_result(turn, status, result_text, error)
         self._release_adapter(turn)
         if status in {"completed", "limit"}:
             self._record_context(turn, result_text)
+        turn.terminal_event.set()
 
     def _append_end(self, turn, status, result_text, error):
         self._trace.append(
@@ -305,6 +361,11 @@ class Runtime:
             raise RuntimeError(_cancel_detail(error)) from error
 
     async def _stop_execution(self, turn: _Turn) -> None:
+        if turn.waiting_for_children:
+            await self._cancel_execution_task(turn)
+            return
+        if turn.adapter_finished:
+            return
         if turn.task is None:
             return
         if turn.handle is None:
@@ -338,12 +399,14 @@ class Runtime:
             del self._adapter_reservations[adapter_key]
 
     def _reject_turn(self, turn: _Turn) -> None:
-        turn.status = "error"
-        self._append_end(
+        turn.adapter_finished = True
+        turn.accepting_children = False
+        self._finish_locked(
             turn,
             "error",
             None,
             "adapter does not support overlapping active turns",
+            True,
         )
 
     async def _wait_execution(self, turn: _Turn) -> None:
@@ -376,6 +439,55 @@ class Runtime:
             return self._runs[run_id]
         except KeyError:
             raise KeyError(f"run not found: {run_id}") from None
+
+    def _require_parent_turn(self, parent_run_id: str, parent_turn_id: str) -> None:
+        if not isinstance(parent_turn_id, str) or not parent_turn_id:
+            raise ValueError("parent_turn_id must be a nonempty string")
+        turn = self._turn(parent_turn_id)
+        if turn.request.run_id != parent_run_id:
+            raise ValueError("parent turn belongs to another run")
+        if turn.status != "running":
+            raise ValueError("parent turn must be running")
+        if turn.adapter_finished or not turn.accepting_children:
+            raise ValueError("parent turn is no longer accepting child turns")
+
+    def _require_child_submit(self, run: _Run) -> None:
+        link = self._delegations.get(run.id)
+        if link is None:
+            return
+        parent = self._turn(link[1])
+        if parent.status != "running" or parent.adapter_finished or not parent.accepting_children:
+            raise ValueError("parent turn is no longer accepting child turns")
+
+    def _track_child_turn(self, run: _Run, turn: _Turn) -> None:
+        link = self._delegations.get(run.id)
+        if link is not None:
+            self._turn(link[1]).child_turn_ids.add(turn.request.turn_id)
+
+    def _children_to_wait(self, turn: _Turn, force: bool) -> tuple[_Turn, ...]:
+        turn.accepting_children = False
+        if force:
+            return ()
+        children = tuple(self._turns[child_id] for child_id in turn.child_turn_ids)
+        turn.waiting_for_children = bool(children)
+        return children
+
+    async def _wait_for_children(self, children: tuple[_Turn, ...]) -> None:
+        await asyncio.gather(*(child.terminal_event.wait() for child in children))
+
+    def _record_child_result(self, turn, status, result_text, error) -> None:
+        link = self._delegations.get(turn.request.run_id)
+        if link is None:
+            return
+        parent_run_id, parent_turn_id = link
+        if self._turn(parent_turn_id).status != "running":
+            return
+        self._trace.append(
+            parent_turn_id,
+            "child_result",
+            _child_result_data(turn, status, result_text, error),
+            parent_run_id,
+        )
 
     def _turn(self, turn_id: str) -> _Turn:
         try:
@@ -448,6 +560,7 @@ def _request(run, turn_id, message_id, payload):
         payload,
         tuple(deepcopy(run.context)),
         deepcopy(run.agent_snapshot),
+        run.tools,
     )
 
 
@@ -488,6 +601,18 @@ def _end_data(status, result_text, error):
     data = {
         "status": status,
         "result_text": None if status == "cancelled" else result_text,
+    }
+    if error:
+        data["error"] = error
+    return data
+
+
+def _child_result_data(turn, status, result_text, error):
+    data = {
+        "child_run_id": turn.request.run_id,
+        "child_turn_id": turn.request.turn_id,
+        "status": status,
+        "result_text": result_text,
     }
     if error:
         data["error"] = error
