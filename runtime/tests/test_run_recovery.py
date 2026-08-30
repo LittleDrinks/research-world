@@ -224,6 +224,122 @@ asyncio.run(main())
 '''
 
 
+_NESTED_CRASH_PROCESS = r'''
+import asyncio, json, os, sys
+from pathlib import Path
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    async def start(self, request):
+        return object()
+    async def submit(self, handle, request, emit):
+        await asyncio.Event().wait()
+    async def cancel(self, handle, request):
+        return None
+
+async def main():
+    runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
+    while True:
+        main_run = await runtime.launch({"id": "main", "adapter": "fake"})
+        main_turn = await runtime.submit(main_run["id"], {"id": "main", "content": "main"})
+        child_run = await runtime.delegate(main_run["id"], {"id": "child", "adapter": "fake"}, parent_turn_id=main_turn["id"])
+        child_turn = await runtime.submit(child_run["id"], {"id": "child", "content": "child"})
+        grandchild_run = await runtime.delegate(child_run["id"], {"id": "grandchild", "adapter": "fake"}, parent_turn_id=child_turn["id"])
+        grandchild_turn = await runtime.submit(grandchild_run["id"], {"id": "grandchild", "content": "grandchild"})
+        chain = {"main_turn": main_turn["id"], "child_turn": child_turn["id"], "grandchild_turn": grandchild_turn["id"], "child_run": child_run["id"], "grandchild_run": grandchild_run["id"]}
+        if child_run["id"] < grandchild_run["id"]:
+            await asyncio.sleep(0.1)
+            print(json.dumps(chain), flush=True)
+            os._exit(0)
+
+asyncio.run(main())
+'''
+
+
+_RECOVER_NESTED_PROCESS = r'''
+import asyncio, json, sys
+from pathlib import Path
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    def __init__(self):
+        self.calls = []
+    async def start(self, request):
+        self.calls.append(["start", request.message_id])
+        return object()
+    async def submit(self, handle, request, emit):
+        self.calls.append(["submit", request.message_id])
+        await asyncio.Event().wait()
+    async def cancel(self, handle, request):
+        self.calls.append(["cancel", request.message_id])
+
+async def collect(runtime, turn_id):
+    return [event async for event in runtime.subscribe(turn_id)]
+
+async def main():
+    adapter = Adapter()
+    runtime = Runtime(Path(sys.argv[1]), {"fake": adapter})
+    chain = json.loads(sys.argv[2])
+    streams = [await collect(runtime, chain[key]) for key in ("grandchild_turn", "child_turn", "main_turn")]
+    order = [[event["turn_id"], event["type"]] for stream in streams for event in stream if event["type"] in {"child_result", "turn_end"}]
+    print(json.dumps({"order": order, "calls": adapter.calls}))
+
+asyncio.run(main())
+'''
+
+
+_CORRUPT_STORE_PROCESS = r'''
+import sqlite3, sys
+from pathlib import Path
+
+connection = sqlite3.connect(Path(sys.argv[1]) / "runs.sqlite3")
+connection.executescript("""
+CREATE TABLE metadata (key TEXT, value TEXT);
+CREATE TABLE runs (id TEXT, agent_snapshot TEXT, adapter_id TEXT, parent_run_id TEXT, completed_context TEXT);
+CREATE TABLE turns (id TEXT, run_id TEXT, message_id TEXT, input TEXT, context TEXT, submit_seq INTEGER, status TEXT, result_text TEXT, error TEXT);
+CREATE TABLE delegations (child_run_id TEXT, parent_run_id TEXT, parent_turn_id TEXT);
+CREATE TABLE message_index (run_id TEXT, message_id TEXT, turn_id TEXT);
+CREATE TABLE events (turn_id TEXT, seq INTEGER, run_id TEXT, type TEXT, time TEXT, data TEXT);
+INSERT INTO metadata VALUES ('format', 'runtime-run-store'), ('version', '1');
+INSERT INTO runs VALUES ('r-main', '{"adapter":"fake"}', 'fake', NULL, '[]');
+INSERT INTO turns VALUES
+    ('t-one', 'r-main', 'm-one', '"one"', '[]', 0, 'running', NULL, NULL),
+    ('t-two', 'r-main', 'm-two', '"two"', '[]', 0, 'running', NULL, NULL);
+INSERT INTO message_index VALUES ('r-main', 'm-one', 't-one'), ('r-main', 'm-two', 't-two');
+INSERT INTO events VALUES
+    ('t-one', 0, 'r-main', 'turn_start', 'time', '{"message_id":"m-one","input":"one"}'),
+    ('t-two', 0, 'r-main', 'turn_start', 'time', '{"message_id":"m-two","input":"two"}');
+""")
+connection.close()
+'''
+
+
+_FAIL_STARTUP_PROCESS = r'''
+from pathlib import Path
+import sys
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    async def start(self, request):
+        return object()
+    async def submit(self, handle, request, emit):
+        return None
+    async def cancel(self, handle, request):
+        return None
+
+try:
+    Runtime(Path(sys.argv[1]), {"fake": Adapter()})
+except Exception as error:
+    print(type(error).__name__ + ":" + str(error))
+'''
+
+
 def _run_process(script, root, *arguments):
     command = [sys.executable, "-c", script, str(root), *arguments]
     return subprocess.run(command, cwd=_RUNTIME_ROOT, check=True, capture_output=True, text=True, timeout=5)
@@ -263,6 +379,25 @@ def test_restart_terminalizes_children_before_parent_in_a_fresh_interpreter(tmp_
     assert recovered["duplicate"]["status"] == "error"
     assert recovered["resumed"][-1]["data"]["status"] == "completed"
     assert recovered["calls"] == [["start", "new"], ["submit", "new"]]
+
+
+def test_nested_recovery_unwinds_grandchild_before_parent_in_fresh_interpreter(tmp_path):
+    created = _output(_run_process(_NESTED_CRASH_PROCESS, tmp_path))
+    recovered = _output(_run_process(_RECOVER_NESTED_PROCESS, tmp_path, json.dumps(created)))
+    assert recovered["order"] == [
+        [created["grandchild_turn"], "turn_end"],
+        [created["child_turn"], "child_result"],
+        [created["child_turn"], "turn_end"],
+        [created["main_turn"], "child_result"],
+        [created["main_turn"], "turn_end"],
+    ]
+    assert recovered["calls"] == []
+
+
+def test_same_shape_store_with_missing_constraints_rejects_duplicate_submit_seq(tmp_path):
+    _run_process(_CORRUPT_STORE_PROCESS, tmp_path)
+    result = _run_process(_FAIL_STARTUP_PROCESS, tmp_path)
+    assert result.stdout.startswith("RunStoreError:runtime store")
 
 
 def test_missing_adapter_fails_startup_without_fallback(tmp_path):

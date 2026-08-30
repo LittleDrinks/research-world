@@ -230,6 +230,8 @@ def _verify_format(connection):
         raise RunStoreError("runtime store has an unknown schema")
     for table, columns in _TABLE_COLUMNS.items():
         _verify_columns(connection, table, columns)
+    _verify_schema(connection)
+    _verify_integrity(connection)
     if tuple(connection.execute("PRAGMA foreign_key_check")):
         raise RunStoreError("runtime store has incomplete associations")
 
@@ -244,6 +246,19 @@ def _verify_columns(connection, table, expected):
     actual = tuple(row["name"] for row in connection.execute(f"PRAGMA table_info({table})"))
     if actual != expected:
         raise RunStoreError(f"runtime store has an invalid {table} schema")
+
+
+def _verify_schema(connection):
+    objects = connection.execute("SELECT type, sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%'").fetchall()
+    actual = {row["sql"] for row in objects if row["type"] == "table"}
+    if any(row["type"] != "table" for row in objects) or actual != set(_SCHEMA):
+        raise RunStoreError("runtime store has invalid schema constraints")
+
+
+def _verify_integrity(connection):
+    result = [row[0] for row in connection.execute("PRAGMA integrity_check")]
+    if result != ["ok"]:
+        raise RunStoreError("runtime store failed integrity check")
 
 
 @contextmanager
@@ -341,6 +356,7 @@ def _event_row(row):
 def _validate_snapshot(value):
     _validate_runs(value)
     _validate_turns(value)
+    _validate_submit_sequences(value)
     _validate_delegations(value)
     _validate_messages(value)
     _validate_events(value)
@@ -391,6 +407,15 @@ def _validate_turn(turn_id, turn, runs):
         raise RunStoreError("runtime store result is invalid")
     if turn.get("error") is not None and not isinstance(turn["error"], str):
         raise RunStoreError("runtime store error is invalid")
+
+
+def _validate_submit_sequences(value):
+    sequences = {}
+    for turn in value["turns"].values():
+        sequences.setdefault(turn["run_id"], []).append(turn["submit_seq"])
+    for values in sequences.values():
+        if sorted(values) != list(range(len(values))):
+            raise RunStoreError("runtime store submit order is not contiguous")
 
 
 def _validate_delegations(value):

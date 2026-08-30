@@ -110,11 +110,20 @@ class Runtime:
 
     def _recover(self):
         pending = [turn for turn in self._turns.values() if turn.status == "running"]
-        children = sorted((turn for turn in pending if turn.request.run_id in self._delegations), key=_recovery_key)
-        others = sorted((turn for turn in pending if turn.request.run_id not in self._delegations), key=_recovery_key)
-        for turn in (*children, *others):
+        for turn in sorted(pending, key=self._recovery_key):
             if turn.status == "running":
                 self._recover_turn(turn)
+
+    def _recovery_key(self, turn):
+        depth = self._run_depth(turn.request.run_id)
+        return -depth, turn.request.run_id, turn.submit_seq, turn.request.turn_id
+
+    def _run_depth(self, run_id):
+        depth = 0
+        while run_id in self._delegations:
+            depth += 1
+            run_id = self._delegations[run_id][0]
+        return depth
 
     def _recover_turn(self, turn):
         turn.accepting_children = False
@@ -625,10 +634,6 @@ def _after_seq(value):
     if not isinstance(value, int) or isinstance(value, bool):
         raise TypeError("after_seq must be an integer")
     return value
-
-
-def _recovery_key(turn):
-    return turn.request.run_id, turn.submit_seq, turn.request.turn_id
 
 
 def _run_view(run):
