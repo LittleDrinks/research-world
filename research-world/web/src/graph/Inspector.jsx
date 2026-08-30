@@ -1,6 +1,7 @@
 import { Check, Copy, GitBranch, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Modal } from "../components/Modal";
+import { ArtifactDownload } from "../components/map/ArtifactDownload";
 import { KIND_LABELS, recordText } from "../utils/labels";
 
 
@@ -86,7 +87,7 @@ function Artifacts({ node, artifacts }) {
   const linked = node.artifact_ids.map((id) => ({ id, artifact: byId.get(id) }));
   if (!linked.length) return null;
   return <section className="inspector-section"><h2>关联 Artifact</h2><ul className="audit-evidence">
-    {linked.map(({ id, artifact }) => <li key={id} className="mono">{artifact ? `${artifact.media_type} · ${id}` : id}</li>)}
+    {linked.map(({ id, artifact }) => <li key={id}><span className="mono">{artifact ? `${artifact.media_type} · ${id}` : id}</span>{artifact && <ArtifactDownload artifact={artifact} />}</li>)}
   </ul></section>;
 }
 

@@ -39,6 +39,7 @@ class ProjectRequest(BaseModel):
 def kernel_graph_router(kernel: KernelInterface) -> APIRouter:
     router = APIRouter()
     _add_project_routes(router, kernel)
+    _add_artifact_routes(router, kernel)
     _add_record_routes(router, kernel)
     _add_relation_routes(router, kernel)
     _add_local_map_route(router, kernel)
@@ -95,6 +96,14 @@ def _add_record_routes(router: APIRouter, kernel: KernelInterface) -> None:
     )
 
 
+def _add_artifact_routes(router: APIRouter, kernel: KernelInterface) -> None:
+    router.add_api_route(
+        "/api/v1/projects/{project_id}/artifacts/{artifact_id}",
+        _artifact(kernel),
+        methods=["GET"],
+    )
+
+
 def _add_relation_routes(router: APIRouter, kernel: KernelInterface) -> None:
     path = "/api/v1/projects/{project_id}/relations"
     router.add_api_route(path, _connect(kernel), methods=["POST"], status_code=201)
@@ -123,6 +132,16 @@ def _record(kernel: KernelInterface):
 def _records(kernel: KernelInterface):
     def endpoint(project_id: str):
         return _kernel_call(kernel.list_records, project_id)
+
+    return endpoint
+
+
+def _artifact(kernel: KernelInterface):
+    def endpoint(project_id: str, artifact_id: str, download: bool = False):
+        artifact = _kernel_call(kernel.get_artifact, project_id, artifact_id)
+        content = _kernel_call(kernel.read_artifact, project_id, artifact_id)
+        headers = {"Content-Disposition": _attachment(artifact)} if download else {}
+        return Response(content, media_type=artifact.media_type, headers=headers)
 
     return endpoint
 
@@ -177,3 +196,7 @@ def _kernel_call(operation, *args):
         raise HTTPException(403, str(error)) from error
     except ValueError as error:
         raise HTTPException(422, str(error)) from error
+
+
+def _attachment(artifact) -> str:
+    return f'attachment; filename="artifact-{artifact.sha256}.bin"'

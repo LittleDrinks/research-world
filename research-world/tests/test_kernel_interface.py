@@ -1,6 +1,9 @@
+from pathlib import Path
+
 import pytest
 from kernel_contract import LocalMapQuery
 
+from server.artifacts import ArtifactStore
 from server.kernel_interface import KernelInterface, LocalMap, create_kernel
 
 
@@ -114,12 +117,25 @@ def test_artifact_is_project_scoped_and_immutable(tmp_path):
 
     with pytest.raises(KeyError):
         kernel.get_artifact(other.id, artifact.id)
+    with pytest.raises(KeyError):
+        kernel.read_artifact(other.id, artifact.id)
     same_content = kernel.capture_artifact(other.id, b"result", "text/plain")
 
     assert same_content.id == artifact.id
     assert same_content.project_id == other.id
     with pytest.raises(ValueError):
         kernel.capture_artifact(project.id, b"result", "application/json")
+
+
+def test_kernel_artifact_read_rejects_corrupted_content(tmp_path):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+    artifact = kernel.capture_artifact(project.id, b"result", "text/plain")
+    store = ArtifactStore(tmp_path / "artifacts", project.id)
+    Path(store.get(artifact.id)["path"]).write_bytes(b"tampered")
+
+    with pytest.raises(ValueError, match="artifact operation failed"):
+        kernel.read_artifact(project.id, artifact.id)
 
 
 def test_session_is_not_readable_from_another_project(tmp_path):
