@@ -24,6 +24,14 @@ def _application_client(tmp_path):
     return TestClient(create_app(app_kernel, graph_kernel=graph_kernel))
 
 
+def test_application_assembly_requires_graph_kernel(tmp_path):
+    world = World(tmp_path / "world.db", tmp_path / "world-artifacts")
+    app_kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
+
+    with pytest.raises(TypeError, match="graph_kernel"):
+        create_app(app_kernel)
+
+
 def _create_application_project(client):
     response = client.post(
         "/api/v1/projects",

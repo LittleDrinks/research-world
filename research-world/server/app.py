@@ -21,20 +21,15 @@ from .library import list_packages
 from .world import ReportNameTaken
 
 
-def create_app(
-    kernel: ResearchKernel, *, graph_kernel: KernelInterface | None = None
-) -> FastAPI:
+def create_app(kernel: ResearchKernel, *, graph_kernel: KernelInterface) -> FastAPI:
     app = FastAPI(title="Research World", version="2")
     register_routes(app, kernel, graph_kernel)
     return app
 
 
-def register_routes(app, kernel, graph_kernel: KernelInterface | None = None) -> None:
+def register_routes(app, kernel, graph_kernel: KernelInterface) -> None:
     _register_world_routes(app, kernel)
-    if graph_kernel is None:
-        project_routes(app, kernel)
-    else:
-        app.include_router(kernel_graph_router(graph_kernel))
+    app.include_router(kernel_graph_router(graph_kernel))
     frontend_routes(app)
 
 
@@ -79,22 +74,6 @@ def health_routes(app) -> None:
     @app.get("/api/v1/health")
     async def health():
         return {"ok": True}
-
-
-def project_routes(app, kernel) -> None:
-    @app.get("/api/v1/projects")
-    async def projects():
-        return await kernel.query(KernelQuery("projects"))
-
-    @app.post("/api/v1/projects", status_code=201)
-    async def create_project(request: Request):
-        return await kernel.command(
-            KernelCommand("create_project", values=await request.json())
-        )
-
-    @app.get("/api/v1/bootstrap")
-    async def bootstrap(project_id: str | None = None):
-        return await kernel.query(KernelQuery("bootstrap", project_id))
 
 
 def project_state_routes(app, kernel) -> None:

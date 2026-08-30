@@ -156,13 +156,13 @@ def test_run_keeps_definition_snapshot(world, project):
     assert world.run(run["id"])["definition_snapshot"]["name"] == "Custom"
 
 
-def test_pipeline_api_starts_run_by_id(world, project, tmp_path):
+def test_pipeline_api_starts_run_by_id(world, project, tmp_path, graph_kernel):
     pipelines = registry(tmp_path)
     pipelines.save("custom", spec())
     kernel = ResearchKernel(
         world, projects_root=tmp_path / "projects", pipelines=pipelines
     )
-    client = TestClient(create_app(kernel))
+    client = TestClient(create_app(kernel, graph_kernel=graph_kernel))
     response = client.post(
         f"/api/v1/projects/{project['id']}/runs",
         json={"node_id": world.nodes(project["id"])[0]["id"], "pipeline_id": "custom"},
@@ -172,7 +172,9 @@ def test_pipeline_api_starts_run_by_id(world, project, tmp_path):
 
 
 @pytest.mark.parametrize("life_state", ["pending", "ghost"])
-def test_pipeline_api_rejects_unadmitted_nodes(world, project, tmp_path, life_state):
+def test_pipeline_api_rejects_unadmitted_nodes(
+    world, project, tmp_path, life_state, graph_kernel
+):
     pipelines = registry(tmp_path)
     pipelines.save("custom", spec())
     node = world.create_node(project["id"], "direction", {"text": "unreviewed"})
@@ -182,7 +184,7 @@ def test_pipeline_api_rejects_unadmitted_nodes(world, project, tmp_path, life_st
         world, projects_root=tmp_path / "projects", pipelines=pipelines
     )
 
-    response = TestClient(create_app(kernel)).post(
+    response = TestClient(create_app(kernel, graph_kernel=graph_kernel)).post(
         f"/api/v1/projects/{project['id']}/runs",
         json={"node_id": node["id"], "pipeline_id": "custom"},
     )
@@ -200,8 +202,10 @@ def test_pipeline_api_rejects_unadmitted_nodes(world, project, tmp_path, life_st
         {"unknown": True},
     ],
 )
-def test_pipeline_api_rejects_internal_run_payload(world, project, tmp_path, payload):
-    client = pipeline_client(world, tmp_path)
+def test_pipeline_api_rejects_internal_run_payload(
+    world, project, tmp_path, payload, graph_kernel
+):
+    client = pipeline_client(world, tmp_path, graph_kernel)
     response = client.post(
         f"/api/v1/projects/{project['id']}/runs",
         json={
@@ -215,50 +219,62 @@ def test_pipeline_api_rejects_internal_run_payload(world, project, tmp_path, pay
 
 
 @pytest.mark.parametrize("life_state", ["pending", "ghost"])
-def test_pipeline_api_rejects_unadmitted_pins(world, project, tmp_path, life_state):
+def test_pipeline_api_rejects_unadmitted_pins(
+    world, project, tmp_path, life_state, graph_kernel
+):
     pin = world.create_node(project["id"], "source", {"title": "private"})
     if life_state == "ghost":
         world.ghost_node(pin["id"], "rejected")
-    response = start_with_payload(world, project, tmp_path, {"pins": [pin["id"]]})
+    response = start_with_payload(
+        world, project, tmp_path, {"pins": [pin["id"]]}, graph_kernel
+    )
     assert response.status_code == 404
     assert world.runs(project["id"]) == []
 
 
-def test_pipeline_api_rejects_cross_project_pin(world, project, tmp_path):
+def test_pipeline_api_rejects_cross_project_pin(world, project, tmp_path, graph_kernel):
     other = world.create_project("other", tmp_path / "other", "Other?")
     pin = world.nodes(other["id"])[0]
-    response = start_with_payload(world, project, tmp_path, {"pins": [pin["id"]]})
+    response = start_with_payload(
+        world, project, tmp_path, {"pins": [pin["id"]]}, graph_kernel
+    )
     assert response.status_code == 404
     assert world.runs(project["id"]) == []
 
 
-def test_pipeline_api_accepts_admitted_pin(world, project, tmp_path):
+def test_pipeline_api_accepts_admitted_pin(world, project, tmp_path, graph_kernel):
     pin = world.create_node(project["id"], "source", {"title": "public"})
     world.admit_node(pin["id"])
-    response = start_with_payload(world, project, tmp_path, {"pins": [pin["id"]]})
+    response = start_with_payload(
+        world, project, tmp_path, {"pins": [pin["id"]]}, graph_kernel
+    )
     assert response.status_code == 201
     assert response.json()["payload"]["pins"] == [pin["id"]]
 
 
-def test_pipeline_api_rejects_cross_project_thread(world, project, tmp_path):
+def test_pipeline_api_rejects_cross_project_thread(
+    world, project, tmp_path, graph_kernel
+):
     other = world.create_project("thread-owner", tmp_path / "thread-owner", "Other?")
     thread = world.create_thread(other["id"], "private", "session:x", "assistant")
-    response = start_with_payload(world, project, tmp_path, {"thread_id": thread["id"]})
+    response = start_with_payload(
+        world, project, tmp_path, {"thread_id": thread["id"]}, graph_kernel
+    )
     assert response.status_code == 404
     assert world.runs(project["id"]) == []
 
 
-def pipeline_client(world, tmp_path):
+def pipeline_client(world, tmp_path, graph_kernel):
     pipelines = registry(tmp_path)
     pipelines.save("custom", spec())
     kernel = ResearchKernel(
         world, projects_root=tmp_path / "projects", pipelines=pipelines
     )
-    return TestClient(create_app(kernel))
+    return TestClient(create_app(kernel, graph_kernel=graph_kernel))
 
 
-def start_with_payload(world, project, tmp_path, payload):
-    return pipeline_client(world, tmp_path).post(
+def start_with_payload(world, project, tmp_path, payload, graph_kernel):
+    return pipeline_client(world, tmp_path, graph_kernel).post(
         f"/api/v1/projects/{project['id']}/runs",
         json={
             "node_id": world.nodes(project["id"])[0]["id"],
@@ -268,12 +284,14 @@ def start_with_payload(world, project, tmp_path, payload):
     )
 
 
-def test_pipeline_api_rejects_unknown_primitive_before_run(world, project, tmp_path):
+def test_pipeline_api_rejects_unknown_primitive_before_run(
+    world, project, tmp_path, graph_kernel
+):
     pipelines = registry(tmp_path)
     kernel = ResearchKernel(
         world, projects_root=tmp_path / "projects", pipelines=pipelines
     )
-    client = TestClient(create_app(kernel))
+    client = TestClient(create_app(kernel, graph_kernel=graph_kernel))
     value = spec()
     value["stages"][0]["prompt"] = "unknown"
     response = client.put("/api/v1/pipelines/custom", json=value)
@@ -293,9 +311,9 @@ class SignalCommandKernel:
         raise AssertionError("run control must not query")
 
 
-def test_run_control_routes_use_semantic_commands_without_query():
+def test_run_control_routes_use_semantic_commands_without_query(graph_kernel):
     kernel = SignalCommandKernel()
-    client = TestClient(create_app(kernel))
+    client = TestClient(create_app(kernel, graph_kernel=graph_kernel))
 
     confirmed = client.post("/api/v1/runs/run:test/confirm")
     resolved = client.post(
