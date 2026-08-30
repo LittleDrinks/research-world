@@ -76,10 +76,10 @@ class ToolAdapter:
         self.operation = operation
 
     async def start(self, request):
-        return request
+        return {"value": None}
 
     async def submit(self, handle, request, emit):
-        handle.value = request.tools.invoke(
+        handle["value"] = request.tools.invoke(
             "kernel",
             self.operation,
             {
@@ -139,8 +139,9 @@ async def test_adapter_can_use_kernel_tool_record_operation(tmp_path):
     run = await runtime.launch({"adapter": "tool", "tools": ["kernel"]})
     turn = await runtime.submit(run["id"], {"id": "message-1", "content": "record"})
 
-    await _events(runtime, turn["id"])
+    trace = await _events(runtime, turn["id"])
 
+    assert trace[-1]["data"] == {"status": "completed", "result_text": "recorded"}
     assert kernel.calls == [
         ("record", "project-1", "direction", {"text": "candidate"}, ())
     ]
