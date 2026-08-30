@@ -16,7 +16,7 @@ from .adapter import (
     TurnRequest as _TurnRequest,
 )
 from .runtime_tools import KernelInterface, RuntimeTools
-from .run_store import _RunStore
+from .run_store import _AGENT_PARAMS_FIELDS, _AGENT_SPEC_FIELDS, _AGENT_TEXT_FIELDS, _RunStore
 from .trace import TraceLedger
 
 
@@ -524,10 +524,10 @@ def _snapshot(agent_spec: Mapping[str, Any]) -> dict[str, Any]:
     snapshot = deepcopy(dict(agent_spec))
     if "runtime" in snapshot:
         raise ValueError("agent spec must use adapter")
+    _validate_snapshot_fields(snapshot)
     adapter_id = snapshot.get("adapter")
     if not isinstance(adapter_id, str) or not adapter_id:
         raise ValueError("agent spec must select an adapter")
-    _validate_snapshot_fields(snapshot)
     try:
         return json.loads(json.dumps(snapshot, ensure_ascii=False, allow_nan=False))
     except (TypeError, ValueError) as error:
@@ -535,20 +535,21 @@ def _snapshot(agent_spec: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _validate_snapshot_fields(value):
-    if isinstance(value, Mapping):
-        for key, item in value.items():
-            if not isinstance(key, str) or _forbidden_snapshot_key(key):
-                raise ValueError("agent spec cannot contain credentials or session id")
-            _validate_snapshot_fields(item)
-    elif isinstance(value, (list, tuple)):
-        for item in value:
-            _validate_snapshot_fields(item)
-
-
-def _forbidden_snapshot_key(key):
-    normalized = "".join(character for character in key.lower() if character.isalnum())
-    blocked = {"apikey", "authorization", "password", "credential", "credentials", "secret", "secrets", "token", "cookie", "cookies"}
-    return normalized in blocked or any(value in normalized for value in ("secret", "credential")) or normalized.endswith(("apikey", "accesskey", "token", "sessionid"))
+    unknown = tuple(key for key in value) if not isinstance(value, Mapping) else tuple(key for key in value if key not in _AGENT_SPEC_FIELDS)
+    if unknown:
+        raise ValueError(f"agent spec contains unsupported fields: {unknown}")
+    if not isinstance(value, Mapping):
+        raise ValueError("agent spec is invalid")
+    if any(key in value and not isinstance(value[key], str) for key in _AGENT_TEXT_FIELDS):
+        raise ValueError("agent spec contains invalid fields")
+    tools = value.get("tools", ())
+    if not isinstance(tools, (list, tuple)) or any(not isinstance(tool, str) for tool in tools):
+        raise ValueError("agent spec tools must be strings")
+    params = value.get("params", {})
+    if not isinstance(params, Mapping) or any(key not in _AGENT_PARAMS_FIELDS for key in params):
+        raise ValueError("agent spec params are invalid")
+    if "mode" in params and not isinstance(params["mode"], str):
+        raise ValueError("agent spec params are invalid")
 
 
 def _message(message: Mapping[str, Any]):

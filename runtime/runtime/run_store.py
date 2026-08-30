@@ -13,6 +13,9 @@ class RunStoreError(ValueError):
 
 _FORMAT = {"format": "runtime-run-store", "version": "1"}
 _STATUSES = {"running", "completed", "limit", "cancelled", "error"}
+_AGENT_SPEC_FIELDS = ("id", "adapter", "model", "instructions", "thinking", "workspace", "tools", "params")
+_AGENT_TEXT_FIELDS = frozenset(_AGENT_SPEC_FIELDS) - {"tools", "params"}
+_AGENT_PARAMS_FIELDS = frozenset({"mode"})
 _TABLE_COLUMNS = {
     "metadata": ("key", "value"),
     "runs": ("id", "agent_snapshot", "adapter_id", "parent_run_id", "completed_context"),
@@ -433,6 +436,18 @@ def _validate_delegations(value):
         has_parent = run["parent_run_id"] is not None
         if has_parent != (run_id in value["delegations"]):
             raise RunStoreError("runtime store delegation association is incomplete")
+    _validate_acyclic_runs(value["runs"])
+
+
+def _validate_acyclic_runs(runs):
+    for start in runs:
+        seen = set()
+        current = start
+        while current is not None:
+            if current in seen:
+                raise RunStoreError("runtime store delegation graph is cyclic")
+            seen.add(current)
+            current = runs[current]["parent_run_id"]
 
 
 def _validate_messages(value):
@@ -509,7 +524,7 @@ def _validate_child_result_event(event, value):
 def _validate_required_child_results(value):
     for child_id, link in value["delegations"].items():
         parent = value["turns"][link["parent_turn_id"]]
-        if parent["status"] != "running":
+        if parent["status"] not in {"running", "completed", "limit"}:
             continue
         children = [turn for turn in value["turns"].values() if turn["run_id"] == child_id and turn["status"] != "running"]
         for child in children:
@@ -568,20 +583,21 @@ def _validate_context_pair(pair):
 
 
 def _validate_snapshot_fields(value):
-    if isinstance(value, dict):
-        for key, item in value.items():
-            if not isinstance(key, str) or _forbidden_snapshot_key(key):
-                raise RunStoreError("runtime store agent snapshot contains forbidden state")
-            _validate_snapshot_fields(item)
-    elif isinstance(value, list):
-        for item in value:
-            _validate_snapshot_fields(item)
-
-
-def _forbidden_snapshot_key(key):
-    normalized = "".join(character for character in key.lower() if character.isalnum())
-    blocked = {"apikey", "authorization", "password", "credential", "credentials", "secret", "secrets", "token", "cookie", "cookies"}
-    return normalized in blocked or any(value in normalized for value in ("secret", "credential")) or normalized.endswith(("apikey", "accesskey", "token", "sessionid"))
+    unknown = tuple(key for key in value) if not isinstance(value, dict) else tuple(key for key in value if key not in _AGENT_SPEC_FIELDS)
+    if unknown:
+        raise RunStoreError(f"runtime store agent snapshot contains unsupported fields: {unknown}")
+    if not isinstance(value, dict):
+        raise RunStoreError("runtime store agent snapshot is invalid")
+    if any(key in value and not isinstance(value[key], str) for key in _AGENT_TEXT_FIELDS):
+        raise RunStoreError("runtime store agent snapshot contains invalid fields")
+    tools = value.get("tools", [])
+    if not isinstance(tools, list) or any(not isinstance(tool, str) for tool in tools):
+        raise RunStoreError("runtime store agent snapshot contains invalid tools")
+    params = value.get("params", {})
+    if not isinstance(params, dict) or any(key not in _AGENT_PARAMS_FIELDS for key in params):
+        raise RunStoreError("runtime store agent snapshot contains invalid params")
+    if "mode" in params and not isinstance(params["mode"], str):
+        raise RunStoreError("runtime store agent snapshot contains invalid params")
 
 
 def _put_unique(mapping, key, value, label):

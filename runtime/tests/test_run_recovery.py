@@ -3,6 +3,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 _RUNTIME_ROOT = Path(__file__).parents[1]
 
 
@@ -32,7 +34,7 @@ async def collect(runtime, turn_id):
 async def main():
     adapter = Adapter()
     runtime = Runtime(Path(sys.argv[1]), {"fake": adapter})
-    run = await runtime.launch({"id": "main", "adapter": "fake", "params": {"mode": "frozen"}})
+    run = await runtime.launch({"id": "main", "adapter": "fake", "model": "frozen-model", "instructions": "frozen instructions", "tools": [], "params": {"mode": "frozen"}})
     first = await runtime.submit(run["id"], {"id": "m1", "content": "one"})
     first_events = await collect(runtime, first["id"])
     second = await runtime.submit(run["id"], {"id": "m2", "content": "two"})
@@ -78,7 +80,7 @@ async def main():
     restored = await runtime.submit(sys.argv[2], {"id": "m3", "content": "three"})
     events = await collect(runtime, restored["id"])
     request = adapter.requests[0]
-    print(json.dumps({"before": before, "duplicate": duplicate, "replay": replay, "events": events, "context": list(request.context), "adapter": request.agent_snapshot["adapter"], "calls": adapter.calls}))
+    print(json.dumps({"before": before, "duplicate": duplicate, "replay": replay, "events": events, "context": list(request.context), "adapter": request.agent_snapshot["adapter"], "snapshot": request.agent_snapshot, "calls": adapter.calls}))
 
 asyncio.run(main())
 '''
@@ -318,6 +320,213 @@ connection.close()
 '''
 
 
+_SECRET_LAUNCH_PROCESS = r'''
+import asyncio, sys
+from pathlib import Path
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    async def start(self, request): return object()
+    async def submit(self, handle, request, emit): return None
+    async def cancel(self, handle, request): return None
+
+async def main():
+    runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
+    try:
+        await runtime.launch({"adapter": "fake", "api_key_value": "sentinel"})
+    except ValueError as error:
+        print("rejected:" + str(error))
+    else:
+        print("accepted")
+
+asyncio.run(main())
+'''
+
+
+_CORRUPT_SECRET_PROCESS = r'''
+import json, sqlite3, sys
+from pathlib import Path
+
+connection = sqlite3.connect(Path(sys.argv[1]) / "runs.sqlite3")
+run_id = connection.execute("SELECT id FROM runs").fetchone()[0]
+connection.execute("UPDATE runs SET agent_snapshot = ? WHERE id = ?", (json.dumps({"adapter": "fake", "api_key_value": "sentinel"}), run_id))
+connection.commit()
+connection.close()
+'''
+
+
+_CYCLE_SEED_PROCESS = r'''
+import asyncio, json, os, sys
+from pathlib import Path
+from runtime.adapter import AdapterResult
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    def __init__(self): self.gates = {}
+    async def start(self, request):
+        self.gates[request.turn_id] = asyncio.Event()
+        return request.turn_id
+    async def submit(self, handle, request, emit):
+        await self.gates[request.turn_id].wait()
+        return AdapterResult(result_text="done")
+    async def cancel(self, handle, request):
+        self.gates[request.turn_id].set()
+
+async def main():
+    runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
+    main_run = await runtime.launch({"adapter": "fake"})
+    main_turn = await runtime.submit(main_run["id"], {"id": "main", "content": "main"})
+    child_run = await runtime.delegate(main_run["id"], {"adapter": "fake"}, parent_turn_id=main_turn["id"])
+    child_turn = await runtime.submit(child_run["id"], {"id": "child", "content": "child"})
+    print(json.dumps({"main_run": main_run["id"], "main_turn": main_turn["id"], "child_run": child_run["id"], "child_turn": child_turn["id"]}), flush=True)
+    await asyncio.sleep(0.1)
+    os._exit(0)
+
+asyncio.run(main())
+'''
+
+
+_MAKE_CYCLE_PROCESS = r'''
+import json, sqlite3, sys
+from pathlib import Path
+
+root, value = Path(sys.argv[1]), json.loads(sys.argv[2])
+connection = sqlite3.connect(root / "runs.sqlite3")
+connection.execute("UPDATE runs SET parent_run_id = ? WHERE id = ?", (value["child_run"], value["main_run"]))
+connection.execute("INSERT INTO delegations VALUES (?, ?, ?)", (value["main_run"], value["child_run"], value["child_turn"]))
+connection.commit()
+connection.close()
+'''
+
+
+_COMPLETED_DELEGATION_PROCESS = r'''
+import asyncio, json, sys
+from pathlib import Path
+from runtime.adapter import AdapterResult
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    def __init__(self): self.gates = {}
+    async def start(self, request):
+        self.gates[request.turn_id] = asyncio.Event()
+        return request.turn_id
+    async def submit(self, handle, request, emit):
+        await self.gates[request.turn_id].wait()
+        return AdapterResult(result_text=request.message_id)
+    async def cancel(self, handle, request):
+        self.gates[request.turn_id].set()
+
+async def collect(runtime, turn_id):
+    return [event async for event in runtime.subscribe(turn_id)]
+
+async def main():
+    adapter = Adapter()
+    runtime = Runtime(Path(sys.argv[1]), {"fake": adapter})
+    parent = await runtime.launch({"adapter": "fake"})
+    parent_turn = await runtime.submit(parent["id"], {"id": "parent", "content": "parent"})
+    child = await runtime.delegate(parent["id"], {"adapter": "fake"}, parent_turn_id=parent_turn["id"])
+    child_turn = await runtime.submit(child["id"], {"id": "child", "content": "child"})
+    while {parent_turn["id"], child_turn["id"]} - set(adapter.gates):
+        await asyncio.sleep(0)
+    adapter.gates[child_turn["id"]].set()
+    await collect(runtime, child_turn["id"])
+    adapter.gates[parent_turn["id"]].set()
+    await collect(runtime, parent_turn["id"])
+    print(json.dumps({"parent_turn": parent_turn["id"], "child_run": child["id"], "child_turn": child_turn["id"]}))
+
+asyncio.run(main())
+'''
+
+
+_REMOVE_CHILD_RESULT_PROCESS = r'''
+import json, sqlite3, sys
+from pathlib import Path
+
+root, value, status = Path(sys.argv[1]), json.loads(sys.argv[2]), sys.argv[3]
+connection = sqlite3.connect(root / "runs.sqlite3")
+connection.execute("DELETE FROM events WHERE turn_id = ? AND type = 'child_result'", (value["parent_turn"],))
+connection.execute("UPDATE events SET seq = seq - 1 WHERE turn_id = ? AND type = 'turn_end'", (value["parent_turn"],))
+connection.execute("UPDATE turns SET status = ? WHERE id = ?", (status, value["parent_turn"]))
+data = json.loads(connection.execute("SELECT data FROM events WHERE turn_id = ? AND type = 'turn_end'", (value["parent_turn"],)).fetchone()[0])
+data["status"] = status
+connection.execute("UPDATE events SET data = ? WHERE turn_id = ? AND type = 'turn_end'", (json.dumps(data), value["parent_turn"]))
+connection.commit()
+connection.close()
+'''
+
+
+_CANCELLED_LATE_CHILD_PROCESS = r'''
+import asyncio, json, sys
+from pathlib import Path
+from runtime.adapter import AdapterResult
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    def __init__(self): self.gates, self.cancelled = {}, set()
+    async def start(self, request):
+        self.gates[request.turn_id] = asyncio.Event()
+        return request.turn_id
+    async def submit(self, handle, request, emit):
+        await self.gates[request.turn_id].wait()
+        if request.turn_id in self.cancelled:
+            return AdapterResult(status="cancelled")
+        return AdapterResult(result_text="late")
+    async def cancel(self, handle, request):
+        self.cancelled.add(request.turn_id)
+        self.gates[request.turn_id].set()
+
+async def collect(runtime, turn_id):
+    return [event async for event in runtime.subscribe(turn_id)]
+
+async def main():
+    adapter = Adapter()
+    runtime = Runtime(Path(sys.argv[1]), {"fake": adapter})
+    parent = await runtime.launch({"adapter": "fake"})
+    parent_turn = await runtime.submit(parent["id"], {"id": "parent", "content": "parent"})
+    child = await runtime.delegate(parent["id"], {"adapter": "fake"}, parent_turn_id=parent_turn["id"])
+    child_turn = await runtime.submit(child["id"], {"id": "child", "content": "child"})
+    while {parent_turn["id"], child_turn["id"]} - set(adapter.gates):
+        await asyncio.sleep(0)
+    await runtime.cancel(parent_turn["id"])
+    adapter.gates[child_turn["id"]].set()
+    await collect(runtime, child_turn["id"])
+    print(json.dumps({"parent_run": parent["id"]}))
+
+asyncio.run(main())
+'''
+
+
+_REOPEN_CANCELLED_PROCESS = r'''
+import asyncio, sys
+from pathlib import Path
+from runtime.adapter import AdapterResult
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    async def start(self, request): return object()
+    async def submit(self, handle, request, emit): return AdapterResult(result_text="reopened")
+    async def cancel(self, handle, request): return None
+
+async def main():
+    runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
+    turn = await runtime.submit(sys.argv[2], {"id": "resume", "content": "resume"})
+    events = [event async for event in runtime.subscribe(turn["id"])]
+    print(events[-1]["data"]["status"])
+
+asyncio.run(main())
+'''
+
+
 _FAIL_STARTUP_PROCESS = r'''
 from pathlib import Path
 import sys
@@ -357,6 +566,7 @@ def test_completed_run_recovers_in_a_fresh_interpreter(tmp_path):
     assert recovered["replay"] == created["events"]
     assert recovered["context"] == [{"role": "user", "message_id": "m1", "content": "one"}, {"role": "assistant", "content": "answer:one"}, {"role": "user", "message_id": "m2", "content": "two"}, {"role": "assistant", "content": "answer:two"}]
     assert recovered["adapter"] == "fake"
+    assert recovered["snapshot"] == {"id": "main", "adapter": "fake", "model": "frozen-model", "instructions": "frozen instructions", "tools": [], "params": {"mode": "frozen"}}
     assert recovered["calls"] == [["start", "fake", "m3"], ["submit", "fake", "m3"]]
 
 
@@ -392,6 +602,40 @@ def test_nested_recovery_unwinds_grandchild_before_parent_in_fresh_interpreter(t
         [created["main_turn"], "turn_end"],
     ]
     assert recovered["calls"] == []
+
+
+def test_secret_agent_spec_is_rejected_before_launch_persists_a_run(tmp_path):
+    result = _run_process(_SECRET_LAUNCH_PROCESS, tmp_path)
+    assert result.stdout.startswith("rejected:")
+    assert "api_key_value" in result.stdout
+
+
+def test_persisted_secret_snapshot_fails_before_fresh_recovery(tmp_path):
+    _run_process(_COMPLETED_PROCESS, tmp_path)
+    _run_process(_CORRUPT_SECRET_PROCESS, tmp_path)
+    result = _run_process(_FAIL_STARTUP_PROCESS, tmp_path)
+    assert result.stdout.startswith("RunStoreError:runtime store")
+
+
+def test_persisted_delegation_cycle_fails_promptly_before_recovery(tmp_path):
+    created = _output(_run_process(_CYCLE_SEED_PROCESS, tmp_path))
+    _run_process(_MAKE_CYCLE_PROCESS, tmp_path, json.dumps(created))
+    result = _run_process(_FAIL_STARTUP_PROCESS, tmp_path)
+    assert result.stdout.startswith("RunStoreError:runtime store")
+
+
+@pytest.mark.parametrize("parent_status", ["completed", "limit"])
+def test_completed_parent_missing_child_result_fails_on_fresh_construction(tmp_path, parent_status):
+    created = _output(_run_process(_COMPLETED_DELEGATION_PROCESS, tmp_path))
+    _run_process(_REMOVE_CHILD_RESULT_PROCESS, tmp_path, json.dumps(created), parent_status)
+    result = _run_process(_FAIL_STARTUP_PROCESS, tmp_path)
+    assert result.stdout.startswith("RunStoreError:runtime store")
+
+
+def test_cancelled_parent_allows_late_child_without_child_result(tmp_path):
+    created = _output(_run_process(_CANCELLED_LATE_CHILD_PROCESS, tmp_path))
+    result = _run_process(_REOPEN_CANCELLED_PROCESS, tmp_path, created["parent_run"])
+    assert result.stdout.strip() == "completed"
 
 
 def test_same_shape_store_with_missing_constraints_rejects_duplicate_submit_seq(tmp_path):
