@@ -13,6 +13,8 @@ from inspect import iscoroutinefunction
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Protocol
 
+from .runtime_tools import KernelInterface, RuntimeTools
+
 
 class RuntimeAdapter(Protocol):
     adapter_id: str
@@ -38,6 +40,7 @@ class TurnRequest:
     input: Any
     context: tuple[dict[str, Any], ...]
     agent_snapshot: dict[str, Any]
+    tools: RuntimeTools
 
 
 @dataclass(frozen=True)
@@ -119,6 +122,7 @@ class _Run:
     adapter: RuntimeAdapter
     parent_run_id: str | None
     session_id: str | None
+    tools: RuntimeTools
     context: list[dict[str, Any]] = field(default_factory=list)
     turns: dict[str, _Turn] = field(default_factory=dict)
 
@@ -143,12 +147,16 @@ class Runtime:
         self,
         data_root: Path,
         adapters: dict[str, RuntimeAdapter],
+        *,
+        kernel: KernelInterface | None = None,
     ):
         _require_data_root(data_root)
         self._adapters = _adapter_map(adapters)
+        self._kernel = kernel
         self._trace = TraceLedger(data_root / "traces")
         self._runs: dict[str, _Run] = {}
         self._turns: dict[str, _Turn] = {}
+        self._delegations: dict[str, tuple[str, str]] = {}
         self._adapter_reservations: dict[int, _Turn] = {}
         self._registry_lock = asyncio.Lock()
 
@@ -168,7 +176,12 @@ class Runtime:
             self._require_run(parent_run_id)
         adapter = _select_adapter(self._adapters, snapshot)
         run = _Run(
-            f"r-{uuid.uuid4().hex}", snapshot, adapter, parent_run_id, session_id
+            f"r-{uuid.uuid4().hex}",
+            snapshot,
+            adapter,
+            parent_run_id,
+            session_id,
+            RuntimeTools(self._kernel, snapshot.get("tools", ())),
         )
         self._runs[run.id] = run
         return run
@@ -243,11 +256,14 @@ class Runtime:
         self,
         parent_run_id: str,
         agent_spec: Mapping[str, Any],
+        *,
+        parent_turn_id: str,
     ) -> dict[str, Any]:
         snapshot = _snapshot(agent_spec)
         async with self._registry_lock:
-            self._require_run(parent_run_id)
+            self._require_parent_turn(parent_run_id, parent_turn_id)
             run = self._register_run(snapshot, None, parent_run_id)
+            self._delegations[run.id] = (parent_run_id, parent_turn_id)
         return _run_view(run)
 
     async def _execute(self, turn: _Turn) -> None:
@@ -309,6 +325,7 @@ class Runtime:
             return
         turn.status, turn.result_text = status, result_text
         self._append_end(turn, status, result_text, error)
+        self._record_child_result(turn, status, result_text, error)
         self._release_adapter(turn)
         if status in {"completed", "limit"}:
             self._record_context(turn, result_text)
@@ -403,6 +420,27 @@ class Runtime:
         except KeyError:
             raise KeyError(f"run not found: {run_id}") from None
 
+    def _require_parent_turn(self, parent_run_id: str, parent_turn_id: str) -> None:
+        if not isinstance(parent_turn_id, str) or not parent_turn_id:
+            raise ValueError("parent_turn_id must be a nonempty string")
+        turn = self._turn(parent_turn_id)
+        if turn.request.run_id != parent_run_id:
+            raise ValueError("parent turn belongs to another run")
+        if turn.status != "running":
+            raise ValueError("parent turn must be running")
+
+    def _record_child_result(self, turn, status, result_text, error) -> None:
+        link = self._delegations.get(turn.request.run_id)
+        if link is None:
+            return
+        parent_run_id, parent_turn_id = link
+        self._trace.append(
+            parent_turn_id,
+            "child_result",
+            _child_result_data(turn, status, result_text, error),
+            parent_run_id,
+        )
+
     def _turn(self, turn_id: str) -> _Turn:
         try:
             return self._turns[turn_id]
@@ -474,6 +512,7 @@ def _request(run, turn_id, message_id, payload):
         payload,
         tuple(deepcopy(run.context)),
         deepcopy(run.agent_snapshot),
+        run.tools,
     )
 
 
@@ -514,6 +553,18 @@ def _end_data(status, result_text, error):
     data = {
         "status": status,
         "result_text": None if status == "cancelled" else result_text,
+    }
+    if error:
+        data["error"] = error
+    return data
+
+
+def _child_result_data(turn, status, result_text, error):
+    data = {
+        "child_run_id": turn.request.run_id,
+        "child_turn_id": turn.request.turn_id,
+        "status": status,
+        "result_text": result_text,
     }
     if error:
         data["error"] = error

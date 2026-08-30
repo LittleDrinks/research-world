@@ -21,6 +21,6 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = [".", "../research-world"]
 testpaths = ["tests"]
 asyncio_mode = "auto"
