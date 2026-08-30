@@ -191,10 +191,16 @@ class PiEventParser:
         if kind == "extension_error" or kind == "session_compact_failed":
             raise PiAdapterError("pi_process", f"pi reported {kind}")
         if kind == "auto_retry_end" and event.get("success") is False:
-            raise PiAdapterError("pi_process", "pi automatic retry failed")
+            raise PiAdapterError(
+                "pi_process",
+                _error_detail(event.get("finalError"), "pi automatic retry failed"),
+            )
         if kind == "extension_ui_request":
-            if event.get("method") in {"select", "confirm", "input", "editor"}:
+            method = event.get("method")
+            if method in {"select", "confirm", "input", "editor"}:
                 raise PiAdapterError("pi_protocol", _interactive_detail(kind, event))
+            if method not in {"notify", "setStatus", "setWidget", "setTitle", "set_editor_text"}:
+                raise PiAdapterError("pi_protocol", f"unsupported pi extension UI method: {method}")
             return
         if kind in {"ui_prompt_start", "ui_prompt_end"}:
             raise PiAdapterError("pi_protocol", _interactive_detail(kind, event))
@@ -339,19 +345,24 @@ def _text_delta(event: dict[str, Any]) -> list[dict[str, Any]]:
     update = event.get("assistantMessageEvent")
     if not isinstance(update, dict):
         raise PiAdapterError("pi_protocol", "pi message update is invalid")
-    if update.get("type") != "text_delta":
-        kind = update.get("type")
-        if kind in REASONING_PHASES:
-            return [_reasoning_event(kind, update)]
-        if kind == "error":
-            raise PiAdapterError("pi_process", "pi model request failed")
-        if kind in MESSAGE_UPDATE_TYPES:
-            return []
-        raise PiAdapterError("pi_protocol", "pi message update type is invalid")
+    kind = update.get("type")
+    if kind == "text_delta":
+        return [_text_delta_event(update)]
+    if kind in REASONING_PHASES:
+        return [_reasoning_event(kind, update)]
+    if kind == "error":
+        detail = update.get("error") or update.get("errorMessage")
+        raise PiAdapterError("pi_process", _error_detail(detail, "pi model request failed"))
+    if kind in MESSAGE_UPDATE_TYPES:
+        return []
+    raise PiAdapterError("pi_protocol", "pi message update type is invalid")
+
+
+def _text_delta_event(update: dict[str, Any]) -> dict[str, Any]:
     value = update.get("delta")
     if not isinstance(value, str):
         raise PiAdapterError("pi_protocol", "pi text delta is invalid")
-    return [{"type": "delta", "data": {"text": value}}]
+    return {"type": "delta", "data": {"text": value}}
 
 
 def _reasoning_event(kind: str, update: dict[str, Any]) -> dict[str, Any]:
@@ -407,11 +418,20 @@ def _message_text(message: dict[str, Any]) -> str:
 def _validate_stop_reason(message: dict[str, Any]) -> None:
     reason = message.get("stopReason")
     if reason == "error":
-        raise PiAdapterError("pi_process", "pi model request failed")
+        raise PiAdapterError(
+            "pi_process",
+            _error_detail(message.get("errorMessage"), "pi model request failed"),
+        )
     if reason == "aborted":
         raise PiAdapterError("pi_process", "pi model request aborted")
     if reason not in {"stop", "length", "toolUse", "deferred"}:
         raise PiAdapterError("pi_protocol", "pi assistant stop reason is invalid")
+
+
+def _error_detail(value: Any, fallback: str) -> str:
+    if isinstance(value, dict):
+        value = value.get("errorMessage")
+    return value if isinstance(value, str) and value else fallback
 
 
 def _probe_version(path: str) -> str:

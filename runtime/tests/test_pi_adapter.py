@@ -118,6 +118,18 @@ for line in sys.stdin:
         print(json.dumps({"type": "agent_settled"}), flush=True)
         record({"stage": "agent_settled"})
         continue
+    if command["message"] == "retry-error":
+        error = {"role": "assistant", "content": [], "stopReason": "error", "errorMessage": "provider quota exhausted"}
+        print(json.dumps({"type": "agent_end", "messages": [error], "willRetry": False}), flush=True)
+        print(json.dumps({"type": "auto_retry_end", "success": False, "finalError": "provider quota exhausted"}), flush=True)
+        print(json.dumps({"type": "agent_settled"}), flush=True)
+        continue
+    if command["message"] == "stream-error":
+        error = {"role": "assistant", "content": [], "stopReason": "error", "errorMessage": "stream provider unavailable"}
+        print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "error", "reason": "error", "error": error}}), flush=True)
+        continue
+    if command["message"] == "unknown-ui":
+        print(json.dumps({"type": "extension_ui_request", "id": "ui-1", "method": "mystery"}), flush=True)
     message = {"role": "assistant", "content": [{"type": "text", "text": "hello"}], "stopReason": "stop"}
     print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "text_delta", "delta": "hel"}}), flush=True)
     print(json.dumps({"type": "message_update", "assistantMessageEvent": {"type": "text_delta", "delta": "lo"}}), flush=True)
@@ -369,8 +381,51 @@ async def test_pi_keeps_final_error_after_settled(tmp_path, monkeypatch):
     assert observed[-1]["data"] == {
         "status": "error",
         "result_text": None,
-        "error": "pi_process: pi model request failed",
+        "error": "pi_process: provider unavailable",
     }
+
+
+async def test_pi_preserves_automatic_retry_error_detail(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "retry-error"})
+    observed = await _events(runtime, turn["id"])
+    assert observed[-1]["data"] == {
+        "status": "error",
+        "result_text": None,
+        "error": "pi_process: provider quota exhausted",
+    }
+
+
+async def test_pi_preserves_stream_error_detail(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "stream-error"})
+    observed = await _events(runtime, turn["id"])
+    assert observed[-1]["data"] == {
+        "status": "error",
+        "result_text": None,
+        "error": "pi_process: stream provider unavailable",
+    }
+
+
+async def test_pi_rejects_unknown_extension_ui_method(tmp_path, monkeypatch):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "unknown-ui"})
+    observed = await _events(runtime, turn["id"])
+    assert observed[-1]["data"] == {
+        "status": "error",
+        "result_text": None,
+        "error": "pi_protocol: unsupported pi extension UI method: mystery",
+    }
+    await _wait_for_command(tmp_path, "abort")
 
 
 async def test_pi_protocol_error_stops_the_fake_process(tmp_path, monkeypatch):
