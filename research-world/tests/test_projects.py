@@ -33,6 +33,20 @@ def test_project_api_rejects_browser_supplied_root(world, tmp_path):
     assert world.projects() == []
 
 
+def test_project_api_updates_auto_state(world, tmp_path):
+    api, _ = client(world, tmp_path)
+    created = api.post(
+        "/api/v1/projects", json={"name": "Auto study", "question": "Why?"}
+    ).json()
+
+    response = api.patch(
+        f"/api/v1/projects/{created['id']}", json={"auto": True}
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {**created, "auto": 1}
+
+
 def test_project_creation_failure_removes_allocated_workspace(world, project, tmp_path):
     api, root = client(world, tmp_path)
     api = TestClient(api.app, raise_server_exceptions=False)

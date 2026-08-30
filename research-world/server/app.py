@@ -41,6 +41,7 @@ def register_routes(app, kernel, graph_kernel: KernelInterface | None = None) ->
 def _register_world_routes(app, kernel) -> None:
     error_handlers(app)
     health_routes(app)
+    project_state_routes(app, kernel)
     graph_node_routes(app, kernel)
     graph_evidence_routes(app, kernel)
     thread_routes(app, kernel)
@@ -94,6 +95,15 @@ def project_routes(app, kernel) -> None:
     @app.get("/api/v1/bootstrap")
     async def bootstrap(project_id: str | None = None):
         return await kernel.query(KernelQuery("bootstrap", project_id))
+
+
+def project_state_routes(app, kernel) -> None:
+    @app.patch("/api/v1/projects/{project_id}")
+    async def update_project(project_id: str, request: Request):
+        value = await request.json()
+        return await kernel.command(
+            KernelCommand("set_auto", project_id, {"enabled": value["auto"]})
+        )
 
 
 def graph_node_routes(app, kernel) -> None:

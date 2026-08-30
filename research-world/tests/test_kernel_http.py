@@ -53,6 +53,25 @@ def _assert_application_map(local_map, source, direction, relation):
     assert result["relations"] == [relation.json()]
 
 
+def test_application_patch_updates_world_project_without_touching_kernel_project(tmp_path):
+    graph_kernel = create_kernel(tmp_path / "kernel.db", tmp_path / "artifacts")
+    world = World(tmp_path / "world.db", tmp_path / "world-artifacts")
+    world_project = world.create_project(
+        "Legacy auto", tmp_path / "legacy-project", "Legacy question"
+    )
+    app_kernel = ResearchKernel(world, projects_root=tmp_path / "projects")
+    client = TestClient(create_app(app_kernel, graph_kernel=graph_kernel))
+    kernel_project = _create_application_project(client)
+
+    response = client.patch(
+        f"/api/v1/projects/{world_project['id']}", json={"auto": True}
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {**world_project, "auto": 1}
+    assert client.get("/api/v1/projects").json() == [kernel_project]
+
+
 def _project(kernel, name="Orbit study"):
     return kernel.create_project(name, "Why do planetary orbits remain stable?")
 
