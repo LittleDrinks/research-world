@@ -504,6 +504,159 @@ asyncio.run(main())
 '''
 
 
+_CANCELLED_RESULT_PROCESS = r'''
+import asyncio, json, sys
+from pathlib import Path
+from runtime.adapter import AdapterResult
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    def __init__(self): self.release = asyncio.Event()
+    async def start(self, request): return object()
+    async def submit(self, handle, request, emit):
+        if request.message_id == "parent":
+            await self.release.wait()
+            return AdapterResult(result_text="parent-result")
+        return AdapterResult(status="cancelled", result_text="discard-me")
+    async def cancel(self, handle, request): return None
+
+async def collect(runtime, turn_id):
+    return [event async for event in runtime.subscribe(turn_id)]
+
+async def main():
+    adapter = Adapter()
+    runtime = Runtime(Path(sys.argv[1]), {"fake": adapter})
+    parent = await runtime.launch({"adapter": "fake"})
+    parent_turn = await runtime.submit(parent["id"], {"id": "parent", "content": "delegate"})
+    child = await runtime.delegate(parent["id"], {"adapter": "fake"}, parent_turn_id=parent_turn["id"])
+    child_turn = await runtime.submit(child["id"], {"id": "child", "content": "work"})
+    child_events = await collect(runtime, child_turn["id"])
+    duplicate = await runtime.submit(child["id"], {"id": "child", "content": "changed"})
+    adapter.release.set()
+    parent_events = await collect(runtime, parent_turn["id"])
+    print(json.dumps({"child_run": child["id"], "duplicate": duplicate, "child": child_events, "parent": parent_events}))
+
+asyncio.run(main())
+'''
+
+
+_RECOVER_CANCELLED_RESULT_PROCESS = r'''
+import asyncio, json, sys
+from pathlib import Path
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    async def start(self, request): return object()
+    async def submit(self, handle, request, emit): raise AssertionError("recovery called adapter")
+    async def cancel(self, handle, request): raise AssertionError("recovery called adapter")
+
+async def collect(runtime, turn_id):
+    return [event async for event in runtime.subscribe(turn_id)]
+
+async def main():
+    runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
+    duplicate = await runtime.submit(sys.argv[2], {"id": "child", "content": "changed"})
+    child = await collect(runtime, sys.argv[3])
+    parent = await collect(runtime, sys.argv[4])
+    print(json.dumps({"child_run": sys.argv[2], "duplicate": duplicate, "child": child, "parent": parent}))
+
+asyncio.run(main())
+'''
+
+
+_MAKE_TERMINAL_PARENT_PROCESS = r'''
+import json, sqlite3, sys
+from pathlib import Path
+
+root, value, status = Path(sys.argv[1]), json.loads(sys.argv[2]), sys.argv[3]
+connection = sqlite3.connect(root / "runs.sqlite3")
+connection.execute("UPDATE turns SET status = ?, result_text = ? WHERE id = ?", (status, "parent-result", value["parent_turn"]))
+connection.execute("UPDATE runs SET completed_context = ? WHERE id = ?", (json.dumps([{"role": "user", "message_id": "parent", "content": "delegate"}, {"role": "assistant", "content": "parent-result"}]), value["parent_run"]))
+connection.execute("INSERT INTO events VALUES (?, 1, ?, 'turn_end', 'time', ?)", (value["parent_turn"], value["parent_run"], json.dumps({"status": status, "result_text": "parent-result"})))
+connection.commit()
+connection.close()
+'''
+
+
+_REJECT_RECOVERY_PROCESS = r'''
+import json, sys
+from pathlib import Path
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    async def start(self, request): raise AssertionError("recovery called adapter")
+    async def submit(self, handle, request, emit): raise AssertionError("recovery called adapter")
+    async def cancel(self, handle, request): raise AssertionError("recovery called adapter")
+
+try:
+    Runtime(Path(sys.argv[1]), {"fake": Adapter()})
+except Exception as error:
+    print(type(error).__name__ + ":" + str(error))
+else:
+    print("constructed")
+'''
+
+
+_CANCELLED_PARENT_PROCESS = r'''
+import asyncio, json, sys
+from pathlib import Path
+from runtime.adapter import AdapterResult
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    def __init__(self): self.gates = {}
+    async def start(self, request):
+        self.gates[request.message_id] = asyncio.Event()
+        return object()
+    async def submit(self, handle, request, emit):
+        await self.gates[request.message_id].wait()
+        return AdapterResult(result_text="late" if request.message_id == "child" else "parent")
+    async def cancel(self, handle, request): self.gates[request.message_id].set()
+
+async def collect(runtime, turn_id):
+    return [event async for event in runtime.subscribe(turn_id)]
+
+async def main():
+    adapter = Adapter()
+    runtime = Runtime(Path(sys.argv[1]), {"fake": adapter})
+    parent = await runtime.launch({"adapter": "fake"})
+    parent_turn = await runtime.submit(parent["id"], {"id": "parent", "content": "parent"})
+    child = await runtime.delegate(parent["id"], {"adapter": "fake"}, parent_turn_id=parent_turn["id"])
+    child_turn = await runtime.submit(child["id"], {"id": "child", "content": "child"})
+    while set(adapter.gates) != {"parent", "child"}: await asyncio.sleep(0)
+    await runtime.cancel(parent_turn["id"])
+    adapter.gates["child"].set()
+    await collect(runtime, child_turn["id"])
+    parent_events = await collect(runtime, parent_turn["id"])
+    print(json.dumps({"parent_run": parent["id"], "parent_turn": parent_turn["id"], "child_run": child["id"], "child_turn": child_turn["id"], "parent": parent_events}))
+
+asyncio.run(main())
+'''
+
+
+_DUPLICATE_CHILD_RESULT_PROCESS = r'''
+import json, sqlite3, sys
+from pathlib import Path
+
+root, value = Path(sys.argv[1]), json.loads(sys.argv[2])
+connection = sqlite3.connect(root / "runs.sqlite3")
+connection.execute("UPDATE events SET seq = seq + 2 WHERE turn_id = ? AND type = 'turn_end'", (value["parent_turn"],))
+data = json.dumps({"child_run_id": value["child_run"], "child_turn_id": value["child_turn"], "status": "completed", "result_text": "late"})
+for seq in (1, 2):
+    connection.execute("INSERT INTO events VALUES (?, ?, ?, 'child_result', 'time', ?)", (value["parent_turn"], seq, value["parent_run"], data))
+connection.commit()
+connection.close()
+'''
+
+
 _REOPEN_CANCELLED_PROCESS = r'''
 import asyncio, sys
 from pathlib import Path
@@ -629,6 +782,31 @@ def test_completed_parent_missing_child_result_fails_on_fresh_construction(tmp_p
     created = _output(_run_process(_COMPLETED_DELEGATION_PROCESS, tmp_path))
     _run_process(_REMOVE_CHILD_RESULT_PROCESS, tmp_path, json.dumps(created), parent_status)
     result = _run_process(_FAIL_STARTUP_PROCESS, tmp_path)
+    assert result.stdout.startswith("RunStoreError:runtime store")
+
+
+def test_cancelled_adapter_result_is_identical_before_and_after_restart(tmp_path):
+    created = _output(_run_process(_CANCELLED_RESULT_PROCESS, tmp_path))
+    recovered = _output(_run_process(_RECOVER_CANCELLED_RESULT_PROCESS, tmp_path, created["child_run"], created["child"][0]["turn_id"], created["parent"][0]["turn_id"]))
+    assert recovered == created
+    assert created["duplicate"]["result_text"] is None
+    assert created["child"][-1]["data"] == {"status": "cancelled", "result_text": None}
+    assert created["parent"][1]["data"]["result_text"] is None
+
+
+@pytest.mark.parametrize("parent_status", ["completed", "limit"])
+def test_terminal_parent_with_running_child_fails_before_recovery(tmp_path, parent_status):
+    created = _output(_run_process(_CRASH_PROCESS, tmp_path))
+    _run_process(_MAKE_TERMINAL_PARENT_PROCESS, tmp_path, json.dumps(created), parent_status)
+    result = _run_process(_REJECT_RECOVERY_PROCESS, tmp_path)
+    assert result.stdout.startswith("RunStoreError:runtime store")
+
+
+def test_cancelled_parent_rejects_duplicate_child_result_associations(tmp_path):
+    created = _output(_run_process(_CANCELLED_PARENT_PROCESS, tmp_path))
+    assert not any(event["type"] == "child_result" for event in created["parent"])
+    _run_process(_DUPLICATE_CHILD_RESULT_PROCESS, tmp_path, json.dumps(created))
+    result = _run_process(_REJECT_RECOVERY_PROCESS, tmp_path)
     assert result.stdout.startswith("RunStoreError:runtime store")
 
 

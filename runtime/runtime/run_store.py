@@ -500,10 +500,15 @@ def _validate_event(event, turn, seq, runs):
 
 
 def _validate_child_result_events(value):
+    child_turn_ids = set()
     for events in value["events"].values():
         for event in events:
             if event["type"] == "child_result":
                 _validate_child_result_event(event, value)
+                child_turn_id = event["data"]["child_turn_id"]
+                if child_turn_id in child_turn_ids:
+                    raise RunStoreError("runtime store duplicate child result association")
+                child_turn_ids.add(child_turn_id)
 
 
 def _validate_child_result_event(event, value):
@@ -524,10 +529,12 @@ def _validate_child_result_event(event, value):
 def _validate_required_child_results(value):
     for child_id, link in value["delegations"].items():
         parent = value["turns"][link["parent_turn_id"]]
+        children = [turn for turn in value["turns"].values() if turn["run_id"] == child_id]
+        if parent["status"] in {"completed", "limit"} and any(child["status"] == "running" for child in children):
+            raise RunStoreError("runtime store terminal parent has running child")
         if parent["status"] not in {"running", "completed", "limit"}:
             continue
-        children = [turn for turn in value["turns"].values() if turn["run_id"] == child_id and turn["status"] != "running"]
-        for child in children:
+        for child in (turn for turn in children if turn["status"] != "running"):
             matches = [event for event in value["events"][parent["id"]] if event["type"] == "child_result" and event["data"]["child_turn_id"] == child["id"]]
             if len(matches) != 1:
                 raise RunStoreError("runtime store child result association is incomplete")

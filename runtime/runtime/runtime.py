@@ -589,6 +589,8 @@ def _result(value: _AdapterResult):
         raise TypeError("adapter submit must return AdapterResult")
     if value.result_text is not None and not isinstance(value.result_text, str):
         raise TypeError("adapter result_text must be a string or None")
+    if value.status == "cancelled":
+        return value.status, None
     return value.status, value.result_text
 
 
