@@ -1,6 +1,6 @@
 import pytest
 
-from server.kernel_interface import KernelInterface, create_kernel
+from server.kernel_interface import KernelInterface, LocalMap, LocalMapQuery, create_kernel
 
 
 def _kernel(tmp_path) -> KernelInterface:
@@ -261,3 +261,111 @@ def test_remove_record_cascades_direct_relations_and_preserves_artifact(tmp_path
     assert kernel.read_artifact(project.id, artifact.id) == b"evidence"
     with pytest.raises(KeyError):
         kernel.get_record(project.id, direction.id)
+
+
+def test_local_map_text_query_returns_bounded_matching_records(tmp_path):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+    first = kernel.record(project.id, "source", {"title": "Orbital resonance"})
+    kernel.record(project.id, "direction", {"text": "Orbital stability"})
+    kernel.record(project.id, "experiment", {"title": "Unrelated trial"})
+
+    result = kernel.local_map(
+        project.id, LocalMapQuery(text="orbital", limit=1)
+    )
+
+    assert result.records == (first,)
+
+
+def test_local_map_node_reference_returns_relations_and_artifacts(tmp_path):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+    artifact = kernel.capture_artifact(project.id, b"evidence", "text/plain")
+    source = kernel.record(project.id, "source", {"title": "Study"})
+    direction = kernel.record(
+        project.id, "direction", {"text": "Candidate"}, (artifact.id,)
+    )
+    relation = kernel.connect(project.id, source.id, direction.id, "supports")
+
+    result = kernel.local_map(
+        project.id, LocalMapQuery(record_id=direction.id, limit=5)
+    )
+
+    assert result == LocalMap((direction,), (relation,), (artifact,))
+
+
+@pytest.mark.parametrize(
+    ("invalid_field", "invalid_value"), (("text", 123), ("record_id", 123))
+)
+def test_local_map_rejects_wrong_query_field_types(tmp_path, invalid_field, invalid_value):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+    record = kernel.record(project.id, "source", {"title": "Orbit"})
+    values = {"text": "orbit", "record_id": record.id}
+    values[invalid_field] = invalid_value
+
+    with pytest.raises(ValueError, match="local map query"):
+        kernel.local_map(project.id, LocalMapQuery(**values, limit=5))
+
+
+@pytest.mark.parametrize(
+    ("invalid_field", "invalid_value"),
+    (("text", ""), ("text", "  "), ("record_id", ""), ("record_id", "  ")),
+)
+def test_local_map_rejects_empty_query_fields(tmp_path, invalid_field, invalid_value):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+    record = kernel.record(project.id, "source", {"title": "Orbit"})
+    values = {"text": "orbit", "record_id": record.id}
+    values[invalid_field] = invalid_value
+
+    with pytest.raises(ValueError, match="local map query"):
+        kernel.local_map(project.id, LocalMapQuery(**values, limit=5))
+
+
+def test_local_map_text_query_matches_content_values_only(tmp_path):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+    record = kernel.record(project.id, "source", {"title": "Study"})
+
+    result = kernel.local_map(project.id, LocalMapQuery(text="  study  ", limit=5))
+
+    assert result.records == (record,)
+
+
+def test_local_map_text_query_does_not_match_content_field_names(tmp_path):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+    kernel.record(project.id, "source", {"title": "Study"})
+
+    result = kernel.local_map(project.id, LocalMapQuery(text="title", limit=5))
+
+    assert result.records == ()
+
+
+def test_local_map_preserves_duplicates_and_project_scope(tmp_path):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+    other = kernel.create_project("Other study", "Why do stars shine?")
+    first = kernel.record(project.id, "source", {"text": "shared finding"})
+    second = kernel.record(project.id, "direction", {"text": "shared finding"})
+    kernel.record(other.id, "source", {"text": "shared finding"})
+
+    result = kernel.local_map(project.id, LocalMapQuery(text="shared", limit=5))
+
+    assert result.records == (first, second)
+
+
+def test_local_map_updates_after_relation_and_record_removal(tmp_path):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+    source = kernel.record(project.id, "source", {"title": "Orbit study"})
+    direction = kernel.record(project.id, "direction", {"text": "Orbit route"})
+    relation = kernel.connect(project.id, source.id, direction.id, "supports")
+    query = LocalMapQuery(text="orbit", limit=5)
+
+    assert kernel.local_map(project.id, query).relations == (relation,)
+    kernel.remove_relation(project.id, relation.id)
+    assert kernel.local_map(project.id, query).relations == ()
+    kernel.remove_record(project.id, direction.id)
+    assert kernel.local_map(project.id, query).records == (source,)

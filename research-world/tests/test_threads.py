@@ -96,7 +96,9 @@ async def prompt_events():
     yield {"type": "delta", "text": "answer"}
 
 
-def test_thread_points_to_runtime_session_and_pins_nodes(world, project, tmp_path):
+def test_thread_points_to_runtime_session_and_pins_nodes(
+    world, project, tmp_path, graph_kernel
+):
     runtime = FakeRuntime()
     kernel = ResearchKernel(
         world,
@@ -104,7 +106,7 @@ def test_thread_points_to_runtime_session_and_pins_nodes(world, project, tmp_pat
         runtime=runtime,
         agents=_agents(tmp_path),
     )
-    client = TestClient(create_app(kernel))
+    client = TestClient(create_app(kernel, graph_kernel=graph_kernel))
     question = world.nodes(project["id"])[0]
     response = client.post(
         f"/api/v1/projects/{project['id']}/threads",
@@ -117,10 +119,12 @@ def test_thread_points_to_runtime_session_and_pins_nodes(world, project, tmp_pat
     assert thread["runtime"]["messages"] == []
 
 
-def test_thread_detail_projects_persisted_publications_without_storage_fields(world, project, tmp_path):
+def test_thread_detail_projects_persisted_publications_without_storage_fields(
+    world, project, tmp_path, graph_kernel
+):
     runtime = FakeRuntime()
     kernel = ResearchKernel(world, projects_root=tmp_path / "projects", runtime=runtime, agents=_agents(tmp_path))
-    client = TestClient(create_app(kernel))
+    client = TestClient(create_app(kernel, graph_kernel=graph_kernel))
     thread = client.post(f"/api/v1/projects/{project['id']}/threads", json={}).json()
     publication = world.publish_report(project["id"], thread["id"], "Orbit", "artifact:private")
     report = world.save_report(project["id"], thread["id"], "V1", publication["id"])
@@ -131,10 +135,12 @@ def test_thread_detail_projects_persisted_publications_without_storage_fields(wo
     assert "project_id" not in str(detail["report_publications"])
 
 
-def test_thread_detail_recovers_report_records_in_stable_order(world, project, tmp_path):
+def test_thread_detail_recovers_report_records_in_stable_order(
+    world, project, tmp_path, graph_kernel
+):
     runtime = FakeRuntime()
     kernel = ResearchKernel(world, projects_root=tmp_path / "projects", runtime=runtime, agents=_agents(tmp_path))
-    client = TestClient(create_app(kernel))
+    client = TestClient(create_app(kernel, graph_kernel=graph_kernel))
     thread = client.post(f"/api/v1/projects/{project['id']}/threads", json={}).json()
     publications = _report_records(world, project, thread)
     _same_record_timestamps(world, "report_publications", publications)
@@ -166,7 +172,9 @@ def test_research_assistant_exposes_the_report_publication_tool():
     assert "publish_report" in agent["tools"]
 
 
-def test_prompt_stream_passes_pinned_node_ids(world, project, tmp_path):
+def test_prompt_stream_passes_pinned_node_ids(
+    world, project, tmp_path, graph_kernel
+):
     runtime = FakeRuntime()
     kernel = ResearchKernel(
         world,
@@ -174,7 +182,7 @@ def test_prompt_stream_passes_pinned_node_ids(world, project, tmp_path):
         runtime=runtime,
         agents=_agents(tmp_path),
     )
-    client = TestClient(create_app(kernel))
+    client = TestClient(create_app(kernel, graph_kernel=graph_kernel))
     question = world.nodes(project["id"])[0]
     thread = client.post(
         f"/api/v1/projects/{project['id']}/threads",
@@ -187,9 +195,9 @@ def test_prompt_stream_passes_pinned_node_ids(world, project, tmp_path):
     assert runtime.prompts[0][3] == [question["id"]]
 
 
-def test_prompt_route_uses_kernel_command():
+def test_prompt_route_uses_kernel_command(graph_kernel):
     kernel = PromptCommandKernel()
-    response = TestClient(create_app(kernel)).post(
+    response = TestClient(create_app(kernel, graph_kernel=graph_kernel)).post(
         "/api/v1/threads/thread:test/prompts", json={"message": "analyze"}
     )
 
@@ -197,7 +205,9 @@ def test_prompt_route_uses_kernel_command():
     assert kernel.tags == ["thread_prompt"]
 
 
-def test_prompt_error_frame_carries_code_and_user_text(world, project, tmp_path):
+def test_prompt_error_frame_carries_code_and_user_text(
+    world, project, tmp_path, graph_kernel
+):
     class SpecInvalidRuntime(FakeRuntime):
         async def prompt_stream(self, session_id, message, project_id, node_ids):
             raise RuntimeRequestError(
@@ -211,7 +221,7 @@ def test_prompt_error_frame_carries_code_and_user_text(world, project, tmp_path)
         runtime=SpecInvalidRuntime(),
         agents=_agents(tmp_path),
     )
-    client = TestClient(create_app(kernel))
+    client = TestClient(create_app(kernel, graph_kernel=graph_kernel))
     thread = client.post(f"/api/v1/projects/{project['id']}/threads", json={}).json()
 
     response = client.post(
@@ -223,7 +233,9 @@ def test_prompt_error_frame_carries_code_and_user_text(world, project, tmp_path)
     assert "Additional properties" not in response.text
 
 
-def test_restart_replaces_pointer_and_keeps_old_trace(world, project, tmp_path):
+def test_restart_replaces_pointer_and_keeps_old_trace(
+    world, project, tmp_path, graph_kernel
+):
     runtime = FakeRuntime()
     kernel = ResearchKernel(
         world,
@@ -231,14 +243,16 @@ def test_restart_replaces_pointer_and_keeps_old_trace(world, project, tmp_path):
         runtime=runtime,
         agents=_agents(tmp_path),
     )
-    client = TestClient(create_app(kernel))
+    client = TestClient(create_app(kernel, graph_kernel=graph_kernel))
     thread = client.post(f"/api/v1/projects/{project['id']}/threads", json={}).json()
     restarted = client.post(f"/api/v1/threads/{thread['id']}/restart").json()
     assert restarted["session_id"] == "session-2"
     assert "session-1" in runtime.sessions
 
 
-def test_cross_project_node_cannot_be_pinned(world, project, tmp_path):
+def test_cross_project_node_cannot_be_pinned(
+    world, project, tmp_path, graph_kernel
+):
     runtime = FakeRuntime()
     kernel = ResearchKernel(
         world,
@@ -246,7 +260,7 @@ def test_cross_project_node_cannot_be_pinned(world, project, tmp_path):
         runtime=runtime,
         agents=_agents(tmp_path),
     )
-    client = TestClient(create_app(kernel))
+    client = TestClient(create_app(kernel, graph_kernel=graph_kernel))
     other = world.create_project("other", tmp_path / "other", "Other?")
     foreign = world.nodes(other["id"])[0]
     response = client.post(
@@ -258,7 +272,7 @@ def test_cross_project_node_cannot_be_pinned(world, project, tmp_path):
 
 @pytest.mark.parametrize("life_state", ["pending", "ghost"])
 def test_unadmitted_node_cannot_enter_thread_context(
-    world, project, tmp_path, life_state
+    world, project, tmp_path, life_state, graph_kernel
 ):
     runtime = FakeRuntime()
     kernel = ResearchKernel(
@@ -267,7 +281,7 @@ def test_unadmitted_node_cannot_enter_thread_context(
         runtime=runtime,
         agents=_agents(tmp_path),
     )
-    client = TestClient(create_app(kernel))
+    client = TestClient(create_app(kernel, graph_kernel=graph_kernel))
     pending = world.create_node(project["id"], "direction", {"text": "unreviewed"})
     if life_state == "ghost":
         world.ghost_node(pending["id"], "rejected")
@@ -292,7 +306,9 @@ def test_agent_registry_reads_and_updates_yaml(tmp_path):
     assert registry.save(agent["id"], agent)["instructions"] == "只陈述可验证结论"
 
 
-def test_agent_api_validates_before_registry_write(world, project, tmp_path):
+def test_agent_api_validates_before_registry_write(
+    world, project, tmp_path, graph_kernel
+):
     runtime = FakeRuntime()
     agents = _agents(tmp_path)
     kernel = ResearchKernel(
@@ -302,7 +318,7 @@ def test_agent_api_validates_before_registry_write(world, project, tmp_path):
         agents=agents,
     )
     value = {**agents.get("research-assistant"), "name": ""}
-    response = TestClient(create_app(kernel)).put(
+    response = TestClient(create_app(kernel, graph_kernel=graph_kernel)).put(
         "/api/v1/agents/research-assistant",
         params={"project_id": project["id"]},
         json=value,
@@ -312,13 +328,13 @@ def test_agent_api_validates_before_registry_write(world, project, tmp_path):
     assert agents.get("research-assistant")["name"] == "研究助手"
 
 
-def test_agent_api_creates_without_upserting(world, project, tmp_path):
+def test_agent_api_creates_without_upserting(world, project, tmp_path, graph_kernel):
     runtime = FakeRuntime()
     agents = _agents(tmp_path)
     kernel = ResearchKernel(
         world, projects_root=tmp_path / "projects", runtime=runtime, agents=agents
     )
-    client = TestClient(create_app(kernel))
+    client = TestClient(create_app(kernel, graph_kernel=graph_kernel))
     value = {**agents.get("research-assistant"), "id": "proof-reviewer"}
 
     params = {"project_id": project["id"]}
@@ -334,7 +350,7 @@ def test_agent_api_creates_without_upserting(world, project, tmp_path):
     assert runtime.validated == [value]
 
 
-def test_agent_update_requires_existing_id(world, project, tmp_path):
+def test_agent_update_requires_existing_id(world, project, tmp_path, graph_kernel):
     runtime = FakeRuntime()
     agents = _agents(tmp_path)
     kernel = ResearchKernel(
@@ -342,7 +358,7 @@ def test_agent_update_requires_existing_id(world, project, tmp_path):
     )
     value = {**agents.get("research-assistant"), "id": "missing"}
 
-    response = TestClient(create_app(kernel)).put(
+    response = TestClient(create_app(kernel, graph_kernel=graph_kernel)).put(
         "/api/v1/agents/missing",
         params={"project_id": project["id"]},
         json=value,

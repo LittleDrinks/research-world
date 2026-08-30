@@ -57,7 +57,9 @@ def _agent(tools):
     }
 
 
-def make_client(world, project, tmp_path, lean4_status="ready", lean4_reason=None):
+def make_client(
+    world, project, tmp_path, graph_kernel, lean4_status="ready", lean4_reason=None
+):
     runtime = FakeRuntime(catalog(lean4_status, lean4_reason))
     kernel = ResearchKernel(
         world,
@@ -65,15 +67,17 @@ def make_client(world, project, tmp_path, lean4_status="ready", lean4_reason=Non
         runtime=runtime,
         agents=AgentRegistry(tmp_path / "agents"),
     )
-    return TestClient(create_app(kernel)), runtime
+    return TestClient(create_app(kernel, graph_kernel=graph_kernel)), runtime
 
 
 def draft_url(project):
     return f"/api/v1/projects/{project['id']}/agent-drafts"
 
 
-def test_draft_builds_spec_from_preset_and_catalog_defaults(world, project, tmp_path):
-    client, _runtime = make_client(world, project, tmp_path)
+def test_draft_builds_spec_from_preset_and_catalog_defaults(
+    world, project, tmp_path, graph_kernel
+):
+    client, _runtime = make_client(world, project, tmp_path, graph_kernel)
 
     response = client.post(draft_url(project), json={"preset_id": "math-proof"})
 
@@ -89,9 +93,11 @@ def test_draft_builds_spec_from_preset_and_catalog_defaults(world, project, tmp_
     assert draft["issues"] == []
 
 
-def test_draft_marks_unavailable_tool_as_blocking(world, project, tmp_path):
+def test_draft_marks_unavailable_tool_as_blocking(
+    world, project, tmp_path, graph_kernel
+):
     client, _runtime = make_client(
-        world, project, tmp_path, "unavailable", "not_installed"
+        world, project, tmp_path, graph_kernel, "unavailable", "not_installed"
     )
 
     response = client.post(draft_url(project), json={"preset_id": "math-proof"})
@@ -101,8 +107,8 @@ def test_draft_marks_unavailable_tool_as_blocking(world, project, tmp_path):
     assert draft["issues"] == ["tool unavailable: lean4 (unavailable / not_installed)"]
 
 
-def test_draft_rejects_unknown_preset(world, project, tmp_path):
-    client, _runtime = make_client(world, project, tmp_path)
+def test_draft_rejects_unknown_preset(world, project, tmp_path, graph_kernel):
+    client, _runtime = make_client(world, project, tmp_path, graph_kernel)
 
     response = client.post(draft_url(project), json={"preset_id": "ghost"})
 
@@ -110,9 +116,11 @@ def test_draft_rejects_unknown_preset(world, project, tmp_path):
     assert "unknown preset: ghost" in response.json()["detail"]
 
 
-def test_create_blocks_unavailable_tool_without_writing(world, project, tmp_path):
+def test_create_blocks_unavailable_tool_without_writing(
+    world, project, tmp_path, graph_kernel
+):
     client, runtime = make_client(
-        world, project, tmp_path, "unavailable", "not_installed"
+        world, project, tmp_path, graph_kernel, "unavailable", "not_installed"
     )
     value = _agent(["lean4"])
 
@@ -128,8 +136,8 @@ def test_create_blocks_unavailable_tool_without_writing(world, project, tmp_path
         AgentRegistry(tmp_path / "agents").get("math-proof")
 
 
-def test_create_with_ready_tools_writes_profile(world, project, tmp_path):
-    client, _runtime = make_client(world, project, tmp_path)
+def test_create_with_ready_tools_writes_profile(world, project, tmp_path, graph_kernel):
+    client, _runtime = make_client(world, project, tmp_path, graph_kernel)
     value = _agent(["lean4"])
 
     response = client.post(
@@ -141,8 +149,10 @@ def test_create_with_ready_tools_writes_profile(world, project, tmp_path):
     assert AgentRegistry(tmp_path / "agents").get("math-proof")["tools"] == ["lean4"]
 
 
-def test_saved_profile_does_not_follow_preset_changes(world, project, tmp_path):
-    client, runtime = make_client(world, project, tmp_path)
+def test_saved_profile_does_not_follow_preset_changes(
+    world, project, tmp_path, graph_kernel
+):
+    client, runtime = make_client(world, project, tmp_path, graph_kernel)
     params = {"project_id": project["id"]}
 
     response = client.post("/api/v1/agents", params=params, json=_agent(["lean4"]))
@@ -153,7 +163,7 @@ def test_saved_profile_does_not_follow_preset_changes(world, project, tmp_path):
     assert saved["tools"] == ["lean4"]
 
 
-def test_create_requires_project_context(world, tmp_path):
+def test_create_requires_project_context(world, tmp_path, graph_kernel):
     runtime = FakeRuntime(catalog("unavailable"))
     kernel = ResearchKernel(
         world,
@@ -161,7 +171,7 @@ def test_create_requires_project_context(world, tmp_path):
         runtime=runtime,
         agents=AgentRegistry(tmp_path / "agents"),
     )
-    client = TestClient(create_app(kernel))
+    client = TestClient(create_app(kernel, graph_kernel=graph_kernel))
     value = _agent(["lean4"])
 
     response = client.post("/api/v1/agents", json=value)
@@ -169,9 +179,11 @@ def test_create_requires_project_context(world, tmp_path):
     assert response.status_code == 422
 
 
-def test_update_blocks_unavailable_tool_without_writing(world, project, tmp_path):
+def test_update_blocks_unavailable_tool_without_writing(
+    world, project, tmp_path, graph_kernel
+):
     client, runtime = make_client(
-        world, project, tmp_path, "unavailable", "not_installed"
+        world, project, tmp_path, graph_kernel, "unavailable", "not_installed"
     )
     registry = AgentRegistry(tmp_path / "agents")
     value = _agent([])
@@ -189,8 +201,8 @@ def test_update_blocks_unavailable_tool_without_writing(world, project, tmp_path
     assert registry.get("math-proof")["tools"] == []
 
 
-def test_update_requires_project_context(world, project, tmp_path):
-    client, runtime = make_client(world, project, tmp_path)
+def test_update_requires_project_context(world, project, tmp_path, graph_kernel):
+    client, runtime = make_client(world, project, tmp_path, graph_kernel)
     value = _agent([])
     AgentRegistry(tmp_path / "agents").create(value)
 

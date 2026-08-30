@@ -1,13 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { bootstrap, mockBase, node, run } from "./fixtures";
 
 
-function mapFixture() {
-  const nodes = [node("node:q", "question"), node("node:s", "source"),
-    node("node:d", "direction", { parent_id: "node:q" }), node("node:e", "experiment", { parent_id: "node:d" })];
-  return bootstrap({ nodes,
-    edges: [{ source: "node:s", target: "node:d", polarity: "supports" }, { source: "node:e", target: "node:d", polarity: "refutes" }],
-    pipelines: [{ id: "custom-cycle", name: "自定义流程", stages: [] }, { id: "research", name: "规划与验证", stages: [] }] });
+test.describe.configure({ mode: "serial" });
+
+
+function uniqueToken() {
+  return `local-map-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 
@@ -42,220 +40,328 @@ function edgeNodeIntersections(page) {
 }
 
 
-test("lays out the four fixed node kinds as graph lanes", async ({ page }) => {
-  await mockBase(page, mapFixture());
-  await page.goto("/map");
-  await expect(page.locator(".research-node")).toHaveCount(4);
-  expect(await nodeX(page, "node:s")).toBeGreaterThan(await nodeX(page, "node:q"));
-  expect(await nodeX(page, "node:d")).toBeGreaterThan(await nodeX(page, "node:s"));
-  expect(await nodeX(page, "node:e")).toBeGreaterThan(await nodeX(page, "node:d"));
-  await expect(page.locator(".react-flow__edge")).toHaveCount(3);
-  await page.screenshot({ path: "test-results/map-desktop.png" });
-});
+function recordContent(title) {
+  return { title, text: `Orbit research ${title}` };
+}
 
 
-test("keeps admitted and ghost experiments from overlapping in one lane", async ({ page }) => {
-  const nodes = [node("node:q", "question"), node("node:d", "direction", { parent_id: "node:q" }),
-    node("node:a1", "experiment", { parent_id: "node:d" }), node("node:a2", "experiment", { parent_id: "node:d" }),
-    node("node:g1", "experiment", { parent_id: "node:d", life_state: "ghost" }),
-    node("node:g2", "experiment", { parent_id: "node:d", life_state: "ghost" })];
-  const edges = [{ source: "node:a1", target: "node:d", polarity: "supports" },
-    { source: "node:a2", target: "node:d", polarity: "supports" }];
-  await mockBase(page, bootstrap({ nodes, edges }));
-  await page.goto("/map");
-  const experiments = ".react-flow__node:has(.kind-experiment)";
-  await expect(page.locator(experiments)).toHaveCount(4);
-  expect(await overlappingPairs(page, experiments)).toEqual([]);
-});
-
-
-test("routes relations around nodes in every life state", async ({ page }) => {
-  const nodes = [node("node:q", "question"), node("node:s", "source"), node("node:d", "direction", { parent_id: "node:q" }),
-    node("node:e", "experiment", { parent_id: "node:d" }), node("node:p", "experiment", { parent_id: "node:d", life_state: "pending" }),
-    node("node:g", "experiment", { parent_id: "node:d", life_state: "ghost" })];
-  const edges = [{ source: "node:s", target: "node:d", polarity: "supports" }, { source: "node:e", target: "node:d", polarity: "refutes" }];
-  await mockBase(page, bootstrap({ nodes, edges }));
-  await page.goto("/map");
-  await expect(page.locator(".react-flow__edge")).toHaveCount(5);
-  expect(await edgeNodeIntersections(page)).toEqual([]);
-});
-
-
-test("shows the research journal as a fact timeline", async ({ page }) => {
-  await mockBase(page, mapFixture());
-  await page.goto("/map");
-  await page.getByRole("button", { name: "科研日志" }).click();
-  await expect(page.locator(".journal li").first()).toBeVisible();
-  await expect(page.locator(".journal")).toContainText("启动运行：生成研究方向");
-  await expect(page.locator(".journal")).toContainText("创建问题");
-  await expect(page.locator(".graph-canvas")).toHaveCount(0);
-  await page.getByRole("button", { name: "地图", exact: true }).click();
-  await expect(page.locator(".research-node").first()).toBeVisible();
-});
-
-
-test("starts a run for the selected node from the inspector", async ({ page }) => {
-  let request;
-  await mockBase(page, mapFixture());
-  await page.route(/\/api\/v1\/projects\/project%3Atest\/runs/, (route) => {
-    request = route.request().postDataJSON();
-    return route.fulfill({ status: 201, json: run({ id: "run:new" }) });
+async function createProject(page) {
+  const health = await page.request.get("/api/v1/health");
+  expect(health.status()).toBe(200);
+  expect(await health.json()).toEqual({ ok: true });
+  const token = uniqueToken();
+  const response = await page.request.post("/api/v1/projects", {
+    data: { name: `Map-${token.slice(-8)}`, question: "Orbit research" },
   });
-  await page.goto("/map?node=node%3Ad");
-  await expect(page.getByLabel("选择流程")).toHaveValue("custom-cycle");
-  await page.getByLabel("选择流程").selectOption("research");
-  await page.getByLabel("选择流程").selectOption("custom-cycle");
-  await page.getByRole("button", { name: "发起运行" }).click();
-  await expect.poll(() => request).toBeTruthy();
-  expect(request).toEqual({ node_id: "node:d", pipeline_id: "custom-cycle" });
-  await expect(page).toHaveURL(/\/traces\/run%3Anew/);
-});
+  expect(response.status()).toBe(201);
+  const project = await response.json();
+  const bootstrap = await page.request.get(`/api/v1/bootstrap?project_id=${encodeURIComponent(project.id)}`);
+  expect(bootstrap.status()).toBe(200);
+  expect((await bootstrap.json()).active_project_id).toBe(project.id);
+  await page.goto("/projects");
+  await page.getByRole("button", { name: new RegExp(project.name) }).click();
+  await expect(page).toHaveURL(/\/map$/);
+  return { id: project.id, token };
+}
 
 
-test("keeps evidence edge direction from the backend", async ({ page }) => {
-  await mockBase(page, mapFixture());
-  await page.goto("/map");
-  const refutes = page.locator(".signal-edge.polarity-refutes");
-  await expect(refutes).toHaveCount(1);
-  await expect(refutes).toHaveAttribute("data-source", "node:e");
-  await expect(refutes).toHaveAttribute("data-target", "node:d");
-  const supports = page.locator(".signal-edge.polarity-supports");
-  await expect(supports).toHaveAttribute("data-source", "node:s");
-  await expect(supports).toHaveAttribute("data-target", "node:d");
-});
+async function createProjectInBrowser(page) {
+  const token = uniqueToken();
+  const name = `Settings-${token.slice(-8)}`;
+  await page.goto("/projects");
+  await page.locator(".projects-bar").getByRole("button", { name: "新建项目" }).click();
+  await page.getByLabel("项目名称").fill(name);
+  await page.getByLabel("研究问题").fill("Settings owner question");
+  await page.getByRole("button", { name: "创建项目" }).click();
+  await expect(page).toHaveURL(/\/map$/);
+  const response = await page.request.get("/api/v1/projects");
+  return (await response.json()).find((project) => project.name === name);
+}
 
 
-test("selects a node from the sidebar record list", async ({ page }) => {
-  await mockBase(page, mapFixture());
-  await page.goto("/map");
-  await page.locator(".record-list .record-item", { hasText: "direction 节点 node:d" }).click();
-  await expect(page).toHaveURL(/\/map\?node=node%3Ad/);
-  await expect(page.locator(".inspector h1")).toHaveText("direction 节点 node:d");
-});
-
-
-test("shows the generated title while preserving the full node body", async ({ page }) => {
-  const text = "完整研究正文 ".repeat(40);
-  const direction = node("node:d", "direction", {
-    parent_id: "node:q", payload: { title: "共振阈值反转", text },
+async function createRecord(page, project, type, token) {
+  const response = await page.request.post(`/api/v1/projects/${project}/records`, {
+    data: { type, content: typeof token === "string" ? { title: `${type} ${token}`, text: token } : token },
   });
-  await mockBase(page, bootstrap({ nodes: [node("node:q", "question"), direction] }));
-  await page.goto("/map?node=node%3Ad");
-  await expect(page.locator('.react-flow__node[data-id="node:d"] h3')).toHaveText("共振阈值反转");
-  await expect(page.locator(".inspector h1")).toHaveText("共振阈值反转");
-  await expect(page.locator(".node-record")).toContainText(text.trim());
-});
+  expect(response.status()).toBe(201);
+  return response.json();
+}
 
 
-test("does not offer a Thread entry for a ghost node", async ({ page }) => {
-  const ghost = node("node:g", "direction", { life_state: "ghost", rejection_reason: "证据不足" });
-  await mockBase(page, bootstrap({ nodes: [node("node:q", "question"), ghost] }));
-  await page.goto("/map?node=node%3Ag");
-  const inspector = page.locator(".inspector");
-  await expect(inspector).toContainText("已驳回");
-  await expect(inspector.locator(".inspector-section", { hasText: "讨论" })).toHaveCount(0);
-  await expect(inspector.getByRole("button", { name: "新建对话并钉入该节点" })).toHaveCount(0);
-  await expect(inspector.getByRole("button", { name: "发起运行" })).toHaveCount(0);
-  await expect(inspector.getByLabel("选择流程")).toHaveCount(0);
-});
-
-
-test("keeps the inspector usable for malformed pending review data", async ({ page }) => {
-  const pending = node("node:p", "direction", {
-    life_state: "pending", payload: { text: {}, claims: ["invalid", null, { text: {}, evidence: [{}] }] },
-    rebuttal: { reviewer_a: null, reviewer_b: "needs evidence", reviewer_c: { stance: {}, argument: {}, evidence: "node:s" } },
+async function seedInspectorGraph(page) {
+  const project = await createProject(page);
+  const source = await createRecord(page, project.id, "source", {
+    title: "Kernel source", text: "Inspector source content", claims: [{ text: "legacy claim" }],
   });
-  await mockBase(page, bootstrap({ nodes: [node("node:q", "question"), pending] }));
-  await page.goto("/map?node=node%3Ap");
+  const direction = await createRecord(page, project.id, "direction", { title: "Kernel direction", text: "Inspector direction content" });
+  const relation = await connect(page, project.id, source.id, direction.id);
+  return { ...project, source, direction, records: [source, direction], relations: [relation] };
+}
+
+
+async function assertKernelInspector(page, graph) {
   const inspector = page.locator(".inspector");
-  await expect(inspector).toContainText("待审查");
-  await expect(inspector.locator("h1")).toHaveText("未命名节点");
-  await expect(inspector.locator(".claim-list")).toHaveCount(0);
-  await expect(inspector.locator(".review-grid article")).toHaveCount(3);
-  await expect(inspector).toContainText("needs evidence");
-  await expect(inspector.getByRole("button", { name: "发起运行" })).toHaveCount(0);
-});
+  await expect(inspector.locator(".node-record")).toContainText(graph.source.content.text);
+  await expect(inspector.locator(".inspector-section", { hasText: "直接关系" })).toContainText(graph.direction.id);
+  await expect(inspector.getByText("原子主张")).toHaveCount(0);
+  await expect(inspector.getByText("审计意见")).toHaveCount(0);
+  await expect(inspector.locator(".pipeline-launcher, .workflow-start, .claim-list, .review-grid, .rejection-reason")).toHaveCount(0);
+}
 
 
-test("uses a safe title for malformed related node payloads", async ({ page }) => {
-  const source = node("node:s", "source", { payload: { title: {} } });
-  const body = bootstrap({ nodes: [node("node:q", "question"), source],
-    edges: [{ source: source.id, target: "node:q", polarity: "supports" }] });
-  await mockBase(page, body);
-  await page.goto("/map?node=node%3Aq");
-  await expect(page.locator(".research-node", { hasText: "未命名节点" })).toBeVisible();
-  await expect(page.locator(".relation-list")).toContainText("未命名节点");
-});
-
-
-test("shows claim evidence and support challenge arguments without scores", async ({ page }) => {
-  const reviewed = node("node:d", "direction", {
-    payload: { text: "可验证方向", claims: [{ id: "claim:1", text: "效应高于基线", verdict: "supported", evidence: ["node:s"] }] },
-    rebuttal: {
-      reviewer_a: { stance: "support", decision: "approve", argument: "来源支持该机制", evidence: ["claim:1", "node:s"] },
-      reviewer_b: { stance: "challenge", decision: "reject", argument: "仍需补实验", evidence: ["artifact:abc"] },
-    },
+async function connect(page, project, source, target, type = "supports") {
+  const response = await page.request.post(`/api/v1/projects/${project}/relations`, {
+    data: { source_id: source, target_id: target, type },
   });
-  await mockBase(page, bootstrap({ nodes: [node("node:q", "question"), reviewed] }));
-  await page.goto("/map?node=node%3Ad");
-  const inspector = page.locator(".inspector");
-  const claim = inspector.locator(".claim-list > li");
-  await expect(claim).toContainText("效应高于基线");
-  await expect(claim).toContainText("已支持");
-  await expect(claim).toContainText("node:s");
-  const reviews = inspector.locator(".review-grid article");
-  await expect(reviews.nth(0)).toContainText("支持方");
-  await expect(reviews.nth(0)).toContainText("通过");
-  await expect(reviews.nth(0)).toContainText("claim:1");
-  await expect(reviews.nth(0)).toContainText("node:s");
-  await expect(reviews.nth(1)).toContainText("质疑方");
-  await expect(reviews.nth(1)).toContainText("驳回");
-  await expect(reviews.nth(1)).toContainText("仍需补实验");
-  await expect(reviews.nth(1)).toContainText("artifact:abc");
-  await expect(inspector).not.toContainText("quality");
-  await expect(inspector).not.toContainText("diversity");
+  expect(response.status()).toBe(201);
+  return response.json();
+}
+
+
+async function seedRecords(page, specs, relationSpecs = []) {
+  const project = await createProject(page);
+  const records = [];
+  for (const [type, content] of specs) {
+    records.push(await createRecord(page, project.id, type, content));
+  }
+  const relations = [];
+  for (const [source, target, type] of relationSpecs) {
+    relations.push(await connect(page, project.id, records[source].id, records[target].id, type));
+  }
+  return { project: project.id, records, relations };
+}
+
+
+async function seedGraph(page) {
+  const token = uniqueToken();
+  const graph = await seedRecords(page, [["source", token], ["direction", token], ["experiment", token]], [[0, 1], [2, 1, "refutes"]]);
+  return { ...graph, token };
+}
+
+
+async function removeRelation(page, project, relation) {
+  expect((await page.request.delete(`/api/v1/projects/${project}/relations/${relation.id}`)).status()).toBe(204);
+}
+
+
+async function removeRecord(page, project, record) {
+  expect((await page.request.delete(`/api/v1/projects/${project}/records/${record.id}`)).status()).toBe(204);
+}
+
+
+async function removeGraph(page, graph) {
+  for (const relation of graph.relations) {
+    await page.request.delete(`/api/v1/projects/${graph.project}/relations/${relation.id}`);
+  }
+  for (const record of graph.records) await page.request.delete(`/api/v1/projects/${graph.project}/records/${record.id}`);
+}
+
+
+test("keeps Kernel record kinds in separate graph lanes", async ({ page }) => {
+  const graph = await seedRecords(page, [["question", recordContent("Question")], ["source", recordContent("Source")], ["direction", recordContent("Direction")], ["experiment", recordContent("Experiment")]], [[1, 2], [2, 3]]);
+  try {
+    await page.goto(`/map?text=${encodeURIComponent("Orbit research")}`);
+    await expect(page.locator(".research-node")).toHaveCount(4);
+    const positions = await Promise.all(graph.records.map((record) => nodeX(page, record.id)));
+    expect(positions[1]).toBeGreaterThan(positions[0]);
+    expect(positions[2]).toBeGreaterThan(positions[1]);
+    expect(positions[3]).toBeGreaterThan(positions[2]);
+  } finally {
+    await removeGraph(page, graph);
+  }
 });
 
 
-test("keeps graph and inspector side by side on a desktop grid", async ({ page }) => {
-  await mockBase(page, mapFixture());
-  await page.goto("/map");
-  expect(await page.locator(".map-workspace").evaluate((element) => getComputedStyle(element).display)).toBe("grid");
-  const graph = await page.locator(".graph-canvas").boundingBox();
-  const inspector = await page.locator(".inspector").boundingBox();
-  expect(graph.width).toBeGreaterThan(0);
-  expect(inspector.x).toBeGreaterThanOrEqual(graph.x + graph.width - 1);
-  expect(inspector.x + inspector.width).toBeLessThanOrEqual(page.viewportSize().width);
-  expect(inspector.y + inspector.height).toBe(await page.evaluate(() => innerHeight));
-  expect(await page.locator(".map-toolbar").evaluate((element) => getComputedStyle(element).display)).toBe("flex");
-  const title = await page.locator(".map-toolbar > div").first().boundingBox();
-  const tools = await page.locator(".map-tools").boundingBox();
-  expect(title.x + title.width).toBeLessThanOrEqual(tools.x);
+test("keeps same-kind Kernel records from overlapping", async ({ page }) => {
+  const specs = [["question", recordContent("Question")], ["direction", recordContent("Direction")], ["experiment", recordContent("Experiment 1")], ["experiment", recordContent("Experiment 2")], ["experiment", recordContent("Experiment 3")], ["experiment", recordContent("Experiment 4")]];
+  const graph = await seedRecords(page, specs, [[2, 1], [3, 1], [4, 1], [5, 1]]);
+  try {
+    await page.goto(`/map?text=${encodeURIComponent("Orbit research")}`);
+    await expect(page.locator(".research-node.kind-experiment")).toHaveCount(4);
+    expect(await overlappingPairs(page, ".research-node.kind-experiment")).toEqual([]);
+  } finally {
+    await removeGraph(page, graph);
+  }
 });
 
 
-test("scrolls the map workspace down to the inspector on mobile", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await mockBase(page, mapFixture());
-  await page.goto("/map");
-  const workspace = page.locator(".map-workspace");
-  expect(await workspace.evaluate((element) => getComputedStyle(element).overflowY)).toBe("auto");
-  await workspace.evaluate((element) => { element.scrollTop = element.scrollHeight; });
-  await expect(page.locator(".inspector-section", { hasText: "节点 ID" })).toBeInViewport();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+test("routes Kernel relations around record nodes", async ({ page }) => {
+  const specs = [["question", recordContent("Question")], ["source", recordContent("Source 1")], ["source", recordContent("Source 2")], ["direction", recordContent("Direction")], ["experiment", recordContent("Experiment 1")], ["experiment", recordContent("Experiment 2")]];
+  const graph = await seedRecords(page, specs, [[1, 3], [2, 3], [4, 3, "refutes"], [5, 3]]);
+  try {
+    await page.goto(`/map?text=${encodeURIComponent("Orbit research")}`);
+    await expect(page.locator(".signal-edge")).toHaveCount(4);
+    expect(await edgeNodeIntersections(page)).toEqual([]);
+  } finally {
+    await removeGraph(page, graph);
+  }
 });
 
 
-test("copies the exact node id from the inspector without conversation controls", async ({ page, context }) => {
-  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-  await mockBase(page, mapFixture());
-  await page.goto("/map?node=node%3Ad");
-  const inspector = page.locator(".inspector");
-  const section = inspector.locator(".inspector-section", { hasText: "节点 ID" });
-  await expect(section.locator("code")).toHaveText("node:d");
-  await section.getByRole("button", { name: "复制节点 ID" }).click();
-  await expect(section.getByRole("button", { name: "已复制节点 ID" })).toBeVisible();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("node:d");
-  await expect(inspector.locator(".inspector-section", { hasText: "讨论" })).toHaveCount(0);
-  await expect(inspector.getByRole("button", { name: /对话/ })).toHaveCount(0);
+test("keeps the real map graph and inspector in a desktop grid", async ({ page }) => {
+  const graph = await seedRecords(page, [["question", recordContent("Question")], ["source", recordContent("Source")], ["direction", recordContent("Direction")], ["experiment", recordContent("Experiment")]], [[1, 2], [2, 3]]);
+  try {
+    await page.goto(`/map?text=${encodeURIComponent("Orbit research")}`);
+    const workspace = page.locator(".map-workspace");
+    const graphCanvas = page.locator(".graph-canvas");
+    const inspector = page.locator(".inspector");
+    const workspaceBox = await workspace.boundingBox();
+    const graphBox = await graphCanvas.boundingBox();
+    const inspectorBox = await inspector.boundingBox();
+    expect(await workspace.evaluate((element) => getComputedStyle(element).display)).toBe("grid");
+    expect(inspectorBox.x).toBeGreaterThanOrEqual(graphBox.x + graphBox.width - 1);
+    expect(inspectorBox.y).toBeGreaterThanOrEqual(workspaceBox.y);
+    expect(inspectorBox.y + inspectorBox.height).toBeLessThanOrEqual(workspaceBox.y + workspaceBox.height + 1);
+    await expect(page.locator(".map-search")).toBeVisible();
+  } finally {
+    await removeGraph(page, graph);
+  }
+});
+
+
+test("renders and refreshes the local graph through Kernel HTTP", async ({ page }) => {
+  const graph = await seedGraph(page);
+  try {
+    await page.goto(`/map?text=${encodeURIComponent(graph.token)}`);
+    await expect(page.locator(".research-node")).toHaveCount(3);
+    await expect(page.locator(".react-flow__edge")).toHaveCount(2);
+    await removeRelation(page, graph.project, graph.relations[0]);
+    await expect.poll(() => page.locator(".react-flow__edge").count()).toBe(1);
+    await removeRecord(page, graph.project, graph.records[1]);
+    await expect.poll(() => page.locator(".research-node").count()).toBe(2);
+  } finally {
+    await removeGraph(page, graph);
+  }
+});
+
+
+async function assertRelationSelection(page, graph, index) {
+  await page.goto(`/map?node=${encodeURIComponent(graph.records[1].id)}`);
+  const relations = page.locator(".relation-list button");
+  await expect(relations).toHaveCount(2);
+  await relations.nth(index).click();
+  await expect(page).toHaveURL(new RegExp(`node=${encodeURIComponent(graph.records[index === 0 ? 0 : 2].id)}`));
+}
+
+
+test("node references expose adjacent direct relations", async ({ page }) => {
+  const graph = await seedGraph(page);
+  try {
+    await page.goto(`/map?node=${encodeURIComponent(graph.records[1].id)}`);
+    await expect(page.locator(".research-node")).toHaveCount(1);
+    await expect(page.locator(".relation-list")).toContainText(graph.records[0].id);
+    await expect(page.locator(".relation-list")).toContainText(graph.records[2].id);
+    await assertRelationSelection(page, graph, 0);
+    await assertRelationSelection(page, graph, 1);
+  } finally {
+    await removeGraph(page, graph);
+  }
+});
+
+
+test("search input changes the LocalMap request", async ({ page }) => {
+  const graph = await seedGraph(page);
+  try {
+    await page.goto("/map");
+    await expect(page.locator(".research-node")).toHaveCount(0);
+    await page.getByLabel("检索局部地图").fill(graph.token);
+    await page.getByRole("button", { name: "检索" }).click();
+    await expect(page).toHaveURL(new RegExp(`text=${encodeURIComponent(graph.token)}`));
+    await expect(page.locator(".research-node")).toHaveCount(3);
+  } finally {
+    await removeGraph(page, graph);
+  }
+});
+
+
+test("keeps the map and inspector usable without mobile page overflow", async ({ page }) => {
+  const graph = await seedGraph(page);
+  try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/map?text=${encodeURIComponent(graph.token)}`);
+    await expect(page.locator(".research-node")).toHaveCount(3);
+    await expect(page.locator(".graph-canvas")).toBeVisible();
+    const workspace = page.locator(".map-workspace");
+    await expect(workspace).toBeVisible();
+    expect(await workspace.evaluate((element) => getComputedStyle(element).overflowY)).toBe("auto");
+    await workspace.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+    await expect(page.locator(".inspector-section", { hasText: "节点 ID" })).toBeInViewport();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  } finally {
+    await removeGraph(page, graph);
+  }
+});
+
+
+test("shows record titles and direct relation labels from LocalMap", async ({ page }) => {
+  const graph = await seedGraph(page);
+  try {
+    await page.goto(`/map?text=${encodeURIComponent(graph.token)}`);
+    await expect(page.locator(".research-node")).toHaveCount(3);
+    for (const record of graph.records) {
+      await expect(page.locator(".research-node", { hasText: record.content.title })).toBeVisible();
+    }
+    await expect(page.locator(".node-record")).toContainText(graph.records[0].content.text);
+    const relations = page.locator(".relation-list");
+    await expect(relations).toContainText("支持");
+    await expect(relations).toContainText(graph.records[1].content.title);
+    await expect(page.locator(".signal-edge.polarity-refutes")).toHaveAttribute("data-source", graph.records[2].id);
+    await expect(page.locator(".signal-edge.polarity-refutes")).toHaveAttribute("data-target", graph.records[1].id);
+  } finally {
+    await removeGraph(page, graph);
+  }
+});
+
+
+test("copies the exact node ID from the LocalMap inspector", async ({ page, context }) => {
+  const graph = await seedGraph(page);
+  try {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: "http://127.0.0.1:18136" });
+    await page.goto(`/map?node=${encodeURIComponent(graph.records[1].id)}`);
+    const inspector = page.locator(".inspector");
+    const section = inspector.locator(".inspector-section", { hasText: "节点 ID" });
+    await expect(section.locator("code")).toHaveText(graph.records[1].id);
+    await section.getByRole("button", { name: "复制节点 ID" }).click();
+    await expect(section.getByRole("button", { name: "已复制节点 ID" })).toBeVisible();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(graph.records[1].id);
+    await expect(inspector.locator(".inspector-section", { hasText: "讨论" })).toHaveCount(0);
+    await expect(inspector.getByRole("button", { name: /对话/ })).toHaveCount(0);
+  } finally {
+    await removeGraph(page, graph);
+  }
+});
+
+
+test("renders Kernel project settings without legacy World controls", async ({ page }) => {
+  const project = await createProjectInBrowser(page);
+  const legacyPatches = [];
+  page.on("request", (request) => {
+    if (request.method() === "PATCH" && request.url().includes("/api/v1/projects/")) legacyPatches.push(request.url());
+  });
+  await page.getByRole("link", { name: "项目设置" }).click();
+  await expect(page).toHaveURL(/\/settings$/);
+  const settings = page.locator(".settings-record");
+  await expect(settings.locator("dt")).toHaveText(["名称", "研究问题", "项目 ID", "创建时间"]);
+  await expect(settings).toContainText(project.name);
+  await expect(settings).toContainText(project.question);
+  await expect(settings).toContainText(project.id);
+  await expect(settings).not.toContainText("工作区");
+  await expect(settings).not.toContainText("规模");
+  await expect(settings).not.toContainText("Auto");
+  await expect(page.locator("input[type=checkbox]")).toHaveCount(0);
+  expect(legacyPatches).toEqual([]);
+});
+
+
+test("renders a pure Kernel LocalMap inspector and selects adjacent records", async ({ page }) => {
+  const graph = await seedInspectorGraph(page);
+  try {
+    await page.goto(`/map?node=${encodeURIComponent(graph.source.id)}`);
+    await assertKernelInspector(page, graph);
+    await page.locator(".relation-list button").click();
+    await expect(page).toHaveURL(new RegExp(`node=${encodeURIComponent(graph.direction.id)}`));
+    await expect(page.locator(".node-record")).toContainText(graph.direction.content.text);
+  } finally {
+    await removeGraph(page, graph);
+  }
 });

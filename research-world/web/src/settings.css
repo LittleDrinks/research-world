@@ -5,5 +5,3 @@
 .settings-record > div:last-child { border-bottom: 0; }
 .settings-record dt { color: var(--text-muted); font-size: 12px; }
 .settings-record dd { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
-.settings-auto { margin-bottom: 14px; }
-.settings-auto span { display: inline; font-size: 13px; color: var(--text); }
