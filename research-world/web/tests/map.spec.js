@@ -65,12 +65,47 @@ async function createProject(page) {
 }
 
 
+async function createProjectInBrowser(page) {
+  const token = uniqueToken();
+  const name = `Settings-${token.slice(-8)}`;
+  await page.goto("/projects");
+  await page.locator(".projects-bar").getByRole("button", { name: "新建项目" }).click();
+  await page.getByLabel("项目名称").fill(name);
+  await page.getByLabel("研究问题").fill("Settings owner question");
+  await page.getByRole("button", { name: "创建项目" }).click();
+  await expect(page).toHaveURL(/\/map$/);
+  const response = await page.request.get("/api/v1/projects");
+  return (await response.json()).find((project) => project.name === name);
+}
+
+
 async function createRecord(page, project, type, token) {
   const response = await page.request.post(`/api/v1/projects/${project}/records`, {
     data: { type, content: typeof token === "string" ? { title: `${type} ${token}`, text: token } : token },
   });
   expect(response.status()).toBe(201);
   return response.json();
+}
+
+
+async function seedInspectorGraph(page) {
+  const project = await createProject(page);
+  const source = await createRecord(page, project.id, "source", {
+    title: "Kernel source", text: "Inspector source content", claims: [{ text: "legacy claim" }],
+  });
+  const direction = await createRecord(page, project.id, "direction", { title: "Kernel direction", text: "Inspector direction content" });
+  const relation = await connect(page, project.id, source.id, direction.id);
+  return { ...project, source, direction, records: [source, direction], relations: [relation] };
+}
+
+
+async function assertKernelInspector(page, graph) {
+  const inspector = page.locator(".inspector");
+  await expect(inspector.locator(".node-record")).toContainText(graph.source.content.text);
+  await expect(inspector.locator(".inspector-section", { hasText: "直接关系" })).toContainText(graph.direction.id);
+  await expect(inspector.getByText("原子主张")).toHaveCount(0);
+  await expect(inspector.getByText("审计意见")).toHaveCount(0);
+  await expect(inspector.locator(".pipeline-launcher, .workflow-start, .claim-list, .review-grid, .rejection-reason")).toHaveCount(0);
 }
 
 
@@ -200,16 +235,24 @@ test("renders and refreshes the local graph through Kernel HTTP", async ({ page 
 });
 
 
+async function assertRelationSelection(page, graph, index) {
+  await page.goto(`/map?node=${encodeURIComponent(graph.records[1].id)}`);
+  const relations = page.locator(".relation-list button");
+  await expect(relations).toHaveCount(2);
+  await relations.nth(index).click();
+  await expect(page).toHaveURL(new RegExp(`node=${encodeURIComponent(graph.records[index === 0 ? 0 : 2].id)}`));
+}
+
+
 test("node references expose adjacent direct relations", async ({ page }) => {
   const graph = await seedGraph(page);
   try {
     await page.goto(`/map?node=${encodeURIComponent(graph.records[1].id)}`);
     await expect(page.locator(".research-node")).toHaveCount(1);
-    await expect(page.locator(".relation-list button")).toHaveCount(2);
     await expect(page.locator(".relation-list")).toContainText(graph.records[0].id);
     await expect(page.locator(".relation-list")).toContainText(graph.records[2].id);
-    await page.locator(".relation-list button").first().click();
-    await expect(page).toHaveURL(new RegExp(`node=${encodeURIComponent(graph.records[0].id)}`));
+    await assertRelationSelection(page, graph, 0);
+    await assertRelationSelection(page, graph, 1);
   } finally {
     await removeGraph(page, graph);
   }
@@ -283,6 +326,41 @@ test("copies the exact node ID from the LocalMap inspector", async ({ page, cont
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(graph.records[1].id);
     await expect(inspector.locator(".inspector-section", { hasText: "讨论" })).toHaveCount(0);
     await expect(inspector.getByRole("button", { name: /对话/ })).toHaveCount(0);
+  } finally {
+    await removeGraph(page, graph);
+  }
+});
+
+
+test("renders Kernel project settings without legacy World controls", async ({ page }) => {
+  const project = await createProjectInBrowser(page);
+  const legacyPatches = [];
+  page.on("request", (request) => {
+    if (request.method() === "PATCH" && request.url().includes("/api/v1/projects/")) legacyPatches.push(request.url());
+  });
+  await page.getByRole("link", { name: "项目设置" }).click();
+  await expect(page).toHaveURL(/\/settings$/);
+  const settings = page.locator(".settings-record");
+  await expect(settings.locator("dt")).toHaveText(["名称", "研究问题", "项目 ID", "创建时间"]);
+  await expect(settings).toContainText(project.name);
+  await expect(settings).toContainText(project.question);
+  await expect(settings).toContainText(project.id);
+  await expect(settings).not.toContainText("工作区");
+  await expect(settings).not.toContainText("规模");
+  await expect(settings).not.toContainText("Auto");
+  await expect(page.locator("input[type=checkbox]")).toHaveCount(0);
+  expect(legacyPatches).toEqual([]);
+});
+
+
+test("renders a pure Kernel LocalMap inspector and selects adjacent records", async ({ page }) => {
+  const graph = await seedInspectorGraph(page);
+  try {
+    await page.goto(`/map?node=${encodeURIComponent(graph.source.id)}`);
+    await assertKernelInspector(page, graph);
+    await page.locator(".relation-list button").click();
+    await expect(page).toHaveURL(new RegExp(`node=${encodeURIComponent(graph.direction.id)}`));
+    await expect(page.locator(".node-record")).toContainText(graph.direction.content.text);
   } finally {
     await removeGraph(page, graph);
   }

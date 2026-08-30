@@ -77,6 +77,33 @@ def _connect(client, project_id, source_id, target_id, relation_type="supports")
     )
 
 
+def _local_map(client, project_id, record_id):
+    return client.post(
+        f"/api/v1/projects/{project_id}/local-map",
+        json={"record_id": record_id, "limit": 5},
+    )
+
+
+def _artifact_view(artifact):
+    return {
+        "id": artifact.id,
+        "project_id": artifact.project_id,
+        "sha256": artifact.sha256,
+        "media_type": artifact.media_type,
+        "size": artifact.size,
+        "created_at": artifact.created_at,
+    }
+
+
+def _assert_local_map(response, direction, relation, artifact):
+    assert response.status_code == 200
+    assert response.json() == {
+        "records": [direction],
+        "relations": [relation],
+        "artifacts": [_artifact_view(artifact)],
+    }
+
+
 def test_http_records_and_rejects_cross_project_connections(tmp_path):
     kernel, client = _client(tmp_path)
     project = _project(kernel)
@@ -154,27 +181,7 @@ def test_http_local_map_returns_records_relations_and_artifacts(tmp_path):
         client, project.id, "direction", {"text": "Candidate"}, [artifact.id]
     )
     relation = _connect(client, project.id, source["id"], direction["id"]).json()
-
-    response = client.post(
-        f"/api/v1/projects/{project.id}/local-map",
-        json={"record_id": direction["id"], "limit": 5},
-    )
-
-    assert response.status_code == 200
-    assert response.json() == {
-        "records": [direction],
-        "relations": [relation],
-        "artifacts": [
-            {
-                "id": artifact.id,
-                "project_id": artifact.project_id,
-                "sha256": artifact.sha256,
-                "media_type": artifact.media_type,
-                "size": artifact.size,
-                "created_at": artifact.created_at,
-            }
-        ],
-    }
+    _assert_local_map(_local_map(client, project.id, direction["id"]), direction, relation, artifact)
 
 
 @pytest.mark.parametrize(

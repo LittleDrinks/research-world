@@ -49,9 +49,24 @@ function useLocalMap(projectId, text, recordId, setMap, setError, setParams) {
   return useCallback(async () => {
     if (!projectId) return;
     const query = recordId ? { record_id: recordId, limit: LOCAL_MAP_LIMIT } : { text, limit: LOCAL_MAP_LIMIT };
-    try { setMap(await getLocalMap(projectId, query)); setError(""); }
+    try { setMap(normalizeLocalMap(await getLocalMap(projectId, query))); setError(""); }
     catch (error) { if (recordId) setParams(text ? { text } : {}); else setError(error.message); }
   }, [projectId, text, recordId, setMap, setError, setParams]);
+}
+
+
+function normalizeLocalMap(value) {
+  return { records: value.records.map(mapRecord), relations: value.relations.map(mapRelation), artifacts: value.artifacts };
+}
+
+
+function mapRecord({ id, type: kind, content, artifact_ids }) {
+  return { id, kind, content, artifact_ids };
+}
+
+
+function mapRelation({ id, source_id: source, target_id: target, type: polarity }) {
+  return { id, source, target, polarity };
 }
 
 
@@ -74,17 +89,12 @@ function MapToolbar({ count, relationCount, text, setParams }) {
 
 
 function MapView({ localMap, selectedId, onSelect }) {
-  const edges = relationEdges(localMap.relations);
+  const edges = localMap.relations;
   const nodeIds = new Set(localMap.records.map((record) => record.id));
   const visibleEdges = edges.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target));
   const selected = localMap.records.find((record) => record.id === selectedId) || localMap.records[0];
   return <div className="map-workspace"><div className="graph-canvas">
-    <GraphView nodes={localMap.records} edges={visibleEdges} selectedId={selected?.id} onSelect={onSelect} newIds={new Set()} busyIds={new Set()} />
+    <GraphView nodes={localMap.records} edges={visibleEdges} selectedId={selected?.id} onSelect={onSelect} />
   </div><Inspector node={selected} nodes={localMap.records} edges={edges} artifacts={localMap.artifacts} onSelect={onSelect} />
   </div>;
-}
-
-
-function relationEdges(relations) {
-  return relations.map((relation) => ({ source: relation.source_id, target: relation.target_id, polarity: relation.type }));
 }

@@ -1,42 +1,25 @@
-import { BookOpen, CircleHelp, Compass, FlaskConical, LoaderCircle, X } from "lucide-react";
+import { BookOpen, CircleHelp, Compass, FlaskConical } from "lucide-react";
 import { Handle, Position } from "@xyflow/react";
-import { nodeText } from "../utils/labels";
+import { KIND_LABELS, recordText } from "../utils/labels";
 
 
 const ICONS = { question: CircleHelp, source: BookOpen, direction: Compass, experiment: FlaskConical };
-const LABELS = { question: "问题", source: "来源", direction: "方向", experiment: "实验" };
 const POSITIONS = [["top", Position.Top], ["right", Position.Right], ["bottom", Position.Bottom], ["left", Position.Left]];
 
 
-function Handles({ type }) {
-  return POSITIONS.map(([side, position]) => <Handle key={side} className="hidden-handle" id={`${type}-${side}`} type={type} position={position} isConnectable={false} />);
-}
-
-
-function statusBadge(data) {
-  if (!data.life_state) return null;
-  if (data.working) return { className: "state-running", label: "运行中" };
-  if (data.life_state === "ghost") return { className: "state-muted", label: "已驳回" };
-  if (data.life_state === "pending") return { className: "", label: "待审查" };
-  if (data.direction_status === "supported") return { className: "state-success", label: "已支持" };
-  if (data.direction_status === "refuted") return { className: "state-failed", label: "已反驳" };
-  if (data.direction_status === "proposed") return { className: "state-warning", label: "待验证" };
-  return { className: "state-success", label: "已入图" };
+function Handles({ handleKind }) {
+  return POSITIONS.map(([side, position]) => <Handle key={side} className="hidden-handle" id={`${handleKind}-${side}`} type={handleKind} position={position} isConnectable={false} />);
 }
 
 
 export function ResearchNode({ data, selected }) {
-  const kind = data.kind || data.type;
+  const kind = data.kind;
   const Icon = ICONS[kind] || Compass;
-  const title = nodeText(data);
-  const badge = statusBadge(data);
-  return <article className={`research-node kind-${kind} ${data.life_state ? `life-${data.life_state}` : ""} ${data.working ? "is-working" : ""} ${data.justCompleted ? "just-completed" : ""} ${selected ? "selected" : ""}`}>
-    <Handles type="target" />
-    <header><span className="node-kind-icon" role="img" aria-label={`${LABELS[kind] || kind}图标`}><Icon size={19} /></span>
-      <div><span>{LABELS[kind] || kind}</span><h3>{title}</h3></div>
-      {badge && <span className={`node-status-badge ${badge.className}`}>{badge.label}</span>}</header>
-    <footer><div className="node-meta"><span>{String(data.id || "").slice(0, 12)}</span></div>
-      {Boolean(data.working) && <LoaderCircle className="spin" size={14} />}{data.life_state === "ghost" && <X size={13} />}</footer>
-    <Handles type="source" />
+  return <article className={`research-node kind-${kind} ${selected ? "selected" : ""}`}>
+    <Handles handleKind="target" />
+    <header><span className="node-kind-icon" role="img" aria-label={`${KIND_LABELS[kind] || kind}图标`}><Icon size={19} /></span>
+      <div><span>{KIND_LABELS[kind] || kind}</span><h3>{recordText(data)}</h3></div></header>
+    <footer><div className="node-meta"><span>{String(data.id || "").slice(0, 12)}</span></div></footer>
+    <Handles handleKind="source" />
   </article>;
 }

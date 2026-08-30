@@ -12,6 +12,12 @@ export function nodeText(node) {
 }
 
 
+export function recordText(record) {
+  const values = [record.content.title, record.content.text, record.content.summary];
+  return values.find((value) => typeof value === "string" && value.trim()) || "未命名记录";
+}
+
+
 export function shortId(value = "") {
   return value.split(":").at(-1)?.slice(0, 7) || value;
 }
