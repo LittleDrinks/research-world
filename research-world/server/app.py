@@ -18,18 +18,31 @@ from .kernel import KernelCommand, KernelQuery, ResearchKernel, default_kernel
 from .kernel_http import kernel_graph_router
 from .kernel_interface import KernelInterface, create_kernel
 from .library import list_packages
+from .transport import runtime_router, session_router
 from .world import ReportNameTaken
 
 
-def create_app(kernel: ResearchKernel, *, graph_kernel: KernelInterface) -> FastAPI:
+def create_app(
+    kernel: ResearchKernel,
+    *,
+    graph_kernel: KernelInterface,
+    transport_runtime=None,
+) -> FastAPI:
     app = FastAPI(title="Research World", version="2")
-    register_routes(app, kernel, graph_kernel)
+    register_routes(
+        app, kernel, graph_kernel, transport_runtime=transport_runtime
+    )
     return app
 
 
-def register_routes(app, kernel, graph_kernel: KernelInterface) -> None:
+def register_routes(
+    app, kernel, graph_kernel: KernelInterface, *, transport_runtime=None
+) -> None:
     _register_world_routes(app, kernel)
     app.include_router(kernel_graph_router(graph_kernel))
+    if transport_runtime is not None:
+        app.include_router(session_router(graph_kernel, transport_runtime))
+        app.include_router(runtime_router(transport_runtime))
     frontend_routes(app)
 
 

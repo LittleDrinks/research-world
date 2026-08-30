@@ -103,6 +103,7 @@ class _Run:
 class _Turn:
     request: _TurnRequest
     adapter: _RuntimeAdapter
+    session_id: str | None
     status: str = "running"
     result_text: str | None = None
     handle: Any = None
@@ -179,7 +180,7 @@ class Runtime:
         self._require_child_submit(run)
         turn_id = f"t-{uuid.uuid4().hex}"
         request = _request(run, turn_id, message_id, payload)
-        turn = _Turn(request, run.adapter)
+        turn = _Turn(request, run.adapter, run.session_id)
         run.turns[message_id] = turn
         self._turns[turn_id] = turn
         self._track_child_turn(run, turn)
@@ -651,6 +652,7 @@ def _turn_view(turn):
         "id": turn.request.turn_id,
         "turn_id": turn.request.turn_id,
         "run_id": turn.request.run_id,
+        "session_id": turn.session_id,
         "message_id": turn.request.message_id,
         "status": turn.status,
         "result_text": turn.result_text,
