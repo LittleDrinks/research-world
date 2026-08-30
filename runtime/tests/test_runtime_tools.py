@@ -5,11 +5,49 @@ import pytest
 from runtime.runtime import AdapterResult, Runtime
 
 
+_KERNEL_OPERATIONS = (
+    ("record", {"project_id": "project-1", "record_type": "source", "content": {}}),
+    (
+        "connect",
+        {
+            "project_id": "project-2",
+            "source_id": "source-1",
+            "target_id": "direction-1",
+            "relation_type": "supports",
+        },
+    ),
+    ("remove_record", {"project_id": "project-1", "record_id": "record-1"}),
+    ("remove_relation", {"project_id": "project-2", "relation_id": "relation-1"}),
+    (
+        "local_map",
+        {"project_id": "project-1", "query": {"text": "orbit", "limit": 5}},
+    ),
+)
+
+_MMR_VALUES = {
+    "candidates": [
+        {"id": "b", "relevance": 0.9},
+        {"id": "a", "relevance": 0.9},
+        {"id": "c", "relevance": 0.8},
+    ],
+    "similarities": {
+        "a": {"b": 1.0, "c": 0.0},
+        "b": {"a": 1.0, "c": 0.0},
+        "c": {"a": 0.0, "b": 0.0},
+    },
+    "count": 2,
+    "diversity_weight": 0.5,
+}
+
+
 class RecordingKernel:
     def __init__(self):
         self.calls = []
+        self.record_error = None
 
     def record(self, project_id, record_type, content, artifact_ids=()):
+        if self.record_error is not None:
+            raise self.record_error
         self.calls.append(("record", project_id, record_type, content, artifact_ids))
         return {"id": "record-1", "project_id": project_id}
 
@@ -34,13 +72,16 @@ class ToolAdapter:
     adapter_id = "tool"
     supports_multiple_writers = True
 
+    def __init__(self, operation="record"):
+        self.operation = operation
+
     async def start(self, request):
         return request
 
     async def submit(self, handle, request, emit):
         handle.value = request.tools.invoke(
             "kernel",
-            "record",
+            self.operation,
             {
                 "project_id": "project-1",
                 "record_type": "direction",
@@ -55,37 +96,8 @@ class ToolAdapter:
 
 class KernelOperationsAdapter(ToolAdapter):
     async def submit(self, handle, request, emit):
-        tools = request.tools
-        tools.invoke(
-            "kernel",
-            "record",
-            {"project_id": "project-1", "record_type": "source", "content": {}},
-        )
-        tools.invoke(
-            "kernel",
-            "connect",
-            {
-                "project_id": "project-2",
-                "source_id": "source-1",
-                "target_id": "direction-1",
-                "relation_type": "supports",
-            },
-        )
-        tools.invoke(
-            "kernel",
-            "remove_record",
-            {"project_id": "project-1", "record_id": "record-1"},
-        )
-        tools.invoke(
-            "kernel",
-            "remove_relation",
-            {"project_id": "project-2", "relation_id": "relation-1"},
-        )
-        tools.invoke(
-            "kernel",
-            "local_map",
-            {"project_id": "project-1", "query": {"text": "orbit", "limit": 5}},
-        )
+        for operation, values in _KERNEL_OPERATIONS:
+            request.tools.invoke("kernel", operation, values)
         return AdapterResult(result_text="kernel operations complete")
 
 
@@ -94,29 +106,29 @@ class MMRAdapter(ToolAdapter):
         self.selection = None
 
     async def submit(self, handle, request, emit):
-        self.selection = request.tools.invoke(
-            "brainstorm",
-            "mmr",
-            {
-                "candidates": [
-                    {"id": "b", "relevance": 0.9},
-                    {"id": "a", "relevance": 0.9},
-                    {"id": "c", "relevance": 0.8},
-                ],
-                "similarities": {
-                    "a": {"b": 1.0, "c": 0.0},
-                    "b": {"a": 1.0, "c": 0.0},
-                    "c": {"a": 0.0, "b": 0.0},
-                },
-                "count": 2,
-                "diversity_weight": 0.5,
-            },
-        )
+        self.selection = request.tools.invoke("brainstorm", "mmr", _MMR_VALUES)
         return AdapterResult(result_text="mmr complete")
 
 
 async def _events(runtime, turn_id):
     return [event async for event in runtime.subscribe(turn_id)]
+
+
+async def _tool_trace(tmp_path, adapter, kernel, selected):
+    runtime = Runtime(tmp_path, {"tool": adapter}, kernel=kernel)
+    run = await runtime.launch({"adapter": "tool", "tools": selected})
+    turn = await runtime.submit(run["id"], {"id": "message-1", "content": "run"})
+    return await _events(runtime, turn["id"])
+
+
+def _assert_kernel_operations(kernel):
+    assert kernel.calls == [
+        ("record", "project-1", "source", {}, ()),
+        ("connect", "project-2", "source-1", "direction-1", "supports"),
+        ("remove_record", "project-1", "record-1"),
+        ("remove_relation", "project-2", "relation-1"),
+        ("local_map", "project-1", {"text": "orbit", "limit": 5}),
+    ]
 
 
 @pytest.mark.asyncio
@@ -137,24 +149,12 @@ async def test_adapter_can_use_kernel_tool_record_operation(tmp_path):
 @pytest.mark.asyncio
 async def test_kernel_tool_forwards_project_scoped_operations(tmp_path):
     kernel = RecordingKernel()
-    adapter = KernelOperationsAdapter()
-    runtime = Runtime(tmp_path, {"tool": adapter}, kernel=kernel)
-    run = await runtime.launch({"adapter": "tool", "tools": ["kernel"]})
-    turn = await runtime.submit(run["id"], {"id": "message-1", "content": "tools"})
-
-    trace = await _events(runtime, turn["id"])
-
+    trace = await _tool_trace(tmp_path, KernelOperationsAdapter(), kernel, ["kernel"])
     assert trace[-1]["data"] == {
         "status": "completed",
         "result_text": "kernel operations complete",
     }
-    assert kernel.calls == [
-        ("record", "project-1", "source", {}, ()),
-        ("connect", "project-2", "source-1", "direction-1", "supports"),
-        ("remove_record", "project-1", "record-1"),
-        ("remove_relation", "project-2", "relation-1"),
-        ("local_map", "project-1", {"text": "orbit", "limit": 5}),
-    ]
+    _assert_kernel_operations(kernel)
 
 
 @pytest.mark.asyncio
@@ -173,3 +173,28 @@ async def test_brainstorm_mmr_is_deterministic_and_does_not_touch_kernel(tmp_pat
         {"id": "c", "relevance": 0.8},
     ]
     assert kernel.calls == []
+
+
+@pytest.mark.asyncio
+async def test_kernel_record_key_error_reaches_turn_error(tmp_path):
+    kernel = RecordingKernel()
+    kernel.record_error = KeyError("record")
+    runtime = Runtime(tmp_path, {"tool": ToolAdapter()}, kernel=kernel)
+    run = await runtime.launch({"adapter": "tool", "tools": ["kernel"]})
+    turn = await runtime.submit(run["id"], {"id": "message-1", "content": "record"})
+    trace = await _events(runtime, turn["id"])
+    assert trace[-1]["data"] == {
+        "status": "error",
+        "result_text": None,
+        "error": "'record'",
+    }
+
+
+@pytest.mark.asyncio
+async def test_unknown_kernel_operation_has_explicit_error(tmp_path):
+    kernel = RecordingKernel()
+    runtime = Runtime(tmp_path, {"tool": ToolAdapter("missing")}, kernel=kernel)
+    run = await runtime.launch({"adapter": "tool", "tools": ["kernel"]})
+    turn = await runtime.submit(run["id"], {"id": "message-1", "content": "unknown"})
+    trace = await _events(runtime, turn["id"])
+    assert trace[-1]["data"]["error"] == "'unknown tool operation: kernel.missing'"

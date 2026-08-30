@@ -57,11 +57,10 @@ class RuntimeTools:
             "local_map": self._local_map,
         }
         try:
-            return handlers[operation](values)
-        except KeyError as error:
-            if error.args == (operation,):
-                raise KeyError(f"unknown tool operation: kernel.{operation}") from None
-            raise
+            handler = handlers[operation]
+        except KeyError:
+            raise KeyError(f"unknown tool operation: kernel.{operation}") from None
+        return handler(values)
 
     def _invoke_brainstorm(self, operation, values):
         if operation != "mmr":
