@@ -74,9 +74,8 @@ class PiAdapter:
     adapter_id = "pi"
     supports_multiple_writers = False
 
-    def __init__(self, executable: str, version: str, timeout: float = 300.0):
+    def __init__(self, executable: str, timeout: float = 300.0):
         self.executable = executable
-        self.version = version
         self.timeout = timeout
 
     @classmethod
@@ -85,8 +84,8 @@ class PiAdapter:
         if resolved is None:
             raise PiAdapterError("pi_not_found", "pi executable not found on PATH")
         path = os.path.realpath(resolved)
-        version = _probe_version(path)
-        return cls(path, version, timeout)
+        _probe_version(path)
+        return cls(path, timeout)
 
     async def start(self, request: TurnRequest) -> PiHandle:
         command = self._command(request)
@@ -456,7 +455,7 @@ def _error_detail(value: Any, fallback: str) -> str:
     return value if isinstance(value, str) and value else fallback
 
 
-def _probe_version(path: str) -> str:
+def _probe_version(path: str) -> None:
     try:
         result = subprocess.run(
             [path, "--version"],
@@ -471,7 +470,6 @@ def _probe_version(path: str) -> str:
     version = result.stdout.strip()
     if result.returncode != 0 or version != PI_VERSION:
         raise PiAdapterError("pi_configuration", f"unsupported pi version: {version or 'unknown'}")
-    return version
 
 
 def _workspace(request: TurnRequest) -> str:

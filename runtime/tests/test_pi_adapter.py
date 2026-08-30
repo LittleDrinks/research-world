@@ -496,13 +496,13 @@ async def test_pi_rejects_unknown_extension_ui_method(tmp_path, monkeypatch):
     await _wait_for_command(tmp_path, "abort")
 
 
-@pytest.mark.parametrize(
-    ("prompt", "detail"),
-    [
-        ("unknown-content", "pi assistant content block is invalid"),
-        ("non-string-content", "pi assistant text is invalid"),
-    ],
+INVALID_CONTENTS = (
+    ("unknown-content", "pi assistant content block is invalid"),
+    ("non-string-content", "pi assistant text is invalid"),
 )
+
+
+@pytest.mark.parametrize(("prompt", "detail"), INVALID_CONTENTS)
 async def test_pi_rejects_invalid_assistant_content(tmp_path, monkeypatch, prompt, detail):
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
