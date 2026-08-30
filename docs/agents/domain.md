@@ -1,4 +1,6 @@
-# 领域文档
-命名或变更领域概念前读取根目录 `CONTEXT.md`；读取 `docs/adr/` 中相关决策。
-Issue 标题、代码、测试与文档使用术语表定义及其明确排除的同义词；提出与 ADR 矛盾的改动前显式指出冲突。
-仓库使用单一领域上下文：根目录 `CONTEXT.md` 与 `docs/adr/`。
+# Domain docs
+[CONTEXT.md](../../CONTEXT.md) is the single glossary for Research Kernel, Runtime, Session, Run, Turn, Trace, Adapter and graph terms.
+[ADR-0033](../adr/0033-runtime-adapters-and-event-delivery.md) and [ADR-0034](../adr/0034-direct-kernel-fact-recording.md) are the accepted Runtime/Kernel decisions for ownership, execution, event delivery and direct fact recording.
+Their `supersedes` entries mark historical scopes that no longer provide current implementation instructions; other ADR details remain historical unless they conflict with those scopes.
+Read the glossary and applicable ADR before changing a domain concept. Use defined terms and their exclusions in issue titles, code, tests and docs; surface conflicts before implementation.
+Run `bash docs/agents/governance-check.sh` to verify the tracked governance files and current-contract assertions.

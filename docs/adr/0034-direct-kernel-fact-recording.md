@@ -1,5 +1,10 @@
 ---
+status: accepted
 sources:
+  - id: issue-169
+    title: MVP 规格：主 Agent 协作研究闭环与双深 Module 切换
+    url: https://github.com/LittleDrinks/research-world/issues/169
+    accessed: 2026-08-31
   - id: issue-146
     title: Research Kernel 深 Module
     url: https://github.com/LittleDrinks/research-world/issues/146
@@ -8,21 +13,21 @@ sources:
     title: 架构落地：决策记录与 TDD 证据约定
     url: https://github.com/LittleDrinks/research-world/issues/147
     accessed: 2026-08-29
-status: accepted
 supersedes:
-  - "ADR 0026: Runtime/Kernel 混合 Session、Trace、Thread 与 Pipeline 的旧所有权"
-  - "ADR 0027: command/query、准入和 Pipeline 驱动的旧 Kernel 写入范围"
-  - "ADR 0032: Kernel 持有固定 Pipeline 与 Auto 的旧范围"
-  - "ADR 0037: 与直接记录、Session 投影和 Kernel LocalMap 冲突的 Workflow/Trajectory 范围"
+  - "0017: fixed Pipeline and admission scope"
+  - "0020: graph evidence and admission scope"
+  - "0021: review Pipeline and write-gate scope"
+  - "0026: mixed Runtime/Kernel Session, Trace, Thread and Pipeline ownership"
+  - "0027: command/query, admission and Pipeline-driven Kernel writes"
+  - "0032: Kernel-owned fixed Pipeline, Stage, Auto and human Gate"
+  - "0037: Workflow, Trajectory and old Session as Research Graph write prerequisites"
 ---
 # Direct Kernel Fact Recording
-Research Kernel 是 Project 研究状态的唯一深模块，拥有 Project、Session、Artifact、Research Graph 记录与关系以及 LocalMap；Runtime 不绕过 Kernel Interface 写入这些对象。
+Research Kernel 是 Project 研究状态的唯一深模块，拥有 Project、Session、Artifact、Record、Relation 与 LocalMap；Runtime 不绕过 Kernel Interface 写入这些对象。
 ## 决策
-Kernel Interface 只接受 Project、Session、Artifact、Record、Connect、Remove 与 LocalMap 领域输入。Record 只校验内容完整和 Project 归属，写入后立即可被地图、LocalMap 和 Agent 使用；不设置准入状态、审核 Gate 或自动拒绝。Connect 只连接同一 Project 的既有记录和有效关系；Remove 记录时同时移除其直接关系，但不删除关联 Artifact；Remove 关系不影响记录。
-Session 先持久化用户消息，再由对话协调层把主 Agent 的最终回答投影回同一消息位置。重复提交同一消息只关联已有 Turn；Child Agent 不直接写用户 Session；Submit 创建 Turn 前失败时保留用户消息而不投影回答。Session 投影是用户可读对话来源，Trace 仍只保存 Runtime 执行事实。
-LocalMap 直接由 Kernel 按 Project 隔离、文本或节点引用和数量限制检索，返回匹配记录、与匹配记录相邻的直接关系和匹配记录关联的 Artifact；查询只接受一个非空 `text` 或 `record_id` 及正整数 `limit`，记录按创建顺序返回且不自动去重。它不调用 MMR、复核或删除，也不把全图交给调用方。MMR 是 Runtime 提供、由 Brainstorm Skill 选择调用的确定性 Tool operation；`mmr` 接受候选 `id`/`relevance`、完整候选间 `similarities`、正整数 `count` 和非负 `diversity_weight`，按 `relevance - diversity_weight * max_similarity` 贪心选择，分数相同时按候选 id 升序，返回选择顺序的候选。它不调用 Kernel、不检索、不复核、不删除或写入。Runtime 只能通过 Kernel Interface 使用图谱能力，Kernel 不实现 MMR。
-`research-world/kernel-contract` 发布 `LocalMapQuery` 作为 Kernel Interface 的唯一共享值对象；Runtime 依赖该 contract，不导入 `server` 或存储实现。
-应用装配 Kernel Interface 时，`/api/v1/projects` 与 `/api/v1/bootstrap` 的 Project 读写和选择都直接使用同一个 Kernel；该 Project 标识随后用于 records、relations 和 LocalMap 路径。旧 ResearchKernel 的 Thread、Pipeline 与 Auto 路由继续独立存在，不接收 Project 镜像或兼容转发。
-Kernel 当前使用 SQLite；SQLite FTS5 只提供词法全文检索，用于候选检索，不是向量余弦语义检索。后续候选检索以 embedding 语义候选替换 FTS5，是 Kernel 内部的私有演进/TODO，不改变 LocalMap Interface，也不自动去重。
+Kernel Interface 只接受 Project、Session、Artifact、Record、Connect、Remove 与 LocalMap 领域输入。Record 只校验内容完整、Project 归属和 Project-owned Artifact 引用，写入后立即可被地图、LocalMap 和 Agent 使用；不持有准入、pending、admitted、ghost、审核意见、人工裁决或 Pipeline 状态。Connect 只连接同一 Project 的既有 Record 和有效 Relation；Remove Record 时同时移除其直接 Relation，但不删除关联 Artifact；Remove Relation 不影响两端 Record。
+Session 先持久化用户消息，再由对话协调层把主 Agent 的最终回答投影回同一消息位置。重复 Submit 同一消息只关联已有 Turn；Child Agent 不直接写用户 Session；Submit 创建 Turn 前失败时保留用户消息而不投影回答。Session 是用户可读对话来源，Trace 只保存 Runtime 执行事实。
+LocalMap 直接由 Kernel 按 Project 隔离、文本或 Record 引用和数量限制检索，返回匹配 Record、直接 Relation 和关联 Artifact；它不调用 MMR、复核或删除，也不把全图交给调用方。MMR 是 Runtime 提供、由 Brainstorm Skill 选择调用的确定性 Tool operation；Runtime 只能通过 Kernel Interface 使用图谱能力，Kernel 不实现 MMR。
+Kernel 当前使用 SQLite；闭环阶段的词法候选检索只用于先完成 Record、LocalMap 与页面功能。功能闭环通过后，语义候选检索以 Embedding 替换词法路径，不改变 LocalMap Interface，不自动去重，也不保留双检索路径。
 ## 取代范围
-上述取代只覆盖与直接事实记录和所有权冲突的旧决定：ADR 0026 中 Kernel/Runtime 对 Session、Trace、Thread 与研究状态的混合范围；ADR 0027 中动态 command/query、准入、Pipeline 和 Kernel 编排作为写入前提的范围；ADR 0032 中由 Kernel 持有固定 Pipeline、Stage、Auto 和人工 Gate 的范围；ADR 0037 中以 Workflow、Trajectory 或旧 Session 作为 Research Graph 写入前提的范围。其余 Research Graph 的对象语义、证据关系和报告闭包规则保持不变。
+`supersedes` 列出的旧 ADR 只在所列范围内保留历史记录，不再把准入、审核、Pipeline、Auto、Workflow 或旧 Session 作为 Record、Connect、Remove、LocalMap 的写入前提。其余 Research Graph 对象语义、证据关系和报告闭包规则保持历史语义。
