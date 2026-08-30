@@ -53,6 +53,5 @@ sources:
 - 旧 `RuntimeAdapter` 的 descriptor、EndpointPool、`generate`、`provider_session_id` 以及把 `agent_end` 当作终态的逻辑不进入新三方法 seam。
 ## 验证边界
 - 已确认本机 `PATH` 定位和 `pi --version`：`0.84.3`。
-- 已通过新 Adapter 发起有界真实回合。Adapter 处理了宿主 Pi 发出的非阻塞 `setStatus`/`setWidget` 通知，但回合仍以 `pi_process: pi model request failed` 结束，未获得成功的 `agent_end`/`agent_settled` 回答。
-- 同一过滤环境的直接 RPC 诊断观察到宿主 `pi-agent-goal` 扩展在 `agent_settled` 阶段报告 stale context（session replacement/reload）。认证、配额、模型响应和完整人工回合因此未验证，不伪造通过；临时证据保存在 `.scratch/tdd/152/real-pi-3.txt` 与 `.scratch/tdd/152/real-pi-raw.txt`。
-- 2026-08-30 使用 `PiAdapter.detect(timeout=30)` 在启动前为空的临时 workspace 发起唯一提示 `Reply with exactly OK.` 的真实主 Agent RPC 回合；宿主 Pi `0.84.3` 被正常定位，但事件序列仅为 `turn_start,turn_end`，终态为 `error`，精确错误为 `pi_process: pi automatic retry failed`。AC5 未通过；证据保存在 `.scratch/tdd/152/real-pi-round2.txt`。
+- 2026-08-30 通过公开 `Runtime`/`PiAdapter` seam，在空的临时 workspace 发起有界主 Agent RPC 回合；宿主 Pi `0.84.3` 正常完成，终态为 `status: completed`，`result_text` 精确为 `OK`，`error: null`。规范化事件类型仅为 `turn_start`、`reasoning`、`delta`、`turn_end`（`reasoning` 可重复）；证据保存在 `.scratch/tdd/152/real-pi-round5-deepseek.txt`。
+- 本次验证未使用 Docker、Penguin fallback 或 Pi Session 文件。
