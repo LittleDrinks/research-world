@@ -1,7 +1,7 @@
 import { Map as MapIcon, Search } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { getLocalMap } from "../api";
+import { deleteRecord, deleteRelation, getLocalMap } from "../api";
 import { useWorld } from "../context/WorldContext";
 import { GraphView } from "../graph/GraphView";
 import { Inspector } from "../graph/Inspector";
@@ -25,17 +25,19 @@ function MapContent({ data, setError }) {
   const project = data.projects.find((item) => item.id === data.active_project_id);
   const { text, recordId } = mapQuery(params, project);
   const load = useLocalMap(data.active_project_id, text, recordId, setLocalMap, setError, setParams);
+  const removeRecord = useCallback((id) => removeMapItem(deleteRecord, data.active_project_id, id, text, load, setParams, setError), [data.active_project_id, text, load, setParams, setError]);
+  const removeRelation = useCallback((id) => removeMapItem(deleteRelation, data.active_project_id, id, text, load, setParams, setError), [data.active_project_id, text, load, setParams, setError]);
 
   useEffect(() => {
-    load();
-    const timer = window.setInterval(load, 1000);
+    load().catch(() => {});
+    const timer = window.setInterval(() => load().catch(() => {}), 1000);
     return () => window.clearInterval(timer);
   }, [load]);
 
   return <section className="map-page">
     <MapToolbar count={localMap.records.length} relationCount={localMap.relations.length}
       text={text} setParams={setParams} />
-    <MapView localMap={localMap} selectedId={recordId} onSelect={(id) => setParams({ node: id })} />
+    <MapView localMap={localMap} selectedId={recordId} onSelect={(id) => selectRecord(setParams, id)} onDeleteRecord={removeRecord} onDeleteRelation={removeRelation} />
   </section>;
 }
 
@@ -46,12 +48,23 @@ function mapQuery(params, project) {
 
 
 function useLocalMap(projectId, text, recordId, setMap, setError, setParams) {
-  return useCallback(async () => {
+  return useCallback(async (requested = { text, recordId }) => {
     if (!projectId) return;
-    const query = recordId ? { record_id: recordId, limit: LOCAL_MAP_LIMIT } : { text, limit: LOCAL_MAP_LIMIT };
+    const query = requested.recordId ? { record_id: requested.recordId, limit: LOCAL_MAP_LIMIT } : { text: requested.text, limit: LOCAL_MAP_LIMIT };
     try { setMap(normalizeLocalMap(await getLocalMap(projectId, query))); setError(""); }
-    catch (error) { if (recordId) setParams(text ? { text } : {}); else setError(error.message); }
+    catch (error) { if (requested.recordId) setParams(text ? { text } : {}); else setError(error.message); throw error; }
   }, [projectId, text, recordId, setMap, setError, setParams]);
+}
+
+
+async function removeMapItem(remove, projectId, id, text, reload, setParams, setError) {
+  try { await remove(projectId, id); await reload({ text, recordId: "" }); setParams(text ? { text } : {}); }
+  catch (error) { setError(error.message); throw error; }
+}
+
+
+function selectRecord(setParams, id) {
+  setParams((current) => { const next = new URLSearchParams(current); next.set("node", id); return next; });
 }
 
 
@@ -88,13 +101,13 @@ function MapToolbar({ count, relationCount, text, setParams }) {
 }
 
 
-function MapView({ localMap, selectedId, onSelect }) {
+function MapView({ localMap, selectedId, onSelect, onDeleteRecord, onDeleteRelation }) {
   const edges = localMap.relations;
   const nodeIds = new Set(localMap.records.map((record) => record.id));
   const visibleEdges = edges.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target));
   const selected = localMap.records.find((record) => record.id === selectedId) || localMap.records[0];
   return <div className="map-workspace"><div className="graph-canvas">
     <GraphView nodes={localMap.records} edges={visibleEdges} selectedId={selected?.id} onSelect={onSelect} />
-  </div><Inspector node={selected} nodes={localMap.records} edges={edges} artifacts={localMap.artifacts} onSelect={onSelect} />
+  </div><Inspector node={selected} nodes={localMap.records} edges={edges} artifacts={localMap.artifacts} onSelect={onSelect} onDeleteRecord={onDeleteRecord} onDeleteRelation={onDeleteRelation} />
   </div>;
 }

@@ -139,21 +139,103 @@ async function seedGraph(page) {
 }
 
 
-async function removeRelation(page, project, relation) {
-  expect((await page.request.delete(`/api/v1/projects/${project}/relations/${relation.id}`)).status()).toBe(204);
-}
-
-
-async function removeRecord(page, project, record) {
-  expect((await page.request.delete(`/api/v1/projects/${project}/records/${record.id}`)).status()).toBe(204);
-}
-
-
 async function removeGraph(page, graph) {
   for (const relation of graph.relations) {
     await page.request.delete(`/api/v1/projects/${graph.project}/relations/${relation.id}`);
   }
   for (const record of graph.records) await page.request.delete(`/api/v1/projects/${graph.project}/records/${record.id}`);
+}
+
+
+function trackMapRequests(page) {
+  const requests = [];
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (path.endsWith("/local-map") || /\/(records|relations)\//.test(path)) requests.push(`${request.method()} ${path}`);
+  });
+  return requests;
+}
+
+
+async function confirmDeletion(page, kind, id, requests) {
+  const resource = kind === "Record" ? "records" : "relations";
+  const encodedId = encodeURIComponent(id);
+  const dialog = page.getByRole("dialog", { name: `确认删除 ${kind}` });
+  await expect(dialog).toContainText(id);
+  const response = page.waitForResponse((value) => value.request().method() === "DELETE" && new URL(value.url()).pathname.endsWith(`/${resource}/${encodedId}`));
+  await dialog.getByRole("button", { name: `删除 ${kind}` }).click();
+  expect((await response).status()).toBe(204);
+  const deletion = requests.findIndex((value) => value.endsWith(`/${resource}/${encodedId}`));
+  await expect.poll(() => requests.slice(deletion + 1).some((value) => value.endsWith("/local-map"))).toBe(true);
+}
+
+
+async function confirmFailedDeletion(page, kind, id, status) {
+  const resource = kind === "Record" ? "records" : "relations";
+  const dialog = page.getByRole("dialog", { name: `确认删除 ${kind}` });
+  await expect(dialog).toContainText(id);
+  const response = page.waitForResponse((value) => value.request().method() === "DELETE" && new URL(value.url()).pathname.endsWith(`/${resource}/${encodeURIComponent(id)}`));
+  await dialog.getByRole("button", { name: `删除 ${kind}` }).click();
+  expect((await response).status()).toBe(status);
+}
+
+
+async function deleteRecordFromInspector(page, record, requests) {
+  await page.getByRole("button", { name: `删除 Record ${record.id}` }).click({ timeout: 5000 });
+  await confirmDeletion(page, "Record", record.id, requests);
+  await expect(page).not.toHaveURL(/node=/);
+}
+
+
+async function deleteRelationFromInspector(page, relation, requests) {
+  await page.getByRole("button", { name: `删除 Relation ${relation.id}` }).click({ timeout: 5000 });
+  await confirmDeletion(page, "Relation", relation.id, requests);
+  await expect(page).not.toHaveURL(/node=/);
+}
+
+
+async function createUnselectedProject(page) {
+  const token = uniqueToken();
+  const response = await page.request.post("/api/v1/projects", { data: { name: `Other-${token.slice(-8)}`, question: "Other question" } });
+  expect(response.status()).toBe(201);
+  return response.json();
+}
+
+
+async function deleteGraphItems(page, graph, token, requests) {
+  await page.goto(`/map?text=${encodeURIComponent(token)}`);
+  await expect(page.locator(".research-node")).toHaveCount(3);
+  await expect(page.locator(".react-flow__edge")).toHaveCount(3);
+  await page.locator(`.react-flow__node[data-id="${graph.records[1].id}"]`).click();
+  await deleteRelationFromInspector(page, graph.relations[0], requests);
+  await expect(page.locator(".react-flow__edge")).toHaveCount(2);
+  await page.goto(`/map?text=${encodeURIComponent(token)}`);
+  await page.locator(`.react-flow__node[data-id="${graph.records[1].id}"]`).click();
+  await deleteRecordFromInspector(page, graph.records[1], requests);
+  await expect.poll(() => page.locator(".research-node").count()).toBe(2);
+  await expect(page.locator(".react-flow__edge")).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator(".research-node")).toHaveCount(2);
+}
+
+
+async function assertStaleDeletionFailure(page, graph) {
+  await page.clock.install();
+  await page.goto(`/map?text=${encodeURIComponent(graph.token)}`);
+  await expect(page.locator(".research-node")).toHaveCount(3);
+  await page.locator(`.react-flow__node[data-id="${graph.records[0].id}"]`).click();
+  const deletion = page.getByRole("button", { name: `删除 Relation ${graph.relations[0].id}` });
+  await expect(deletion).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`node=${encodeURIComponent(graph.records[0].id)}`));
+  await expect(page.locator(".research-node")).toHaveCount(1);
+  await page.clock.pauseAt(new Date());
+  expect((await page.request.delete(`/api/v1/projects/${graph.project}/relations/${graph.relations[0].id}`)).status()).toBe(204);
+  await deletion.click();
+  await confirmFailedDeletion(page, "Relation", graph.relations[0].id, 404);
+  await expect(page.getByRole("alert")).toContainText(graph.relations[0].id);
+  await expect(page.getByRole("dialog", { name: "确认删除 Relation" })).toBeVisible();
+  await expect(page.locator(".research-node")).toHaveCount(1);
+  await expect(deletion).toBeVisible();
 }
 
 
@@ -219,16 +301,35 @@ test("keeps the real map graph and inspector in a desktop grid", async ({ page }
 });
 
 
-test("renders and refreshes the local graph through Kernel HTTP", async ({ page }) => {
+test("deletes Records and Relations through confirmed Kernel HTTP and refreshes", async ({ page }) => {
+  const token = uniqueToken();
+  const graph = await seedRecords(page, [["source", token], ["direction", token], ["experiment", token]], [[0, 1], [1, 2, "depends_on"], [2, 1, "refutes"]]);
+  const requests = trackMapRequests(page);
+  try { await deleteGraphItems(page, graph, token, requests); } finally { await removeGraph(page, graph); }
+});
+
+
+test("keeps deletion scoped to the current Project and rejects unknown targets", async ({ page }) => {
   const graph = await seedGraph(page);
+  const other = await createUnselectedProject(page);
+  const foreign = await createRecord(page, other.id, "direction", uniqueToken());
   try {
+    expect((await page.request.delete(`/api/v1/projects/${graph.project}/records/missing`)).status()).toBe(404);
+    expect((await page.request.delete(`/api/v1/projects/${graph.project}/records/${foreign.id}`)).status()).toBe(403);
     await page.goto(`/map?text=${encodeURIComponent(graph.token)}`);
     await expect(page.locator(".research-node")).toHaveCount(3);
     await expect(page.locator(".react-flow__edge")).toHaveCount(2);
-    await removeRelation(page, graph.project, graph.relations[0]);
-    await expect.poll(() => page.locator(".react-flow__edge").count()).toBe(1);
-    await removeRecord(page, graph.project, graph.records[1]);
-    await expect.poll(() => page.locator(".research-node").count()).toBe(2);
+  } finally {
+    await removeGraph(page, graph);
+    await removeGraph(page, { project: other.id, records: [foreign], relations: [] });
+  }
+});
+
+
+test("preserves map state and reports a stale deletion failure", async ({ page }) => {
+  const graph = await seedGraph(page);
+  try {
+    await assertStaleDeletionFailure(page, graph);
   } finally {
     await removeGraph(page, graph);
   }
@@ -237,7 +338,7 @@ test("renders and refreshes the local graph through Kernel HTTP", async ({ page 
 
 async function assertRelationSelection(page, graph, index) {
   await page.goto(`/map?node=${encodeURIComponent(graph.records[1].id)}`);
-  const relations = page.locator(".relation-list button");
+  const relations = page.locator(".relation-list .relation-link");
   await expect(relations).toHaveCount(2);
   await relations.nth(index).click();
   await expect(page).toHaveURL(new RegExp(`node=${encodeURIComponent(graph.records[index === 0 ? 0 : 2].id)}`));
@@ -358,7 +459,7 @@ test("renders a pure Kernel LocalMap inspector and selects adjacent records", as
   try {
     await page.goto(`/map?node=${encodeURIComponent(graph.source.id)}`);
     await assertKernelInspector(page, graph);
-    await page.locator(".relation-list button").click();
+    await page.locator(".relation-list .relation-link").click();
     await expect(page).toHaveURL(new RegExp(`node=${encodeURIComponent(graph.direction.id)}`));
     await expect(page.locator(".node-record")).toContainText(graph.direction.content.text);
   } finally {

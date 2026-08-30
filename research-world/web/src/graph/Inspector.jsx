@@ -1,14 +1,25 @@
-import { Check, Copy, GitBranch } from "lucide-react";
+import { Check, Copy, GitBranch, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { Modal } from "../components/Modal";
 import { KIND_LABELS, recordText } from "../utils/labels";
 
 
-export function Inspector({ node, nodes, edges, artifacts = [], onSelect }) {
+export function Inspector({ node, nodes, edges, artifacts = [], onSelect, onDeleteRecord, onDeleteRelation }) {
+  const [pending, setPending] = useState(null);
+  const [busy, setBusy] = useState(false);
   if (!node) return <aside className="inspector inspector-empty">选择节点查看上下文。</aside>;
+  const confirm = async () => {
+    if (!pending) return;
+    setBusy(true);
+    try { await (pending.kind === "Record" ? onDeleteRecord(pending.id) : onDeleteRelation(pending.id)); setPending(null); }
+    catch { /* parent reports the failed operation */ }
+    finally { setBusy(false); }
+  };
   return <aside className="inspector"><div className="inspector-scroll"><NodeHeader node={node} />
-    <NodeRecord node={node} /><Relations node={node} nodes={nodes} edges={edges} onSelect={onSelect} />
+    <NodeRecord node={node} /><RecordActions node={node} onRequest={() => setPending({ kind: "Record", id: node.id })} />
+    <Relations node={node} nodes={nodes} edges={edges} onSelect={onSelect} onDelete={(edge) => setPending({ kind: "Relation", id: edge.id })} />
     <Artifacts node={node} artifacts={artifacts} /><NodeIdEntry node={node} />
-  </div></aside>;
+  </div><DeleteDialog pending={pending} busy={busy} onClose={() => setPending(null)} onConfirm={confirm} /></aside>;
 }
 
 
@@ -31,11 +42,28 @@ function formatContent(value) {
 }
 
 
-function Relations({ node, nodes, edges, onSelect }) {
+function RecordActions({ node, onRequest }) {
+  return <section className="inspector-section"><button className="button secondary" aria-label={`删除 Record ${node.id}`} title={`删除 Record ${node.id}`} onClick={onRequest}><Trash2 size={15} />删除 Record</button></section>;
+}
+
+
+function Relations({ node, nodes, edges, onSelect, onDelete }) {
   const related = relatedRecords(node, nodes, edges);
   return <section className="inspector-section"><h2><GitBranch size={15} />直接关系</h2>{related.length ? <ul className="relation-list">
-    {related.map(({ edge, adjacentId, record }) => <li key={edge.id}><button onClick={() => onSelect(adjacentId)}><span className={`polarity ${edge.polarity}`}>{relationLabel(edge.polarity)}</span><b>{record ? recordText(record) : adjacentId}</b></button></li>)}
+    {related.map(({ edge, adjacentId, record }) => <li key={edge.id}><div className="relation-row"><button className="relation-link" onClick={() => onSelect(adjacentId)}><span className={`polarity ${edge.polarity}`}>{relationLabel(edge.polarity)}</span><b>{record ? recordText(record) : adjacentId}</b></button><button className="icon-button" aria-label={`删除 Relation ${edge.id}`} title={`删除 Relation ${edge.id}`} onClick={(event) => { event.stopPropagation(); onDelete(edge); }}><Trash2 size={15} /></button></div></li>)}
   </ul> : <p className="muted">暂无关系</p>}</section>;
+}
+
+
+function DeleteDialog({ pending, busy, onClose, onConfirm }) {
+  if (!pending) return null;
+  const kind = pending.kind;
+  return <Modal title={`确认删除 ${kind}`} open onClose={busy ? () => {} : onClose}>
+    <div className="delete-confirmation"><p>将删除 {kind}。</p><code className="mono">{pending.id}</code>
+      {kind === "Record" ? <p>直接 Relation 将一并移除，关联 Artifact 保留。</p> : <p>两端 Record 保持不变。</p>}
+      <div className="form-actions"><button type="button" className="button secondary" disabled={busy} onClick={onClose}>取消</button><button type="button" className="button primary" disabled={busy} onClick={onConfirm}><Trash2 size={15} />{busy ? "删除中..." : `删除 ${kind}`}</button></div>
+    </div>
+  </Modal>;
 }
 
 
