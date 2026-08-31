@@ -34,7 +34,7 @@ _Avoid_: 准入、pending、双审 Gate
 **MMR Tool operation**：Brainstorm Skill 可调用的确定性 Runtime Tool operation，用于从候选中选择多样内容；不承担 LocalMap 检索、写入或正确性判定。
 **Session**：Project 下用户可读的一段主 Agent 对话；浏览器生成的稳定 `session_id` 是创建重试的幂等键，一个 Project 可有多个 Session，Runtime 为每个 Session 关联独立主 Run。Session 保存用户消息和与其 Turn 配对的主 Agent 最终回答，回答固定在对应用户消息之后，不因完成顺序改变；不持有 Adapter 绑定、原生 harness 状态或 Trace。
 _Avoid_: Thread、执行 Session、节点消息表
-**Message**：Research Kernel 在 Session 中保存的一条用户消息及其可选的主 Agent 最终回答；`message_id` 是稳定标识，Runtime 只按它关联 Submit 与已有 Turn，不拥有消息内容。
+**Message**：Research Kernel 在 Session 中保存的一条用户消息及其可选的主 Agent 最终回答；`message_id` 是稳定标识，Runtime 只按它关联 Submit 与已有 Turn，并持久校验一个 Message 只能归属一个 Session；Child Run 的 Message 不绑定 Session。
 **Agent**：可被启动并完成工作的助手定义；MVP 只有一个协作学习者可见的主 Agent 配置，包含角色提示词、选中的 Skill 与 Tool。创建 Session 时提交配置，Runtime 在 Launch 时冻结执行快照；修改配置创建新 Session。Agent 不持有模型访问配置或 Runtime Adapter 绑定。
 _Avoid_: Research Graph 节点、可变持久 Agent、模型配置
 **主 Agent**：唯一直接与协作学习者对话的 Agent；理解意图、给出回应，并决定是否委派工作。
