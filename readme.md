@@ -86,7 +86,6 @@ q049 在相同问题、模型、检索权限和近似输出预算下比较直接
 - `RESULT`：形成终态后报告终态、模型、Session id、调用和 token、来源、版本产物、rubric、失败和未解决项；Herdr 的 `idle`、`done`、`blocked` 不是科研 RESULT。
 - 计划与执行分开表述。实际执行保存输入、命令或方法、输出、退出状态、数据或文件哈希和限制；未执行步骤明确标为 planned，不用模拟结果填充。
 - API key 和其他凭证只存在于 Runtime 环境，不得进入 prompt、Tool I/O、Trajectory、Artifact、清单、截图或失败输出。发现泄漏立即停止发布、隔离受影响产物、脱敏并重新运行；含密钥版本不得作为证据。
-Herdr/Pi 的完整 Trajectory 作为运行审计保留，不自动成为 Claim。平台完成后，平台主 Agent 可读取 Artifact 并通过现有 Graph CLI 写入经审核的研究对象；本次运行不实现导入层。
 ## P1-P20 证据矩阵
 设计 ADR 只证明约定；历史 Artifact/Trajectory 只证明对应历史运行；科学结果必须由当前 Project 中具有证据闭包的 Claim、关联 Source/Experiment/Artifact、Trajectory 和评价记录共同支持。
 | 章节 | 模板要求字段 | 所需系统能力/科学结果 | 证据位置 | 当前状态 | 缺口 issue |
