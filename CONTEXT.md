@@ -2,7 +2,9 @@
 围绕单个科学问题积累可审核、可复现、可追溯的研究状态。
 ## Ownership
 **Research Kernel（研究内核）**：Project 研究状态的唯一所有者，拥有 Project、Session、Message、Artifact、Record、Relation 与 LocalMap；不拥有 Agent 执行事实。
-**Runtime**：Agent 执行的唯一所有者，拥有模型访问配置、Run、Turn、Trace、Skill、Tool、委派、Runtime Adapter 与执行快照；不拥有 Session、Project、Artifact 或 Research Graph 记录。
+**Runtime**：Agent 执行的唯一所有者，拥有 Run、Turn、Trace、Skill、Tool、委派、Runtime Adapter 与执行快照；不拥有模型访问配置、Session、Project、Artifact 或 Research Graph 记录。
+**Research World 设置 facade**：Web 与 Penguin 之间只转发模型设置操作（测试、保存、掩码读取、替换与清除）；不负责对话协调，不持久模型访问配置，不拥有 Penguin token。
+**Penguin**：Runtime 使用的独立模型服务进程，持久拥有部署级模型访问配置及其原生 JSON/SSE 协议和 bearer token 生命周期；Runtime 是唯一外部调用方。
 **对话协调**：服务器组合层将用户消息写入 Session、提交 Turn，并将主 Agent 终态回答投影回同一消息；不拥有 Project、Run 或 Trace。
 ## Language
 **协作学习者**：正在从零学习本项目技术栈的项目决策者；讲解以已验证路径由粗到细展开，直到能说明各模块职责。
@@ -51,10 +53,10 @@ _Avoid_: Connector、MCP server、transport、模型函数名
 ## Agent Runtime
 **Runtime Adapter**：Runtime 内部适配一种执行 harness 的同级实现，封装模型调用与 harness 配置。它只识别、启动、提交、取消和产生规范化事件；Run 恢复、Trace 持久化、上下文快照、委派与重连由 Runtime 负责。
 _Avoid_: Runtime、Tool Adapter、用户自定义命令
-**执行域**：Runtime Adapter 实际使用 harness 的操作系统进程环境；本机执行域复用协作学习者已有 CLI，托管执行域由 Runtime 管理认证与协议，harness 进程由 Runtime 直接管理或由 Compose 作为固定服务管理。
+**执行域**：Runtime Adapter 实际使用 harness 的操作系统进程环境；本机执行域复用协作学习者已有 CLI，托管执行域由 Runtime 管理连接与协议，harness 进程由 Runtime 直接管理或由 Compose 作为固定服务管理。
 **Pi Adapter（开发期）**：只在本机执行域复用已安装的 Pi 及其设置，用于主机端到端确认；不进入 Docker 交付，也不构成 MVP 可用性门槛。
-**Penguin Harness Adapter（Docker/MVP 默认）**：Compose 管理固定 Penguin Server 进程与 readiness，Runtime Adapter 管理认证、Penguin Session、Task 与 HTTP/SSE 映射；使用协作学习者提供的模型访问配置，凭证不进入 Agent、Session、Trace 或前端。
-**模型访问配置**：协作学习者交给 Runtime 的模型访问凭证及必要选择；Compose 只把实际凭证注入执行模型的托管 harness，其他服务不读取。
+**Penguin Harness Adapter（Docker/MVP 默认）**：Compose 管理固定 Penguin Server 进程与 readiness，Runtime Adapter 只封装 Penguin 原生 HTTP/SSE、Penguin Session 与 Task 映射；模型访问配置由 Penguin 持久化，Penguin bearer token 不进入 Agent、Session、Trace、control 或 Web；Web password input 的明文 apikey 仅按明确请求暂存。
+**模型访问配置**：部署级设置，包含 provider、model id、baseurl 与 apikey；Research World 设置 facade 只转发测试、保存、掩码读取、替换与清除，Penguin 是唯一持久所有者；明文 apikey 可短暂进入 Web password input 和明确的测试、保存或替换请求；请求结束即清空，不持久化或返回到其他边界；不随 Project、Session、Agent、Run、Turn 或 Trace 复制。
 **Adapter 绑定**：Runtime 为 Run 选择并冻结的 Runtime Adapter；主 Agent 与 Subagent 的执行均基于绑定，失败不静默切换。
 **Run**：Agent 及其 Adapter 绑定的持续执行上下文；Runtime 唯一维护主 Agent Run 与一个 Session 的关联，Subagent Run 只关联父 Run。一个 Run 可同时承载多个活跃 Turn，包含执行快照、原生 harness 续接状态与 Trace。
 **Turn**：一次 Run 执行；创建时冻结该 Run 已终态的上下文，即终态事件持久化位次先于该 Turn 起始位次的 completed 与 limit 结果，按提交序；其他活跃 Turn 的输入和生成内容不进入该快照。每个 Turn 都有独立的 Adapter 执行句柄，事件、取消和终态均按 Turn 标识关联，终态为 completed、limit、cancelled 或 error。
