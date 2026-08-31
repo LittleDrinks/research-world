@@ -58,7 +58,7 @@ _Avoid_: Runtime、Tool Adapter、用户自定义命令
 **Penguin Harness Adapter（Docker/MVP 默认）**：Compose 管理固定 Penguin Server 进程与 readiness，Runtime Adapter 只封装 Penguin 原生 HTTP/SSE、Penguin Session 与 Task 映射；模型访问配置由 Penguin 持久化，Penguin bearer token 不进入 Agent、Session、Trace、control 或 Web；Web password input 的明文 apikey 仅按明确请求暂存。
 **模型访问配置**：部署级设置，包含 provider、model id、baseurl 与 apikey；Research World 设置 facade 只转发测试、保存、掩码读取、替换与清除，Penguin 是唯一持久所有者；明文 apikey 可短暂进入 Web password input 和明确的测试、保存或替换请求；请求结束即清空，不持久化或返回到其他边界；不随 Project、Session、Agent、Run、Turn 或 Trace 复制。
 **Adapter 绑定**：Runtime 为 Run 选择并冻结的 Runtime Adapter；主 Agent 与 Subagent 的执行均基于绑定，失败不静默切换。
-**Adapter 原生身份**：Runtime Adapter 为 Run 提供的当前 identifier-only JSON 恢复标识，形状固定为 `{"session_id": 非空字符串}`；Runtime 按 Adapter 归属在 Run 中一次性持久化，相同值重复绑定幂等，冲突绑定拒绝；只经 TurnRequest 传给所属 Adapter，不进入 Trace、Run public view、Kernel 或浏览器。
+**Adapter 原生身份**：Runtime Adapter 为 Run 提供的当前 identifier-only JSON 恢复标识，形状固定为 `{"session_id": 非空字符串}`；Runtime 按 Adapter 归属在 Run 中一次性持久化，相同值重复绑定幂等，冲突绑定拒绝；绑定载荷只在所属 Adapter 的 TurnRequest 回调 provenance 中流转，不作为公共执行事实收集，不进入 Trace、result、error、log、events、Run public view、Kernel 或浏览器；普通输入输出即使恰好等于同一字符串也保持原样。
 **Run**：Agent 及其 Adapter 绑定的持续执行上下文；Runtime 唯一维护主 Agent Run 与一个 Session 的关联，Subagent Run 只关联父 Run。一个 Run 可同时承载多个活跃 Turn，包含执行快照、原生 harness 续接状态与 Trace。
 **Turn**：一次 Run 执行；创建时冻结该 Run 已终态的上下文，即终态事件持久化位次先于该 Turn 起始位次的 completed 与 limit 结果，按提交序；其他活跃 Turn 的输入和生成内容不进入该快照。每个 Turn 都有独立的 Adapter 执行句柄，事件、取消和终态均按 Turn 标识关联，终态为 completed、limit、cancelled 或 error。
 **输入提交 (Submit)**：对话协调将用户消息持久化后，Runtime 根据 Session 找到或启动主 Agent Run，并为该消息创建 Turn；浏览器不选择或传递 Run id。完成创建后立即返回 Turn 标识，不等待或承载流式事件。

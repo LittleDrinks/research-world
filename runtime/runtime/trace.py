@@ -150,31 +150,25 @@ def _public_data(data):
     return _redact(redact_trace_data(data), hidden, ())
 
 
-def redact_trace_data(data, continuations=(), structured_values=()):
-    values = redact_trace_values(data, continuations, structured_values)
+def redact_trace_data(data, continuations=()):
+    values = _redact_continuations(data, continuations)
     return _redact(values, {"workspace", "codex_home", "runtime_binding", "provider_session_id"}, ())
 
 
-def redact_trace_values(data, identifiers=(), structured_values=()):
-    return _redact_continuations(data, identifiers, structured_values)
-
-
-def _redact_continuations(value, continuations, structured_values):
-    if _matches_structured(value, structured_values):
-        return "<redacted>"
+def _redact_continuations(value, continuations):
     if isinstance(value, dict):
-        return _redact_continuation_mapping(value, continuations, structured_values)
+        return _redact_continuation_mapping(value, continuations)
     if isinstance(value, list):
-        return [_redact_continuations(item, continuations, structured_values) for item in value]
-    return _redact_continuation_text(value, continuations, structured_values) if isinstance(value, str) else value
+        return [_redact_continuations(item, continuations) for item in value]
+    return _redact_continuation_text(value, continuations) if isinstance(value, str) else value
 
 
-def _redact_continuation_mapping(value, continuations, structured_values):
+def _redact_continuation_mapping(value, continuations):
     redacted = {}
     for key, item in value.items():
         if isinstance(key, str):
-            key = _redact_continuation_text(key, continuations, structured_values)
-        redacted[_unique_key(redacted, key)] = _redact_continuations(item, continuations, structured_values)
+            key = _redact_continuation_text(key, continuations)
+        redacted[_unique_key(redacted, key)] = _redact_continuations(item, continuations)
     return redacted
 
 
@@ -186,10 +180,7 @@ def _unique_key(value, key):
     return candidate
 
 
-def _redact_continuation_text(value, continuations, structured_values):
-    parsed = _parse_json(value)
-    if parsed is not _NO_JSON and _matches_structured(parsed, structured_values):
-        return "<redacted>"
+def _redact_continuation_text(value, continuations):
     continuations = tuple(item for item in continuations if isinstance(item, str))
     for continuation in sorted(continuations, key=len, reverse=True):
         if value == continuation:
@@ -198,27 +189,6 @@ def _redact_continuation_text(value, continuations, structured_values):
             rf"(?<!\w){re.escape(continuation)}(?!\w)", "<redacted>", value
         )
     return value
-
-
-_NO_JSON = object()
-
-
-def _parse_json(value):
-    try:
-        return json.loads(value)
-    except (TypeError, ValueError):
-        return _NO_JSON
-
-
-def _matches_structured(value, candidates):
-    return any(_structured_equal(value, candidate) for candidate in candidates)
-
-
-def _structured_equal(left, right):
-    try:
-        return json.dumps(left, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False) == json.dumps(right, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
-    except (TypeError, ValueError):
-        return False
 
 
 def _redact(value, hidden, path, preserved=()):
