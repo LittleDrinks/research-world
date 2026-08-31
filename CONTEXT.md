@@ -62,6 +62,6 @@ _Avoid_: Runtime、Tool Adapter、用户自定义命令
 **事件订阅 (Subscribe)**：从指定 Turn 的 Trace 读取已发生及后续的规范化事件；断线后可重新订阅，不创建输入或新的 Turn。
 **取消 (Cancel)**：只终止指定 Turn；关闭事件订阅不取消 Turn。
 **Server-Sent Events (SSE)**：Server 通过长期 HTTP GET 向浏览器单向推送事件；浏览器为每个活跃 Turn 使用独立 EventSource，每条事件的 `id` 对应 Trace `seq`，自动重连从最后收到的序号继续。
-**Trace**：模型可见消息、Tool 交互、Adapter 事件与父子 Run 关系的追加式执行事实流；每条事件关联一个 Turn，不是用户对话或 Research Graph 事实。
+**Trace**：模型可见消息、Tool 交互、Adapter 事件与父子 Run 关系的追加式执行事实流；每条事件关联一个 Turn，不是用户对话或 Research Graph 事实。持久化事件表是一条 append-only 因果日志，已提交位次从 1 开始完整连续；恢复校验在单一读事务内对照 SQLite 持久分配状态证明无缺口。
 _Avoid_: 进程日志、Research event、Session
 **Launch**：Runtime 创建 Run 的启动原语；协作学习者启动主 Agent，主 Agent 通过 Delegate 启动 Subagent。
