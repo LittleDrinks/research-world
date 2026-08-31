@@ -139,7 +139,9 @@ class KernelInterface(Protocol):
 
     def list_projects(self) -> list[Project]: ...
 
-    def create_session(self, project_id: str, title: str = "") -> Session: ...
+    def create_session(
+        self, project_id: str, session_id: str, title: str = ""
+    ) -> Session: ...
 
     def get_session(self, project_id: str, session_id: str) -> Session: ...
 
@@ -238,25 +240,30 @@ class _SQLiteKernel(KernelInterface):
             ).fetchall()
         return [Project(*row) for row in rows]
 
-    def create_session(self, project_id: str, title: str = "") -> Session:
+    def create_session(
+        self, project_id: str, session_id: str, title: str = ""
+    ) -> Session:
         self.get_project(project_id)
+        _require_text(session_id, "session id")
         if not isinstance(title, str):
             raise ValueError("session title must be text")
-        session = Session(_new_id("session"), project_id, title.strip(), now(), ())
+        title = title.strip()
         with self._connect() as connection:
             connection.execute(
-                "INSERT INTO kernel_sessions VALUES(?,?,?,?)",
-                (session.id, session.project_id, session.title, session.created_at),
+                "INSERT OR IGNORE INTO kernel_sessions VALUES(?,?,?,?)",
+                (session_id, project_id, title, now()),
             )
-        return session
+            row = _session_row(connection, session_id)
+            if row["project_id"] != project_id:
+                raise PermissionError("session belongs to another project")
+            if row["title"] != title:
+                raise ValueError("session title conflicts with existing session")
+            return _session_from_row(connection, row)
 
     def get_session(self, project_id: str, session_id: str) -> Session:
         self.get_project(project_id)
         with self._connect() as connection:
-            row = connection.execute(
-                "SELECT id,project_id,title,created_at FROM kernel_sessions WHERE id=?",
-                (session_id,),
-            ).fetchone()
+            row = _session_row(connection, session_id)
             if row is None:
                 raise KeyError(session_id)
             if row["project_id"] != project_id:
@@ -626,6 +633,13 @@ def _session_from_row(connection: sqlite3.Connection, row: sqlite3.Row) -> Sessi
         row["created_at"],
         tuple(map(_message_from_row, messages)),
     )
+
+
+def _session_row(connection: sqlite3.Connection, session_id: str) -> sqlite3.Row | None:
+    return connection.execute(
+        "SELECT id,project_id,title,created_at FROM kernel_sessions WHERE id=?",
+        (session_id,),
+    ).fetchone()
 
 
 def _message_from_row(row: sqlite3.Row) -> Message:

@@ -19,7 +19,7 @@ def _project(kernel: KernelInterface):
 
 def _project_and_session(kernel: KernelInterface):
     project = _project(kernel)
-    return project, kernel.create_session(project.id)
+    return project, kernel.create_session(project.id, "session:default")
 
 
 def test_project_is_persisted_through_the_kernel_interface(tmp_path):
@@ -43,13 +43,35 @@ def test_project_names_are_unique_at_the_kernel_interface(tmp_path):
 def test_session_can_be_created_listed_and_read_for_a_project(tmp_path):
     kernel = _kernel(tmp_path)
     project = _project(kernel)
-    session = kernel.create_session(project.id, "Orbit notes")
+    session = kernel.create_session(project.id, "session:notes", "Orbit notes")
     reopened = _kernel(tmp_path)
 
     assert session.project_id == project.id
     assert session.messages == ()
     assert reopened.get_session(project.id, session.id) == session
     assert reopened.list_sessions(project.id) == [session]
+
+
+def test_same_project_and_session_id_reuses_the_original_session(tmp_path):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+
+    first = kernel.create_session(project.id, "session:stable", "Orbit notes")
+    repeated = kernel.create_session(project.id, "session:stable", "Orbit notes")
+
+    assert repeated == first
+    assert kernel.list_sessions(project.id) == [first]
+
+
+def test_same_session_id_rejects_a_different_title(tmp_path):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+    first = kernel.create_session(project.id, "session:stable", "Orbit notes")
+
+    with pytest.raises(ValueError, match="title"):
+        kernel.create_session(project.id, "session:stable", "Changed title")
+
+    assert kernel.get_session(project.id, first.id) == first
 
 
 def test_user_message_is_persisted_with_a_stable_id(tmp_path):
@@ -148,6 +170,15 @@ def test_session_is_not_readable_from_another_project(tmp_path):
         kernel.get_session(other.id, session.id)
 
 
+def test_missing_session_is_not_returned(tmp_path):
+    kernel = _kernel(tmp_path)
+    project = _project(kernel)
+
+    assert kernel.list_sessions(project.id) == []
+    with pytest.raises(KeyError):
+        kernel.get_session(project.id, "session:missing")
+
+
 def test_reprojecting_the_same_answer_is_idempotent_and_cannot_overwrite(tmp_path):
     kernel = _kernel(tmp_path)
     project, session = _project_and_session(kernel)
@@ -178,7 +209,10 @@ def test_response_completion_order_does_not_reorder_session_messages(tmp_path):
         project.id, session.id, first.id, "Answer one"
     )
 
-    assert kernel.get_session(project.id, session.id).messages == (first, second)
+    assert _kernel(tmp_path).get_session(project.id, session.id).messages == (
+        first,
+        second,
+    )
 
 
 def test_record_is_immediately_readable_through_the_kernel_interface(tmp_path):
