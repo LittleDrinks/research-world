@@ -57,11 +57,11 @@ _Avoid_: Runtime、Tool Adapter、用户自定义命令
 **模型访问配置**：协作学习者交给 Runtime 的模型访问凭证及必要选择，仅供托管 harness Adapter 使用。
 **Adapter 绑定**：Runtime 为 Run 选择并冻结的 Runtime Adapter；主 Agent 与 Subagent 的执行均基于绑定，失败不静默切换。
 **Run**：Agent 及其 Adapter 绑定的持续执行上下文；Runtime 唯一维护主 Agent Run 与一个 Session 的关联，Subagent Run 只关联父 Run。一个 Run 可同时承载多个活跃 Turn，包含执行快照、原生 harness 续接状态与 Trace。
-**Turn**：一次 Run 执行；创建时冻结该 Run 已终态的上下文，其他活跃 Turn 的输入和生成内容不进入该快照。每个 Turn 都有独立的 Adapter 执行句柄，事件、取消和终态均按 Turn 标识关联，终态为 completed、limit、cancelled 或 error。
+**Turn**：一次 Run 执行；创建时冻结该 Run 已终态的上下文，即终态事件持久化位次先于该 Turn 起始位次的 completed 与 limit 结果，按提交序；其他活跃 Turn 的输入和生成内容不进入该快照。每个 Turn 都有独立的 Adapter 执行句柄，事件、取消和终态均按 Turn 标识关联，终态为 completed、limit、cancelled 或 error。
 **输入提交 (Submit)**：对话协调将用户消息持久化后，Runtime 根据 Session 找到或启动主 Agent Run，并为该消息创建 Turn；浏览器不选择或传递 Run id。完成创建后立即返回 Turn 标识，不等待或承载流式事件。
 **事件订阅 (Subscribe)**：从指定 Turn 的 Trace 读取已发生及后续的规范化事件；断线后可重新订阅，不创建输入或新的 Turn。
 **取消 (Cancel)**：只终止指定 Turn；关闭事件订阅不取消 Turn。
 **Server-Sent Events (SSE)**：Server 通过长期 HTTP GET 向浏览器单向推送事件；浏览器为每个活跃 Turn 使用独立 EventSource，每条事件的 `id` 对应 Trace `seq`，自动重连从最后收到的序号继续。
-**Trace**：模型可见消息、Tool 交互、Adapter 事件与父子 Run 关系的追加式执行事实流；每条事件关联一个 Turn，不是用户对话或 Research Graph 事实。
+**Trace**：模型可见消息、Tool 交互、Adapter 事件与父子 Run 关系的追加式执行事实流；每条事件关联一个 Turn，不是用户对话或 Research Graph 事实。持久化事件表是一条 append-only 因果日志，已提交位次从 1 开始完整连续；恢复校验在单一读事务内对照 SQLite 持久分配状态证明无缺口。
 _Avoid_: 进程日志、Research event、Session
 **Launch**：Runtime 创建 Run 的启动原语；协作学习者启动主 Agent，主 Agent 通过 Delegate 启动 Subagent。

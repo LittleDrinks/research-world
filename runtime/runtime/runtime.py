@@ -2,13 +2,10 @@ from __future__ import annotations
 
 import asyncio
 import json
-import threading
 import uuid
-from collections import defaultdict
 from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
 from inspect import iscoroutinefunction
 from pathlib import Path
 from typing import Any
@@ -19,72 +16,11 @@ from .adapter import (
     TurnRequest as _TurnRequest,
 )
 from .runtime_tools import KernelInterface, RuntimeTools
+from .run_store import _AGENT_PARAMS_FIELDS, _AGENT_SPEC_FIELDS, _AGENT_TEXT_FIELDS, _RunStore
+from .trace import TraceLedger
 
 
-class TraceLedger:
-    def __init__(self, root: Path):
-        self.root = root
-        self.root.mkdir(parents=True, exist_ok=True)
-        self._events: dict[str, list[dict[str, Any]]] = {}
-        self._locks: defaultdict[str, threading.Lock] = defaultdict(threading.Lock)
-        self._watchers: defaultdict[str, set[asyncio.Queue]] = defaultdict(set)
-
-    def append(self, turn_id: str, event_type: str, data: dict[str, Any], run_id: str):
-        with self._locks[turn_id]:
-            events = self._load(turn_id)
-            event = _event(run_id, turn_id, len(events), event_type, data)
-            self._write(turn_id, event)
-            events.append(event)
-        for queue in tuple(self._watchers[turn_id]):
-            queue.put_nowait(deepcopy(event))
-        return deepcopy(event)
-
-    def read(self, turn_id: str, after_seq: int = -1):
-        return [
-            deepcopy(event)
-            for event in self._load(turn_id)
-            if event["seq"] > after_seq
-        ]
-
-    def exists(self, turn_id: str) -> bool:
-        return bool(self._load(turn_id))
-
-    def terminal(self, turn_id: str) -> bool:
-        return any(event["type"] == "turn_end" for event in self._load(turn_id))
-
-    def watch(self, turn_id: str) -> asyncio.Queue:
-        queue = asyncio.Queue()
-        self._watchers[turn_id].add(queue)
-        return queue
-
-    def unwatch(self, turn_id: str, queue: asyncio.Queue) -> None:
-        self._watchers[turn_id].discard(queue)
-
-    def _load(self, turn_id: str) -> list[dict[str, Any]]:
-        if turn_id in self._events:
-            return self._events[turn_id]
-        path = self._path(turn_id)
-        if not path.exists():
-            events: list[dict[str, Any]] = []
-        else:
-            events = [
-                json.loads(line)
-                for line in path.read_text(encoding="utf-8").splitlines()
-                if line
-            ]
-        self._events[turn_id] = events
-        return events
-
-    def _write(self, turn_id: str, event: dict[str, Any]) -> None:
-        path = self._path(turn_id)
-        with path.open("a", encoding="utf-8") as stream:
-            stream.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")))
-            stream.write("\n")
-
-    def _path(self, turn_id: str) -> Path:
-        if Path(turn_id).name != turn_id:
-            raise ValueError("invalid turn id")
-        return self.root / f"{turn_id}.jsonl"
+_RUNTIME_EVENT_TYPES = {"turn_start", "turn_end", "child_result"}
 
 
 @dataclass
@@ -103,6 +39,7 @@ class _Run:
 class _Turn:
     request: _TurnRequest
     adapter: _RuntimeAdapter
+    submit_seq: int = 0
     status: str = "running"
     result_text: str | None = None
     handle: Any = None
@@ -129,12 +66,71 @@ class Runtime:
         _require_data_root(data_root)
         self._adapters = _adapter_map(adapters)
         self._kernel = kernel
-        self._trace = TraceLedger(data_root / "traces")
+        self._store = _RunStore(data_root)
+        self._trace = TraceLedger(self._store)
         self._runs: dict[str, _Run] = {}
         self._turns: dict[str, _Turn] = {}
         self._delegations: dict[str, tuple[str, str]] = {}
         self._adapter_reservations: dict[int, _Turn] = {}
         self._registry_lock = asyncio.Lock()
+        self._restore()
+
+    def _restore(self):
+        stored = self._store.snapshot()
+        for row in stored["runs"].values():
+            self._restore_run(row)
+        self._restore_delegations(stored["delegations"])
+        for row in sorted(stored["turns"].values(), key=lambda item: item["submit_seq"]):
+            self._restore_turn(row)
+        self._restore_children()
+        self._recover()
+
+    def _restore_run(self, row):
+        adapter = self._adapters.get(row["adapter_id"])
+        if adapter is None:
+            raise ValueError(f"runtime adapter is unavailable: {row['adapter_id']}")
+        run = _Run(row["id"], row["agent_snapshot"], adapter, row["parent_run_id"], None, RuntimeTools(self._kernel, row["agent_snapshot"].get("tools", ())), row["context"])
+        self._runs[run.id] = run
+
+    def _restore_delegations(self, delegations):
+        for row in delegations.values():
+            self._delegations[row["child_run_id"]] = (row["parent_run_id"], row["parent_turn_id"])
+
+    def _restore_turn(self, row):
+        run = self._require_run(row["run_id"])
+        request = _TurnRequest(row["run_id"], row["id"], row["message_id"], row["input"], tuple(row["context"]), deepcopy(run.agent_snapshot), run.tools)
+        turn = _Turn(request, run.adapter, submit_seq=row["submit_seq"], status=row["status"], result_text=row["result_text"])
+        if turn.status != "running":
+            turn.adapter_finished = True
+            turn.accepting_children = False
+            turn.terminal_event.set()
+        run.turns[turn.request.message_id] = turn
+        self._turns[turn.request.turn_id] = turn
+
+    def _restore_children(self):
+        for turn in self._turns.values():
+            self._track_child_turn(self._runs[turn.request.run_id], turn)
+
+    def _recover(self):
+        pending = [turn for turn in self._turns.values() if turn.status == "running"]
+        for turn in sorted(pending, key=self._recovery_key):
+            if turn.status == "running":
+                self._recover_turn(turn)
+
+    def _recovery_key(self, turn):
+        depth = self._run_depth(turn.request.run_id)
+        return -depth, turn.request.run_id, turn.submit_seq, turn.request.turn_id
+
+    def _run_depth(self, run_id):
+        depth = 0
+        while run_id in self._delegations:
+            depth += 1
+            run_id = self._delegations[run_id][0]
+        return depth
+
+    def _recover_turn(self, turn):
+        turn.accepting_children = False
+        self._complete_turn(turn, "error", None, "runtime restarted before turn completion", True)
 
     async def launch(
         self,
@@ -144,10 +140,10 @@ class Runtime:
     ) -> dict[str, Any]:
         snapshot = _snapshot(agent_spec)
         async with self._registry_lock:
-            run = self._register_run(snapshot, session_id, None)
+            run = self._register_run(snapshot, session_id, None, None)
         return _run_view(run)
 
-    def _register_run(self, snapshot, session_id, parent_run_id):
+    def _register_run(self, snapshot, session_id, parent_run_id, parent_turn_id):
         if parent_run_id:
             self._require_run(parent_run_id)
         adapter = _select_adapter(self._adapters, snapshot)
@@ -159,6 +155,7 @@ class Runtime:
             session_id,
             RuntimeTools(self._kernel, snapshot.get("tools", ())),
         )
+        self._store.create_run(run.id, snapshot, adapter.adapter_id, parent_run_id, parent_turn_id)
         self._runs[run.id] = run
         return run
 
@@ -180,10 +177,10 @@ class Runtime:
         turn_id = f"t-{uuid.uuid4().hex}"
         request = _request(run, turn_id, message_id, payload)
         turn = _Turn(request, run.adapter)
+        turn.submit_seq = self._trace.create_turn(run.id, turn_id, message_id, payload, request.context)
         run.turns[message_id] = turn
         self._turns[turn_id] = turn
         self._track_child_turn(run, turn)
-        self._trace.append(turn_id, "turn_start", _start_data(request), run.id)
         self._start_turn(turn)
         return turn
 
@@ -242,7 +239,7 @@ class Runtime:
         snapshot = _snapshot(agent_spec)
         async with self._registry_lock:
             self._require_parent_turn(parent_run_id, parent_turn_id)
-            run = self._register_run(snapshot, None, parent_run_id)
+            run = self._register_run(snapshot, None, parent_run_id, parent_turn_id)
             self._delegations[run.id] = (parent_run_id, parent_turn_id)
         return _run_view(run)
 
@@ -291,8 +288,10 @@ class Runtime:
 
     async def _emit(self, turn: _Turn, value: Any) -> None:
         event_type, data = _adapter_event(value)
-        if event_type == "turn_end":
-            raise RuntimeError("adapter cannot emit a terminal event")
+        if event_type in _RUNTIME_EVENT_TYPES:
+            if event_type == "turn_end":
+                raise RuntimeError("adapter cannot emit a terminal event")
+            raise RuntimeError(f"adapter cannot emit runtime-owned event: {event_type}")
         async with self._registry_lock:
             if turn.status == "running":
                 self._trace.append(
@@ -329,27 +328,47 @@ class Runtime:
                 self._finish_locked(turn, status, result_text, error, force)
 
     def _finish_locked(self, turn, status, result_text, error, force) -> None:
+        self._complete_turn(turn, status, result_text, error, force)
+
+    def _complete_turn(self, turn, status, result_text, error, force):
         if turn.status != "running":
             return
         status = _status(status)
         if turn.cancel_requested and not force and status != "error":
             return
+        context = self._context_after(turn, status, result_text)
+        self._trace.finish(
+            turn.request.run_id,
+            turn.request.turn_id,
+            _end_data(status, result_text, error),
+            context,
+            self._parent_result(turn, status, result_text, error),
+        )
+        self._apply_finish(turn, status, result_text, context)
+
+    def _apply_finish(self, turn, status, result_text, context):
         turn.status, turn.result_text = status, result_text
         turn.waiting_for_children = False
-        self._append_end(turn, status, result_text, error)
-        self._record_child_result(turn, status, result_text, error)
+        turn.adapter_finished = True
         self._release_adapter(turn)
-        if status in {"completed", "limit"}:
-            self._record_context(turn, result_text)
+        self._runs[turn.request.run_id].context = context
         turn.terminal_event.set()
 
-    def _append_end(self, turn, status, result_text, error):
-        self._trace.append(
-            turn.request.turn_id,
-            "turn_end",
-            _end_data(status, result_text, error),
-            turn.request.run_id,
-        )
+    def _parent_result(self, turn, status, result_text, error):
+        link = self._delegations.get(turn.request.run_id)
+        if link is None or self._turn(link[1]).status != "running":
+            return None
+        return link[0], link[1], _child_result_data(turn, status, result_text, error)
+
+    def _context_after(self, turn, status, result_text):
+        run = self._runs[turn.request.run_id]
+        context = []
+        for candidate in sorted(run.turns.values(), key=lambda item: item.submit_seq):
+            outcome = status if candidate is turn else candidate.status
+            result = result_text if candidate is turn else candidate.result_text
+            if outcome in {"completed", "limit"}:
+                context.extend(_context_entry(candidate, result))
+        return context
 
     async def _cancel_handle(self, turn: _Turn) -> None:
         if turn.handle is None or turn.cancel_sent:
@@ -417,19 +436,6 @@ class Runtime:
         except asyncio.CancelledError:
             return
 
-    def _record_context(self, turn: _Turn, result_text: str | None) -> None:
-        run = self._runs[turn.request.run_id]
-        run.context.extend(
-            (
-                {
-                    "role": "user",
-                    "message_id": turn.request.message_id,
-                    "content": deepcopy(turn.request.input),
-                },
-                {"role": "assistant", "content": result_text or ""},
-            )
-        )
-
     def _require_trace(self, turn_id: str) -> None:
         if not self._trace.exists(turn_id):
             raise KeyError(f"turn not found: {turn_id}")
@@ -474,20 +480,6 @@ class Runtime:
 
     async def _wait_for_children(self, children: tuple[_Turn, ...]) -> None:
         await asyncio.gather(*(child.terminal_event.wait() for child in children))
-
-    def _record_child_result(self, turn, status, result_text, error) -> None:
-        link = self._delegations.get(turn.request.run_id)
-        if link is None:
-            return
-        parent_run_id, parent_turn_id = link
-        if self._turn(parent_turn_id).status != "running":
-            return
-        self._trace.append(
-            parent_turn_id,
-            "child_result",
-            _child_result_data(turn, status, result_text, error),
-            parent_run_id,
-        )
 
     def _turn(self, turn_id: str) -> _Turn:
         try:
@@ -537,10 +529,32 @@ def _snapshot(agent_spec: Mapping[str, Any]) -> dict[str, Any]:
     snapshot = deepcopy(dict(agent_spec))
     if "runtime" in snapshot:
         raise ValueError("agent spec must use adapter")
+    _validate_snapshot_fields(snapshot)
     adapter_id = snapshot.get("adapter")
     if not isinstance(adapter_id, str) or not adapter_id:
         raise ValueError("agent spec must select an adapter")
-    return snapshot
+    try:
+        return json.loads(json.dumps(snapshot, ensure_ascii=False, allow_nan=False))
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"agent spec must be JSON-serializable: {error}") from error
+
+
+def _validate_snapshot_fields(value):
+    unknown = tuple(key for key in value) if not isinstance(value, Mapping) else tuple(key for key in value if key not in _AGENT_SPEC_FIELDS)
+    if unknown:
+        raise ValueError(f"agent spec contains unsupported fields: {unknown}")
+    if not isinstance(value, Mapping):
+        raise ValueError("agent spec is invalid")
+    if any(key in value and not isinstance(value[key], str) for key in _AGENT_TEXT_FIELDS):
+        raise ValueError("agent spec contains invalid fields")
+    tools = value.get("tools", ())
+    if not isinstance(tools, (list, tuple)) or any(not isinstance(tool, str) for tool in tools):
+        raise ValueError("agent spec tools must be strings")
+    params = value.get("params", {})
+    if not isinstance(params, Mapping) or any(key not in _AGENT_PARAMS_FIELDS for key in params):
+        raise ValueError("agent spec params are invalid")
+    if "mode" in params and not isinstance(params["mode"], str):
+        raise ValueError("agent spec params are invalid")
 
 
 def _message(message: Mapping[str, Any]):
@@ -564,10 +578,6 @@ def _request(run, turn_id, message_id, payload):
     )
 
 
-def _start_data(request):
-    return {"message_id": request.message_id, "input": deepcopy(request.input)}
-
-
 def _adapter_event(value):
     if not isinstance(value, dict) or set(value) != {"type", "data"}:
         raise TypeError("adapter events must be type/data mappings")
@@ -584,6 +594,8 @@ def _result(value: _AdapterResult):
         raise TypeError("adapter submit must return AdapterResult")
     if value.result_text is not None and not isinstance(value.result_text, str):
         raise TypeError("adapter result_text must be a string or None")
+    if value.status == "cancelled":
+        return value.status, None
     return value.status, value.result_text
 
 
@@ -619,21 +631,17 @@ def _child_result_data(turn, status, result_text, error):
     return data
 
 
+def _context_entry(turn, result_text):
+    return [
+        {"role": "user", "message_id": turn.request.message_id, "content": deepcopy(turn.request.input)},
+        {"role": "assistant", "content": result_text or ""},
+    ]
+
+
 def _after_seq(value):
     if not isinstance(value, int) or isinstance(value, bool):
         raise TypeError("after_seq must be an integer")
     return value
-
-
-def _event(run_id, turn_id, seq, event_type, data):
-    return {
-        "run_id": run_id,
-        "turn_id": turn_id,
-        "seq": seq,
-        "type": event_type,
-        "time": datetime.now(UTC).isoformat(),
-        "data": deepcopy(data),
-    }
 
 
 def _run_view(run):
