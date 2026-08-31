@@ -131,8 +131,10 @@ async def _events(runtime, turn_id):
 
 async def _tool_trace(tmp_path, adapter, kernel, selected):
     runtime = Runtime(tmp_path, {"tool": adapter}, kernel=kernel)
-    run = await runtime.launch({"adapter": "tool", "tools": selected})
-    turn = await runtime.submit(run["id"], {"id": "message-1", "content": "run"})
+    run = await runtime.launch(
+        {"adapter": "tool", "tools": selected}, session_id="session-tools"
+    )
+    turn = await runtime.submit(run["session_id"], {"id": "message-1", "content": "run"})
     return await _events(runtime, turn["id"])
 
 
@@ -151,8 +153,10 @@ async def test_adapter_can_use_kernel_tool_record_operation(tmp_path):
     kernel = RecordingKernel()
     adapter = ToolAdapter()
     runtime = Runtime(tmp_path, {"tool": adapter}, kernel=kernel)
-    run = await runtime.launch({"adapter": "tool", "tools": ["kernel"]})
-    turn = await runtime.submit(run["id"], {"id": "message-1", "content": "record"})
+    run = await runtime.launch(
+        {"adapter": "tool", "tools": ["kernel"]}, session_id="session-tools"
+    )
+    turn = await runtime.submit(run["session_id"], {"id": "message-1", "content": "record"})
 
     trace = await _events(runtime, turn["id"])
 
@@ -178,8 +182,10 @@ async def test_brainstorm_mmr_is_deterministic_and_does_not_touch_kernel(tmp_pat
     kernel = RecordingKernel()
     adapter = MMRAdapter()
     runtime = Runtime(tmp_path, {"tool": adapter}, kernel=kernel)
-    run = await runtime.launch({"adapter": "tool", "tools": ["brainstorm"]})
-    turn = await runtime.submit(run["id"], {"id": "message-1", "content": "select"})
+    run = await runtime.launch(
+        {"adapter": "tool", "tools": ["brainstorm"]}, session_id="session-tools"
+    )
+    turn = await runtime.submit(run["session_id"], {"id": "message-1", "content": "select"})
 
     trace = await _events(runtime, turn["id"])
 
@@ -196,8 +202,10 @@ async def test_kernel_record_key_error_reaches_turn_error(tmp_path):
     kernel = RecordingKernel()
     kernel.record_error = KeyError("record")
     runtime = Runtime(tmp_path, {"tool": ToolAdapter()}, kernel=kernel)
-    run = await runtime.launch({"adapter": "tool", "tools": ["kernel"]})
-    turn = await runtime.submit(run["id"], {"id": "message-1", "content": "record"})
+    run = await runtime.launch(
+        {"adapter": "tool", "tools": ["kernel"]}, session_id="session-tools"
+    )
+    turn = await runtime.submit(run["session_id"], {"id": "message-1", "content": "record"})
     trace = await _events(runtime, turn["id"])
     assert trace[-1]["data"] == {
         "status": "error",
@@ -210,7 +218,9 @@ async def test_kernel_record_key_error_reaches_turn_error(tmp_path):
 async def test_unknown_kernel_operation_has_explicit_error(tmp_path):
     kernel = RecordingKernel()
     runtime = Runtime(tmp_path, {"tool": ToolAdapter("missing")}, kernel=kernel)
-    run = await runtime.launch({"adapter": "tool", "tools": ["kernel"]})
-    turn = await runtime.submit(run["id"], {"id": "message-1", "content": "unknown"})
+    run = await runtime.launch(
+        {"adapter": "tool", "tools": ["kernel"]}, session_id="session-tools"
+    )
+    turn = await runtime.submit(run["session_id"], {"id": "message-1", "content": "unknown"})
     trace = await _events(runtime, turn["id"])
     assert trace[-1]["data"]["error"] == "'unknown tool operation: kernel.missing'"

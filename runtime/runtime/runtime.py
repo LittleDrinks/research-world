@@ -182,19 +182,18 @@ class Runtime:
 
     async def submit(
         self,
-        run_id: str,
+        session_id: str,
         message: Mapping[str, Any],
     ) -> dict[str, Any]:
         message_id, payload = _message(message)
         async with self._registry_lock:
-            turn = self._register_turn(run_id, message_id, payload)
+            turn = self._register_turn(session_id, message_id, payload)
         return _turn_view(turn)
 
-    def _register_turn(self, run_id, message_id, payload):
-        run = self._require_run(run_id)
+    def _register_turn(self, session_id, message_id, payload):
+        run = self._require_session(session_id)
         if existing := run.turns.get(message_id):
             return existing
-        self._require_child_submit(run)
         turn_id = f"t-{uuid.uuid4().hex}"
         request = _request(run, turn_id, message_id, payload)
         turn = _Turn(request, run.adapter)
@@ -471,6 +470,14 @@ class Runtime:
         except KeyError:
             raise KeyError(f"run not found: {run_id}") from None
 
+    def _require_session(self, session_id: str) -> _Run:
+        if not isinstance(session_id, str) or not session_id:
+            raise ValueError("session_id must be a nonempty string")
+        try:
+            return self._session_runs[session_id]
+        except KeyError:
+            raise KeyError(f"session not found: {session_id}") from None
+
     def _require_parent_turn(self, parent_run_id: str, parent_turn_id: str) -> None:
         if not isinstance(parent_turn_id, str) or not parent_turn_id:
             raise ValueError("parent_turn_id must be a nonempty string")
@@ -480,14 +487,6 @@ class Runtime:
         if turn.status != "running":
             raise ValueError("parent turn must be running")
         if turn.adapter_finished or not turn.accepting_children:
-            raise ValueError("parent turn is no longer accepting child turns")
-
-    def _require_child_submit(self, run: _Run) -> None:
-        link = self._delegations.get(run.id)
-        if link is None:
-            return
-        parent = self._turn(link[1])
-        if parent.status != "running" or parent.adapter_finished or not parent.accepting_children:
             raise ValueError("parent turn is no longer accepting child turns")
 
     def _track_child_turn(self, run: _Run, turn: _Turn) -> None:
