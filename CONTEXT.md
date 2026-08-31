@@ -32,7 +32,7 @@ _Avoid_: 准入、pending、双审 Gate
 **Embedding**：模型把文本表示为数字向量，可比较意思接近程度，但不能证明两段文本陈述同一事实。
 **语义候选检索（MVP 效果项）**：功能闭环通过后，以 Embedding 替换词法候选路径；只返回候选，不自动拒绝、合并或删除 Record，不保留双检索路径。
 **MMR Tool operation**：Brainstorm Skill 可调用的确定性 Runtime Tool operation，用于从候选中选择多样内容；不承担 LocalMap 检索、写入或正确性判定。
-**Session**：Project 下用户可读的一段主 Agent 对话；一个 Project 可有多个 Session，Runtime 为每个 Session 关联独立主 Run。Session 保存用户消息和与其 Turn 配对的主 Agent 最终回答，回答固定在对应用户消息之后，不因完成顺序改变；不持有 Adapter 绑定、原生 harness 状态或 Trace。
+**Session**：Project 下用户可读的一段主 Agent 对话；浏览器生成的稳定 `session_id` 是创建重试的幂等键，一个 Project 可有多个 Session，Runtime 为每个 Session 关联独立主 Run。Session 保存用户消息和与其 Turn 配对的主 Agent 最终回答，回答固定在对应用户消息之后，不因完成顺序改变；不持有 Adapter 绑定、原生 harness 状态或 Trace。
 _Avoid_: Thread、执行 Session、节点消息表
 **Message**：Research Kernel 在 Session 中保存的一条用户消息及其可选的主 Agent 最终回答；`message_id` 是稳定标识，Runtime 只按它关联 Submit 与已有 Turn，不拥有消息内容。
 **Agent**：可被启动并完成工作的助手定义；MVP 只有一个协作学习者可见的主 Agent 配置，包含角色提示词、选中的 Skill 与 Tool。创建 Session 时提交配置，Runtime 在 Launch 时冻结执行快照；修改配置创建新 Session。Agent 不持有模型访问配置或 Runtime Adapter 绑定。
@@ -53,7 +53,7 @@ _Avoid_: Connector、MCP server、transport、模型函数名
 _Avoid_: Runtime、Tool Adapter、用户自定义命令
 **执行域**：Runtime Adapter 实际启动 harness 的操作系统进程环境；本机执行域复用协作学习者已有 CLI，托管执行域由 Runtime 直接启动并管理 harness。
 **Pi Adapter（开发期）**：只在本机执行域复用已安装的 Pi 及其设置，用于主机端到端确认；不进入 Docker 交付，也不构成 MVP 可用性门槛。
-**Penguin Harness Adapter（Docker/MVP 默认）**：由 Runtime 直接启动并管理的托管 harness Adapter；使用协作学习者提供的模型访问配置，凭证不进入 Agent、Session、Trace 或前端。
+**Penguin Harness Adapter（Docker/MVP 默认）**：Compose 管理固定 Penguin Server 进程与 readiness，Runtime Adapter 管理认证、Penguin Session、Task 与 HTTP/SSE 映射；使用协作学习者提供的模型访问配置，凭证不进入 Agent、Session、Trace 或前端。
 **模型访问配置**：协作学习者交给 Runtime 的模型访问凭证及必要选择，仅供托管 harness Adapter 使用。
 **Adapter 绑定**：Runtime 为 Run 选择并冻结的 Runtime Adapter；主 Agent 与 Subagent 的执行均基于绑定，失败不静默切换。
 **Run**：Agent 及其 Adapter 绑定的持续执行上下文；Runtime 唯一维护主 Agent Run 与一个 Session 的关联，Subagent Run 只关联父 Run。一个 Run 可同时承载多个活跃 Turn，包含执行快照、原生 harness 续接状态与 Trace。

@@ -9,6 +9,7 @@ required=(
   CONTEXT.md
   docs/adr/0033-runtime-adapters-and-event-delivery.md
   docs/adr/0034-direct-kernel-fact-recording.md
+  docs/adr/0038-web-model-conversation-closure.md
   docs/agents/domain.md
   docs/agents/issue-tracker.md
   docs/agents/triage-labels.md
@@ -37,6 +38,7 @@ current=(
   CONTEXT.md
   docs/adr/0033-runtime-adapters-and-event-delivery.md
   docs/adr/0034-direct-kernel-fact-recording.md
+  docs/adr/0038-web-model-conversation-closure.md
   docs/agents/domain.md
   docs/agents/issue-tracker.md
   docs/agents/triage-labels.md
@@ -122,9 +124,16 @@ for term in Record Connect Remove LocalMap MMR Artifact '不持有准入、pendi
   require_text docs/adr/0034-direct-kernel-fact-recording.md "$term"
 done
 
+require_text docs/adr/0038-web-model-conversation-closure.md 'status: accepted'
+require_text docs/adr/0038-web-model-conversation-closure.md 'supersedes:'
+for term in '稳定 UUID 幂等键' '唯一 `session_id`' '重复 Submit 返回原 Turn' 'Last-Event-ID' 'Compose 管理固定 Penguin v0.2.9 Server' '只有 Penguin 服务读取仓库根 `apikey` 与 `baseurl`'; do
+  require_text docs/adr/0038-web-model-conversation-closure.md "$term"
+done
+
 require_text docs/agents/domain.md 'CONTEXT.md'
 require_text docs/agents/domain.md 'ADR-0033'
 require_text docs/agents/domain.md 'ADR-0034'
+require_text docs/agents/domain.md 'ADR-0038'
 require_text docs/agents/issue-tracker.md 'gh issue view <number> --comments'
 for file in "${current[@]}"; do
   rg -q '^# ' "$file" || {
@@ -141,6 +150,7 @@ require_text AGENTS.md '[docs/agents/triage-labels.md](docs/agents/triage-labels
 require_text docs/agents/domain.md '[CONTEXT.md](../../CONTEXT.md)'
 require_text docs/agents/domain.md '[ADR-0033](../adr/0033-runtime-adapters-and-event-delivery.md)'
 require_text docs/agents/domain.md '[ADR-0034](../adr/0034-direct-kernel-fact-recording.md)'
+require_text docs/agents/domain.md '[ADR-0038](../adr/0038-web-model-conversation-closure.md)'
 require_text CONTEXT.md 'Penguin Harness Adapter（Docker/MVP 默认）'
 require_text docs/adr/0033-runtime-adapters-and-event-delivery.md 'Docker/MVP 默认交付 Adapter'
 require_text docs/adr/0033-runtime-adapters-and-event-delivery.md '不静默切换、占位或模拟另一个 Adapter'
