@@ -11,14 +11,14 @@ class RunStoreError(ValueError):
     pass
 
 
-_FORMAT = {"format": "runtime-run-store", "version": "2"}
+_FORMAT = {"format": "runtime-run-store", "version": "3"}
 _STATUSES = {"running", "completed", "limit", "cancelled", "error"}
 _AGENT_SPEC_FIELDS = ("id", "adapter", "model", "instructions", "thinking", "workspace", "tools", "params")
 _AGENT_TEXT_FIELDS = frozenset(_AGENT_SPEC_FIELDS) - {"tools", "params"}
 _AGENT_PARAMS_FIELDS = frozenset({"mode"})
 _TABLE_COLUMNS = {
     "metadata": ("key", "value"),
-    "runs": ("id", "agent_snapshot", "adapter_id", "parent_run_id", "completed_context"),
+    "runs": ("id", "session_id", "agent_snapshot", "adapter_id", "parent_run_id", "completed_context"),
     "turns": ("id", "run_id", "message_id", "input", "context", "submit_seq", "start_pos", "status", "result_text", "error"),
     "delegations": ("child_run_id", "parent_run_id", "parent_turn_id"),
     "message_index": ("run_id", "message_id", "turn_id"),
@@ -26,7 +26,7 @@ _TABLE_COLUMNS = {
 }
 _SCHEMA = (
     "CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
-    "CREATE TABLE runs (id TEXT PRIMARY KEY, agent_snapshot TEXT NOT NULL, adapter_id TEXT NOT NULL, parent_run_id TEXT REFERENCES runs(id), completed_context TEXT NOT NULL)",
+    "CREATE TABLE runs (id TEXT PRIMARY KEY, session_id TEXT UNIQUE, agent_snapshot TEXT NOT NULL, adapter_id TEXT NOT NULL, parent_run_id TEXT REFERENCES runs(id), completed_context TEXT NOT NULL)",
     "CREATE TABLE turns (id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES runs(id), message_id TEXT NOT NULL, input TEXT NOT NULL, context TEXT NOT NULL, submit_seq INTEGER NOT NULL, start_pos INTEGER NOT NULL REFERENCES events(pos), status TEXT NOT NULL, result_text TEXT, error TEXT, UNIQUE(run_id, message_id), UNIQUE(run_id, submit_seq))",
     "CREATE TABLE delegations (child_run_id TEXT PRIMARY KEY REFERENCES runs(id), parent_run_id TEXT NOT NULL REFERENCES runs(id), parent_turn_id TEXT NOT NULL REFERENCES turns(id))",
     "CREATE TABLE message_index (run_id TEXT NOT NULL REFERENCES runs(id), message_id TEXT NOT NULL, turn_id TEXT NOT NULL UNIQUE REFERENCES turns(id), PRIMARY KEY(run_id, message_id))",
@@ -61,12 +61,14 @@ class _RunStore:
             return
         _create_schema(self.connection)
 
-    def create_run(self, run_id, snapshot, adapter_id, parent_run_id, parent_turn_id):
+    def create_run(self, run_id, snapshot, adapter_id, parent_run_id, parent_turn_id, session_id):
         if (parent_run_id is None) != (parent_turn_id is None):
             raise RunStoreError("runtime store run parent association is incomplete")
+        if parent_run_id is not None and session_id is not None:
+            raise RunStoreError("runtime store child run cannot have a session")
         self._begin()
         try:
-            self._insert_run(run_id, snapshot, adapter_id, parent_run_id)
+            self._insert_run(run_id, snapshot, adapter_id, parent_run_id, session_id)
             if parent_turn_id:
                 self._insert_delegation(run_id, parent_run_id, parent_turn_id)
             self.connection.commit()
@@ -74,14 +76,16 @@ class _RunStore:
             self.connection.rollback()
             raise _store_error(error, "run") from error
 
-    def _insert_run(self, run_id, snapshot, adapter_id, parent_run_id):
+    def _insert_run(self, run_id, snapshot, adapter_id, parent_run_id, session_id):
         _require_id(run_id, "run id")
         _require_id(adapter_id, "adapter id")
         if parent_run_id is not None:
             _require_id(parent_run_id, "parent run id")
+        if session_id is not None:
+            _require_id(session_id, "session id")
         self.connection.execute(
-            "INSERT INTO runs VALUES (?, ?, ?, ?, ?)",
-            (run_id, _encode(snapshot, "agent snapshot"), adapter_id, parent_run_id, _encode([], "context")),
+            "INSERT INTO runs VALUES (?, ?, ?, ?, ?, ?)",
+            (run_id, session_id, _encode(snapshot, "agent snapshot"), adapter_id, parent_run_id, _encode([], "context")),
         )
 
     def _insert_delegation(self, child_run_id, parent_run_id, parent_turn_id):
@@ -359,7 +363,7 @@ def _event_rows(connection):
 
 
 def _run_row(row):
-    return {"id": row["id"], "agent_snapshot": _decode(row["agent_snapshot"], "agent snapshot"), "adapter_id": row["adapter_id"], "parent_run_id": row["parent_run_id"], "context": _decode(row["completed_context"], "context")}
+    return {"id": row["id"], "session_id": row["session_id"], "agent_snapshot": _decode(row["agent_snapshot"], "agent snapshot"), "adapter_id": row["adapter_id"], "parent_run_id": row["parent_run_id"], "context": _decode(row["completed_context"], "context")}
 
 
 def _turn_row(row):
@@ -377,6 +381,7 @@ def _event_row(row):
 def _validate_snapshot(value):
     _validate_allocation(value)
     _validate_runs(value)
+    _validate_sessions(value)
     _validate_turns(value)
     _validate_submit_sequences(value)
     _validate_delegations(value)
@@ -413,10 +418,21 @@ def _validate_run(run_id, run, runs):
     if not isinstance(run.get("agent_snapshot"), dict) or run["agent_snapshot"].get("adapter") != run.get("adapter_id"):
         raise RunStoreError("runtime store adapter binding is invalid")
     _validate_snapshot_fields(run["agent_snapshot"])
+    if run.get("session_id") is not None:
+        _require_id(run["session_id"], "session id")
     parent_id = run.get("parent_run_id")
     if parent_id is not None and (not isinstance(parent_id, str) or parent_id not in runs):
         raise RunStoreError("runtime store parent run association is invalid")
+    if parent_id is not None and run.get("session_id") is not None:
+        raise RunStoreError("runtime store child run cannot have a session")
     _validate_context_value(run.get("context"))
+
+
+def _validate_sessions(value):
+    sessions = {}
+    for run in value["runs"].values():
+        if run["session_id"] is not None:
+            _put_unique(sessions, run["session_id"], run["id"], "session")
 
 
 def _validate_turns(value):
