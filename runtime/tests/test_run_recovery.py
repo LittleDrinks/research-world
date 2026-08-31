@@ -242,6 +242,83 @@ asyncio.run(main())
 '''
 
 
+_SEED_OVERLAP_PROCESS = r'''
+import asyncio, json, os, sys
+from pathlib import Path
+from runtime.adapter import AdapterResult
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    def __init__(self): self.gates = {"m1": asyncio.Event(), "m2": asyncio.Event()}
+    async def start(self, request): return object()
+    async def submit(self, handle, request, emit):
+        await self.gates[request.message_id].wait()
+        return AdapterResult(result_text="answer:" + request.message_id)
+    async def cancel(self, handle, request): return None
+
+async def collect(runtime, turn_id):
+    return [event async for event in runtime.subscribe(turn_id)]
+
+async def main():
+    adapter = Adapter()
+    runtime = Runtime(Path(sys.argv[1]), {"fake": adapter})
+    run = await runtime.launch({"id": "main", "adapter": "fake"})
+    first = await runtime.submit(run["id"], {"id": "m1", "content": "one"})
+    second = await runtime.submit(run["id"], {"id": "m2", "content": "two"})
+    adapter.gates["m1"].set()
+    await collect(runtime, first["id"])
+    print(json.dumps({"first": first["id"], "second": second["id"]}), flush=True)
+    os._exit(0)
+
+asyncio.run(main())
+'''
+
+
+_SKEW_PENDING_CONTEXT_PROCESS = r'''
+import json, sqlite3, sys
+from pathlib import Path
+
+root, value, mode = Path(sys.argv[1]), json.loads(sys.argv[2]), sys.argv[3]
+entry = json.dumps([{"role": "user", "message_id": "m1", "content": "one"}, {"role": "assistant", "content": "answer:m1"}])
+connection = sqlite3.connect(root / "runs.sqlite3")
+connection.execute("UPDATE turns SET context = ? WHERE id = ?", (entry, value["second"]))
+if mode == "equal":
+    moment, = connection.execute("SELECT time FROM events WHERE turn_id = ? AND seq = 0", (value["second"],)).fetchone()
+else:
+    moment = "2000-01-01T00:00:00+00:00"
+connection.execute("UPDATE events SET time = ? WHERE turn_id = ? AND type = 'turn_end'", (moment, value["first"]))
+connection.commit()
+connection.close()
+'''
+
+
+_SKEW_COMPLETED_TIME_PROCESS = r'''
+import sqlite3, sys
+from pathlib import Path
+
+connection = sqlite3.connect(Path(sys.argv[1]) / "runs.sqlite3")
+connection.execute("UPDATE events SET time = '9999-01-01T00:00:00+00:00' WHERE turn_id = ? AND type = 'turn_end'", (sys.argv[2],))
+connection.commit()
+connection.close()
+'''
+
+
+_SKEW_ALL_TIMES_PROCESS = r'''
+import sqlite3, sys
+from pathlib import Path
+
+connection = sqlite3.connect(Path(sys.argv[1]) / "runs.sqlite3")
+rows = connection.execute("SELECT rowid FROM events ORDER BY rowid").fetchall()
+for index, (rowid,) in enumerate(rows):
+    moment = "2026-01-01T00:00:00+00:00" if sys.argv[2] == "equal" else f"2026-01-01T00:00:{59 - index:02d}+00:00"
+    connection.execute("UPDATE events SET time = ? WHERE rowid = ?", (moment, rowid))
+connection.commit()
+connection.close()
+'''
+
+
 _CRASH_PROCESS = r'''
 import asyncio, json, os, sys
 from pathlib import Path
@@ -693,7 +770,7 @@ root, turn_id = Path(sys.argv[1]), sys.argv[2]
 connection = sqlite3.connect(root / "runs.sqlite3")
 run_id, = connection.execute("SELECT run_id FROM events WHERE turn_id = ? AND seq = 0", (turn_id,)).fetchone()
 connection.execute("UPDATE events SET seq = seq + 10 WHERE turn_id = ? AND seq > 0", (turn_id,))
-connection.execute("INSERT INTO events VALUES (?, 1, ?, 'turn_start', 'corrupt-time', ?)", (turn_id, run_id, json.dumps({"message_id": "forged", "input": "forged"})))
+connection.execute("INSERT INTO events (turn_id, seq, run_id, type, time, data) VALUES (?, 1, ?, 'turn_start', 'corrupt-time', ?)", (turn_id, run_id, json.dumps({"message_id": "forged", "input": "forged"})))
 connection.execute("UPDATE events SET seq = seq - 9 WHERE turn_id = ? AND seq > 1", (turn_id,))
 assert [row[0] for row in connection.execute("SELECT seq FROM events WHERE turn_id = ? ORDER BY seq", (turn_id,))] == [0, 1, 2, 3]
 connection.commit()
@@ -828,7 +905,7 @@ root, value, status = Path(sys.argv[1]), json.loads(sys.argv[2]), sys.argv[3]
 connection = sqlite3.connect(root / "runs.sqlite3")
 connection.execute("UPDATE turns SET status = ?, result_text = ? WHERE id = ?", (status, "parent-result", value["parent_turn"]))
 connection.execute("UPDATE runs SET completed_context = ? WHERE id = ?", (json.dumps([{"role": "user", "message_id": "parent", "content": "delegate"}, {"role": "assistant", "content": "parent-result"}]), value["parent_run"]))
-connection.execute("INSERT INTO events VALUES (?, 1, ?, 'turn_end', 'time', ?)", (value["parent_turn"], value["parent_run"], json.dumps({"status": status, "result_text": "parent-result"})))
+connection.execute("INSERT INTO events (turn_id, seq, run_id, type, time, data) VALUES (?, 1, ?, 'turn_end', 'time', ?)", (value["parent_turn"], value["parent_run"], json.dumps({"status": status, "result_text": "parent-result"})))
 connection.commit()
 connection.close()
 '''
@@ -903,7 +980,7 @@ connection = sqlite3.connect(root / "runs.sqlite3")
 connection.execute("UPDATE events SET seq = seq + 2 WHERE turn_id = ? AND type = 'turn_end'", (value["parent_turn"],))
 data = json.dumps({"child_run_id": value["child_run"], "child_turn_id": value["child_turn"], "status": "completed", "result_text": "late"})
 for seq in (1, 2):
-    connection.execute("INSERT INTO events VALUES (?, ?, ?, 'child_result', 'time', ?)", (value["parent_turn"], seq, value["parent_run"], data))
+    connection.execute("INSERT INTO events (turn_id, seq, run_id, type, time, data) VALUES (?, ?, ?, 'child_result', 'time', ?)", (value["parent_turn"], seq, value["parent_run"], data))
 connection.commit()
 connection.close()
 '''
@@ -1003,6 +1080,35 @@ def test_completed_run_recovers_in_a_fresh_interpreter(tmp_path):
 
 def test_recovered_context_keeps_submit_order_after_reverse_completion(tmp_path):
     run_id = _run_process(_REVERSE_CONTEXT_PROCESS, tmp_path).stdout.strip()
+    result = _run_process(_RECOVER_CONTEXT_PROCESS, tmp_path, run_id)
+    assert json.loads(result.stdout) == [{"role": "user", "message_id": "m1", "content": "one"}, {"role": "assistant", "content": "answer:m1"}, {"role": "user", "message_id": "m2", "content": "two"}, {"role": "assistant", "content": "answer:m2"}]
+
+
+_EXPECTED_COMPLETED_CONTEXT = [{"role": "user", "message_id": "m1", "content": "one"}, {"role": "assistant", "content": "answer:one"}, {"role": "user", "message_id": "m2", "content": "two"}, {"role": "assistant", "content": "answer:two"}]
+
+
+@pytest.mark.parametrize("mode", ["equal", "earlier"], ids=["equal_timestamps", "reverse_rollback"])
+def test_context_inclusion_beyond_causal_order_fails_on_fresh_construction(tmp_path, mode):
+    created = _output(_run_process(_SEED_OVERLAP_PROCESS, tmp_path))
+    _run_process(_SKEW_PENDING_CONTEXT_PROCESS, tmp_path, json.dumps(created), mode)
+    attempts = [_output(_run_process(_REJECT_CORRUPT_RECOVERY_PROCESS, tmp_path)) for _ in range(2)]
+    assert all("error" in attempt for attempt in attempts), attempts
+    assert all(attempt["error"].startswith("RunStoreError:runtime store") for attempt in attempts)
+    assert all(attempt["calls"] == [] and attempt["unchanged"] for attempt in attempts)
+    assert attempts[0] == attempts[1]
+
+
+def test_backward_display_clock_keeps_valid_completed_history(tmp_path):
+    created = _output(_run_process(_COMPLETED_PROCESS, tmp_path))
+    _run_process(_SKEW_COMPLETED_TIME_PROCESS, tmp_path, created["first"][0]["turn_id"])
+    result = _run_process(_RECOVER_CONTEXT_PROCESS, tmp_path, created["run_id"])
+    assert json.loads(result.stdout) == _EXPECTED_COMPLETED_CONTEXT
+
+
+@pytest.mark.parametrize("mode", ["equal", "decreasing"])
+def test_multiple_active_turns_survive_restart_with_skewed_display_times(tmp_path, mode):
+    run_id = _run_process(_REVERSE_CONTEXT_PROCESS, tmp_path).stdout.strip()
+    _run_process(_SKEW_ALL_TIMES_PROCESS, tmp_path, mode)
     result = _run_process(_RECOVER_CONTEXT_PROCESS, tmp_path, run_id)
     assert json.loads(result.stdout) == [{"role": "user", "message_id": "m1", "content": "one"}, {"role": "assistant", "content": "answer:m1"}, {"role": "user", "message_id": "m2", "content": "two"}, {"role": "assistant", "content": "answer:m2"}]
 
