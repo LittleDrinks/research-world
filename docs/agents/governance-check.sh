@@ -7,6 +7,7 @@ cd "$root"
 required=(
   AGENTS.md
   CONTEXT.md
+  MEMORY.md
   docs/adr/0033-runtime-adapters-and-event-delivery.md
   docs/adr/0034-direct-kernel-fact-recording.md
   docs/adr/0038-web-model-conversation-closure.md
@@ -36,6 +37,7 @@ require_text() {
 current=(
   AGENTS.md
   CONTEXT.md
+  MEMORY.md
   docs/adr/0033-runtime-adapters-and-event-delivery.md
   docs/adr/0034-direct-kernel-fact-recording.md
   docs/adr/0038-web-model-conversation-closure.md
@@ -56,6 +58,10 @@ for needle in \
   'Compose 只把仓库根' \
   '只把仓库根 `apikey` 与 `baseurl` 注入 Penguin Server' \
   '仓库根 .env' \
+  '仓库根 `.env` 的 `apikey`、`baseurl`' \
+  '凭证只在仓库根' \
+  '凭证不进入 Agent、Session、Trace、control 或 Web' \
+  'Web 均不包含模型凭证或 Penguin token' \
   'Kernel 拥有 Run' \
   'Research Kernel 拥有 Run' \
   'Runtime 在调用 start 前拒绝同一 Adapter' \
@@ -118,14 +124,23 @@ for term in \
   '关闭事件订阅不取消 Turn'; do
   require_text CONTEXT.md "$term"
 done
+require_text CONTEXT.md '只转发模型设置操作（测试、保存、掩码读取、替换与清除）；不负责对话协调'
+require_text CONTEXT.md '明文 apikey 可短暂进入 Web password input 和明确的测试、保存或替换请求'
+
+require_text MEMORY.md '模型访问配置是部署级设置'
+require_text MEMORY.md 'Research World 设置 facade 只转发测试、保存、掩码读取、替换与清除'
+require_text MEMORY.md 'Penguin 是唯一持久所有者'
 
 require_text AGENTS.md '$anysearch'
 require_text AGENTS.md 'TDD'
 require_text AGENTS.md 'docker compose up --build -d'
 require_text AGENTS.md 'Pi'
-require_text AGENTS.md '每次返工前先检索'
-require_text AGENTS.md '两次返工后仍未通过则重新拆票'
-require_text AGENTS.md '被审 commit、结论、逐项意见和整体耗时'
+require_text AGENTS.md 'Review 请求返工时，修改实现前先用 `$anysearch` 检索成熟实践'
+require_text AGENTS.md '同一 issue 两次返工后，第三次实现前先复核 issue 并决定拆票或重开票'
+require_text AGENTS.md 'implementation+review round'
+require_text AGENTS.md '被审 worker commit 的完整 hash'
+require_text AGENTS.md 'reviewer result、findings/opinion'
+require_text AGENTS.md 'end-to-end wall-clock duration'
 
 require_text docs/adr/0033-runtime-adapters-and-event-delivery.md 'status: accepted'
 require_text docs/adr/0033-runtime-adapters-and-event-delivery.md 'supersedes:'
@@ -144,6 +159,8 @@ require_text docs/adr/0038-web-model-conversation-closure.md 'supersedes:'
 for term in '稳定 UUID 幂等键' '唯一 `session_id`' '重复 Submit 返回原 Turn' '未绑定 Session、跨 Session Message 与 Child Run 目标在 Runtime Adapter 启动和 Trace 写入前失败' '非空 `completed` 或 `limit` 回答' 'Last-Event-ID' 'Web 模型设置属于本闭环范围' '测试、保存、掩码读取、替换、清除' 'Research World 设置 facade 只转发' 'Runtime Settings 管理面不属于五动作执行接口' '未配置模型时 Compose 和应用仍保持健康' 'Chat 不提交模型 Turn' 'Compose 管理 Penguin Harness Adapter 的固定 v0.2.9 server 进程' '每次启动铸造新的 bearer token' '每次新请求重新读取 token 文件' 'control/Web 不获得 token' '不设计外部生成或手工轮换' '仓库根环境文件不注入模型凭证'; do
   require_text docs/adr/0038-web-model-conversation-closure.md "$term"
 done
+require_text docs/adr/0038-web-model-conversation-closure.md '以 `0600` 写入专用数据根的 token 文件'
+require_text docs/adr/0038-web-model-conversation-closure.md '明文 apikey 可短暂进入 Web password input 和明确的测试、保存或替换请求'
 
 require_text docs/agents/domain.md 'CONTEXT.md'
 require_text docs/agents/domain.md 'ADR-0033'

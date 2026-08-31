@@ -14,8 +14,8 @@
 12. 计划实现的每一个模块，先检索一轮已有代码与成熟实现；需要通用依赖时先查官方 registry。
 13. Git 工作流固定为 `GitHub issue → feat/<issue>-<slug> → PR → 全新独立 Codex 验收 → 合并 PR → 关闭 issue 与 Herdr worker`：开工前 issue 须包含明确验收标准；每个 issue 独占一个分支，一个分支只服务一个 issue；提交原子化并只推送 feat 分支，禁止直接 push `main` 与 force push；PR 正文须关联对应 issue；实现者自验后交由全新独立 Codex 按 issue 验收，失败不合并、不关闭；通过后合并 PR，远端回读成功后关闭 issue 与 Herdr worker。
 14. TDD 临时证据统一写入 `.scratch/tdd/<ticket>/`，保存每票 red/green 命令输出和临时诊断；永久测试源码跟随所属模块并由 Git 跟踪，`.scratch/tdd/` 保持忽略。
-15. Review 前先检索当前规格、CONTEXT.md、accepted ADR、同模块代码和已有 review 证据；每次返工前先检索对应 review 结论与变更范围；同一 issue 两次返工后仍未通过则重新拆票。
-16. 每次 review 评论记录被审 commit、结论、逐项意见和整体耗时。
+15. Review 前先检索当前规格、CONTEXT.md、accepted ADR、同模块代码和已有 review 证据；Review 请求返工时，修改实现前先用 `$anysearch` 检索成熟实践；同一 issue 两次返工后，第三次实现前先复核 issue 并决定拆票或重开票。
+16. 每个 implementation+review round 的 issue comment 记录被审 worker commit 的完整 hash、reviewer result、findings/opinion，以及从 implementation start 到 review completion 的 end-to-end wall-clock duration。
 
 # 文档
 
