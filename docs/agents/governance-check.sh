@@ -52,6 +52,10 @@ for needle in \
   '同一 Adapter 的重叠 Turn' \
   'Runtime 拥有 Session' \
   'Runtime owns Session' \
+  'Runtime 拥有模型访问配置' \
+  'Compose 只把仓库根' \
+  '只把仓库根 `apikey` 与 `baseurl` 注入 Penguin Server' \
+  '仓库根 .env' \
   'Kernel 拥有 Run' \
   'Research Kernel 拥有 Run' \
   'Runtime 在调用 start 前拒绝同一 Adapter' \
@@ -78,6 +82,10 @@ for term in \
   'Runtime Adapter' \
   'Pi Adapter' \
   'Penguin Harness Adapter' \
+  'Research World 设置 facade' \
+  '模型访问配置' \
+  '部署级设置' \
+  'Penguin 是唯一持久所有者' \
   'Server-Sent Events (SSE)' \
   'Record' \
   'Connect' \
@@ -103,6 +111,9 @@ require_text docs/adr/0034-direct-kernel-fact-recording.md 'Kernel Interface 只
 
 for term in \
   'Agent 不持有模型访问配置或 Runtime Adapter 绑定' \
+  '模型访问配置' \
+  '部署级设置' \
+  'Penguin 是唯一持久所有者' \
   '一个 Run 可同时承载多个活跃 Turn' \
   '关闭事件订阅不取消 Turn'; do
   require_text CONTEXT.md "$term"
@@ -112,10 +123,13 @@ require_text AGENTS.md '$anysearch'
 require_text AGENTS.md 'TDD'
 require_text AGENTS.md 'docker compose up --build -d'
 require_text AGENTS.md 'Pi'
+require_text AGENTS.md '每次返工前先检索'
+require_text AGENTS.md '两次返工后仍未通过则重新拆票'
+require_text AGENTS.md '被审 commit、结论、逐项意见和整体耗时'
 
 require_text docs/adr/0033-runtime-adapters-and-event-delivery.md 'status: accepted'
 require_text docs/adr/0033-runtime-adapters-and-event-delivery.md 'supersedes:'
-for term in Launch Submit Subscribe Cancel Delegate 'Message id' 'Trace `seq`' 'Last-Event-ID' EventSource 'Runtime 不得因为底层 harness 的实现方式把同一 Run 的重叠 Turn 改为互斥或拒绝' '@ai-sdk/react useChat' 'Pydantic AI UI Adapter' 'Penguin Harness Adapter'; do
+for term in Launch Submit Subscribe Cancel Delegate 'Message id' 'Trace `seq`' 'Last-Event-ID' EventSource '独立 Runtime JSON/SSE 服务' '按预期 Session 作用域校验 Subscribe' '在 SSE 响应开始前完成校验' 'Adapter 原生身份恢复' 'Runtime Settings 管理面不属于五动作执行接口' 'Runtime 不得因为底层 harness 的实现方式把同一 Run 的重叠 Turn 改为互斥或拒绝' '@ai-sdk/react useChat' 'Pydantic AI UI Adapter' 'Penguin Harness Adapter'; do
   require_text docs/adr/0033-runtime-adapters-and-event-delivery.md "$term"
 done
 
@@ -127,7 +141,7 @@ done
 
 require_text docs/adr/0038-web-model-conversation-closure.md 'status: accepted'
 require_text docs/adr/0038-web-model-conversation-closure.md 'supersedes:'
-for term in '稳定 UUID 幂等键' '唯一 `session_id`' '重复 Submit 返回原 Turn' '未绑定 Session、跨 Session Message 与 Child Run 目标在 Runtime Adapter 启动和 Trace 写入前失败' '非空 `completed` 或 `limit` 回答' 'Last-Event-ID' 'Compose 管理 Penguin Harness Adapter 的固定 v0.2.9 server 进程' 'Runtime 拥有模型访问配置' '只把仓库根 `apikey` 与 `baseurl` 注入 Penguin Server'; do
+for term in '稳定 UUID 幂等键' '唯一 `session_id`' '重复 Submit 返回原 Turn' '未绑定 Session、跨 Session Message 与 Child Run 目标在 Runtime Adapter 启动和 Trace 写入前失败' '非空 `completed` 或 `limit` 回答' 'Last-Event-ID' 'Web 模型设置属于本闭环范围' '测试、保存、掩码读取、替换、清除' 'Research World 设置 facade 只转发' 'Runtime Settings 管理面不属于五动作执行接口' '未配置模型时 Compose 和应用仍保持健康' 'Chat 不提交模型 Turn' 'Compose 管理 Penguin Harness Adapter 的固定 v0.2.9 server 进程' '每次启动铸造新的 bearer token' '每次新请求重新读取 token 文件' 'control/Web 不获得 token' '不设计外部生成或手工轮换' '仓库根环境文件不注入模型凭证'; do
   require_text docs/adr/0038-web-model-conversation-closure.md "$term"
 done
 
