@@ -69,6 +69,7 @@ class Runtime:
         self._store = _RunStore(data_root)
         self._trace = TraceLedger(self._store)
         self._runs: dict[str, _Run] = {}
+        self._session_runs: dict[str, _Run] = {}
         self._turns: dict[str, _Turn] = {}
         self._delegations: dict[str, tuple[str, str]] = {}
         self._adapter_reservations: dict[int, _Turn] = {}
@@ -89,8 +90,8 @@ class Runtime:
         adapter = self._adapters.get(row["adapter_id"])
         if adapter is None:
             raise ValueError(f"runtime adapter is unavailable: {row['adapter_id']}")
-        run = _Run(row["id"], row["agent_snapshot"], adapter, row["parent_run_id"], None, RuntimeTools(self._kernel, row["agent_snapshot"].get("tools", ())), row["context"])
-        self._runs[run.id] = run
+        run = _Run(row["id"], row["agent_snapshot"], adapter, row["parent_run_id"], row["session_id"], RuntimeTools(self._kernel, row["agent_snapshot"].get("tools", ())), row["context"])
+        self._remember_run(run)
 
     def _restore_delegations(self, delegations):
         for row in delegations.values():
@@ -146,6 +147,10 @@ class Runtime:
     def _register_run(self, snapshot, session_id, parent_run_id, parent_turn_id):
         if parent_run_id:
             self._require_run(parent_run_id)
+            if session_id is not None:
+                raise ValueError("child run cannot have a session")
+        if existing := self._existing_session(session_id, snapshot):
+            return existing
         adapter = _select_adapter(self._adapters, snapshot)
         run = _Run(
             f"r-{uuid.uuid4().hex}",
@@ -155,9 +160,25 @@ class Runtime:
             session_id,
             RuntimeTools(self._kernel, snapshot.get("tools", ())),
         )
-        self._store.create_run(run.id, snapshot, adapter.adapter_id, parent_run_id, parent_turn_id)
-        self._runs[run.id] = run
+        self._store.create_run(run.id, snapshot, adapter.adapter_id, parent_run_id, parent_turn_id, session_id)
+        self._remember_run(run)
         return run
+
+    def _existing_session(self, session_id, snapshot):
+        if session_id is None:
+            return None
+        run = self._session_runs.get(session_id)
+        if run is not None and run.agent_snapshot != snapshot:
+            raise ValueError("session launch conflicts with existing agent snapshot")
+        return run
+
+    def _remember_session(self, run):
+        if run.session_id is not None:
+            self._session_runs[run.session_id] = run
+
+    def _remember_run(self, run):
+        self._runs[run.id] = run
+        self._remember_session(run)
 
     async def submit(
         self,
