@@ -4,6 +4,8 @@ import yaml
 
 COMPOSE = Path(__file__).parents[1] / "compose.yaml"
 RELEASE_COMPOSE = Path(__file__).parents[1] / "compose.release.yaml"
+DOCKERFILE = Path(__file__).parents[1] / "Dockerfile"
+PENGUIN_READINESS = Path(__file__).parents[1] / "penguin-readiness.mjs"
 
 
 def compose():
@@ -63,3 +65,50 @@ def test_release_compose_preserves_credential_boundary():
     assert services["runtime"]["env_file"] == ["../.env"]
     for name in ("control", "worker", "runner-controller"):
         assert "env_file" not in services[name]
+
+
+def test_penguin_service_is_pinned_and_uses_a_private_data_root():
+    service = compose()["services"]["penguin"]
+
+    assert service["build"] == {"context": ".", "target": "runtime"}
+    assert service["command"] == [
+        "/opt/penguin/bin/penguin",
+        "server",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "7364",
+    ]
+    assert service["environment"]["PENGUIN_HOME"] == "/penguin-data"
+    assert service["environment"]["PENGUIN_UPDATE_CHECK"] == "off"
+    assert service["volumes"] == ["rw-penguin-data:/penguin-data"]
+    assert service["healthcheck"]["test"] == [
+        "CMD",
+        "/opt/penguin/node/bin/node",
+        "/opt/penguin-readiness.mjs",
+    ]
+
+
+def test_release_compose_runs_the_pinned_penguin_image():
+    service = release_compose()["services"]["penguin"]
+
+    assert "build" not in service
+    assert service["image"] == "${RW_IMAGE:-ghcr.io/littledrinks/research-world}:${RW_VERSION:-pre-alpha}"
+
+
+def test_penguin_artifact_pin_is_the_public_linux_x64_release():
+    dockerfile = DOCKERFILE.read_text(encoding="utf-8")
+
+    assert "https://github.com/Prism-Shadow/penguin-harness/releases/download/v0.2.9/penguin-linux-x64.tar.gz" in dockerfile
+    assert "585f6885be6bbbd7eba5eca7308de4c8c4e0ab4990fb450726bdda50c0d268fe" in dockerfile
+
+
+def test_penguin_readiness_is_authenticated_exact_version_and_silent():
+    readiness = PENGUIN_READINESS.read_text(encoding="utf-8")
+
+    assert "api-token" in readiness
+    assert "Authorization" in readiness
+    assert 'version !== "0.2.9"' in readiness
+    assert 'describe !== "v0.2.9"' in readiness
+    assert "console." not in readiness
+    assert "process.stdout" not in readiness

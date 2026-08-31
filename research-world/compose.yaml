@@ -1,4 +1,25 @@
 services:
+  penguin:
+    build:
+      context: .
+      target: runtime
+    command: ["/opt/penguin/bin/penguin", "server", "--host", "0.0.0.0", "--port", "7364"]
+    env_file:
+      - ../.env
+    environment:
+      PENGUIN_HOME: /penguin-data
+      PENGUIN_UPDATE_CHECK: "off"
+      OPENAI_API_KEY: ${apikey:-}
+      OPENAI_BASE_URL: ${baseurl:-}
+    volumes:
+      - rw-penguin-data:/penguin-data
+    networks: [control, worker-egress]
+    healthcheck:
+      test: ["CMD", "/opt/penguin/node/bin/node", "/opt/penguin-readiness.mjs"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   control:
     build:
       context: .
@@ -106,6 +127,7 @@ services:
 volumes:
   rw-kernel-data:
   rw-runtime-data:
+  rw-penguin-data:
 
 networks:
   control:

@@ -4,7 +4,7 @@
 ```bash
 docker compose up --build -d
 ```
-控制面 `http://127.0.0.1:8095`（projects 卡片页）。服务：control(8095)、worker、runtime(8098)、runner-controller(8096)。启动不创建 workflow，不调用模型。
+控制面 `http://127.0.0.1:8095`（projects 卡片页）。服务：control(8095)、worker、runtime(8098)、runner-controller(8096)、penguin(7364，认证版本 readiness)。启动不创建 workflow，不调用模型。
 ## Pre-alpha
 ```bash
 docker pull ghcr.io/littledrinks/research-world:pre-alpha

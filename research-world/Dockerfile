@@ -1,3 +1,35 @@
+FROM python:3.12-slim AS penguin
+ARG PENGUIN_VERSION=0.2.9
+ARG PENGUIN_SHA256=585f6885be6bbbd7eba5eca7308de4c8c4e0ab4990fb450726bdda50c0d268fe
+RUN test "$PENGUIN_VERSION" = "0.2.9" \
+    && test "$PENGUIN_SHA256" = "585f6885be6bbbd7eba5eca7308de4c8c4e0ab4990fb450726bdda50c0d268fe" \
+    && PENGUIN_VERSION="$PENGUIN_VERSION" PENGUIN_SHA256="$PENGUIN_SHA256" python - <<'PY'
+import hashlib
+import os
+import tarfile
+from pathlib import Path
+from urllib.request import urlopen
+
+expected = os.environ["PENGUIN_SHA256"]
+archive = Path("/tmp/penguin.tar.gz")
+url = "https://github.com/Prism-Shadow/penguin-harness/releases/download/v0.2.9/penguin-linux-x64.tar.gz"
+with urlopen(url) as source, archive.open("wb") as target:
+    while chunk := source.read(1024 * 1024):
+        target.write(chunk)
+actual = hashlib.sha256(archive.read_bytes()).hexdigest()
+if actual != expected:
+    raise SystemExit("Penguin release checksum mismatch")
+with tarfile.open(archive, "r:gz") as bundle:
+    bundle.extract("./payload.tar.gz", "/tmp")
+    bundle.extract("./payload.tar.gz.sha256", "/tmp")
+payload = Path("/tmp/payload.tar.gz")
+payload_expected = Path("/tmp/payload.tar.gz.sha256").read_text().split()[0]
+if hashlib.sha256(payload.read_bytes()).hexdigest() != payload_expected:
+    raise SystemExit("Penguin payload checksum mismatch")
+with tarfile.open(payload, "r:gz") as program:
+    program.extractall("/opt")
+PY
+
 FROM node:22-alpine AS web
 WORKDIR /build/web
 COPY web/package.json web/package-lock.json ./
@@ -19,6 +51,8 @@ COPY agents/ agents/
 COPY pipelines/ pipelines/
 COPY schemas/ schemas/
 COPY --from=web /build/web/dist web/dist
+COPY --from=penguin /opt/penguin /opt/penguin
+COPY penguin-readiness.mjs /opt/penguin-readiness.mjs
 EXPOSE 8095
 CMD ["rw", "serve", "--host", "0.0.0.0", "--port", "8095"]
 
