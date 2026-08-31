@@ -121,13 +121,15 @@ def test_penguin_artifact_pin_is_the_public_linux_x64_release():
     assert "ARG PENGUIN_SHA256" not in dockerfile
 
 
-def test_penguin_entrypoint_generates_a_private_seed_password():
+def test_penguin_entrypoint_keeps_seed_password_process_local():
     entrypoint = PENGUIN_ENTRYPOINT.read_text(encoding="utf-8")
 
-    assert "PENGUIN_SEED_ADMIN_PASSWORD" in entrypoint
+    assert "export PENGUIN_SEED_ADMIN_PASSWORD=" in entrypoint
     assert "secrets.token_urlsafe(32)" in entrypoint
-    assert "umask 077" in entrypoint
     assert 'exec "$@"' in entrypoint
+    assert ".seed-admin-password" not in entrypoint
+    assert "chmod" not in entrypoint
+    assert "cat " not in entrypoint
 
 
 def test_penguin_readiness_is_authenticated_exact_version_and_silent():

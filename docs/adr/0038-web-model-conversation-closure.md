@@ -34,4 +34,4 @@ Runtime 在根 Run 持久记录中保存唯一 `session_id`。相同 Session 与
 自动断线重连使用 SSE `id` 与 `Last-Event-ID`。整页刷新先按稳定 Session 身份从 Kernel 水合对话；未回答 Message 以原 id 重复 Submit，复用原 Turn并重新订阅 Trace，不依赖浏览器保存执行状态，也不再次执行模型。
 ## Penguin
 Compose 管理 Penguin Harness Adapter 的固定 v0.2.9 server 进程、数据根与 readiness。Runtime Adapter 独占 bearer token、Run 到 Penguin Session 映射、Turn 到 Penguin Task 映射及 HTTP/SSE 协议；浏览器和 Kernel 不接触该 server。
-Runtime 独占模型访问配置，Compose 不向 Penguin Server 注入模型凭证或仓库根 `.env`，也不调用其模型、受管 Project、Agent 或 Task API。Runtime Trace、Session、健康响应、异常、日志和 Web 均不包含模型凭证或 Penguin token。成功终态同时要求非空 assistant 文本、根请求完成与随后 Task idle。
+Runtime 独占模型访问配置，Compose 不向 Penguin Server 注入模型凭证或仓库根 `.env`，也不调用其模型、受管 Project、Agent 或 Task API。Delivery entrypoint 每次容器启动生成高熵 `PENGUIN_SEED_ADMIN_PASSWORD`，只通过进程环境传给官方 server，不写入镜像、data root、日志或响应。Runtime Trace、Session、健康响应、异常、日志和 Web 均不包含模型凭证或 Penguin token。成功终态同时要求非空 assistant 文本、根请求完成与随后 Task idle。

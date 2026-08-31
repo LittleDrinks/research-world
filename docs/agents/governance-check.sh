@@ -127,7 +127,7 @@ done
 
 require_text docs/adr/0038-web-model-conversation-closure.md 'status: accepted'
 require_text docs/adr/0038-web-model-conversation-closure.md 'supersedes:'
-for term in '稳定 UUID 幂等键' '唯一 `session_id`' '重复 Submit 返回原 Turn' '未绑定 Session、跨 Session Message 与 Child Run 目标在 Runtime Adapter 启动和 Trace 写入前失败' '非空 `completed` 或 `limit` 回答' 'Last-Event-ID' 'Compose 管理 Penguin Harness Adapter 的固定 v0.2.9 server 进程' 'Runtime 独占模型访问配置' 'Compose 不向 Penguin Server 注入模型凭证或仓库根 `.env`'; do
+for term in '稳定 UUID 幂等键' '唯一 `session_id`' '重复 Submit 返回原 Turn' '未绑定 Session、跨 Session Message 与 Child Run 目标在 Runtime Adapter 启动和 Trace 写入前失败' '非空 `completed` 或 `limit` 回答' 'Last-Event-ID' 'Compose 管理 Penguin Harness Adapter 的固定 v0.2.9 server 进程' 'Runtime 独占模型访问配置' 'Compose 不向 Penguin Server 注入模型凭证或仓库根 `.env`' 'Delivery entrypoint 每次容器启动生成高熵 `PENGUIN_SEED_ADMIN_PASSWORD`'; do
   require_text docs/adr/0038-web-model-conversation-closure.md "$term"
 done
 
