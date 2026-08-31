@@ -1,14 +1,11 @@
 services:
   penguin:
     image: ${RW_IMAGE:-ghcr.io/littledrinks/research-world}:${RW_VERSION:-pre-alpha}
+    entrypoint: ["/usr/local/bin/penguin-entrypoint"]
     command: ["/opt/penguin/bin/penguin", "server", "--host", "0.0.0.0", "--port", "7364"]
-    env_file:
-      - ../.env
     environment:
       PENGUIN_HOME: /penguin-data
       PENGUIN_UPDATE_CHECK: "off"
-      OPENAI_API_KEY: ${apikey:-}
-      OPENAI_BASE_URL: ${baseurl:-}
     volumes:
       - rw-penguin-data:/penguin-data
     networks: [control, worker-egress]

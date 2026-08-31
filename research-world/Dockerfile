@@ -1,18 +1,15 @@
 FROM python:3.12-slim AS penguin
-ARG PENGUIN_VERSION=0.2.9
-ARG PENGUIN_SHA256=585f6885be6bbbd7eba5eca7308de4c8c4e0ab4990fb450726bdda50c0d268fe
-RUN test "$PENGUIN_VERSION" = "0.2.9" \
-    && test "$PENGUIN_SHA256" = "585f6885be6bbbd7eba5eca7308de4c8c4e0ab4990fb450726bdda50c0d268fe" \
-    && PENGUIN_VERSION="$PENGUIN_VERSION" PENGUIN_SHA256="$PENGUIN_SHA256" python - <<'PY'
+RUN python - <<'PY'
 import hashlib
-import os
 import tarfile
 from pathlib import Path
 from urllib.request import urlopen
 
-expected = os.environ["PENGUIN_SHA256"]
+url, expected = (
+    "https://github.com/Prism-Shadow/penguin-harness/releases/download/v0.2.9/penguin-linux-x64.tar.gz",
+    "585f6885be6bbbd7eba5eca7308de4c8c4e0ab4990fb450726bdda50c0d268fe",
+)
 archive = Path("/tmp/penguin.tar.gz")
-url = "https://github.com/Prism-Shadow/penguin-harness/releases/download/v0.2.9/penguin-linux-x64.tar.gz"
 with urlopen(url) as source, archive.open("wb") as target:
     while chunk := source.read(1024 * 1024):
         target.write(chunk)
@@ -53,6 +50,7 @@ COPY schemas/ schemas/
 COPY --from=web /build/web/dist web/dist
 COPY --from=penguin /opt/penguin /opt/penguin
 COPY penguin-readiness.mjs /opt/penguin-readiness.mjs
+COPY --chmod=0755 penguin-entrypoint.sh /usr/local/bin/penguin-entrypoint
 EXPOSE 8095
 CMD ["rw", "serve", "--host", "0.0.0.0", "--port", "8095"]
 

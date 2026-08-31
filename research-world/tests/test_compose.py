@@ -6,6 +6,20 @@ COMPOSE = Path(__file__).parents[1] / "compose.yaml"
 RELEASE_COMPOSE = Path(__file__).parents[1] / "compose.release.yaml"
 DOCKERFILE = Path(__file__).parents[1] / "Dockerfile"
 PENGUIN_READINESS = Path(__file__).parents[1] / "penguin-readiness.mjs"
+PENGUIN_ENTRYPOINT = Path(__file__).parents[1] / "penguin-entrypoint.sh"
+PENGUIN_COMMAND = [
+    "/opt/penguin/bin/penguin",
+    "server",
+    "--host",
+    "0.0.0.0",
+    "--port",
+    "7364",
+]
+PENGUIN_HEALTHCHECK = [
+    "CMD",
+    "/opt/penguin/node/bin/node",
+    "/opt/penguin-readiness.mjs",
+]
 
 
 def compose():
@@ -71,22 +85,22 @@ def test_penguin_service_is_pinned_and_uses_a_private_data_root():
     service = compose()["services"]["penguin"]
 
     assert service["build"] == {"context": ".", "target": "runtime"}
-    assert service["command"] == [
-        "/opt/penguin/bin/penguin",
-        "server",
-        "--host",
-        "0.0.0.0",
-        "--port",
-        "7364",
-    ]
+    assert service["entrypoint"] == ["/usr/local/bin/penguin-entrypoint"]
+    assert service["command"] == PENGUIN_COMMAND
     assert service["environment"]["PENGUIN_HOME"] == "/penguin-data"
     assert service["environment"]["PENGUIN_UPDATE_CHECK"] == "off"
     assert service["volumes"] == ["rw-penguin-data:/penguin-data"]
-    assert service["healthcheck"]["test"] == [
-        "CMD",
-        "/opt/penguin/node/bin/node",
-        "/opt/penguin-readiness.mjs",
-    ]
+    assert service["healthcheck"]["test"] == PENGUIN_HEALTHCHECK
+
+
+def test_penguin_does_not_receive_model_credentials():
+    for value in (compose(), release_compose()):
+        service = value["services"]["penguin"]
+        assert "env_file" not in service
+        assert not {"OPENAI_API_KEY", "OPENAI_BASE_URL"} & set(service.get("environment", {}))
+        assert "PENGUIN_SEED_ADMIN_PASSWORD" not in service.get("environment", {})
+        assert "apikey" not in str(service)
+        assert "baseurl" not in str(service)
 
 
 def test_release_compose_runs_the_pinned_penguin_image():
@@ -94,6 +108,8 @@ def test_release_compose_runs_the_pinned_penguin_image():
 
     assert "build" not in service
     assert service["image"] == "${RW_IMAGE:-ghcr.io/littledrinks/research-world}:${RW_VERSION:-pre-alpha}"
+    assert service["entrypoint"] == ["/usr/local/bin/penguin-entrypoint"]
+    assert service["command"] == PENGUIN_COMMAND
 
 
 def test_penguin_artifact_pin_is_the_public_linux_x64_release():
@@ -101,6 +117,17 @@ def test_penguin_artifact_pin_is_the_public_linux_x64_release():
 
     assert "https://github.com/Prism-Shadow/penguin-harness/releases/download/v0.2.9/penguin-linux-x64.tar.gz" in dockerfile
     assert "585f6885be6bbbd7eba5eca7308de4c8c4e0ab4990fb450726bdda50c0d268fe" in dockerfile
+    assert "ARG PENGUIN_VERSION" not in dockerfile
+    assert "ARG PENGUIN_SHA256" not in dockerfile
+
+
+def test_penguin_entrypoint_generates_a_private_seed_password():
+    entrypoint = PENGUIN_ENTRYPOINT.read_text(encoding="utf-8")
+
+    assert "PENGUIN_SEED_ADMIN_PASSWORD" in entrypoint
+    assert "secrets.token_urlsafe(32)" in entrypoint
+    assert "umask 077" in entrypoint
+    assert 'exec "$@"' in entrypoint
 
 
 def test_penguin_readiness_is_authenticated_exact_version_and_silent():
