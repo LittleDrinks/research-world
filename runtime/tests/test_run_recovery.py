@@ -701,6 +701,21 @@ connection.close()
 '''
 
 
+_CORRUPT_RUNNING_TURN_PROCESS = r'''
+import json, sqlite3, sys
+from pathlib import Path
+
+root, value, corruption = Path(sys.argv[1]), json.loads(sys.argv[2]), json.loads(sys.argv[3])
+connection = sqlite3.connect(root / "runs.sqlite3")
+connection.execute(
+    "UPDATE turns SET result_text = ?, error = ? WHERE id = ?",
+    (corruption.get("result_text"), corruption.get("error"), value["child_turn"]),
+)
+connection.commit()
+connection.close()
+'''
+
+
 _REJECT_CORRUPT_RECOVERY_PROCESS = r'''
 import json, sys
 from pathlib import Path
@@ -1020,6 +1035,17 @@ def test_middle_turn_start_fails_before_fresh_recovery(tmp_path):
     assert all("error" in attempt for attempt in attempts), attempts
     assert all(attempt["error"].startswith("RunStoreError:runtime store") for attempt in attempts)
     assert all("duplicate turn start" in attempt["error"] for attempt in attempts)
+    assert all(attempt["calls"] == [] and attempt["unchanged"] for attempt in attempts)
+    assert attempts[0] == attempts[1]
+
+
+@pytest.mark.parametrize("corruption", [{"result_text": "corrupt"}, {"error": "corrupt"}, {"result_text": "corrupt", "error": "corrupt"}], ids=["result", "error", "both"])
+def test_running_turn_with_terminal_fields_fails_before_fresh_recovery(tmp_path, corruption):
+    created = _output(_run_process(_CRASH_PROCESS, tmp_path))
+    _run_process(_CORRUPT_RUNNING_TURN_PROCESS, tmp_path, json.dumps(created), json.dumps(corruption))
+    attempts = [_output(_run_process(_REJECT_CORRUPT_RECOVERY_PROCESS, tmp_path)) for _ in range(2)]
+    assert all("error" in attempt for attempt in attempts), attempts
+    assert all(attempt["error"].startswith("RunStoreError:runtime store") for attempt in attempts)
     assert all(attempt["calls"] == [] and attempt["unchanged"] for attempt in attempts)
     assert attempts[0] == attempts[1]
 

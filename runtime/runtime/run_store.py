@@ -411,6 +411,8 @@ def _validate_turn(turn_id, turn, runs):
     _validate_result(turn["status"], turn.get("result_text"))
     if turn.get("error") is not None and not isinstance(turn["error"], str):
         raise RunStoreError("runtime store error is invalid")
+    if turn["status"] == "running" and (turn.get("result_text") is not None or turn.get("error") is not None):
+        raise RunStoreError("runtime store running turn carries terminal fields")
 
 
 def _validate_submit_sequences(value):
