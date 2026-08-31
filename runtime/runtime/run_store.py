@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +11,7 @@ class RunStoreError(ValueError):
     pass
 
 
-_FORMAT = {"format": "runtime-run-store", "version": "1"}
+_FORMAT = {"format": "runtime-run-store", "version": "2"}
 _STATUSES = {"running", "completed", "limit", "cancelled", "error"}
 _AGENT_SPEC_FIELDS = ("id", "adapter", "model", "instructions", "thinking", "workspace", "tools", "params")
 _AGENT_TEXT_FIELDS = frozenset(_AGENT_SPEC_FIELDS) - {"tools", "params"}
@@ -20,18 +19,18 @@ _AGENT_PARAMS_FIELDS = frozenset({"mode"})
 _TABLE_COLUMNS = {
     "metadata": ("key", "value"),
     "runs": ("id", "agent_snapshot", "adapter_id", "parent_run_id", "completed_context"),
-    "turns": ("id", "run_id", "message_id", "input", "context", "submit_seq", "status", "result_text", "error"),
+    "turns": ("id", "run_id", "message_id", "input", "context", "submit_seq", "start_pos", "status", "result_text", "error"),
     "delegations": ("child_run_id", "parent_run_id", "parent_turn_id"),
     "message_index": ("run_id", "message_id", "turn_id"),
-    "events": ("turn_id", "seq", "run_id", "type", "time", "data"),
+    "events": ("pos", "turn_id", "seq", "run_id", "type", "time", "data"),
 }
 _SCHEMA = (
     "CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
     "CREATE TABLE runs (id TEXT PRIMARY KEY, agent_snapshot TEXT NOT NULL, adapter_id TEXT NOT NULL, parent_run_id TEXT REFERENCES runs(id), completed_context TEXT NOT NULL)",
-    "CREATE TABLE turns (id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES runs(id), message_id TEXT NOT NULL, input TEXT NOT NULL, context TEXT NOT NULL, submit_seq INTEGER NOT NULL, status TEXT NOT NULL, result_text TEXT, error TEXT, UNIQUE(run_id, message_id), UNIQUE(run_id, submit_seq))",
+    "CREATE TABLE turns (id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES runs(id), message_id TEXT NOT NULL, input TEXT NOT NULL, context TEXT NOT NULL, submit_seq INTEGER NOT NULL, start_pos INTEGER NOT NULL REFERENCES events(pos), status TEXT NOT NULL, result_text TEXT, error TEXT, UNIQUE(run_id, message_id), UNIQUE(run_id, submit_seq))",
     "CREATE TABLE delegations (child_run_id TEXT PRIMARY KEY REFERENCES runs(id), parent_run_id TEXT NOT NULL REFERENCES runs(id), parent_turn_id TEXT NOT NULL REFERENCES turns(id))",
     "CREATE TABLE message_index (run_id TEXT NOT NULL REFERENCES runs(id), message_id TEXT NOT NULL, turn_id TEXT NOT NULL UNIQUE REFERENCES turns(id), PRIMARY KEY(run_id, message_id))",
-    "CREATE TABLE events (turn_id TEXT NOT NULL REFERENCES turns(id), seq INTEGER NOT NULL, run_id TEXT NOT NULL REFERENCES runs(id), type TEXT NOT NULL, time TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY(turn_id, seq))",
+    "CREATE TABLE events (pos INTEGER PRIMARY KEY AUTOINCREMENT, turn_id TEXT NOT NULL REFERENCES turns(id) DEFERRABLE INITIALLY DEFERRED, seq INTEGER NOT NULL, run_id TEXT NOT NULL REFERENCES runs(id), type TEXT NOT NULL, time TEXT NOT NULL, data TEXT NOT NULL, UNIQUE(turn_id, seq))",
 )
 
 
@@ -98,11 +97,11 @@ class _RunStore:
         self._begin()
         try:
             submit_seq = self._next_submit_seq(run_id)
-            self._insert_turn(run_id, turn_id, message_id, payload, context, submit_seq)
+            start_pos = _insert_event(self.connection, start_event)
+            self._insert_turn(run_id, turn_id, message_id, payload, context, submit_seq, start_pos)
             self.connection.execute(
                 "INSERT INTO message_index VALUES (?, ?, ?)", (run_id, message_id, turn_id)
             )
-            _insert_event(self.connection, start_event)
             self.connection.commit()
         except (sqlite3.Error, RunStoreError) as error:
             self.connection.rollback()
@@ -115,12 +114,12 @@ class _RunStore:
             raise RunStoreError(f"runtime store run is missing: {run_id}")
         return (row["value"] if row["value"] is not None else -1) + 1
 
-    def _insert_turn(self, run_id, turn_id, message_id, payload, context, submit_seq):
+    def _insert_turn(self, run_id, turn_id, message_id, payload, context, submit_seq, start_pos):
         _require_id(turn_id, "turn id")
         _require_id(message_id, "message id")
         self.connection.execute(
-            "INSERT INTO turns VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (turn_id, run_id, message_id, _encode(payload, "message"), _encode(context, "context"), submit_seq, "running", None, None),
+            "INSERT INTO turns VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (turn_id, run_id, message_id, _encode(payload, "message"), _encode(context, "context"), submit_seq, start_pos, "running", None, None),
         )
 
     def append_event(self, event):
@@ -185,7 +184,7 @@ class _RunStore:
 
     def read_events(self, turn_id):
         rows = self.connection.execute("SELECT * FROM events WHERE turn_id = ? ORDER BY seq", (turn_id,))
-        return [_event_row(row) for row in rows]
+        return [{key: value for key, value in _event_row(row).items() if key != "pos"} for row in rows]
 
     def snapshot(self):
         try:
@@ -278,10 +277,11 @@ def _transaction(connection):
 
 def _insert_event(connection, event):
     fields = _event_fields(event)
-    connection.execute(
-        "INSERT INTO events VALUES (?, ?, ?, ?, ?, ?)",
+    cursor = connection.execute(
+        "INSERT INTO events (turn_id, seq, run_id, type, time, data) VALUES (?, ?, ?, ?, ?, ?)",
         (*fields[:4], fields[4], _encode(fields[5], "event data")),
     )
+    return cursor.lastrowid
 
 
 def _event_fields(event):
@@ -346,7 +346,7 @@ def _run_row(row):
 
 
 def _turn_row(row):
-    return {"id": row["id"], "run_id": row["run_id"], "message_id": row["message_id"], "input": _decode(row["input"], "message"), "context": _decode(row["context"], "context"), "submit_seq": row["submit_seq"], "status": row["status"], "result_text": row["result_text"], "error": row["error"]}
+    return {"id": row["id"], "run_id": row["run_id"], "message_id": row["message_id"], "input": _decode(row["input"], "message"), "context": _decode(row["context"], "context"), "submit_seq": row["submit_seq"], "start_pos": row["start_pos"], "status": row["status"], "result_text": row["result_text"], "error": row["error"]}
 
 
 def _delegation_row(row):
@@ -354,7 +354,7 @@ def _delegation_row(row):
 
 
 def _event_row(row):
-    return {"run_id": row["run_id"], "turn_id": row["turn_id"], "seq": row["seq"], "type": row["type"], "time": row["time"], "data": _decode(row["data"], "event data")}
+    return {"pos": row["pos"], "run_id": row["run_id"], "turn_id": row["turn_id"], "seq": row["seq"], "type": row["type"], "time": row["time"], "data": _decode(row["data"], "event data")}
 
 
 def _validate_snapshot(value):
@@ -404,6 +404,8 @@ def _validate_turn(turn_id, turn, runs):
     _require_id(turn.get("message_id"), "message id")
     if not isinstance(turn.get("submit_seq"), int) or isinstance(turn["submit_seq"], bool) or turn["submit_seq"] < 0:
         raise RunStoreError("runtime store submit order is invalid")
+    if not isinstance(turn.get("start_pos"), int) or isinstance(turn["start_pos"], bool) or turn["start_pos"] < 1:
+        raise RunStoreError("runtime store turn start position is invalid")
     if turn.get("status") not in _STATUSES:
         raise RunStoreError("runtime store turn state is invalid")
     _validate_context_value(turn.get("context"))
@@ -417,12 +419,16 @@ def _validate_turn(turn_id, turn, runs):
 
 
 def _validate_submit_sequences(value):
-    sequences = {}
+    grouped = {}
     for turn in value["turns"].values():
-        sequences.setdefault(turn["run_id"], []).append(turn["submit_seq"])
-    for values in sequences.values():
-        if sorted(values) != list(range(len(values))):
+        grouped.setdefault(turn["run_id"], []).append(turn)
+    for turns in grouped.values():
+        ordered = sorted(turns, key=lambda turn: turn["submit_seq"])
+        if [turn["submit_seq"] for turn in ordered] != list(range(len(ordered))):
             raise RunStoreError("runtime store submit order is not contiguous")
+        positions = [turn["start_pos"] for turn in ordered]
+        if positions != sorted(positions) or len(set(positions)) != len(positions):
+            raise RunStoreError("runtime store submit order contradicts causal position")
 
 
 def _validate_delegations(value):
@@ -482,8 +488,12 @@ def _validate_event_sequence(turn, events, runs):
         raise RunStoreError("runtime store turn start is missing")
     if any(event["type"] == "turn_start" for event in events[1:]):
         raise RunStoreError("runtime store duplicate turn start")
+    if turn["start_pos"] != events[0]["pos"]:
+        raise RunStoreError("runtime store turn start position is inconsistent")
     for seq, event in enumerate(events):
         _validate_event(event, turn, seq, runs)
+        if seq and event["pos"] <= events[seq - 1]["pos"]:
+            raise RunStoreError("runtime store event order contradicts causal position")
     ends = [event for event in events if event["type"] == "turn_end"]
     if turn["status"] == "running" and ends:
         raise RunStoreError("runtime store running turn is terminal")
@@ -495,6 +505,8 @@ def _validate_event_sequence(turn, events, runs):
 
 
 def _validate_event(event, turn, seq, runs):
+    if not isinstance(event.get("pos"), int) or isinstance(event["pos"], bool) or event["pos"] < 1:
+        raise RunStoreError("runtime store event position is invalid")
     if not isinstance(event.get("seq"), int) or event["seq"] != seq:
         raise RunStoreError("runtime store event sequence is invalid")
     if event["turn_id"] != turn["id"] or event["run_id"] != runs[turn["run_id"]]["id"]:
@@ -599,22 +611,15 @@ def _context_sources(turn, turns):
 
 
 def _validate_context_availability(turn, turns, sources, events):
-    started = _event_time(events[turn["id"]][0])
+    started = events[turn["id"]][0]["pos"]
     for candidate in turns:
         if candidate["submit_seq"] >= turn["submit_seq"] or candidate["status"] not in {"completed", "limit"}:
             continue
-        ended = _event_time(events[candidate["id"]][-1])
+        ended = events[candidate["id"]][-1]["pos"]
         if ended < started and candidate["id"] not in sources:
             raise RunStoreError("runtime store turn context misses an available result")
         if candidate["id"] in sources and ended > started:
             raise RunStoreError("runtime store turn context includes an unavailable result")
-
-
-def _event_time(event):
-    try:
-        return datetime.fromisoformat(event["time"])
-    except ValueError:
-        raise RunStoreError("runtime store event time is invalid") from None
 
 
 def _completed_context(turns):
