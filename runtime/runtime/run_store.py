@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
@@ -11,14 +12,14 @@ class RunStoreError(ValueError):
     pass
 
 
-_FORMAT = {"format": "runtime-run-store", "version": "3"}
+_FORMAT = {"format": "runtime-run-store", "version": "4"}
 _STATUSES = {"running", "completed", "limit", "cancelled", "error"}
 _AGENT_SPEC_FIELDS = ("id", "adapter", "model", "instructions", "thinking", "workspace", "tools", "params")
 _AGENT_TEXT_FIELDS = frozenset(_AGENT_SPEC_FIELDS) - {"tools", "params"}
 _AGENT_PARAMS_FIELDS = frozenset({"mode"})
 _TABLE_COLUMNS = {
     "metadata": ("key", "value"),
-    "runs": ("id", "session_id", "agent_snapshot", "adapter_id", "parent_run_id", "completed_context"),
+    "runs": ("id", "session_id", "agent_snapshot", "adapter_id", "native_identity", "parent_run_id", "completed_context"),
     "turns": ("id", "run_id", "message_id", "input", "context", "submit_seq", "start_pos", "status", "result_text", "error"),
     "delegations": ("child_run_id", "parent_run_id", "parent_turn_id"),
     "message_index": ("run_id", "message_id", "turn_id"),
@@ -26,7 +27,7 @@ _TABLE_COLUMNS = {
 }
 _SCHEMA = (
     "CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
-    "CREATE TABLE runs (id TEXT PRIMARY KEY, session_id TEXT UNIQUE, agent_snapshot TEXT NOT NULL, adapter_id TEXT NOT NULL, parent_run_id TEXT REFERENCES runs(id), completed_context TEXT NOT NULL)",
+    "CREATE TABLE runs (id TEXT PRIMARY KEY, session_id TEXT UNIQUE, agent_snapshot TEXT NOT NULL, adapter_id TEXT NOT NULL, native_identity TEXT NOT NULL, parent_run_id TEXT REFERENCES runs(id), completed_context TEXT NOT NULL)",
     "CREATE TABLE turns (id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES runs(id), message_id TEXT NOT NULL, input TEXT NOT NULL, context TEXT NOT NULL, submit_seq INTEGER NOT NULL, start_pos INTEGER NOT NULL REFERENCES events(pos), status TEXT NOT NULL, result_text TEXT, error TEXT, UNIQUE(run_id, message_id), UNIQUE(run_id, submit_seq))",
     "CREATE TABLE delegations (child_run_id TEXT PRIMARY KEY REFERENCES runs(id), parent_run_id TEXT NOT NULL REFERENCES runs(id), parent_turn_id TEXT NOT NULL REFERENCES turns(id))",
     "CREATE TABLE message_index (run_id TEXT NOT NULL REFERENCES runs(id), message_id TEXT NOT NULL, turn_id TEXT NOT NULL UNIQUE REFERENCES turns(id), PRIMARY KEY(run_id, message_id))",
@@ -84,9 +85,37 @@ class _RunStore:
         if session_id is not None:
             _require_id(session_id, "session id")
         self.connection.execute(
-            "INSERT INTO runs VALUES (?, ?, ?, ?, ?, ?)",
-            (run_id, session_id, _encode(snapshot, "agent snapshot"), adapter_id, parent_run_id, _encode([], "context")),
+            "INSERT INTO runs VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (run_id, session_id, _encode(snapshot, "agent snapshot"), adapter_id, _encode(None, "native identity"), parent_run_id, _encode([], "context")),
         )
+
+    def bind_native_identity(self, run_id, adapter_id, identity):
+        _require_id(run_id, "run id")
+        _require_id(adapter_id, "adapter id")
+        _validate_native_identity(identity)
+        try:
+            with _transaction(self.connection):
+                current = self._native_identity_for(run_id, adapter_id)
+                if current is not None:
+                    if not _native_identity_equal(current["value"], identity):
+                        raise RunStoreError("runtime store native identity conflicts")
+                    return
+                self.connection.execute(
+                    "UPDATE runs SET native_identity = ? WHERE id = ?",
+                    (_encode(_native_identity_binding(adapter_id, identity), "native identity"), run_id),
+                )
+        except (sqlite3.Error, RunStoreError) as error:
+            raise _store_error(error, "native identity") from error
+
+    def _native_identity_for(self, run_id, adapter_id):
+        row = self.connection.execute("SELECT adapter_id, native_identity FROM runs WHERE id = ?", (run_id,)).fetchone()
+        if row is None:
+            raise RunStoreError(f"runtime store run is missing: {run_id}")
+        if row["adapter_id"] != adapter_id:
+            raise RunStoreError("runtime store native identity ownership is inconsistent")
+        value = _decode(row["native_identity"], "native identity")
+        _validate_native_identity_binding(value, adapter_id)
+        return value
 
     def _insert_delegation(self, child_run_id, parent_run_id, parent_turn_id):
         row = self.connection.execute("SELECT run_id FROM turns WHERE id = ?", (parent_turn_id,)).fetchone()
@@ -363,7 +392,15 @@ def _event_rows(connection):
 
 
 def _run_row(row):
-    return {"id": row["id"], "session_id": row["session_id"], "agent_snapshot": _decode(row["agent_snapshot"], "agent snapshot"), "adapter_id": row["adapter_id"], "parent_run_id": row["parent_run_id"], "context": _decode(row["completed_context"], "context")}
+    return {
+        "id": row["id"],
+        "session_id": row["session_id"],
+        "agent_snapshot": _decode(row["agent_snapshot"], "agent snapshot"),
+        "adapter_id": row["adapter_id"],
+        "native_identity": _decode(row["native_identity"], "native identity"),
+        "parent_run_id": row["parent_run_id"],
+        "context": _decode(row["completed_context"], "context"),
+    }
 
 
 def _turn_row(row):
@@ -418,6 +455,7 @@ def _validate_run(run_id, run, runs):
     if not isinstance(run.get("agent_snapshot"), dict) or run["agent_snapshot"].get("adapter") != run.get("adapter_id"):
         raise RunStoreError("runtime store adapter binding is invalid")
     _validate_snapshot_fields(run["agent_snapshot"])
+    _validate_native_identity_binding(run.get("native_identity"), run["adapter_id"])
     if run.get("session_id") is not None:
         _require_id(run["session_id"], "session id")
     parent_id = run.get("parent_run_id")
@@ -714,6 +752,56 @@ def _validate_snapshot_fields(value):
         raise RunStoreError("runtime store agent snapshot contains invalid params")
     if "mode" in params and not isinstance(params["mode"], str):
         raise RunStoreError("runtime store agent snapshot contains invalid params")
+
+
+def _validate_native_identity_binding(value, adapter_id):
+    if value is None:
+        return
+    if not isinstance(value, dict) or set(value) != {"adapter_id", "value"}:
+        raise RunStoreError("runtime store native identity is malformed")
+    if value["adapter_id"] != adapter_id:
+        raise RunStoreError("runtime store native identity ownership is inconsistent")
+    _validate_native_identity(value["value"])
+
+
+def _validate_native_identity(value):
+    if value is None or value in ("", [], {}):
+        raise RunStoreError("runtime store native identity is invalid")
+    _validate_native_value(value)
+
+
+def _validate_native_value(value):
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if not isinstance(key, str) or _forbidden_native_key(key):
+                raise RunStoreError("runtime store native identity contains credentials")
+            _validate_native_value(item)
+    elif isinstance(value, list):
+        for item in value:
+            _validate_native_value(item)
+    elif value is None or isinstance(value, (str, int, bool)):
+        return
+    elif isinstance(value, float) and math.isfinite(value):
+        return
+    else:
+        raise RunStoreError("runtime store native identity is not JSON")
+
+
+def _forbidden_native_key(key):
+    normalized = "".join(character for character in key.lower() if character.isalnum())
+    return normalized in {"apikey", "authorization", "password", "credential", "credentials", "secret", "secrets", "token", "tokens", "cookie", "cookies"} or normalized.endswith(("apikey", "accesstoken", "authtoken", "bearertoken", "password", "secret", "credential", "token"))
+
+
+def _native_identity_binding(adapter_id, identity):
+    return {"adapter_id": adapter_id, "value": identity}
+
+
+def _native_identity_equal(left, right):
+    return _native_identity_json(left) == _native_identity_json(right)
+
+
+def _native_identity_json(value):
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
 def _put_unique(mapping, key, value, label):

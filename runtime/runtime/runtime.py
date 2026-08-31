@@ -33,6 +33,7 @@ class _Run:
     tools: RuntimeTools
     context: list[dict[str, Any]] = field(default_factory=list)
     turns: dict[str, _Turn] = field(default_factory=dict)
+    native_identity: Any = None
 
 
 @dataclass
@@ -90,7 +91,7 @@ class Runtime:
         adapter = self._adapters.get(row["adapter_id"])
         if adapter is None:
             raise ValueError(f"runtime adapter is unavailable: {row['adapter_id']}")
-        run = _Run(row["id"], row["agent_snapshot"], adapter, row["parent_run_id"], row["session_id"], RuntimeTools(self._kernel, row["agent_snapshot"].get("tools", ())), row["context"])
+        run = _Run(row["id"], row["agent_snapshot"], adapter, row["parent_run_id"], row["session_id"], RuntimeTools(self._kernel, row["agent_snapshot"].get("tools", ())), row["context"], native_identity=_native_identity_value(row["native_identity"]))
         self._remember_run(run)
 
     def _restore_delegations(self, delegations):
@@ -99,7 +100,7 @@ class Runtime:
 
     def _restore_turn(self, row):
         run = self._require_run(row["run_id"])
-        request = _TurnRequest(row["run_id"], row["id"], row["message_id"], row["input"], tuple(row["context"]), deepcopy(run.agent_snapshot), run.tools)
+        request = _TurnRequest(row["run_id"], row["id"], row["message_id"], row["input"], tuple(row["context"]), deepcopy(run.agent_snapshot), run.tools, deepcopy(run.native_identity), self._native_identity_binder(run))
         turn = _Turn(request, run.adapter, submit_seq=row["submit_seq"], status=row["status"], result_text=row["result_text"])
         if turn.status != "running":
             turn.adapter_finished = True
@@ -180,6 +181,22 @@ class Runtime:
         self._runs[run.id] = run
         self._remember_session(run)
 
+    def _native_identity_binder(self, run):
+        adapter = run.adapter
+
+        async def bind(identity):
+            return await self._bind_native_identity(run, adapter, identity)
+
+        return bind
+
+    async def _bind_native_identity(self, run, adapter, identity):
+        async with self._registry_lock:
+            if run.adapter is not adapter:
+                raise ValueError("native identity ownership is inconsistent")
+            self._store.bind_native_identity(run.id, adapter.adapter_id, identity)
+            run.native_identity = deepcopy(identity)
+            return deepcopy(identity)
+
     async def submit(
         self,
         run_id: str,
@@ -196,7 +213,7 @@ class Runtime:
             return existing
         self._require_child_submit(run)
         turn_id = f"t-{uuid.uuid4().hex}"
-        request = _request(run, turn_id, message_id, payload)
+        request = _request(run, turn_id, message_id, payload, self._native_identity_binder(run))
         turn = _Turn(request, run.adapter)
         turn.submit_seq = self._trace.create_turn(run.id, turn_id, message_id, payload, request.context)
         run.turns[message_id] = turn
@@ -315,6 +332,8 @@ class Runtime:
             raise RuntimeError(f"adapter cannot emit runtime-owned event: {event_type}")
         async with self._registry_lock:
             if turn.status == "running":
+                identity = self._runs[turn.request.run_id].native_identity
+                data = _redact_native_identity(data, identity)
                 self._trace.append(
                     turn.request.turn_id, event_type, data, turn.request.run_id
                 )
@@ -357,6 +376,9 @@ class Runtime:
         status = _status(status)
         if turn.cancel_requested and not force and status != "error":
             return
+        identity = self._runs[turn.request.run_id].native_identity
+        result_text = _redact_native_identity(result_text, identity)
+        error = _redact_native_identity(error, identity)
         context = self._context_after(turn, status, result_text)
         self._trace.finish(
             turn.request.run_id,
@@ -587,7 +609,45 @@ def _message(message: Mapping[str, Any]):
     return message_id, deepcopy(message["content"])
 
 
-def _request(run, turn_id, message_id, payload):
+def _native_identity_value(value):
+    return None if value is None else deepcopy(value["value"])
+
+
+def _redact_native_identity(value, identity):
+    if identity is None:
+        return value
+    parts = _native_identity_parts(identity)
+    parts.append(json.dumps(identity, ensure_ascii=False, separators=(",", ":")))
+    return _redact_native_value(value, parts)
+
+
+def _native_identity_parts(value):
+    if isinstance(value, dict):
+        return sum((_native_identity_parts(item) for item in value.values()), [])
+    if isinstance(value, list):
+        return sum((_native_identity_parts(item) for item in value), [])
+    return [value] if value not in (None, "") else []
+
+
+def _redact_native_value(value, needles):
+    if isinstance(value, dict):
+        return {
+            _redact_native_value(key, needles): _redact_native_value(item, needles)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_redact_native_value(item, needles) for item in value]
+    if isinstance(value, str):
+        for needle in needles:
+            if isinstance(needle, str):
+                value = value.replace(needle, "<redacted>")
+        return value
+    if any(type(value) is type(needle) and value == needle for needle in needles):
+        return "<redacted>"
+    return value
+
+
+def _request(run, turn_id, message_id, payload, bind_native_identity):
     return _TurnRequest(
         run.id,
         turn_id,
@@ -596,6 +656,8 @@ def _request(run, turn_id, message_id, payload):
         tuple(deepcopy(run.context)),
         deepcopy(run.agent_snapshot),
         run.tools,
+        deepcopy(run.native_identity),
+        bind_native_identity,
     )
 
 

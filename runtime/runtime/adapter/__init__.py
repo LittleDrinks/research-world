@@ -30,6 +30,8 @@ class TurnRequest:
     context: tuple[dict[str, Any], ...]
     agent_snapshot: dict[str, Any]
     tools: Any
+    native_identity: Any
+    bind_native_identity: Callable[[Any], Awaitable[Any]]
 
 
 @dataclass(frozen=True)
