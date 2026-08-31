@@ -198,7 +198,11 @@ class Runtime:
         turn_id = f"t-{uuid.uuid4().hex}"
         request = _request(run, turn_id, message_id, payload)
         turn = _Turn(request, run.adapter)
-        turn.submit_seq = self._trace.create_turn(run.id, turn_id, message_id, payload, request.context)
+        stored = self._trace.create_turn(run.id, turn_id, message_id, payload, request.context, run.session_id)
+        if "existing" in stored:
+            self._restore_turn(stored["existing"])
+            return run.turns[message_id]
+        turn.submit_seq = stored["submit_seq"]
         run.turns[message_id] = turn
         self._turns[turn_id] = turn
         self._track_child_turn(run, turn)
