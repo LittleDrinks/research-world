@@ -17,7 +17,7 @@ from .adapter import (
 )
 from .runtime_tools import KernelInterface, RuntimeTools
 from .run_store import _AGENT_PARAMS_FIELDS, _AGENT_SPEC_FIELDS, _AGENT_TEXT_FIELDS, _RunStore
-from .trace import TraceLedger
+from .trace import TraceLedger, redact_trace_values
 
 
 _RUNTIME_EVENT_TYPES = {"turn_start", "turn_end", "child_result"}
@@ -52,6 +52,8 @@ class _Turn:
     accepting_children: bool = True
     waiting_for_children: bool = False
     child_turn_ids: set[str] = field(default_factory=set)
+    pending_events: list[tuple[str, dict[str, Any]]] = field(default_factory=list)
+    native_identity_rejected: bool = False
     terminal_event: asyncio.Event = field(default_factory=asyncio.Event)
     cancel_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
@@ -100,7 +102,7 @@ class Runtime:
 
     def _restore_turn(self, row):
         run = self._require_run(row["run_id"])
-        request = _TurnRequest(row["run_id"], row["id"], row["message_id"], row["input"], tuple(row["context"]), deepcopy(run.agent_snapshot), run.tools, deepcopy(run.native_identity), self._native_identity_binder(run))
+        request = _TurnRequest(row["run_id"], row["id"], row["message_id"], row["input"], tuple(row["context"]), deepcopy(run.agent_snapshot), run.tools, deepcopy(run.native_identity), self._native_identity_binder(run, row["id"]))
         turn = _Turn(request, run.adapter, submit_seq=row["submit_seq"], status=row["status"], result_text=row["result_text"])
         if turn.status != "running":
             turn.adapter_finished = True
@@ -181,20 +183,29 @@ class Runtime:
         self._runs[run.id] = run
         self._remember_session(run)
 
-    def _native_identity_binder(self, run):
+    def _native_identity_binder(self, run, turn_id):
         adapter = run.adapter
 
         async def bind(identity):
-            return await self._bind_native_identity(run, adapter, identity)
+            turn = self._turns.get(turn_id)
+            return await self._bind_native_identity(run, adapter, identity, turn)
 
         return bind
 
-    async def _bind_native_identity(self, run, adapter, identity):
+    async def _bind_native_identity(self, run, adapter, identity, turn):
         async with self._registry_lock:
             if run.adapter is not adapter:
                 raise ValueError("native identity ownership is inconsistent")
-            self._store.bind_native_identity(run.id, adapter.adapter_id, identity)
-            run.native_identity = deepcopy(identity)
+            try:
+                self._store.bind_native_identity(run.id, adapter.adapter_id, identity)
+            except ValueError:
+                if turn is not None:
+                    turn.native_identity_rejected = True
+                raise
+            _update_native_identity(run, identity)
+            if turn is not None:
+                turn.native_identity_rejected = False
+                self._flush_turn_events(turn)
             return deepcopy(identity)
 
     async def submit(
@@ -213,7 +224,7 @@ class Runtime:
             return existing
         self._require_child_submit(run)
         turn_id = f"t-{uuid.uuid4().hex}"
-        request = _request(run, turn_id, message_id, payload, self._native_identity_binder(run))
+        request = _request(run, turn_id, message_id, payload, self._native_identity_binder(run, turn_id))
         turn = _Turn(request, run.adapter)
         turn.submit_seq = self._trace.create_turn(run.id, turn_id, message_id, payload, request.context)
         run.turns[message_id] = turn
@@ -311,6 +322,7 @@ class Runtime:
     async def _mark_adapter_finished(self, turn: _Turn) -> None:
         async with self._registry_lock:
             turn.adapter_finished = True
+            self._flush_turn_events(turn)
 
     async def _handle_cancelled(
         self, turn: _Turn, error: asyncio.CancelledError
@@ -332,11 +344,15 @@ class Runtime:
             raise RuntimeError(f"adapter cannot emit runtime-owned event: {event_type}")
         async with self._registry_lock:
             if turn.status == "running":
-                identity = self._runs[turn.request.run_id].native_identity
-                data = _redact_native_identity(data, identity)
-                self._trace.append(
-                    turn.request.turn_id, event_type, data, turn.request.run_id
-                )
+                run = self._runs[turn.request.run_id]
+                if run.native_identity is None:
+                    turn.pending_events.append((event_type, data))
+                else:
+                    self._append_event(turn, event_type, data, run.native_identity)
+
+    def _append_event(self, turn, event_type, data, identity):
+        data = _redact_native_identity(data, identity)
+        self._trace.append(turn.request.turn_id, event_type, data, turn.request.run_id)
 
     async def _finish(
         self, turn, status, result_text, error=None, *, force=False
@@ -376,7 +392,7 @@ class Runtime:
         status = _status(status)
         if turn.cancel_requested and not force and status != "error":
             return
-        identity = self._runs[turn.request.run_id].native_identity
+        identity = self._flush_turn_events(turn)
         result_text = _redact_native_identity(result_text, identity)
         error = _redact_native_identity(error, identity)
         context = self._context_after(turn, status, result_text)
@@ -388,6 +404,14 @@ class Runtime:
             self._parent_result(turn, status, result_text, error),
         )
         self._apply_finish(turn, status, result_text, context)
+
+    def _flush_turn_events(self, turn):
+        identity = self._runs[turn.request.run_id].native_identity
+        if turn.native_identity_rejected:
+            turn.pending_events.clear()
+        else:
+            _flush_pending_events(turn, identity, self._append_event)
+        return identity
 
     def _apply_finish(self, turn, status, result_text, context):
         turn.status, turn.result_text = status, result_text
@@ -613,38 +637,22 @@ def _native_identity_value(value):
     return None if value is None else deepcopy(value["value"])
 
 
+def _update_native_identity(run, identity):
+    run.native_identity = deepcopy(identity)
+    for turn in run.turns.values():
+        turn.request.native_identity = deepcopy(identity)
+
+
+def _flush_pending_events(turn, identity, append):
+    pending, turn.pending_events = turn.pending_events, []
+    for event_type, data in pending:
+        append(turn, event_type, data, identity)
+
+
 def _redact_native_identity(value, identity):
     if identity is None:
         return value
-    parts = _native_identity_parts(identity)
-    parts.append(json.dumps(identity, ensure_ascii=False, separators=(",", ":")))
-    return _redact_native_value(value, parts)
-
-
-def _native_identity_parts(value):
-    if isinstance(value, dict):
-        return sum((_native_identity_parts(item) for item in value.values()), [])
-    if isinstance(value, list):
-        return sum((_native_identity_parts(item) for item in value), [])
-    return [value] if value not in (None, "") else []
-
-
-def _redact_native_value(value, needles):
-    if isinstance(value, dict):
-        return {
-            _redact_native_value(key, needles): _redact_native_value(item, needles)
-            for key, item in value.items()
-        }
-    if isinstance(value, list):
-        return [_redact_native_value(item, needles) for item in value]
-    if isinstance(value, str):
-        for needle in needles:
-            if isinstance(needle, str):
-                value = value.replace(needle, "<redacted>")
-        return value
-    if any(type(value) is type(needle) and value == needle for needle in needles):
-        return "<redacted>"
-    return value
+    return redact_trace_values(value, tuple(identity.values()), (identity,))
 
 
 def _request(run, turn_id, message_id, payload, bind_native_identity):

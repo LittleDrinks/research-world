@@ -21,7 +21,7 @@ class RuntimeAdapter(Protocol):
     async def cancel(self, handle: Any, request: TurnRequest) -> Any: ...
 
 
-@dataclass(frozen=True)
+@dataclass
 class TurnRequest:
     run_id: str
     turn_id: str

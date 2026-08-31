@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import math
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
@@ -13,6 +12,7 @@ class RunStoreError(ValueError):
 
 
 _FORMAT = {"format": "runtime-run-store", "version": "4"}
+_NATIVE_IDENTITY_FIELDS = frozenset({"session_id"})
 _STATUSES = {"running", "completed", "limit", "cancelled", "error"}
 _AGENT_SPEC_FIELDS = ("id", "adapter", "model", "instructions", "thinking", "workspace", "tools", "params")
 _AGENT_TEXT_FIELDS = frozenset(_AGENT_SPEC_FIELDS) - {"tools", "params"}
@@ -97,7 +97,7 @@ class _RunStore:
             with _transaction(self.connection):
                 current = self._native_identity_for(run_id, adapter_id)
                 if current is not None:
-                    if not _native_identity_equal(current["value"], identity):
+                    if current["value"] != identity:
                         raise RunStoreError("runtime store native identity conflicts")
                     return
                 self.connection.execute(
@@ -765,43 +765,14 @@ def _validate_native_identity_binding(value, adapter_id):
 
 
 def _validate_native_identity(value):
-    if value is None or value in ("", [], {}):
-        raise RunStoreError("runtime store native identity is invalid")
-    _validate_native_value(value)
-
-
-def _validate_native_value(value):
-    if isinstance(value, dict):
-        for key, item in value.items():
-            if not isinstance(key, str) or _forbidden_native_key(key):
-                raise RunStoreError("runtime store native identity contains credentials")
-            _validate_native_value(item)
-    elif isinstance(value, list):
-        for item in value:
-            _validate_native_value(item)
-    elif value is None or isinstance(value, (str, int, bool)):
-        return
-    elif isinstance(value, float) and math.isfinite(value):
-        return
-    else:
-        raise RunStoreError("runtime store native identity is not JSON")
-
-
-def _forbidden_native_key(key):
-    normalized = "".join(character for character in key.lower() if character.isalnum())
-    return normalized in {"apikey", "authorization", "password", "credential", "credentials", "secret", "secrets", "token", "tokens", "cookie", "cookies"} or normalized.endswith(("apikey", "accesstoken", "authtoken", "bearertoken", "password", "secret", "credential", "token"))
+    if not isinstance(value, dict) or set(value) != _NATIVE_IDENTITY_FIELDS:
+        raise RunStoreError("runtime store native identity has unsupported shape")
+    if not isinstance(value["session_id"], str) or not value["session_id"]:
+        raise RunStoreError("runtime store native identity session_id is invalid")
 
 
 def _native_identity_binding(adapter_id, identity):
     return {"adapter_id": adapter_id, "value": identity}
-
-
-def _native_identity_equal(left, right):
-    return _native_identity_json(left) == _native_identity_json(right)
-
-
-def _native_identity_json(value):
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
 def _put_unique(mapping, key, value, label):
