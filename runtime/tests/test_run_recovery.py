@@ -1299,3 +1299,240 @@ except Exception as error:
 """
     result = _run_process(script, tmp_path)
     assert result.stdout.strip() == "RunStoreError:runtime store is missing or incomplete"
+
+
+_DELETE_MIDDLE_EVENT_PROCESS = r'''
+import sqlite3, sys
+from pathlib import Path
+
+connection = sqlite3.connect(Path(sys.argv[1]) / "runs.sqlite3")
+connection.execute("DELETE FROM events WHERE turn_id = ? AND type = 'delta'", (sys.argv[2],))
+connection.execute("UPDATE events SET seq = 1 WHERE turn_id = ? AND type = 'turn_end'", (sys.argv[2],))
+connection.commit()
+connection.close()
+'''
+
+
+_DELETE_LAST_EVENT_PROCESS = r'''
+import json, sqlite3, sys
+from pathlib import Path
+
+connection = sqlite3.connect(Path(sys.argv[1]) / "runs.sqlite3")
+turn_id = sys.argv[2]
+run_id, = connection.execute("SELECT run_id FROM turns WHERE id = ?", (turn_id,)).fetchone()
+context = json.dumps([{"role": "user", "message_id": "m1", "content": "one"}, {"role": "assistant", "content": "answer:one"}])
+connection.execute("DELETE FROM events WHERE turn_id = ? AND type = 'turn_end'", (turn_id,))
+connection.execute("UPDATE turns SET status = 'running', result_text = NULL WHERE id = ?", (turn_id,))
+connection.execute("UPDATE runs SET completed_context = ? WHERE id = ?", (context, run_id))
+connection.commit()
+connection.close()
+'''
+
+
+_DROP_EVENT_SEQUENCE_PROCESS = r'''
+import sqlite3, sys
+from pathlib import Path
+
+connection = sqlite3.connect(Path(sys.argv[1]) / "runs.sqlite3")
+connection.execute("DELETE FROM sqlite_sequence WHERE name = 'events'")
+connection.commit()
+connection.close()
+'''
+
+
+_SKEW_EVENT_SEQUENCE_PROCESS = r'''
+import sqlite3, sys
+from pathlib import Path
+
+connection = sqlite3.connect(Path(sys.argv[1]) / "runs.sqlite3")
+connection.execute("UPDATE sqlite_sequence SET seq = seq - 1 WHERE name = 'events'")
+connection.commit()
+connection.close()
+'''
+
+
+_LAUNCH_ONLY_PROCESS = r'''
+import asyncio, sys
+from pathlib import Path
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    async def start(self, request): return object()
+    async def submit(self, handle, request, emit): return None
+    async def cancel(self, handle, request): return None
+
+async def main():
+    runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
+    run = await runtime.launch({"id": "main", "adapter": "fake"})
+    print(run["id"])
+
+asyncio.run(main())
+'''
+
+
+_RACE_SEED_PROCESS = r'''
+import asyncio, json, os, sys
+from pathlib import Path
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    async def start(self, request): return object()
+    async def submit(self, handle, request, emit): await asyncio.Event().wait()
+    async def cancel(self, handle, request): return None
+
+async def main():
+    runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
+    run = await runtime.launch({"id": "main", "adapter": "fake"})
+    turn = await runtime.submit(run["id"], {"id": "m1", "content": "one"})
+    await asyncio.sleep(0.1)
+    print(json.dumps({"run_id": run["id"], "turn_id": turn["id"]}), flush=True)
+    os._exit(0)
+
+asyncio.run(main())
+'''
+
+
+_RACE_WRITER_PROCESS = r'''
+import json, sys
+from pathlib import Path
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    def __init__(self): self.calls = []
+    async def start(self, request): self.calls.append("start")
+    async def submit(self, handle, request, emit): self.calls.append("submit")
+    async def cancel(self, handle, request): self.calls.append("cancel")
+
+adapter = Adapter()
+try:
+    Runtime(Path(sys.argv[1]), {"fake": adapter})
+except Exception as error:
+    print(json.dumps({"constructed": False, "error": type(error).__name__ + ":" + str(error), "calls": adapter.calls}))
+else:
+    print(json.dumps({"constructed": True, "calls": adapter.calls}))
+'''
+
+
+_RACE_READER_PROCESS = r'''
+import json, subprocess, sys, time
+from pathlib import Path
+import runtime.run_store as store_module
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    def __init__(self): self.calls = []
+    async def start(self, request): self.calls.append("start")
+    async def submit(self, handle, request, emit): self.calls.append("submit")
+    async def cancel(self, handle, request): self.calls.append("cancel")
+
+root = Path(sys.argv[1])
+journal = root / "runs.sqlite3-journal"
+writer_source = Path(sys.argv[2]).read_text()
+writer = None
+original = store_module._rows
+
+def probed(connection, query, decoder):
+    global writer
+    rows = original(connection, query, decoder)
+    if writer is None and "FROM turns" in query:
+        writer = subprocess.Popen([sys.executable, "-c", writer_source, str(root)], stdout=subprocess.PIPE, text=True)
+        while not journal.exists() and writer.poll() is None:
+            time.sleep(0.001)
+        try:
+            writer.wait(timeout=1)
+        except subprocess.TimeoutExpired:
+            pass
+    return rows
+
+store_module._rows = probed
+adapter = Adapter()
+try:
+    Runtime(root, {"fake": adapter})
+except Exception as error:
+    outcome = {"constructed": False, "error": type(error).__name__ + ":" + str(error)}
+else:
+    outcome = {"constructed": True}
+out, _ = writer.communicate()
+print(json.dumps({"reader": outcome, "reader_calls": adapter.calls, "writer": json.loads(out)}))
+'''
+
+
+_RACE_REPLAY_PROCESS = r'''
+import asyncio, json, sys
+from pathlib import Path
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    async def start(self, request): return object()
+    async def submit(self, handle, request, emit): return None
+    async def cancel(self, handle, request): return None
+
+async def main():
+    runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
+    events = [event async for event in runtime.subscribe(sys.argv[2])]
+    print(json.dumps([{"seq": event["seq"], "type": event["type"], "data": event["data"]} for event in events]))
+
+asyncio.run(main())
+'''
+
+
+def _assert_rejected_twice(tmp_path):
+    attempts = [_output(_run_process(_REJECT_CORRUPT_RECOVERY_PROCESS, tmp_path)) for _ in range(2)]
+    assert all("error" in attempt for attempt in attempts), attempts
+    assert all(attempt["error"].startswith("RunStoreError:runtime store") for attempt in attempts)
+    assert all(attempt["calls"] == [] and attempt["unchanged"] for attempt in attempts)
+    assert attempts[0] == attempts[1]
+
+
+def test_deleted_middle_event_fails_on_repeated_fresh_construction(tmp_path):
+    created = _output(_run_process(_COMPLETED_PROCESS, tmp_path))
+    _run_process(_DELETE_MIDDLE_EVENT_PROCESS, tmp_path, created["turn_id"])
+    _assert_rejected_twice(tmp_path)
+
+
+def test_deleted_last_event_fails_on_repeated_fresh_construction(tmp_path):
+    created = _output(_run_process(_COMPLETED_PROCESS, tmp_path))
+    _run_process(_DELETE_LAST_EVENT_PROCESS, tmp_path, created["turn_id"])
+    _assert_rejected_twice(tmp_path)
+
+
+def test_missing_event_sequence_metadata_fails_on_fresh_construction(tmp_path):
+    _run_process(_COMPLETED_PROCESS, tmp_path)
+    _run_process(_DROP_EVENT_SEQUENCE_PROCESS, tmp_path)
+    _assert_rejected_twice(tmp_path)
+
+
+def test_corrupt_event_sequence_metadata_fails_on_fresh_construction(tmp_path):
+    _run_process(_COMPLETED_PROCESS, tmp_path)
+    _run_process(_SKEW_EVENT_SEQUENCE_PROCESS, tmp_path)
+    _assert_rejected_twice(tmp_path)
+
+
+def test_launch_only_history_recovers_in_a_fresh_interpreter(tmp_path):
+    run_id = _run_process(_LAUNCH_ONLY_PROCESS, tmp_path).stdout.strip()
+    result = _run_process(_RECOVER_CONTEXT_PROCESS, tmp_path, run_id)
+    assert json.loads(result.stdout) == []
+
+
+def test_concurrent_constructors_never_observe_a_mixed_snapshot(tmp_path):
+    created = _output(_run_process(_RACE_SEED_PROCESS, tmp_path))
+    writer = tmp_path / "writer.py"
+    writer.write_text(_RACE_WRITER_PROCESS)
+    raced = _output(_run_process(_RACE_READER_PROCESS, tmp_path, str(writer)))
+    assert raced["reader"] == {"constructed": True}, raced
+    assert raced["reader_calls"] == [] and raced["writer"] == {"constructed": True, "calls": []}, raced
+    replay = _output(_run_process(_RACE_REPLAY_PROCESS, tmp_path, created["turn_id"]))
+    assert replay == [
+        {"seq": 0, "type": "turn_start", "data": {"message_id": "m1", "input": "one"}},
+        {"seq": 1, "type": "turn_end", "data": {"status": "error", "result_text": None, "error": "runtime restarted before turn completion"}},
+    ]
