@@ -23,6 +23,7 @@ _TABLE_COLUMNS = {
     "turns": ("id", "run_id", "message_id", "input", "context", "submit_seq", "start_pos", "status", "result_text", "error"),
     "delegations": ("child_run_id", "parent_run_id", "parent_turn_id"),
     "message_index": ("run_id", "message_id", "turn_id"),
+    "message_owners": ("message_id", "session_id", "run_id"),
     "events": ("pos", "turn_id", "seq", "run_id", "type", "time", "data"),
 }
 _SCHEMA = (
@@ -31,6 +32,7 @@ _SCHEMA = (
     "CREATE TABLE turns (id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES runs(id), message_id TEXT NOT NULL, input TEXT NOT NULL, context TEXT NOT NULL, submit_seq INTEGER NOT NULL, start_pos INTEGER NOT NULL REFERENCES events(pos), status TEXT NOT NULL, result_text TEXT, error TEXT, UNIQUE(run_id, message_id), UNIQUE(run_id, submit_seq))",
     "CREATE TABLE delegations (child_run_id TEXT PRIMARY KEY REFERENCES runs(id), parent_run_id TEXT NOT NULL REFERENCES runs(id), parent_turn_id TEXT NOT NULL REFERENCES turns(id))",
     "CREATE TABLE message_index (run_id TEXT NOT NULL REFERENCES runs(id), message_id TEXT NOT NULL, turn_id TEXT NOT NULL UNIQUE REFERENCES turns(id), PRIMARY KEY(run_id, message_id))",
+    "CREATE TABLE message_owners (message_id TEXT PRIMARY KEY, session_id TEXT, run_id TEXT NOT NULL REFERENCES runs(id))",
     "CREATE TABLE events (pos INTEGER PRIMARY KEY AUTOINCREMENT, turn_id TEXT NOT NULL REFERENCES turns(id) DEFERRABLE INITIALLY DEFERRED, seq INTEGER NOT NULL, run_id TEXT NOT NULL REFERENCES runs(id), type TEXT NOT NULL, time TEXT NOT NULL, data TEXT NOT NULL, UNIQUE(turn_id, seq))",
 )
 
@@ -126,9 +128,13 @@ class _RunStore:
             (child_run_id, parent_run_id, parent_turn_id),
         )
 
-    def create_turn(self, run_id, turn_id, message_id, payload, context, start_event):
+    def create_turn(self, run_id, turn_id, message_id, payload, context, session_id, start_event):
         self._begin()
         try:
+            existing = self._claim_message(message_id, session_id, run_id)
+            if existing is not None:
+                self.connection.commit()
+                return {"existing": existing}
             submit_seq = self._next_submit_seq(run_id)
             start_pos = _insert_event(self.connection, start_event)
             self._insert_turn(run_id, turn_id, message_id, payload, context, submit_seq, start_pos)
@@ -139,7 +145,22 @@ class _RunStore:
         except (sqlite3.Error, RunStoreError) as error:
             self.connection.rollback()
             raise _store_error(error, "turn") from error
-        return submit_seq
+        return {"submit_seq": submit_seq}
+
+    def _claim_message(self, message_id, session_id, run_id):
+        row = self.connection.execute("SELECT message_owners.*, runs.parent_run_id AS owner_parent_run_id FROM message_owners JOIN runs ON runs.id = message_owners.run_id WHERE message_owners.message_id = ?", (message_id,)).fetchone()
+        if row is None:
+            self.connection.execute("INSERT INTO message_owners VALUES (?, ?, ?)", (message_id, session_id, run_id))
+            return None
+        if row["run_id"] == run_id and row["session_id"] == session_id:
+            return self._existing_message_turn(run_id, message_id)
+        raise RunStoreError(_message_conflict(row["session_id"], row["owner_parent_run_id"]))
+
+    def _existing_message_turn(self, run_id, message_id):
+        row = self.connection.execute("SELECT turns.* FROM turns JOIN message_index ON message_index.turn_id = turns.id WHERE message_index.run_id = ? AND message_index.message_id = ?", (run_id, message_id)).fetchone()
+        if row is None:
+            raise RunStoreError("runtime store message owner has no turn")
+        return _turn_row(row)
 
     def _next_submit_seq(self, run_id):
         row = self.connection.execute("SELECT MAX(submit_seq) AS value FROM turns WHERE run_id = ?", (run_id,)).fetchone()
@@ -349,6 +370,7 @@ def _load_snapshot(connection):
         "turns": _rows(connection, "SELECT * FROM turns", _turn_row),
         "delegations": _delegation_rows(connection),
         "messages": _message_rows(connection),
+        "message_owners": _message_owner_rows(connection),
         "events": _event_rows(connection),
         "allocation": _event_allocation(connection),
     }
@@ -373,6 +395,14 @@ def _message_rows(connection):
     for row in connection.execute("SELECT * FROM message_index"):
         run = result.setdefault(row["run_id"], {})
         _put_unique(run, row["message_id"], row["turn_id"], "message")
+    return result
+
+
+def _message_owner_rows(connection):
+    result = {}
+    for row in connection.execute("SELECT * FROM message_owners"):
+        value = {"message_id": row["message_id"], "session_id": row["session_id"], "run_id": row["run_id"]}
+        _put_unique(result, row["message_id"], value, "message owner")
     return result
 
 
@@ -423,6 +453,7 @@ def _validate_snapshot(value):
     _validate_submit_sequences(value)
     _validate_delegations(value)
     _validate_messages(value)
+    _validate_message_owners(value)
     _validate_events(value)
     _validate_contexts(value)
 
@@ -550,6 +581,17 @@ def _validate_messages(value):
     actual = {(run_id, message_id): turn_id for run_id, messages in value["messages"].items() for message_id, turn_id in messages.items()}
     if actual != expected:
         raise RunStoreError("runtime store message index is inconsistent")
+
+
+def _validate_message_owners(value):
+    owners = value["message_owners"]
+    expected = {}
+    for turn in value["turns"].values():
+        run = value["runs"][turn["run_id"]]
+        owner = {"message_id": turn["message_id"], "session_id": run["session_id"], "run_id": run["id"]}
+        _put_unique(expected, turn["message_id"], owner, "message ownership")
+    if owners != expected:
+        raise RunStoreError("runtime store message ownership is inconsistent")
 
 
 def _validate_events(value):
@@ -808,3 +850,9 @@ def _store_error(error, operation):
     if isinstance(error, RunStoreError):
         return error
     return RunStoreError(f"runtime store {operation} failed: {error}")
+
+
+def _message_conflict(owner_session_id, owner_parent_run_id):
+    if owner_session_id is not None:
+        return "message belongs to another session"
+    return "message belongs to a child run" if owner_parent_run_id is not None else "message belongs to another run"

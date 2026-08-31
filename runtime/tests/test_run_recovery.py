@@ -408,13 +408,15 @@ class Adapter:
 
 async def main():
     runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
+    attempt = 0
     while True:
+        attempt += 1
         main_run = await runtime.launch({"id": "main", "adapter": "fake"})
-        main_turn = await runtime.submit(main_run["id"], {"id": "main", "content": "main"})
+        main_turn = await runtime.submit(main_run["id"], {"id": f"main-{attempt}", "content": "main"})
         child_run = await runtime.delegate(main_run["id"], {"id": "child", "adapter": "fake"}, parent_turn_id=main_turn["id"])
-        child_turn = await runtime.submit(child_run["id"], {"id": "child", "content": "child"})
+        child_turn = await runtime.submit(child_run["id"], {"id": f"child-{attempt}", "content": "child"})
         grandchild_run = await runtime.delegate(child_run["id"], {"id": "grandchild", "adapter": "fake"}, parent_turn_id=child_turn["id"])
-        grandchild_turn = await runtime.submit(grandchild_run["id"], {"id": "grandchild", "content": "grandchild"})
+        grandchild_turn = await runtime.submit(grandchild_run["id"], {"id": f"grandchild-{attempt}", "content": "grandchild"})
         chain = {"main_turn": main_turn["id"], "child_turn": child_turn["id"], "grandchild_turn": grandchild_turn["id"], "child_run": child_run["id"], "grandchild_run": grandchild_run["id"]}
         if child_run["id"] < grandchild_run["id"]:
             await asyncio.sleep(0.1)

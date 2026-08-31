@@ -34,11 +34,12 @@ class TraceLedger:
         self.store = store
         self._watchers: defaultdict[str, set[asyncio.Queue]] = defaultdict(set)
 
-    def create_turn(self, run_id, turn_id, message_id, payload, context):
+    def create_turn(self, run_id, turn_id, message_id, payload, context, session_id):
         event = _runtime_event(run_id, turn_id, 0, "turn_start", {"message_id": message_id, "input": payload})
-        submit_seq = self.store.create_turn(run_id, turn_id, message_id, payload, context, event)
-        self._publish(turn_id, event)
-        return submit_seq
+        result = self.store.create_turn(run_id, turn_id, message_id, payload, context, session_id, event)
+        if "existing" not in result:
+            self._publish(turn_id, event)
+        return result
 
     def append(self, turn_id, event_type, data, run_id):
         event = _runtime_event(run_id, turn_id, self.store.next_seq(turn_id), event_type, data)
