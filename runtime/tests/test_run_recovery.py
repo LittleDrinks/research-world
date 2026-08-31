@@ -685,6 +685,22 @@ connection.close()
 '''
 
 
+_CORRUPT_MIDDLE_TURN_START_PROCESS = r'''
+import json, sqlite3, sys
+from pathlib import Path
+
+root, turn_id = Path(sys.argv[1]), sys.argv[2]
+connection = sqlite3.connect(root / "runs.sqlite3")
+run_id, = connection.execute("SELECT run_id FROM events WHERE turn_id = ? AND seq = 0", (turn_id,)).fetchone()
+connection.execute("UPDATE events SET seq = seq + 10 WHERE turn_id = ? AND seq > 0", (turn_id,))
+connection.execute("INSERT INTO events VALUES (?, 1, ?, 'turn_start', 'corrupt-time', ?)", (turn_id, run_id, json.dumps({"message_id": "forged", "input": "forged"})))
+connection.execute("UPDATE events SET seq = seq - 9 WHERE turn_id = ? AND seq > 1", (turn_id,))
+assert [row[0] for row in connection.execute("SELECT seq FROM events WHERE turn_id = ? ORDER BY seq", (turn_id,))] == [0, 1, 2, 3]
+connection.commit()
+connection.close()
+'''
+
+
 _REJECT_CORRUPT_RECOVERY_PROCESS = r'''
 import json, sys
 from pathlib import Path
@@ -994,6 +1010,18 @@ def test_corrupt_cancelled_main_result_fails_before_fresh_recovery(tmp_path):
 
 def test_corrupt_cancelled_child_result_fails_before_fresh_recovery(tmp_path):
     _assert_corrupt_cancelled_result_fails(tmp_path, _CANCELLED_RESULT_PROCESS)
+
+
+def test_middle_turn_start_fails_before_fresh_recovery(tmp_path):
+    created = _output(_run_process(_COMPLETED_PROCESS, tmp_path))
+    assert [event["type"] for event in created["events"]] == ["turn_start", "delta", "turn_end"]
+    _run_process(_CORRUPT_MIDDLE_TURN_START_PROCESS, tmp_path, created["turn_id"])
+    attempts = [_output(_run_process(_REJECT_CORRUPT_RECOVERY_PROCESS, tmp_path)) for _ in range(2)]
+    assert all("error" in attempt for attempt in attempts), attempts
+    assert all(attempt["error"].startswith("RunStoreError:runtime store") for attempt in attempts)
+    assert all("duplicate turn start" in attempt["error"] for attempt in attempts)
+    assert all(attempt["calls"] == [] and attempt["unchanged"] for attempt in attempts)
+    assert attempts[0] == attempts[1]
 
 
 @pytest.mark.parametrize("parent_status", ["completed", "limit"])

@@ -477,6 +477,8 @@ def _validate_events(value):
 def _validate_event_sequence(turn, events, runs):
     if not events or events[0]["type"] != "turn_start":
         raise RunStoreError("runtime store turn start is missing")
+    if any(event["type"] == "turn_start" for event in events[1:]):
+        raise RunStoreError("runtime store duplicate turn start")
     for seq, event in enumerate(events):
         _validate_event(event, turn, seq, runs)
     ends = [event for event in events if event["type"] == "turn_end"]
