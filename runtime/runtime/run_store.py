@@ -11,6 +11,10 @@ class RunStoreError(ValueError):
     pass
 
 
+class RunStoreConflictError(RunStoreError):
+    pass
+
+
 _FORMAT = {"format": "runtime-run-store", "version": "4"}
 _STATUSES = {"running", "completed", "limit", "cancelled", "error"}
 _AGENT_SPEC_FIELDS = ("id", "adapter", "model", "instructions", "thinking", "workspace", "tools", "params")
@@ -125,7 +129,7 @@ class _RunStore:
             return None
         if row["run_id"] == run_id and row["session_id"] == session_id:
             return self._existing_message_turn(run_id, message_id)
-        raise RunStoreError(_message_conflict(row["session_id"], row["owner_parent_run_id"]))
+        raise RunStoreConflictError(_message_conflict(row["session_id"], row["owner_parent_run_id"]))
 
     def _existing_message_turn(self, run_id, message_id):
         row = self.connection.execute("SELECT turns.* FROM turns JOIN message_index ON message_index.turn_id = turns.id WHERE message_index.run_id = ? AND message_index.message_id = ?", (run_id, message_id)).fetchone()
