@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from contextlib import contextmanager
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -564,10 +565,56 @@ def _validate_end(turn, event):
 
 def _validate_contexts(value):
     for run_id, run in value["runs"].items():
-        turns = [turn for turn in value["turns"].values() if turn["run_id"] == run_id]
-        expected = _completed_context(sorted(turns, key=lambda item: item["submit_seq"]))
-        if run["context"] != expected:
+        turns = sorted((turn for turn in value["turns"].values() if turn["run_id"] == run_id), key=lambda turn: turn["submit_seq"])
+        if run["context"] != _completed_context(turns):
             raise RunStoreError("runtime store completed context is inconsistent")
+        _validate_turn_contexts(turns, value["events"])
+
+
+def _validate_turn_contexts(turns, events):
+    previous = set()
+    for turn in turns:
+        sources = _context_sources(turn, turns)
+        if not previous <= set(sources):
+            raise RunStoreError("runtime store turn context is inconsistent")
+        _validate_context_availability(turn, turns, sources, events)
+        previous = set(sources)
+
+
+def _context_sources(turn, turns):
+    earlier = {candidate["message_id"]: candidate for candidate in turns if candidate["submit_seq"] < turn["submit_seq"]}
+    sources, last_seq = {}, -1
+    for index in range(0, len(turn["context"]), 2):
+        pair = turn["context"][index : index + 2]
+        candidate = earlier.get(pair[0]["message_id"])
+        if candidate is None or candidate["status"] not in {"completed", "limit"} or candidate["id"] in sources:
+            raise RunStoreError("runtime store turn context origin is invalid")
+        if pair != _context_entry(candidate["message_id"], candidate["input"], candidate["result_text"]):
+            raise RunStoreError("runtime store turn context content is inconsistent")
+        if candidate["submit_seq"] < last_seq:
+            raise RunStoreError("runtime store turn context order is inconsistent")
+        last_seq = candidate["submit_seq"]
+        sources[candidate["id"]] = candidate
+    return sources
+
+
+def _validate_context_availability(turn, turns, sources, events):
+    started = _event_time(events[turn["id"]][0])
+    for candidate in turns:
+        if candidate["submit_seq"] >= turn["submit_seq"] or candidate["status"] not in {"completed", "limit"}:
+            continue
+        ended = _event_time(events[candidate["id"]][-1])
+        if ended < started and candidate["id"] not in sources:
+            raise RunStoreError("runtime store turn context misses an available result")
+        if candidate["id"] in sources and ended > started:
+            raise RunStoreError("runtime store turn context includes an unavailable result")
+
+
+def _event_time(event):
+    try:
+        return datetime.fromisoformat(event["time"])
+    except ValueError:
+        raise RunStoreError("runtime store event time is invalid") from None
 
 
 def _completed_context(turns):

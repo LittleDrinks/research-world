@@ -716,6 +716,59 @@ connection.close()
 '''
 
 
+_PENDING_CONTEXT_PROCESS = r'''
+import asyncio, json, os, sqlite3, sys
+from pathlib import Path
+from runtime.adapter import AdapterResult
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    def __init__(self): self.requests = []
+    async def start(self, request):
+        self.requests.append(request)
+        return object()
+    async def submit(self, handle, request, emit):
+        if request.message_id == "m1":
+            return AdapterResult(result_text="answer:one")
+        await asyncio.Event().wait()
+    async def cancel(self, handle, request):
+        return None
+
+async def collect(runtime, turn_id):
+    return [event async for event in runtime.subscribe(turn_id)]
+
+async def main():
+    adapter = Adapter()
+    runtime = Runtime(Path(sys.argv[1]), {"fake": adapter})
+    run = await runtime.launch({"id": "main", "adapter": "fake"})
+    first = await runtime.submit(run["id"], {"id": "m1", "content": "one"})
+    await collect(runtime, first["id"])
+    second = await runtime.submit(run["id"], {"id": "m2", "content": "two"})
+    while len(adapter.requests) < 2:
+        await asyncio.sleep(0)
+    connection = sqlite3.connect(Path(sys.argv[1]) / "runs.sqlite3")
+    stored = json.loads(connection.execute("SELECT context FROM turns WHERE id = ?", (second["id"],)).fetchone()[0])
+    connection.close()
+    print(json.dumps({"turn_id": second["id"], "adapter_context": list(adapter.requests[1].context), "stored_context": stored}), flush=True)
+    os._exit(0)
+
+asyncio.run(main())
+'''
+
+
+_CORRUPT_PENDING_CONTEXT_PROCESS = r'''
+import sqlite3, sys
+from pathlib import Path
+
+connection = sqlite3.connect(Path(sys.argv[1]) / "runs.sqlite3")
+connection.execute("UPDATE turns SET context = '[]' WHERE id = ?", (sys.argv[2],))
+connection.commit()
+connection.close()
+'''
+
+
 _REJECT_CORRUPT_RECOVERY_PROCESS = r'''
 import json, sys
 from pathlib import Path
@@ -1035,6 +1088,19 @@ def test_middle_turn_start_fails_before_fresh_recovery(tmp_path):
     assert all("error" in attempt for attempt in attempts), attempts
     assert all(attempt["error"].startswith("RunStoreError:runtime store") for attempt in attempts)
     assert all("duplicate turn start" in attempt["error"] for attempt in attempts)
+    assert all(attempt["calls"] == [] and attempt["unchanged"] for attempt in attempts)
+    assert attempts[0] == attempts[1]
+
+
+def test_pending_turn_context_mutation_fails_on_repeated_fresh_construction(tmp_path):
+    created = _output(_run_process(_PENDING_CONTEXT_PROCESS, tmp_path))
+    expected = [{"role": "user", "message_id": "m1", "content": "one"}, {"role": "assistant", "content": "answer:one"}]
+    assert created["adapter_context"] == expected
+    assert created["stored_context"] == expected
+    _run_process(_CORRUPT_PENDING_CONTEXT_PROCESS, tmp_path, created["turn_id"])
+    attempts = [_output(_run_process(_REJECT_CORRUPT_RECOVERY_PROCESS, tmp_path)) for _ in range(2)]
+    assert all("error" in attempt for attempt in attempts), attempts
+    assert all(attempt["error"].startswith("RunStoreError:runtime store") for attempt in attempts)
     assert all(attempt["calls"] == [] and attempt["unchanged"] for attempt in attempts)
     assert attempts[0] == attempts[1]
 
