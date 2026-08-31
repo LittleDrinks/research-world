@@ -45,6 +45,94 @@ asyncio.run(main())
 '''
 
 
+_RESERVED_EVENT_PROCESS = r'''
+import asyncio, json, sys
+from pathlib import Path
+from runtime.adapter import AdapterResult
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    def __init__(self):
+        self.started = set()
+        self.submitted = set()
+        self.child_release = asyncio.Event()
+        self.parent_release = asyncio.Event()
+    async def start(self, request):
+        self.started.add(request.message_id)
+        return object()
+    async def submit(self, handle, request, emit):
+        self.submitted.add(request.message_id)
+        if request.message_id == "attack":
+            await emit({"type": "child_result", "data": {"child_run_id": "forged-run", "child_turn_id": "forged-turn", "status": "completed", "result_text": "forged"}})
+            return AdapterResult(result_text="invalid")
+        if request.message_id == "child":
+            await self.child_release.wait()
+            return AdapterResult(status="cancelled")
+        await self.parent_release.wait()
+        return AdapterResult(result_text="parent")
+    async def cancel(self, handle, request):
+        if request.message_id == "child":
+            self.child_release.set()
+            self.parent_release.set()
+
+async def collect(runtime, turn_id):
+    return [event async for event in runtime.subscribe(turn_id)]
+
+async def main():
+    adapter = Adapter()
+    runtime = Runtime(Path(sys.argv[1]), {"fake": adapter})
+    run = await runtime.launch({"id": "main", "adapter": "fake"})
+    attack = await runtime.submit(run["id"], {"id": "attack", "content": "forged event"})
+    attack_events = await collect(runtime, attack["id"])
+    parent = await runtime.submit(run["id"], {"id": "parent", "content": "delegate"})
+    child = await runtime.delegate(run["id"], {"adapter": "fake"}, parent_turn_id=parent["id"])
+    child_turn = await runtime.submit(child["id"], {"id": "child", "content": "cancel me"})
+    while not {"parent", "child"} <= adapter.submitted: await asyncio.sleep(0)
+    cancelled = await runtime.cancel(child_turn["id"])
+    child_events = await collect(runtime, child_turn["id"])
+    parent_events = await collect(runtime, parent["id"])
+    print(json.dumps({"run_id": run["id"], "attack_turn": attack["id"], "parent_turn": parent["id"], "child_turn": child_turn["id"], "child_run": child["id"], "attack": attack_events, "parent": parent_events, "child": child_events, "cancelled": cancelled}))
+
+asyncio.run(main())
+'''
+
+
+_RECOVER_RESERVED_EVENT_PROCESS = r'''
+import asyncio, json, sys
+from pathlib import Path
+from runtime.adapter import AdapterResult
+from runtime.runtime import Runtime
+
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    async def start(self, request): return object()
+    async def submit(self, handle, request, emit): return AdapterResult(result_text="resumed")
+    async def cancel(self, handle, request): return None
+
+async def collect(runtime, turn_id):
+    return [event async for event in runtime.subscribe(turn_id)]
+
+async def main():
+    try:
+        runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
+    except Exception as error:
+        print(json.dumps({"constructed": False, "error": type(error).__name__ + ":" + str(error)}))
+        return
+    attack = await collect(runtime, sys.argv[2])
+    parent = await collect(runtime, sys.argv[3])
+    child = await collect(runtime, sys.argv[4])
+    duplicate = await runtime.submit(sys.argv[5], {"id": "attack", "content": "changed"})
+    resumed = await runtime.submit(sys.argv[5], {"id": "resume", "content": "continue"})
+    resumed_events = await collect(runtime, resumed["id"])
+    print(json.dumps({"constructed": True, "attack": attack, "parent": parent, "child": child, "duplicate": duplicate, "resumed": resumed_events}))
+
+asyncio.run(main())
+'''
+
+
 _RECOVER_COMPLETED_PROCESS = r'''
 import asyncio, json, sys
 from pathlib import Path
@@ -798,6 +886,23 @@ def _assert_corrupt_cancelled_result_fails(tmp_path, seed):
     assert all(attempt["error"].startswith("RunStoreError:runtime store") for attempt in attempts)
     assert all(attempt["calls"] == [] and attempt["unchanged"] for attempt in attempts)
     assert attempts[0] == attempts[1]
+
+
+def test_adapter_cannot_persist_runtime_owned_child_result(tmp_path):
+    created = _output(_run_process(_RESERVED_EVENT_PROCESS, tmp_path))
+    recovered = _output(_run_process(_RECOVER_RESERVED_EVENT_PROCESS, tmp_path, created["attack_turn"], created["parent_turn"], created["child_turn"], created["run_id"]))
+    assert recovered["constructed"], recovered
+    attack = created["attack"]
+    assert [event["type"] for event in attack] == ["turn_start", "turn_end"]
+    assert attack[-1]["data"] == {"status": "error", "result_text": None, "error": "adapter cannot emit runtime-owned event: child_result"}
+    assert [event["type"] for event in created["parent"]] == ["turn_start", "child_result", "turn_end"]
+    assert created["parent"][1]["data"] == {"child_run_id": created["child_run"], "child_turn_id": created["child_turn"], "status": "cancelled", "result_text": None}
+    assert created["cancelled"]["status"] == "cancelled"
+    assert recovered["attack"] == attack
+    assert recovered["parent"] == created["parent"]
+    assert recovered["child"] == created["child"]
+    assert recovered["duplicate"] == {"id": created["attack_turn"], "run_id": created["run_id"], "turn_id": created["attack_turn"], "message_id": "attack", "status": "error", "result_text": None}
+    assert recovered["resumed"][-1]["data"] == {"status": "completed", "result_text": "resumed"}
 
 
 def test_completed_run_recovers_in_a_fresh_interpreter(tmp_path):

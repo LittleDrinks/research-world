@@ -20,6 +20,9 @@ from .run_store import _AGENT_PARAMS_FIELDS, _AGENT_SPEC_FIELDS, _AGENT_TEXT_FIE
 from .trace import TraceLedger
 
 
+_RUNTIME_EVENT_TYPES = {"turn_start", "turn_end", "child_result"}
+
+
 @dataclass
 class _Run:
     id: str
@@ -285,8 +288,10 @@ class Runtime:
 
     async def _emit(self, turn: _Turn, value: Any) -> None:
         event_type, data = _adapter_event(value)
-        if event_type == "turn_end":
-            raise RuntimeError("adapter cannot emit a terminal event")
+        if event_type in _RUNTIME_EVENT_TYPES:
+            if event_type == "turn_end":
+                raise RuntimeError("adapter cannot emit a terminal event")
+            raise RuntimeError(f"adapter cannot emit runtime-owned event: {event_type}")
         async with self._registry_lock:
             if turn.status == "running":
                 self._trace.append(
