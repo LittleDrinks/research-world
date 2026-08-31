@@ -51,7 +51,7 @@ _Avoid_: Connector、MCP server、transport、模型函数名
 **Preset**：可复用的 Agent 草稿；引用 Tool id，不拥有安装、配置或执行逻辑，保存后不随 Preset 漂移。
 **识别**：Runtime 枚举当前可选择的 Runtime Adapter、Skill 与 Tool；缺失或未就绪能力阻止 Launch。
 ## Agent Runtime
-**Runtime Adapter**：Runtime 内部适配一种执行 harness 的同级实现，封装模型调用与 harness 配置。它只识别、启动、提交、取消和产生规范化事件；Run 恢复、Trace 持久化、上下文快照、委派与重连由 Runtime 负责。
+**Runtime Adapter**：Runtime 内部适配一种执行 harness 的同级实现，封装模型调用与 harness 配置。它只识别、启动、提交、取消、关闭和产生规范化事件；Run 恢复、Trace 持久化、上下文快照、委派与重连由 Runtime 负责。Runtime 关闭后拒绝新的 Launch、Submit 与 Delegate，先通过 Cancel 终结活跃 Turn 并等待其任务，再对每个共享 Adapter 关闭一次；Subscribe 仍可回放已持久化终态，重复关闭复用同一结果，Adapter 关闭异常统一为 Runtime 错误。
 _Avoid_: Runtime、Tool Adapter、用户自定义命令
 **执行域**：Runtime Adapter 实际使用 harness 的操作系统进程环境；本机执行域复用协作学习者已有 CLI，托管执行域由 Runtime 管理连接与协议，harness 进程由 Runtime 直接管理或由 Compose 作为固定服务管理。
 **Pi Adapter（开发期）**：只在本机执行域复用已安装的 Pi 及其设置，用于主机端到端确认；不进入 Docker 交付，也不构成 MVP 可用性门槛。

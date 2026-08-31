@@ -20,6 +20,8 @@ class RuntimeAdapter(Protocol):
 
     async def cancel(self, handle: Any, request: TurnRequest) -> Any: ...
 
+    async def close(self) -> None: ...
+
 
 @dataclass(frozen=True)
 class TurnRequest:

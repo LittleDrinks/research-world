@@ -132,6 +132,9 @@ class PiAdapter:
         handle.cancelled = True
         await _cleanup(handle)
 
+    async def close(self) -> None:
+        return None
+
 
 class PiEventParser:
     def __init__(self):

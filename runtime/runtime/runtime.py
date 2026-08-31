@@ -64,8 +64,7 @@ class Runtime:
         kernel: KernelInterface | None = None,
     ):
         _require_data_root(data_root)
-        self._adapters = _adapter_map(adapters)
-        self._kernel = kernel
+        self._adapters, self._kernel = _adapter_map(adapters), kernel
         self._store = _RunStore(data_root)
         self._trace = TraceLedger(self._store)
         self._runs: dict[str, _Run] = {}
@@ -74,6 +73,7 @@ class Runtime:
         self._delegations: dict[str, tuple[str, str]] = {}
         self._adapter_reservations: dict[int, _Turn] = {}
         self._registry_lock = asyncio.Lock()
+        self._closing, self._close_task = False, None
         self._restore()
 
     def _restore(self):
@@ -141,6 +141,7 @@ class Runtime:
     ) -> dict[str, Any]:
         snapshot = _snapshot(agent_spec)
         async with self._registry_lock:
+            self._require_open()
             run = self._register_run(snapshot, session_id, None, None)
         return _run_view(run)
 
@@ -187,8 +188,47 @@ class Runtime:
     ) -> dict[str, Any]:
         message_id, payload = _message(message)
         async with self._registry_lock:
+            self._require_open()
             turn = self._register_turn(session_id, message_id, payload)
         return _turn_view(turn)
+
+    async def close(self) -> None:
+        async with self._registry_lock:
+            if self._close_task is None:
+                self._closing = True
+                self._close_task = asyncio.create_task(self._shutdown())
+            task = self._close_task
+        await asyncio.shield(task)
+
+    async def _close_adapters(self) -> None:
+        results = await asyncio.gather(
+            *(self._close_adapter(adapter) for adapter in self._adapters.values())
+        )
+        if error := next((value for value in results if isinstance(value, BaseException)), None):
+            raise RuntimeError("runtime close failed") from error
+
+    async def _close_adapter(self, adapter) -> BaseException | None:
+        try:
+            await adapter.close()
+        except BaseException as error:
+            return error
+        return None
+
+    async def _shutdown(self) -> None:
+        async with self._registry_lock:
+            turns = tuple(turn for turn in self._turns.values() if turn.status == "running")
+        results = await asyncio.gather(
+            *(self.cancel(turn.request.turn_id) for turn in turns),
+            return_exceptions=True,
+        )
+        await asyncio.gather(*(self._wait_execution(turn) for turn in turns))
+        await self._close_adapters()
+        if error := next((value for value in results if isinstance(value, BaseException)), None):
+            raise RuntimeError("runtime close failed") from error
+
+    def _require_open(self) -> None:
+        if self._closing:
+            raise RuntimeError("runtime is closed")
 
     def _register_turn(self, session_id, message_id, payload):
         run = self._require_session(session_id)
@@ -262,6 +302,7 @@ class Runtime:
     ) -> dict[str, Any]:
         snapshot = _snapshot(agent_spec)
         async with self._registry_lock:
+            self._require_open()
             self._require_parent_turn(parent_run_id, parent_turn_id)
             run = self._register_run(snapshot, None, parent_run_id, parent_turn_id)
             self._delegations[run.id] = (parent_run_id, parent_turn_id)
