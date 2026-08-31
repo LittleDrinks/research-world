@@ -188,13 +188,23 @@ class _RunStore:
 
     def snapshot(self):
         try:
-            value = _load_snapshot(self.connection)
+            value = self._read_snapshot()
             _validate_snapshot(value)
             return value
         except RunStoreError:
             raise
         except (sqlite3.Error, ValueError, TypeError, KeyError) as error:
             raise RunStoreError(f"runtime store is invalid: {error}") from error
+
+    def _read_snapshot(self):
+        self.connection.execute("BEGIN")
+        try:
+            value = _load_snapshot(self.connection)
+        except Exception:
+            self.connection.rollback()
+            raise
+        self.connection.commit()
+        return value
 
     def _begin(self):
         try:
@@ -307,7 +317,14 @@ def _load_snapshot(connection):
         "delegations": _delegation_rows(connection),
         "messages": _message_rows(connection),
         "events": _event_rows(connection),
+        "allocation": _event_allocation(connection),
     }
+
+
+def _event_allocation(connection):
+    count, maximum = connection.execute("SELECT COUNT(*), MAX(pos) FROM events").fetchone()
+    row = connection.execute("SELECT seq FROM sqlite_sequence WHERE name = 'events'").fetchone()
+    return {"count": count, "maximum": maximum, "sequence": None if row is None else row["seq"]}
 
 
 def _rows(connection, query, decoder):
@@ -358,6 +375,7 @@ def _event_row(row):
 
 
 def _validate_snapshot(value):
+    _validate_allocation(value)
     _validate_runs(value)
     _validate_turns(value)
     _validate_submit_sequences(value)
@@ -365,6 +383,17 @@ def _validate_snapshot(value):
     _validate_messages(value)
     _validate_events(value)
     _validate_contexts(value)
+
+
+def _validate_allocation(value):
+    allocation = value["allocation"]
+    count, maximum, sequence = allocation["count"], allocation["maximum"], allocation["sequence"]
+    if maximum is None:
+        if count or sequence is not None:
+            raise RunStoreError("runtime store event log allocation is inconsistent")
+        return
+    if count != maximum or sequence != maximum:
+        raise RunStoreError("runtime store event log is not complete")
 
 
 def _validate_runs(value):
