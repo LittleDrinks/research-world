@@ -30,9 +30,9 @@ class Adapter:
 async def main():
     runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
     run = await runtime.launch({"id": "main", "adapter": "fake"}, session_id="session-a")
-    turn = await runtime.submit(run["id"], {"id": "message-1", "content": "one"})
+    turn = await runtime.submit(run["session_id"], {"id": "message-1", "content": "one"})
     [event async for event in runtime.subscribe(turn["id"])]
-    print(json.dumps(await runtime.submit(run["id"], {"id": "message-1", "content": "one"})))
+    print(json.dumps(await runtime.submit(run["session_id"], {"id": "message-1", "content": "one"})))
 
 asyncio.run(main())
 '''
@@ -55,70 +55,13 @@ async def main():
     adapter = Adapter()
     runtime = Runtime(Path(sys.argv[1]), {"fake": adapter})
     run = await runtime.launch({"id": "main", "adapter": "fake"}, session_id="session-a")
-    duplicate = await runtime.submit(run["id"], {"id": "message-1", "content": "changed"})
+    duplicate = await runtime.submit(run["session_id"], {"id": "message-1", "content": "changed"})
     other = await runtime.launch({"id": "main", "adapter": "fake"}, session_id="session-b")
     try:
-        await runtime.submit(other["id"], {"id": "message-1", "content": "one"})
+        await runtime.submit(other["session_id"], {"id": "message-1", "content": "one"})
     except ValueError as error:
         conflict = str(error)
     else:
-        conflict = "accepted"
-    print(json.dumps({"duplicate": duplicate, "conflict": conflict, "calls": adapter.calls}))
-
-asyncio.run(main())
-'''
-
-
-_SESSIONLESS_OWNER_PROCESS = r'''
-import asyncio, json, sys
-from pathlib import Path
-from runtime.adapter import AdapterResult
-from runtime.runtime import Runtime
-
-class Adapter:
-    adapter_id = "fake"
-    supports_multiple_writers = True
-    async def start(self, request): return object()
-    async def submit(self, handle, request, emit): return AdapterResult(result_text="answer")
-    async def cancel(self, handle, request): return None
-
-async def main():
-    runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
-    run = await runtime.launch({"id": "main", "adapter": "fake"})
-    turn = await runtime.submit(run["id"], {"id": "message-root", "content": "one"})
-    [event async for event in runtime.subscribe(turn["id"])]
-    duplicate = await runtime.submit(run["id"], {"id": "message-root", "content": "changed"})
-    print(json.dumps({"run_id": run["id"], "turn": duplicate}))
-
-asyncio.run(main())
-'''
-
-
-_SESSIONLESS_READER_PROCESS = r'''
-import asyncio, json, sys
-from pathlib import Path
-from runtime.adapter import AdapterResult
-from runtime.runtime import Runtime
-
-class Adapter:
-    adapter_id = "fake"
-    supports_multiple_writers = True
-    def __init__(self): self.calls = []
-    async def start(self, request): self.calls.append("start"); return object()
-    async def submit(self, handle, request, emit): self.calls.append("submit"); return AdapterResult(result_text="answer")
-    async def cancel(self, handle, request): self.calls.append("cancel")
-
-async def main():
-    adapter = Adapter()
-    runtime = Runtime(Path(sys.argv[1]), {"fake": adapter})
-    duplicate = await runtime.submit(sys.argv[2], {"id": "message-root", "content": "changed"})
-    other = await runtime.launch({"id": "main", "adapter": "fake"})
-    try:
-        await runtime.submit(other["id"], {"id": "message-root", "content": "one"})
-    except ValueError as error:
-        conflict = str(error)
-    else:
-        await asyncio.sleep(0)
         conflict = "accepted"
     print(json.dumps({"duplicate": duplicate, "conflict": conflict, "calls": adapter.calls}))
 
@@ -212,15 +155,6 @@ async def _launched_pair(tmp_path):
     return (first, first_adapter, first_run), (second, second_adapter, second_run)
 
 
-async def _sessionless_pair(tmp_path):
-    first_adapter, second_adapter = HoldingAdapter(), HoldingAdapter()
-    first = Runtime(tmp_path, {"fake": first_adapter})
-    second = Runtime(tmp_path, {"fake": second_adapter})
-    first_run = await first.launch(SPEC)
-    second_run = await second.launch(SPEC)
-    return (first, first_adapter, first_run), (second, second_adapter, second_run)
-
-
 @pytest.mark.parametrize("winner_index", [0, 1], ids=["first_claim", "second_claim"])
 @pytest.mark.asyncio
 async def test_message_reuse_across_sessions_fails_before_execution(tmp_path, winner_index):
@@ -228,10 +162,10 @@ async def test_message_reuse_across_sessions_fails_before_execution(tmp_path, wi
     owner, loser = pair[winner_index], pair[1 - winner_index]
     owner_runtime, owner_adapter, owner_run = owner
     loser_runtime, loser_adapter, loser_run = loser
-    turn = await owner_runtime.submit(owner_run["id"], {"id": "message-1", "content": "one"})
+    turn = await owner_runtime.submit(owner_run["session_id"], {"id": "message-1", "content": "one"})
 
     with pytest.raises(ValueError, match="message belongs to another session"):
-        await loser_runtime.submit(loser_run["id"], {"id": "message-1", "content": "one"})
+        await loser_runtime.submit(loser_run["session_id"], {"id": "message-1", "content": "one"})
 
     owner_adapter.release.set()
     assert (await _events(owner_runtime, turn["id"]))[-1]["data"]["status"] == "cancelled"
@@ -240,33 +174,18 @@ async def test_message_reuse_across_sessions_fails_before_execution(tmp_path, wi
 
 
 @pytest.mark.asyncio
-async def test_sessionless_root_reuse_fails_before_execution(tmp_path):
-    owner, loser = await _sessionless_pair(tmp_path)
-    turn = await owner[0].submit(owner[2]["id"], {"id": "message-root", "content": "one"})
-    await asyncio.sleep(0)
-
-    with pytest.raises(ValueError, match="message belongs to another run"):
-        await loser[0].submit(loser[2]["id"], {"id": "message-root", "content": "one"})
-
-    assert loser[1].calls == []
-    owner[1].release.set()
-    assert (await _events(owner[0], turn["id"]))[-1]["data"]["status"] == "cancelled"
-    assert owner[1].calls == [("start", "message-root"), ("submit", "message-root")]
-
-
-@pytest.mark.asyncio
 async def test_message_ownership_survives_fresh_runtime(tmp_path):
     adapter = CountingAdapter()
     runtime = Runtime(tmp_path, {"fake": adapter})
     run = await runtime.launch(SPEC, session_id="session-a")
-    turn = await runtime.submit(run["id"], {"id": "message-1", "content": "one"})
+    turn = await runtime.submit(run["session_id"], {"id": "message-1", "content": "one"})
     await _events(runtime, turn["id"])
     restarted_adapter = CountingAdapter()
     restarted = Runtime(tmp_path, {"fake": restarted_adapter})
     other = await restarted.launch(SPEC, session_id="session-b")
 
     with pytest.raises(ValueError, match="message belongs to another session"):
-        await restarted.submit(other["id"], {"id": "message-1", "content": "one"})
+        await restarted.submit(other["session_id"], {"id": "message-1", "content": "one"})
 
     assert restarted_adapter.calls == []
 
@@ -275,13 +194,13 @@ async def test_message_ownership_survives_fresh_runtime(tmp_path):
 async def test_same_message_and_session_reuses_turn_after_restart(tmp_path):
     runtime = Runtime(tmp_path, {"fake": CountingAdapter()})
     run = await runtime.launch(SPEC, session_id="session-a")
-    original = await runtime.submit(run["id"], {"id": "message-1", "content": "one"})
+    original = await runtime.submit(run["session_id"], {"id": "message-1", "content": "one"})
     await _events(runtime, original["id"])
     restarted_adapter = CountingAdapter()
     restarted = Runtime(tmp_path, {"fake": restarted_adapter})
     recovered_run = await restarted.launch(SPEC, session_id="session-a")
 
-    duplicate = await restarted.submit(recovered_run["id"], {"id": "message-1", "content": "changed"})
+    duplicate = await restarted.submit(recovered_run["session_id"], {"id": "message-1", "content": "changed"})
 
     assert duplicate == {**original, "status": "completed", "result_text": "answer"}
     assert restarted_adapter.calls == []
@@ -292,10 +211,10 @@ async def test_child_reuse_of_session_message_fails_before_execution(tmp_path):
     parent_adapter, child_adapter = HoldingAdapter(), ChildAdapter()
     runtime = Runtime(tmp_path, {"fake": parent_adapter, "child": child_adapter})
     parent = await runtime.launch(SPEC, session_id="session-a")
-    parent_turn = await runtime.submit(parent["id"], {"id": "message-1", "content": "one"})
+    parent_turn = await runtime.submit(parent["session_id"], {"id": "message-1", "content": "one"})
     child = await runtime.delegate(parent["id"], {"id": "child", "adapter": "child"}, parent_turn_id=parent_turn["id"])
 
-    with pytest.raises(ValueError, match="message belongs to another session"):
+    with pytest.raises(KeyError, match="session not found"):
         await runtime.submit(child["id"], {"id": "message-1", "content": "one"})
 
     assert child_adapter.calls == []
@@ -303,28 +222,10 @@ async def test_child_reuse_of_session_message_fails_before_execution(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_session_reuse_of_child_message_fails_before_execution(tmp_path):
-    parent_adapter, child_adapter = HoldingAdapter(), ChildAdapter()
-    runtime = Runtime(tmp_path, {"fake": parent_adapter, "child": child_adapter})
-    parent = await runtime.launch(SPEC, session_id="session-a")
-    other = await runtime.launch(SPEC, session_id="session-b")
-    parent_turn = await runtime.submit(parent["id"], {"id": "message-1", "content": "one"})
-    child = await runtime.delegate(parent["id"], {"id": "child", "adapter": "child"}, parent_turn_id=parent_turn["id"])
-    child_turn = await runtime.submit(child["id"], {"id": "message-2", "content": "two"})
-    assert (await _events(runtime, child_turn["id"]))[-1]["data"]["status"] == "completed"
-
-    with pytest.raises(ValueError, match="message belongs to a child run"):
-        await runtime.submit(other["id"], {"id": "message-2", "content": "two"})
-
-    assert parent_adapter.calls == [("start", "message-1"), ("submit", "message-1")]
-    await runtime.cancel(parent_turn["id"])
-
-
-@pytest.mark.asyncio
 async def test_concurrent_cross_session_claim_has_one_execution_winner(tmp_path):
     pair = await _launched_pair(tmp_path)
     attempts = await asyncio.gather(
-        *(runtime.submit(run["id"], {"id": "message-1", "content": "one"}) for runtime, _, run in pair),
+        *(runtime.submit(run["session_id"], {"id": "message-1", "content": "one"}) for runtime, _, run in pair),
         return_exceptions=True,
     )
     winner_index = next(index for index, value in enumerate(attempts) if isinstance(value, dict))
@@ -381,8 +282,8 @@ async def test_process_race_has_one_owner_and_zero_loser_execution(tmp_path):
     second = await runtime.launch(SPEC, session_id="session-b")
     go = tmp_path / "go"
     processes = [
-        _start_race_process(tmp_path, tmp_path / "ready-a", go, first["id"]),
-        _start_race_process(tmp_path, tmp_path / "ready-b", go, second["id"]),
+        _start_race_process(tmp_path, tmp_path / "ready-a", go, first["session_id"]),
+        _start_race_process(tmp_path, tmp_path / "ready-b", go, second["session_id"]),
     ]
     _wait_for_ready((tmp_path / "ready-a", tmp_path / "ready-b"))
     go.touch()
@@ -392,35 +293,4 @@ async def test_process_race_has_one_owner_and_zero_loser_execution(tmp_path):
     assert [result["status"] for result in results].count("rejected") == 1
     rejected = next(result for result in results if result["status"] == "rejected")
     assert rejected["error"] == "message belongs to another session"
-    assert sorted(result["calls"] for result in results) == [[], ["start", "submit"]]
-
-
-@pytest.mark.asyncio
-async def test_sessionless_root_ownership_survives_fresh_interpreter(tmp_path):
-    owner = json.loads(_run_process(_SESSIONLESS_OWNER_PROCESS, tmp_path).stdout)
-    recovered = json.loads(_run_process(_SESSIONLESS_READER_PROCESS, tmp_path, owner["run_id"]).stdout)
-
-    assert recovered["duplicate"] == owner["turn"]
-    assert recovered["conflict"] == "message belongs to another run"
-    assert recovered["calls"] == []
-
-
-@pytest.mark.asyncio
-async def test_sessionless_root_process_race_has_one_owner(tmp_path):
-    runtime = Runtime(tmp_path, {"fake": CountingAdapter()})
-    first = await runtime.launch(SPEC)
-    second = await runtime.launch(SPEC)
-    go = tmp_path / "go"
-    processes = [
-        _start_race_process(tmp_path, tmp_path / "ready-a", go, first["id"]),
-        _start_race_process(tmp_path, tmp_path / "ready-b", go, second["id"]),
-    ]
-    _wait_for_ready((tmp_path / "ready-a", tmp_path / "ready-b"))
-    go.touch()
-    results = _race_results(processes)
-
-    assert [result["status"] for result in results].count("accepted") == 1
-    assert [result["status"] for result in results].count("rejected") == 1
-    rejected = next(result for result in results if result["status"] == "rejected")
-    assert rejected["error"] == "message belongs to another run"
     assert sorted(result["calls"] for result in results) == [[], ["start", "submit"]]

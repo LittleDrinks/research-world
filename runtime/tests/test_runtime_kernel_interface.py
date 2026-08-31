@@ -103,8 +103,10 @@ async def test_runtime_kernel_tool_uses_public_project_scoped_interface(tmp_path
     kernel, project, foreign_record, record = _kernel_fixture(tmp_path)
     adapter = KernelIntegrationAdapter(project, foreign_record, record)
     runtime = Runtime(tmp_path / "runtime", {"integration": adapter}, kernel=kernel)
-    run = await runtime.launch({"adapter": "integration", "tools": ["kernel"]})
-    turn = await runtime.submit(run["id"], {"id": "message-1", "content": "inspect"})
+    run = await runtime.launch(
+        {"adapter": "integration", "tools": ["kernel"]}, session_id="session-kernel"
+    )
+    turn = await runtime.submit(run["session_id"], {"id": "message-1", "content": "inspect"})
 
     trace = await _events(runtime, turn["id"])
 
@@ -121,8 +123,10 @@ async def test_runtime_kernel_tool_preserves_local_map_domain_errors(tmp_path):
     kernel, project, _, record = _kernel_fixture(tmp_path)
     adapter = InvalidLocalMapAdapter(project.id, record.id)
     runtime = Runtime(tmp_path / "runtime", {"invalid": adapter}, kernel=kernel)
-    run = await runtime.launch({"adapter": "invalid", "tools": ["kernel"]})
-    turn = await runtime.submit(run["id"], {"id": "message-1", "content": "inspect"})
+    run = await runtime.launch(
+        {"adapter": "invalid", "tools": ["kernel"]}, session_id="session-kernel"
+    )
+    turn = await runtime.submit(run["session_id"], {"id": "message-1", "content": "inspect"})
 
     trace = await _events(runtime, turn["id"])
 

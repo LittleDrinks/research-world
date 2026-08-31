@@ -326,8 +326,8 @@ async def test_pi_adapter_runs_fake_process_and_emits_normalized_delta(tmp_path,
     monkeypatch.setenv("PI_CODING_AGENT_DIR", "/host-pi")
     adapter = PiAdapter.detect()
     runtime = Runtime(tmp_path / "data", {"pi": adapter})
-    run = await runtime.launch({"adapter": "pi", "model": "default", "instructions": "system", "thinking": "high", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "hello"})
+    run = await runtime.launch({"adapter": "pi", "model": "default", "instructions": "system", "thinking": "high", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "hello"})
     observed = await _events(runtime, turn["id"])
     launch, command = _launch_records(tmp_path)
     _assert_launch(launch, command)
@@ -338,8 +338,8 @@ async def test_pi_adapter_normalizes_reasoning_and_tool_streams(tmp_path, monkey
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "rich"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "rich"})
     observed = await _events(runtime, turn["id"])
     _assert_rich_events(observed)
 
@@ -348,8 +348,8 @@ async def test_pi_completes_final_message_with_thinking_and_text_blocks(tmp_path
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "thinking-final"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "thinking-final"})
     observed = await _events(runtime, turn["id"])
     assert observed[-1]["data"] == {"status": "completed", "result_text": "OK"}
 
@@ -358,8 +358,8 @@ async def test_pi_waits_for_settled_after_agent_end(tmp_path, monkeypatch):
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "settled"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "settled"})
     events_task = asyncio.create_task(_events(runtime, turn["id"]))
     await _wait_for_stage(tmp_path, "agent_end")
     assert not events_task.done()
@@ -372,8 +372,8 @@ async def test_pi_process_exit_after_settled_is_an_explicit_turn_error(tmp_path,
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "settled-crash"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "settled-crash"})
     observed = await _events(runtime, turn["id"])
     assert observed[-1]["data"] == {
         "status": "error",
@@ -390,8 +390,8 @@ async def test_pi_rejects_a_foreign_response_before_normal_sequence(tmp_path, mo
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "foreign-response"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "foreign-response"})
     observed = await _events(runtime, turn["id"])
     assert observed[-1]["data"] == {
         "status": "error",
@@ -408,8 +408,8 @@ async def test_pi_continues_after_intermediate_overflow_error(tmp_path, monkeypa
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "overflow-retry"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "overflow-retry"})
     observed = await _events(runtime, turn["id"])
     records = _records(tmp_path)
     stages = [item["stage"] for item in records if "stage" in item]
@@ -423,8 +423,8 @@ async def test_pi_accepts_successful_automatic_retry(tmp_path, monkeypatch):
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "auto-retry"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "auto-retry"})
     observed = await _events(runtime, turn["id"])
     stages = [item["stage"] for item in _records(tmp_path) if "stage" in item]
     assert stages == ["retrying", "successful_agent_end", "agent_settled"]
@@ -433,8 +433,8 @@ async def test_pi_accepts_successful_automatic_retry(tmp_path, monkeypatch):
 
 async def test_pi_inherits_host_locale_without_runtime_credentials(tmp_path, monkeypatch):
     runtime = _fake_runtime(tmp_path, monkeypatch, LOCALE_ENVIRONMENT)
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "hello"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "hello"})
     await _events(runtime, turn["id"])
     launch, _ = _launch_records(tmp_path)
     _assert_locale_filtering(launch)
@@ -444,8 +444,8 @@ async def test_pi_keeps_final_error_after_settled(tmp_path, monkeypatch):
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "final-error"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "final-error"})
     observed = await _events(runtime, turn["id"])
     assert _command_sequence(_records(tmp_path)) == [
         "prompt", "final_error_agent_end", "agent_settled", "abort"
@@ -461,9 +461,9 @@ async def test_pi_preserves_final_error_when_cancelled_before_settled(tmp_path, 
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
     turn = await runtime.submit(
-        run["id"], {"id": "m1", "content": "final-error-before-settled"}
+        run["session_id"], {"id": "m1", "content": "final-error-before-settled"}
     )
     await _wait_for_stage(tmp_path, "final_error_before_settled")
     result = await runtime.cancel(turn["id"])
@@ -480,8 +480,8 @@ async def test_pi_preserves_automatic_retry_error_detail(tmp_path, monkeypatch):
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "retry-error"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "retry-error"})
     observed = await _events(runtime, turn["id"])
     assert observed[-1]["data"] == {
         "status": "error",
@@ -494,8 +494,8 @@ async def test_pi_preserves_stream_error_detail(tmp_path, monkeypatch):
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "stream-error"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "stream-error"})
     observed = await _events(runtime, turn["id"])
     assert observed[-1]["data"] == {
         "status": "error",
@@ -508,8 +508,8 @@ async def test_pi_rejects_unknown_extension_ui_method(tmp_path, monkeypatch):
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "unknown-ui"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "unknown-ui"})
     observed = await _events(runtime, turn["id"])
     assert observed[-1]["data"] == {
         "status": "error",
@@ -530,8 +530,8 @@ async def test_pi_rejects_invalid_assistant_content(tmp_path, monkeypatch, promp
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": prompt})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": prompt})
     observed = await _events(runtime, turn["id"])
     assert observed[-1]["data"] == {
         "status": "error",
@@ -545,8 +545,8 @@ async def test_pi_protocol_error_stops_the_fake_process(tmp_path, monkeypatch):
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "instructions": "system", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "invalid"})
+    run = await runtime.launch({"adapter": "pi", "instructions": "system", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "invalid"})
     observed = await _events(runtime, turn["id"])
     await _wait_for_command(tmp_path, "abort")
     assert observed[-1]["data"]["status"] == "error"
@@ -556,8 +556,8 @@ async def test_pi_rejects_unknown_event_through_runtime(tmp_path, monkeypatch):
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "unknown"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "unknown"})
     observed = await _events(runtime, turn["id"])
     assert observed[-1]["data"] == {
         "status": "error",
@@ -571,8 +571,8 @@ async def test_pi_rejected_prompt_is_an_explicit_protocol_error(tmp_path, monkey
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "reject"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "reject"})
     observed = await _events(runtime, turn["id"])
     await _wait_for_command(tmp_path, "abort")
     assert observed[-1]["data"] == {
@@ -586,8 +586,8 @@ async def test_pi_adapter_cancels_a_turn_through_runtime(tmp_path, monkeypatch):
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "cancel"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "cancel"})
     await _wait_for_command(tmp_path, "prompt")
     result = await runtime.cancel(turn["id"])
     observed = await _events(runtime, turn["id"])
@@ -600,9 +600,9 @@ async def test_pi_preserves_protocol_error_during_cancel(tmp_path, monkeypatch):
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
     turn = await runtime.submit(
-        run["id"], {"id": "m1", "content": "cancel-protocol-error"}
+        run["session_id"], {"id": "m1", "content": "cancel-protocol-error"}
     )
     await _wait_for_stage(tmp_path, "cancel-ready")
     result = await runtime.cancel(turn["id"])
@@ -619,8 +619,8 @@ async def test_pi_process_exit_is_an_explicit_turn_error(tmp_path, monkeypatch):
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "crash"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "crash"})
     observed = await _events(runtime, turn["id"])
     assert observed[-1]["data"] == {"status": "error", "result_text": None, "error": "pi_process: pi exited with status 7"}
 
@@ -629,8 +629,8 @@ async def test_pi_eof_before_agent_end_is_a_protocol_error(tmp_path, monkeypatch
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "incomplete"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "incomplete"})
     observed = await _events(runtime, turn["id"])
     assert observed[-1]["data"] == {"status": "error", "result_text": None, "error": "pi_protocol: pi exited before agent_end"}
 
@@ -639,8 +639,8 @@ async def test_pi_eof_after_agent_end_requires_settled(tmp_path, monkeypatch):
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect()})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "missing-settled"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "missing-settled"})
     observed = await _events(runtime, turn["id"])
     assert observed[-1]["data"] == {"status": "error", "result_text": None, "error": "pi_protocol: pi exited before agent_settled"}
 
@@ -649,8 +649,8 @@ async def test_pi_settled_wait_is_bounded(tmp_path, monkeypatch):
     _fake_pi(tmp_path)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     runtime = Runtime(tmp_path / "data", {"pi": PiAdapter.detect(timeout=0.05)})
-    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)})
-    turn = await runtime.submit(run["id"], {"id": "m1", "content": "timeout"})
+    run = await runtime.launch({"adapter": "pi", "workspace": str(tmp_path)}, session_id="session-pi")
+    turn = await runtime.submit(run["session_id"], {"id": "m1", "content": "timeout"})
     started = time.monotonic()
     observed = await _events(runtime, turn["id"])
     assert time.monotonic() - started < 1

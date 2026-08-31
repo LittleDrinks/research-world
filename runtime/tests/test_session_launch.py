@@ -64,12 +64,15 @@ async def test_child_run_has_no_session_binding_or_session_index_claim(tmp_path)
     adapter = HoldAdapter()
     runtime = Runtime(tmp_path, {"fake": adapter})
     parent = await runtime.launch(SPEC, session_id="session-200")
-    parent_turn = await runtime.submit(parent["id"], {"id": "parent", "content": "delegate"})
+    parent_turn = await runtime.submit(parent["session_id"], {"id": "parent", "content": "delegate"})
     child = await runtime.delegate(
         parent["id"], {"id": "child", "adapter": "fake"}, parent_turn_id=parent_turn["id"]
     )
 
     assert child["session_id"] is None
+    with pytest.raises(KeyError, match="session not found"):
+        await runtime.submit(child["id"], {"id": "child", "content": "work"})
+    assert adapter.calls == []
     restarted = Runtime(tmp_path, {"fake": HoldAdapter()})
     recovered = await restarted.launch(SPEC, session_id="session-200")
     assert recovered["id"] == parent["id"]
