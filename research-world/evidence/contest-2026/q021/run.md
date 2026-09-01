@@ -2,9 +2,8 @@
 project: q021
 protocol: contest-research-workflow-2026-09-01
 status: waiting_human
-final: v6.md
-final_review: review-v6.md
-final_receipt: receipt-v6.md
+final: v8.md
+final_review: review-v8.md
 ---
 # q021 运行记录
 ## 问题
@@ -26,9 +25,13 @@ Can we ever overcome antibiotic resistance?
 | `v6.md` | `01a05e01-b0fc-7063-99d8-a18a795c3027` | `contest-qwen/qwen3-max` | 24 | 104792 | 766848 | 7664 | 修正 Banerjee DOI 与终态口径 |
 | `review-v6.md` | `01a05e07-3391-7a92-a452-9e2cfde5fd53` | `contest-qwen/qwen3.7-max` | 18 | 136322 | 566016 | 8019 | `deliverable`；12/12；关键 DOI 三标识符通过 |
 | `receipt-v6.md` | `01a05e40-c972-7a30-a423-fcbea4bcf268` | `contest-qwen/qwen3.7-max` | 12 | 92334 | 342144 | 6614 | 终态审计回执；复算 reviewer 模型、Session、token 与 RESULT |
+| `v7.md` | `01a05e78-3abf-7f8e-81e1-fbbfd82eaf45` | `contest-qwen/qwen3-max` | 11 | 101546 | 170368 | 6237 | 来源元数据投影；S7 题名与作者仍需修订 |
+| `review-v7.md` | `01a05e7d-cd6a-7c28-acd5-a10cfe7e5457` | `contest-qwen/qwen3.7-max` | 14 | 152828 | 536448 | 20483 | `revise`；发现 S7 题名、作者与 PMCID 错误 |
+| `v8.md` | `01a05e86-27d5-7154-bac7-cb63948ece82` | `contest-qwen/qwen3-max` | 12 | 68609 | 164992 | 6817 | 修正 S3-S5、S7 书目元数据；科学内容不变 |
+| `review-v8.md` | `01a05e88-c0ce-793b-a264-77b59077df5f` | `contest-qwen/qwen3.7-max` | 25 | 125950 | 781440 | 18809 | `deliverable`；12/12；来源 8/8 四标识符交叉核验 |
 失败的 `gpt-5.6-sol` reviewer Session 未生成文件且未被覆盖；全新 `qwen3.7-max` Session 完成 V3 评审。模型切换单独披露，不把后续改进只归因于 Workflow。
 ## 结果
-V1 已有三条机制路线，但 V2 将实验室报告时间误当临床医嘱终点，并用无来源标准差支撑正式 RCT。V3 将任务收缩为 n=30 可行性 pilot；V4 修复 ITT、panel 外病原和终点边界；V5 修正 PMID 及未来样本量取整，但独立分支验收发现 Banerjee DOI 仍拼接错误。V6 将 DOI 修正为 `10.1093/cid/civ447`，并以 PMID 26197846、PMCID PMC4560903 交叉核验。六维分数最终达到 12/12，来源 8/8。
+V1 已有三条机制路线，但 V2 将实验室报告时间误当临床医嘱终点，并用无来源标准差支撑正式 RCT。V3 将任务收缩为 n=30 可行性 pilot；V4 修复 ITT、panel 外病原和终点边界；V5 修正 PMID 及未来样本量取整，但独立分支验收发现 Banerjee DOI 仍拼接错误。V6 修正 DOI；V7 的来源投影又暴露 S7 题名与作者错误；V8 以 DOI、PMID、PMCID 和权威页面交叉核验 8/8 来源。六维分数最终达到 12/12。
 ## 终态
 `waiting_human`。研究计划本身已通过独立评审；继续执行需要 IRB、临床团队、患者知情同意、BSL-2 条件和 RDT 资源，不用模拟结果替代。
 ## 文件哈希
@@ -47,7 +50,12 @@ V1 已有三条机制路线，但 V2 将实验室报告时间误当临床医嘱�
 | `v6.md` | `dd943c2606c1016fed1b792c67622feff1a2491c5a2c6c5bab9e4061d8aae0b7` |
 | `review-v6.md` | `0cebfb729786263162959527e18de77fea61cda8b0f87ab0ae9e64d6c0416e04` |
 | `receipt-v6.md` | `74921c5d47caab784ad47f1e5f9c1c1d9e86b72997f5a6be23cdd70ad53682e1` |
+| `v7.md` | `b42bb7c74241b50ac329b7a50bd9c51c5d92e83b5ea5b7c7643c7a31612dcb35` |
+| `review-v7.md` | `49cfd8568f83bf233a904aa39c5a72a2069c4aac71293eaff667775d944e937a` |
+| `v8.md` | `ea9a7941442104ec497d8d51af8865ddc0c5cc45b4688041e5f2ebbadbf61fd0` |
+| `review-v8.md` | `b13fd56eb4c7488ea59aefff31bfa58fe05dd1ccdf0e9c57ddaf88b6ae39d1dc` |
 ## 审计说明
 - review-v4 声称 V4 内容重复；编排器以标题和终态计数核验文件各仅一份，review-v5 通过 diff 再次确认无重复。
 - review-v5 错把 `10.1093/cid/civ478` 判为 Banerjee 论文 DOI；全新分支验收以 PubMed、PMC 和 DOI 交叉核验发现错误，V6 与 review-v6 保留修复链。
+- review-v7 发现 V7 将 S7 论文题名与作者错配；V8 与 review-v8 保留修复和 8/8 交叉核验链。旧 `receipt-v6.md` 只审计 V6，不作为 V8 最终回执。
 - 未来正式 RCT 的 10% 非劣效界值和约 660 例只用于规划，仍需领域专家和统计学家批准。
