@@ -1,9 +1,50 @@
 import asyncio
+import json
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 
 from runtime.adapter import AdapterResult
 from runtime.runtime import Runtime
+
+
+_CHILD_TASK_REENTRANT_PROCESS = r'''
+import asyncio, json, sys
+from pathlib import Path
+from runtime.adapter import AdapterResult
+from runtime.runtime import Runtime
+class Adapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+    def __init__(self):
+        self.runtime = None
+        self.reentrant_error = None
+        self.close_calls = 0
+    async def start(self, request): return object()
+    async def submit(self, handle, request, emit):
+        async def close_from_child():
+            try: await self.runtime.close()
+            except RuntimeError as error: self.reentrant_error = str(error)
+        await asyncio.gather(asyncio.create_task(close_from_child()))
+        return AdapterResult(result_text="done")
+    async def cancel(self, handle, request): return None
+    async def close(self): self.close_calls += 1
+async def events(runtime, turn_id):
+    return [event async for event in runtime.subscribe(turn_id)]
+async def main():
+    adapter = Adapter()
+    runtime = Runtime(Path(sys.argv[1]), {"fake": adapter})
+    adapter.runtime = runtime
+    run = await runtime.launch({"id": "main", "adapter": "fake"}, session_id="session-main")
+    turn = await runtime.submit(run["session_id"], {"id": "message-1", "content": "one"})
+    observed = await asyncio.wait_for(events(runtime, turn["id"]), timeout=1)
+    before_close = adapter.close_calls
+    await runtime.close()
+    print(json.dumps({"error": adapter.reentrant_error, "before_close": before_close, "after_close": adapter.close_calls, "event": observed[-1]["data"]}))
+asyncio.run(main())
+'''
 
 
 class ControlledAdapter:
@@ -198,6 +239,24 @@ async def test_reentrant_close_fails_before_lifecycle_state_changes(tmp_path):
     await runtime.launch({"id": "other", "adapter": "controlled"}, session_id="session-other")
     await runtime.close()
     assert adapter.close_calls == 1
+
+
+def test_child_task_reentrant_close_fails_before_lifecycle_state_changes(tmp_path):
+    result = subprocess.run(
+        [sys.executable, "-c", _CHILD_TASK_REENTRANT_PROCESS, str(tmp_path)],
+        cwd=Path(__file__).parents[1],
+        capture_output=True,
+        text=True,
+        timeout=1,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == {
+        "error": "runtime close cannot run from an active turn",
+        "before_close": 0,
+        "after_close": 1,
+        "event": {"status": "completed", "result_text": "done"},
+    }
 
 
 @pytest.mark.asyncio

@@ -58,13 +58,8 @@ class _Turn:
 
 
 class Runtime:
-    _close_task: asyncio.Task | None = None
-
     def __init__(
-        self,
-        data_root: Path,
-        adapters: dict[str, _RuntimeAdapter],
-        *,
+        self, data_root: Path, adapters: dict[str, _RuntimeAdapter], *,
         kernel: KernelInterface | None = None,
     ):
         _require_data_root(data_root)
@@ -78,6 +73,7 @@ class Runtime:
         self._delegations: dict[str, tuple[str, str]] = {}
         self._adapter_reservations: dict[int, _Turn] = {}
         self._registry_lock = asyncio.Lock()
+        self._close_task: asyncio.Task | None = None
         self._restore()
 
     def _restore(self):
@@ -327,16 +323,20 @@ class Runtime:
         return _run_view(run)
 
     async def _execute(self, turn: _Turn) -> None:
+        token = _CLOSE_RUNTIME.set(self)
         try:
-            await self._run_adapter(turn)
-        except asyncio.CancelledError as error:
-            await self._mark_adapter_finished(turn)
-            await self._handle_cancelled(turn, error)
-        except Exception as error:
-            await self._mark_adapter_finished(turn)
-            await self._finish(
-                turn, "error", None, str(error), force=turn.cancel_requested
-            )
+            try:
+                await self._run_adapter(turn)
+            except asyncio.CancelledError as error:
+                await self._mark_adapter_finished(turn)
+                await self._handle_cancelled(turn, error)
+            except Exception as error:
+                await self._mark_adapter_finished(turn)
+                await self._finish(
+                    turn, "error", None, str(error), force=turn.cancel_requested
+                )
+        finally:
+            _CLOSE_RUNTIME.reset(token)
 
     async def _run_adapter(self, turn: _Turn) -> None:
         if turn.cancel_requested:

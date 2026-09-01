@@ -891,9 +891,7 @@ def test_same_shape_store_with_missing_constraints_rejects_duplicate_submit_seq(
     assert result.stdout.startswith("RunStoreError:runtime store")
 
 
-def test_missing_adapter_fails_startup_without_fallback(tmp_path):
-    created = _output(_run_process(_COMPLETED_PROCESS, tmp_path))
-    script = """
+_MISSING_ADAPTER_PROCESS = """
 from pathlib import Path
 import sys
 from runtime.runtime import Runtime
@@ -911,7 +909,11 @@ try:
 except ValueError as error:
     print(error)
 """
-    result = _run_process(script, tmp_path, created["run_id"])
+
+
+def test_missing_adapter_fails_startup_without_fallback(tmp_path):
+    created = _output(_run_process(_COMPLETED_PROCESS, tmp_path))
+    result = _run_process(_MISSING_ADAPTER_PROCESS, tmp_path, created["run_id"])
     assert result.stdout.strip() == "runtime adapter is unavailable: fake"
 
 
