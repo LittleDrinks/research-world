@@ -108,6 +108,9 @@ class ToolAdapter:
     async def cancel(self, handle, request):
         return None
 
+    async def close(self):
+        return None
+
 
 class KernelOperationsAdapter(ToolAdapter):
     async def submit(self, handle, request, emit):

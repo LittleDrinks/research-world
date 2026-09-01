@@ -67,6 +67,64 @@ class ControlledAdapter:
             raise self.close_error
 
 
+class ReentrantAdapter(ControlledAdapter):
+    def __init__(self):
+        super().__init__()
+        self.runtime = None
+        self.reentrant_error = None
+
+    async def submit(self, handle, request, emit):
+        try:
+            await self.runtime.close()
+        except RuntimeError as error:
+            self.reentrant_error = str(error)
+        return AdapterResult(result_text="done")
+
+
+class ReentrantCancelAdapter(ControlledAdapter):
+    def __init__(self):
+        super().__init__()
+        self.runtime = None
+        self.reentrant_task = None
+
+    async def cancel(self, handle, request):
+        self.reentrant_task = asyncio.create_task(self.runtime.close())
+        await super().cancel(handle, request)
+
+
+class ReentrantCloseAdapter(ControlledAdapter):
+    def __init__(self):
+        super().__init__()
+        self.runtime = None
+        self.reentrant_task = None
+
+    async def close(self):
+        self.close_calls += 1
+        self.close_started.set()
+        self.reentrant_task = asyncio.create_task(self.runtime.close())
+
+
+class MissingCloseAdapter:
+    adapter_id = "missing"
+    supports_multiple_writers = True
+
+    async def start(self, request):
+        return object()
+
+    async def submit(self, handle, request, emit):
+        return AdapterResult(result_text="done")
+
+    async def cancel(self, handle, request):
+        return None
+
+
+class SyncCloseAdapter(MissingCloseAdapter):
+    adapter_id = "sync"
+
+    def close(self):
+        return None
+
+
 def _owned_tasks():
     return asyncio.all_tasks() - {asyncio.current_task()}
 
@@ -102,6 +160,114 @@ async def _running_turns(tmp_path):
     second = await runtime.submit(run["session_id"], {"id": "message-2", "content": "two"})
     await adapter.all_submits_started.wait()
     return runtime, adapter, first, second, _owned_tasks()
+
+
+async def _events(runtime, turn_id):
+    return [event async for event in runtime.subscribe(turn_id)]
+
+
+async def _cancel_twice(task):
+    task.cancel()
+    await asyncio.sleep(0)
+    task.cancel()
+    await asyncio.sleep(0)
+
+
+@pytest.mark.parametrize(
+    "adapter", [MissingCloseAdapter(), SyncCloseAdapter()], ids=["missing", "sync"]
+)
+def test_runtime_rejects_non_async_close_before_store(tmp_path, adapter):
+    with pytest.raises(TypeError, match="adapters must implement RuntimeAdapter"):
+        Runtime(tmp_path, {adapter.adapter_id: adapter})
+    assert not tuple(tmp_path.iterdir())
+
+
+@pytest.mark.asyncio
+async def test_reentrant_close_fails_before_lifecycle_state_changes(tmp_path):
+    adapter = ReentrantAdapter()
+    runtime = Runtime(tmp_path, {"controlled": adapter})
+    adapter.runtime = runtime
+    run = await runtime.launch(
+        {"id": "main", "adapter": "controlled"}, session_id="session-main"
+    )
+    turn = await runtime.submit(run["session_id"], {"id": "message-1", "content": "one"})
+
+    observed = await asyncio.wait_for(_events(runtime, turn["id"]), timeout=1)
+    assert adapter.reentrant_error == "runtime close cannot run from an active turn"
+    assert observed[-1]["data"] == {"status": "completed", "result_text": "done"}
+    await runtime.launch({"id": "other", "adapter": "controlled"}, session_id="session-other")
+    await runtime.close()
+    assert adapter.close_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_reentrant_cancel_close_fails_before_self_wait(tmp_path):
+    adapter = ReentrantCancelAdapter()
+    runtime = Runtime(tmp_path, {"controlled": adapter})
+    adapter.runtime = runtime
+    run = await runtime.launch({"id": "main", "adapter": "controlled"}, session_id="session-main")
+    turn = await runtime.submit(run["session_id"], {"id": "message-1", "content": "one"})
+    await adapter.submit_started.wait()
+    owned_tasks = _owned_tasks()
+
+    await runtime.close()
+
+    with pytest.raises(RuntimeError, match="runtime close cannot run from an active turn"):
+        await adapter.reentrant_task
+    assert (await _events(runtime, turn["id"]))[-1]["data"]["status"] == "cancelled"
+    assert not owned_tasks.intersection(asyncio.all_tasks())
+
+
+@pytest.mark.asyncio
+async def test_reentrant_adapter_close_fails_before_self_wait(tmp_path):
+    adapter = ReentrantCloseAdapter()
+    runtime = Runtime(tmp_path, {"controlled": adapter})
+    adapter.runtime = runtime
+
+    await runtime.close()
+
+    with pytest.raises(RuntimeError, match="runtime close cannot run from an active turn"):
+        await adapter.reentrant_task
+    assert adapter.close_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_cancelled_close_caller_waits_for_shutdown_and_does_not_retry(tmp_path):
+    adapter = ControlledAdapter()
+    adapter.close_gate = asyncio.Event()
+    runtime = Runtime(tmp_path, {"controlled": adapter})
+    closing = asyncio.create_task(runtime.close())
+    await adapter.close_started.wait()
+    owned_tasks = _owned_tasks()
+
+    await _cancel_twice(closing)
+    assert not closing.done()
+    adapter.close_gate.set()
+    with pytest.raises(asyncio.CancelledError):
+        await closing
+
+    assert not owned_tasks.intersection(asyncio.all_tasks())
+    await runtime.close()
+    assert adapter.close_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_cancelled_close_caller_preserves_cancellation_on_failure(tmp_path):
+    adapter = ControlledAdapter()
+    adapter.close_gate = asyncio.Event()
+    adapter.close_error = ValueError("adapter close failed")
+    runtime = Runtime(tmp_path, {"controlled": adapter})
+    closing = asyncio.create_task(runtime.close())
+    await adapter.close_started.wait()
+    await _cancel_twice(closing)
+    assert not closing.done()
+
+    adapter.close_gate.set()
+    with pytest.raises(asyncio.CancelledError):
+        await closing
+    with pytest.raises(RuntimeError, match="runtime close failed"):
+        await runtime.close()
+    assert adapter.close_calls == 1
 
 
 @pytest.mark.asyncio

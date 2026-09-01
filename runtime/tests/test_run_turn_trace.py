@@ -89,6 +89,9 @@ class FakeAdapter:
         handle.cancelled = True
         handle.released.set()
 
+    async def close(self):
+        return None
+
     async def wait_for_handles(self, count=2):
         await asyncio.wait_for(self._wait_for_handles(count), timeout=1)
 
@@ -165,6 +168,9 @@ class MultiWriterSharedHandleAdapter:
     async def cancel(self, handle, request):
         self.cancelled_requests.append(request.turn_id)
         self._releases[request.turn_id].set()
+
+    async def close(self):
+        return None
 
     async def wait_for_turns(self, count):
         await asyncio.wait_for(self._wait_for_turns(count), timeout=1)
@@ -368,7 +374,7 @@ def test_runtime_requires_matching_nonempty_adapter_id(tmp_path, key, adapter_id
         Runtime(data_root=tmp_path, adapters={key: adapter})
 
 
-@pytest.mark.parametrize("method", ["start", "submit", "cancel"])
+@pytest.mark.parametrize("method", ["start", "submit", "cancel", "close"])
 def test_runtime_requires_async_adapter_methods(tmp_path, method):
     adapter = FakeAdapter()
     setattr(adapter, method, lambda *args: None)
