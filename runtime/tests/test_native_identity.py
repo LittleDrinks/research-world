@@ -179,6 +179,34 @@ class CaughtRejectedBindingAdapter:
         return None
 
 
+class RejectedParentWithChildAdapter:
+    adapter_id = "fake"
+    supports_multiple_writers = True
+
+    def __init__(self):
+        self.child_started = asyncio.Event()
+        self.rejection_attempted = asyncio.Event()
+        self.release = asyncio.Event()
+
+    async def start(self, request):
+        return object()
+
+    async def submit(self, handle, request, emit):
+        if request.message_id == "parent":
+            await self.child_started.wait()
+            self.rejection_attempted.set()
+            await request.bind_native_identity({"private_key": "bad-native"})
+        else:
+            self.child_started.set()
+        await self.release.wait()
+        result_text = "child text" if request.message_id == "child" else "parent text"
+        await emit({"type": "delta", "data": {"text": result_text}})
+        return AdapterResult(result_text=result_text)
+
+    async def cancel(self, handle, request):
+        self.release.set()
+
+
 class StreamingAdapter:
     adapter_id = "fake"
     supports_multiple_writers = True
@@ -287,6 +315,34 @@ async def _stream(runtime, run_id, message_id):
 
 async def _next_event(stream):
     return await asyncio.wait_for(anext(stream), 1)
+
+
+async def _rejected_parent_setup(tmp_path):
+    adapter = RejectedParentWithChildAdapter()
+    runtime = Runtime(tmp_path, {"fake": adapter})
+    parent = await runtime.launch({"adapter": "fake"})
+    parent_turn = await runtime.submit(parent["id"], {"id": "parent", "content": "delegate"})
+    child = await runtime.delegate(parent["id"], {"adapter": "fake"}, parent_turn_id=parent_turn["id"])
+    child_turn = await runtime.submit(child["id"], {"id": "child", "content": "task"})
+    await adapter.rejection_attempted.wait()
+    return adapter, runtime, parent_turn, child_turn
+
+
+def _assert_rejected_parent_events(parent_events, child_events):
+    assert [event["type"] for event in parent_events] == ["turn_start", "turn_end"]
+    assert parent_events[-1]["data"] == {
+        "status": "error",
+        "result_text": None,
+        "error": "runtime store native identity has unsupported shape",
+    }
+    assert child_events[-1]["data"] == {
+        "status": "completed",
+        "result_text": "child text",
+    }
+    assert not any(
+        marker in json.dumps(parent_events)
+        for marker in ("child_result", "private_key", "bad-native", "child text")
+    )
 
 
 @pytest.mark.asyncio
@@ -431,6 +487,16 @@ async def test_rejected_binding_hides_adapter_error_text(tmp_path):
     }
     assert "bad-native" not in json.dumps(events)
     assert adapter.post_bind_identity is None
+
+
+@pytest.mark.asyncio
+async def test_rejected_parent_drops_late_child_result(tmp_path):
+    adapter, runtime, parent_turn, child_turn = await _rejected_parent_setup(tmp_path)
+    adapter.release.set()
+    parent_events, child_events = await asyncio.gather(
+        _events(runtime, parent_turn["id"]), _events(runtime, child_turn["id"])
+    )
+    _assert_rejected_parent_events(parent_events, child_events)
 
 
 @pytest.mark.asyncio
