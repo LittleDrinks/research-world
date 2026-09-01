@@ -54,11 +54,11 @@ V3 使用 Peters 圆轨道公式核验地球-太阳引力波耗散。输入、�
 | `review-v2.md` | `de3c4080cf75477c45277a820fdf4a17cb1f3ba3b90712950dc6bc66a4d7a0f4` |
 | `v3.md` | `c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f` |
 | `review-v3.md` | `f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472` |
-| `baseline-matched.md` | `6d5187ff110534d77a594aed6e2a9b4f3661d2f11d80aca9ff79d8e5a1de8e0c` |
+| `baseline-matched.md` | `06b0ae4adfc29ae506290f8feb4eaaf961e2cad831d1dec1e4d8c084b3b708a6` |
 | `baseline-matched-v2.md` | `add15e78cdeeb775a65b5df9cfe7afc5dd512c4acaa09a5025bad750cb249e1b` |
 | `review-baseline-matched.md` | `1f6cd5cf3e9b2712481b539a372ee922ab101b66402825c6b79685650f46f125` |
 | `baseline-matched-v3.md` | `21d42887f740922599d4f89f9b1d6428225fdf668b5784f106b0e0d8b08cfc5e` |
-| `baseline-matched-v4.md` | `e98b9d10547077bfcd56b1d3838265d7d82f59a14c298db1719a50769ff76681` |
+| `baseline-matched-v4.md` | `900c0e1351694896692bad2da26207f2c786f70af34b9c3de446a4c02310653f` |
 | `review-baseline-matched-v4.md` | `41f52319488ac932cf94d9f94896ddfc35add7415235697a66a3a27c7979821b` |
 ## 未解决项
 - V3 将约 1% 水星失稳概率错归于 Batygin & Laughlin 2008；该概率应由 Laskar & Gastineau 2009 支持。最终评审判为不影响实施与主结论的 Minor，交付时保留披露。
