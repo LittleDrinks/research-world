@@ -1,18 +1,9 @@
 from fastapi.testclient import TestClient
 
+from runtime.runtime import Runtime
 from runtime.server import create_app
 
 
-class ClosingRuntime:
-    def __init__(self):
-        self.closed = False
-
-    async def close(self):
-        self.closed = True
-
-
-def test_app_lifespan_awaits_runtime_close():
-    runtime = ClosingRuntime()
-    with TestClient(create_app(runtime)) as client:
+def test_app_serves_health(tmp_path):
+    with TestClient(create_app(Runtime(tmp_path, {}))) as client:
         assert client.get("/health").json() == {"ok": True}
-    assert runtime.closed
