@@ -15,6 +15,7 @@ from .adapter import (
     RuntimeAdapter as _RuntimeAdapter,
     TurnRequest as _TurnRequest,
 )
+from .errors import RuntimeConflictError
 from .runtime_tools import KernelInterface, RuntimeTools
 from .run_store import _AGENT_PARAMS_FIELDS, _AGENT_SPEC_FIELDS, _AGENT_TEXT_FIELDS, _RunStore
 from .trace import TraceLedger
@@ -169,7 +170,7 @@ class Runtime:
             return None
         run = self._session_runs.get(session_id)
         if run is not None and run.agent_snapshot != snapshot:
-            raise ValueError("session launch conflicts with existing agent snapshot")
+            raise RuntimeConflictError("session launch conflicts with existing agent snapshot")
         return run
 
     def _remember_session(self, run):
