@@ -3,7 +3,7 @@ project: q112
 protocol: contest-research-workflow-2026-09-01
 status: waiting_human
 final: v6.md
-final_review: review-v6.md
+final_review: review-v7.md
 ---
 # q112 运行记录
 ## 问题
@@ -24,6 +24,7 @@ Can we create an environmentally friendly replacement for plastics?
 | `review-v5.md` | `01a05e7d-ecea-7ccf-b741-6424ed98200b` | `contest-qwen/qwen3.7-max` | 16 | 263944 | 709632 | 18280 | `deliverable`；12/12；来源 9/9；无科学漂移 |
 | `v6.md` | `01a05eb5-adbe-7342-a986-848354ebad32` | `contest-qwen/qwen3-max` | 15 | 63773 | 261760 | 5377 | 修正 ReCiPe 2016 报告定位与 Geyer 9% 分母 |
 | `review-v6.md` | `01a05eb9-2dea-777b-9ed5-3b663f2538f8` | `contest-qwen/qwen3.7-max` | 11 | 107393 | 291456 | 10305 | `deliverable`；12/12；来源 9/9；报告与论文不再混用 |
+| `review-v7.md` | `01a05ed8-ded8-7e65-b17a-064d1458c1e7` | `contest-qwen/qwen3.7-max` | 21 | 161868 | 726528 | 15414 | `deliverable`；12/12；PMID28776036/PMC5517107；角色边界闭合 |
 失败的 `gpt-5.6-sol` reviewer Session 未生成内容且未被覆盖；全新 `qwen3.7-max` Session 完成 V1 评审。模型切换单独披露，不把改进只归因于 Workflow。
 ## 结果
 V1 把不可替代的碳酸饮料材料体系放在同一比较中。V2 改为 1,000 次 750 mL 冷食外带容器服务，比较 rPET、工业堆肥 PLA/PHA 和可复用 PP；后续评审修复错用标准、来源元数据、ReCiPe 单位和复用 break-even 方程。最终模型 `N_eff=(1-r^D)/(1-r)`，逐影响类别比较 `P/N_eff+W+T+rL` 与单次方案，所有阈值均为待批准设计参数。
@@ -44,6 +45,8 @@ V1 把不可替代的碳酸饮料材料体系放在同一比较中。V2 改为 1
 | `review-v5.md` | `9ef61264edcd5fac6d5a5b505090613d4504fe05003f9227c50a6c732ab56ae9` |
 | `v6.md` | `c26821f134516a9aab1932ed97805ad3f6c3b4a43301d8c2f2d91a3c3f80b84d` |
 | `review-v6.md` | `a52e3bfc0e9f56ace3c22913f65dbacf978a5fda74faebe5b194b08c2c2db934` |
+| `review-v7.md` | `b8f1655bc67d432c8834e55b8faa18ebfb315b17f798e0f6d95ca5fc9d887cb9` |
 ## 未解决项
 - 计划质量不等价于材料性能、LCA 或运营系统已被实证验证。
 - 自定义性能阈值与基础设施阈值仍需研究团队和利益相关方批准。
+- review-v6 的错误 PMC 与“planned 终态”措辞保留为被拒历史；review-v7 使用正确主记录并只给 reviewer verdict/建议。

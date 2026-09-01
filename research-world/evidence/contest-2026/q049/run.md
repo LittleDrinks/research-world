@@ -2,9 +2,9 @@
 project: q049
 protocol: contest-research-workflow-2026-09-01
 status: completed
-final: v4.md
-final_review: review-v4.md
-final_receipt: receipt-v4.md
+final: v5.md
+final_review: review-v5.md
+final_receipt: receipt-v5.md
 matched_baseline: baseline-matched-v6.md
 matched_review: review-baseline-matched-v6.md
 matched_receipt: receipt-baseline-matched-v6.md
@@ -39,6 +39,9 @@ Gravity keeps planets in stable orbits around the sun. Yet orbits do decay very 
 | `v4.md` | `01a05e78-2dc7-7f1a-8c8c-cc0d8f0d4fb4` | `contest-qwen/qwen3-max` | 14 | 81158 | 296192 | 6630 | 修正水星失稳概率来源归因并投影来源元数据；科学主线不变 |
 | `review-v4.md` | `01a05e7d-bee7-7696-b996-6b0536574739` | `contest-qwen/qwen3.7-max` | 22 | 142884 | 1039104 | 13854 | `deliverable`；12/12；来源 6/6；概率来源已纠正 |
 | `receipt-v4.md` | `01a05eb5-adc5-7ec2-a7a2-5952895be3eb` | `contest-qwen/qwen3.7-max` | 13 | 97686 | 359040 | 9177 | 独立确认最终来源分母 6/6、哈希、Peters 复算与概率归因 |
+| `v5.md` | `01a05ed8-deed-7ad4-8e41-715198ec6381` | `contest-qwen/qwen3-max` | 13 | 59071 | 229888 | 5036 | 将 artifact 内“当前终态”改为“当前研究结论”；科学内容零漂移 |
+| `review-v5.md` | `01a05edb-c929-7bc5-8e0b-87f556e74251` | `contest-qwen/qwen3.7-max` | 15 | 157174 | 540672 | 13907 | `deliverable`；12/12；来源 6/6；仅给 reviewer verdict |
+| `receipt-v5.md` | `01a05ee1-6f4c-7a29-ac3a-f11bf0acad9e` | `contest-qwen/qwen3.7-max` | 11 | 62988 | 206976 | 6206 | 可归因审计回执；记录 auditor/reviewer UUID、哈希和 RESULT |
 成功的 `gpt-5.6-sol` reviewer Session 中出现过上游 `401/503` 重试；模型随后继续完成任务。失败的 `gpt-5.3-codex` Session 未生成内容，未被覆盖或计入成功评审。
 ## 同条件对照
 最初的 `baseline.md` 与 V1 实际长度和 calls 不匹配，只保留为历史直接回答。七个全新 attempt 全部留痕；attempt 6 由独立 reviewer 判定为可交付 matched baseline。两侧相同原题、`qwen3-max`、检索权限和 3500–5000 中文字目标，均在一个独立 Session 内完成；实际检索路径分别为 Crossref 与 anysearch，不冒充同行为或因果。
@@ -80,7 +83,11 @@ V3 使用 Peters 圆轨道公式核验地球-太阳引力波耗散。输入、�
 | `v4.md` | `fe013717797c44cc1dd401982ed1f0f8e22311a3b2661f3b489f9389981c54eb` |
 | `review-v4.md` | `b61a0ffea0e40ca93bce9371eba4b71e5656e1bbfa5dfb9d8c871dcfdbe05068` |
 | `receipt-v4.md` | `1ecd438af35d08ec332e155b98ea595cdaee4c26b5ab94a96d67619b04618591` |
+| `v5.md` | `51dc9f52a52fb9379e9a2c148eeafe2fc5579dd5da498d6dd6cda9028ecd460f` |
+| `review-v5.md` | `96b19f719b7a340fce43e2d3e192e67901d21c057c977bf08e5837d9d4c6f853` |
+| `receipt-v5.md` | `dbdf4f3834e2e5793230af38b9338c7eda421a5e52b2dd81d2fd1fbdbc4d6636` |
 ## 未解决项
 - V3 的约 1% 水星失稳概率来源归因错误已在 V4 修正为 Laskar & Gastineau 2009；Batygin & Laughlin 2008 仅支撑构造的 1.261 Gyr 失稳轨迹。
 - V3 未把限定计算脚本作为 Artifact 保存，但公开了公式、输入、命令、输出和输出哈希；最终 reviewer 已独立复现。
 - Matched baseline attempt 6 只用于公平 benchmark，不可作为学术答案直接采用；其关键数值正确，但没有显式来源标识、Direction 或研究计划，独立 reviewer 已明确披露。
+- receipt-v4 的 `auditor_session: current` 与 V4 artifact 的“当前终态”均保留为被拒历史；V5/review-v5/receipt-v5 已分别闭合角色边界与可归因性。

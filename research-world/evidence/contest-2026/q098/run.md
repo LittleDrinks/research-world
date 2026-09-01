@@ -2,8 +2,8 @@
 project: q098
 protocol: contest-research-workflow-2026-09-01
 status: waiting_human
-final: v9.md
-final_review: review-v9.md
+final: v10.md
+final_review: review-v10.md
 ---
 # q098 运行记录
 ## 问题
@@ -31,6 +31,8 @@ Why do we need sleep?
 | `review-v8.md` | `01a05eb9-2de5-73c8-b99d-977f4b97dede` | `contest-qwen/qwen3.7-max` | 31 | 280519 | 1706496 | 22147 | `deliverable`；12/12；发现 S3 继承页码错误 |
 | `v9.md` | `01a05ec1-53ee-77ff-805e-3947e3934067` | `contest-qwen/qwen3-max` | 4 | 25509 | 45952 | 4675 | 单点修正 S3 页码为 628-631 |
 | `review-v9.md` | `01a05ec2-ed31-7d94-b162-eff2abc39cf8` | `contest-qwen/qwen3.7-max` | 10 | 76539 | 274560 | 7482 | `deliverable`；12/12；来源 8/8；零 open findings |
+| `v10.md` | `01a05ed8-dedd-7933-b0cc-3b23e3065aee` | `contest-qwen/qwen3-max` | 11 | 31867 | 171264 | 5431 | 补全 S5 权威题名的 Brief communication 前缀 |
+| `review-v10.md` | `01a05edc-80ec-717a-a4d2-81b799ea5e7a` | `contest-qwen/qwen3.7-max` | 17 | 87011 | 523776 | 10890 | `deliverable`；12/12；来源 8/8；真实 reviewer UUID |
 失败的 `gpt-5.6-sol` reviewer Session 未生成内容且未被覆盖；全新 `qwen3.7-max` Session 完成 V1 评审。模型切换单独披露，不把改进只归因于 Workflow。
 ## 结果
 V1 已覆盖突触稳态、类淋巴和免疫代谢三方向，但混淆疫苗研究并让观察性设计承担因果结论。V2 的修订又用不相关论文支撑 HOMA-IR 效应和方差。最终版改为 120 名完成者的前瞻性 precision pilot；V8 以 NCBI 修正 S5 作者和两条疫苗论文 DOI，V9 修正 S3 页码。Fisher-z 只作为粗相关精度基准，不冒充调整模型功效，三方向证据、局限和可区分预测均保留。
@@ -58,6 +60,8 @@ V1 已覆盖突触稳态、类淋巴和免疫代谢三方向，但混淆疫苗�
 | `review-v8.md` | `407319e10562c77cb93525efa9caddca9a97bcaf90779e8a5348f44e5486766a` |
 | `v9.md` | `3c2c0c582abc502626be4e6fcbdabb309f82baa44338e88462c670e95b1498d4` |
 | `review-v9.md` | `ab76206f2868783aa4ecf8987a737103cfce00d1c9729ebff017bb692090069a` |
+| `v10.md` | `324a1a9c5eaffdd78c2f95a9294282df5d93d9630a5dfc14d9fa80e11fb92c1b` |
+| `review-v10.md` | `d7089814bf81e341d9cb16271c907b52ac4512842864a251b7940b06cfa96dad` |
 ## 审计说明
 - review-v2/review-v3 将工具重复展示误判为文件重复；编排器以标题和终态计数核验每版均只有一份正文，review-v5 通过 diff 再确认。
 - Matthews 2012 的青少年横断面估计只作背景，不用于成人队列样本量。
