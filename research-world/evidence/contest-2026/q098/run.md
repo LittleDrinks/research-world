@@ -4,6 +4,7 @@ protocol: contest-research-workflow-2026-09-01
 status: waiting_human
 final: v6.md
 final_review: review-v6.md
+final_receipt: receipt-v6.md
 ---
 # q098 运行记录
 ## 问题
@@ -24,6 +25,7 @@ Why do we need sleep?
 | `review-v5.md` | `01a05dd9-b644-7462-88e2-04971a2295e2` | `contest-qwen/qwen3.7-max` | 21 | 93233 | 346368 | 10699 | `deliverable`；12/12；引用 8/8；无残留 finding |
 | `v6.md` | `01a05e01-c0a6-78f9-bac2-8ac56832cd4f` | `contest-qwen/qwen3-max` | 12 | 64850 | 225408 | 4734 | 收口为协议终态 `waiting_human` |
 | `review-v6.md` | `01a05e04-9b92-7d94-bc88-0e6b15604e0e` | `contest-qwen/qwen3.7-max` | 22 | 168038 | 599808 | 13300 | `deliverable`；12/12；引用 8/8 沿用且无科学回退 |
+| `receipt-v6.md` | `01a05e40-d8b3-7b36-9df9-d393c3d7cae5` | `contest-qwen/qwen3.7-max` | 9 | 62793 | 257664 | 5172 | 终态审计回执；复算 reviewer 模型、Session、token 与 RESULT |
 失败的 `gpt-5.6-sol` reviewer Session 未生成内容且未被覆盖；全新 `qwen3.7-max` Session 完成 V1 评审。模型切换单独披露，不把改进只归因于 Workflow。
 ## 结果
 V1 已覆盖突触稳态、类淋巴和免疫代谢三方向，但混淆疫苗研究并让观察性设计承担因果结论。V2 的修订又用不相关论文支撑 HOMA-IR 效应和方差。最终版改为 120 名完成者的前瞻性 precision pilot，以基线 14 天腕动计睡眠预测 6 个月 HOMA-IR；Fisher-z 只作为粗相关精度基准，不冒充调整模型功效，三方向证据、局限和可区分预测均保留。
@@ -44,6 +46,7 @@ V1 已覆盖突触稳态、类淋巴和免疫代谢三方向，但混淆疫苗�
 | `review-v5.md` | `d67f31b996bf14abb1b2a41a76d0f0e74dd7cdd8899665d45d5ee14bb92ea51c` |
 | `v6.md` | `d28d61310c90fe9a9ec8506fae7229827a9d35081210ce9b7f55807003ebcb00` |
 | `review-v6.md` | `d6b3dfa704089e9aef44d6f9aad2a8ddc9a29cb99fb9cde12eb15fb2a5fbabc3` |
+| `receipt-v6.md` | `5031a70987184d4db06d0ea3e418b5e27275b19e3db0f72ce42f06408ad630fc` |
 ## 审计说明
 - review-v2/review-v3 将工具重复展示误判为文件重复；编排器以标题和终态计数核验每版均只有一份正文，review-v5 通过 diff 再确认。
 - Matthews 2012 的青少年横断面估计只作背景，不用于成人队列样本量。
