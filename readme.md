@@ -60,6 +60,7 @@ verified: 2026-09-01
 - Review Session：全新 Pi Session，只读取 canonical Project、V1、V1 来源记录和统一 rubric，不读取 V1 Trajectory；输出逐项分数、引用核验、具体缺陷和修改要求。
 - Revision Session：全新 Pi Session，读取 canonical Project、V1、来源记录和 review；生成 V2。未通过时，每次修订继续使用全新 Session 并保留 V3、V4；提交叙事固定展示 V1→评审→最终版，不覆盖旧版本。
 - Session 归属固定为 Project 加版本或职责；RESULT 记录实际 Session id、模型、调用和 token。正式案例至少保留一组 Qwen 结果；其他上游模型可用于评审、修订或鲁棒性比较。模型变更后的提升不归因于 Workflow。
+- 版本 Artifact 只记录 `candidate`、`reviewed`、`superseded` 等版本阶段与 reviewer verdict，不裁决 Project 终态。历史 Artifact 中出现的 `completed` 或 `pending_review` 仅是该 Session 的原始自述，不参与终态统计。
 ### 深度案例 rubric
 每项 0、1、2 分：0 为缺失或不可用，1 为存在但有实质缺陷，2 为可直接进入提交材料。最终版须总分至少 10/12、无 0 分、关键引用抽查通过、无伪造执行结果，并由独立 reviewer 判定可交付。
 | 维度 | 2 分条件 |
@@ -71,7 +72,7 @@ verified: 2026-09-01
 | 研究计划 | 数据、方法、对照、判断方式、产物、资源和风险足以让研究者继续实施 |
 | 表达与追溯 | 问题、证据、方向、取舍和计划形成单一主线，来源与版本可回读 |
 ### 终态
-按表中顺序裁决，命中即停止；每个 Project 恰好一个终态。
+按表中顺序裁决，命中即停止；每个 Project 恰好一个终态。唯一权威记录为 `run.md` frontmatter 的 `status`，且必须同时指向 final 与 final_review；其他 Artifact、review、Herdr 或 Session 状态均不得覆盖该值。
 | 终态 | 判定 |
 |---|---|
 | `waiting_human` | 继续运行需要领域裁决、受限数据权限、安全或伦理决定；记录待决问题，不伪造替代结果 |
@@ -83,7 +84,7 @@ q049 在相同问题、模型、检索权限和近似输出预算下比较直接
 ### Herdr 任务协议
 - `MISSION`：固定 Project id、原始问题、任务协议版本、Session 职责、模型、来源权限、输出位置和禁止项。
 - `BACKBRIEF`：调用模型前复述 Project、问题边界、计划检索、预期文件、Session 职责、模型和已知限制；Project、版本或职责不一致时停止。
-- `RESULT`：形成终态后报告终态、模型、Session id、调用和 token、来源、版本产物、rubric、失败和未解决项；Herdr 的 `idle`、`done`、`blocked` 不是科研 RESULT。
+- `RESULT`：报告 Session 结果、模型、Session id、调用和 token、来源、版本产物、rubric、失败和未解决项；独立评审后才由 `run.md` 裁决 Project 终态。Herdr 的 `idle`、`done`、`blocked` 不是科研 RESULT。
 - 计划与执行分开表述。实际执行保存输入、命令或方法、输出、退出状态、数据或文件哈希和限制；未执行步骤明确标为 planned，不用模拟结果填充。
 - API key 和其他凭证只存在于 Runtime 环境，不得进入 prompt、Tool I/O、Trajectory、Artifact、清单、截图或失败输出。发现泄漏立即停止发布、隔离受影响产物、脱敏并重新运行；含密钥版本不得作为证据。
 ## P1-P20 证据矩阵
