@@ -2,8 +2,8 @@
 project: q098
 protocol: contest-research-workflow-2026-09-01
 status: waiting_human
-final: v7.md
-final_review: review-v7.md
+final: v9.md
+final_review: review-v9.md
 ---
 # q098 运行记录
 ## 问题
@@ -27,9 +27,13 @@ Why do we need sleep?
 | `receipt-v6.md` | `01a05e40-d8b3-7b36-9df9-d393c3d7cae5` | `contest-qwen/qwen3.7-max` | 9 | 62793 | 257664 | 5172 | 终态审计回执；复算 reviewer 模型、Session、token 与 RESULT |
 | `v7.md` | `01a05e7a-73cf-7d60-855d-9c4c92b40ccd` | `contest-qwen/qwen3-max` | 7 | 30335 | 107264 | 5061 | 来源元数据投影；科学内容不变 |
 | `review-v7.md` | `01a05e7d-fc50-7f02-a114-051098f7d274` | `contest-qwen/qwen3.7-max` | 21 | 168795 | 1039104 | 15833 | `deliverable`；12/12；来源 8/8；无科学漂移 |
+| `v8.md` | `01a05eb5-adce-7ecb-b63d-0f0daae487df` | `contest-qwen/qwen3-max` | 18 | 49173 | 444032 | 6094 | 修正 S5 作者与 S7/S8 错配 DOI |
+| `review-v8.md` | `01a05eb9-2de5-73c8-b99d-977f4b97dede` | `contest-qwen/qwen3.7-max` | 31 | 280519 | 1706496 | 22147 | `deliverable`；12/12；发现 S3 继承页码错误 |
+| `v9.md` | `01a05ec1-53ee-77ff-805e-3947e3934067` | `contest-qwen/qwen3-max` | 4 | 25509 | 45952 | 4675 | 单点修正 S3 页码为 628-631 |
+| `review-v9.md` | `01a05ec2-ed31-7d94-b162-eff2abc39cf8` | `contest-qwen/qwen3.7-max` | 10 | 76539 | 274560 | 7482 | `deliverable`；12/12；来源 8/8；零 open findings |
 失败的 `gpt-5.6-sol` reviewer Session 未生成内容且未被覆盖；全新 `qwen3.7-max` Session 完成 V1 评审。模型切换单独披露，不把改进只归因于 Workflow。
 ## 结果
-V1 已覆盖突触稳态、类淋巴和免疫代谢三方向，但混淆疫苗研究并让观察性设计承担因果结论。V2 的修订又用不相关论文支撑 HOMA-IR 效应和方差。最终版改为 120 名完成者的前瞻性 precision pilot，以基线 14 天腕动计睡眠预测 6 个月 HOMA-IR；Fisher-z 只作为粗相关精度基准，不冒充调整模型功效，三方向证据、局限和可区分预测均保留。
+V1 已覆盖突触稳态、类淋巴和免疫代谢三方向，但混淆疫苗研究并让观察性设计承担因果结论。V2 的修订又用不相关论文支撑 HOMA-IR 效应和方差。最终版改为 120 名完成者的前瞻性 precision pilot；V8 以 NCBI 修正 S5 作者和两条疫苗论文 DOI，V9 修正 S3 页码。Fisher-z 只作为粗相关精度基准，不冒充调整模型功效，三方向证据、局限和可区分预测均保留。
 ## 终态
 `waiting_human`。研究计划已通过独立评审；继续需要 IRB、参与者知情同意、腕动计和实验室资源，观察性结果仍不能建立因果关系。
 ## 文件哈希
@@ -50,7 +54,12 @@ V1 已覆盖突触稳态、类淋巴和免疫代谢三方向，但混淆疫苗�
 | `receipt-v6.md` | `5031a70987184d4db06d0ea3e418b5e27275b19e3db0f72ce42f06408ad630fc` |
 | `v7.md` | `dcd7ae30be8d1bebf3b69025141edfbb75d2585c2ea918be28b7453839ca2faf` |
 | `review-v7.md` | `4bde0114d587eb675c9efaff15bcc327a18fa5f7fad708be3120a01b88846fe4` |
+| `v8.md` | `e56b7e30297e4fb9642e4f97d0803665062980220c275cd5be45b0651dbb1916` |
+| `review-v8.md` | `407319e10562c77cb93525efa9caddca9a97bcaf90779e8a5348f44e5486766a` |
+| `v9.md` | `3c2c0c582abc502626be4e6fcbdabb309f82baa44338e88462c670e95b1498d4` |
+| `review-v9.md` | `ab76206f2868783aa4ecf8987a737103cfce00d1c9729ebff017bb692090069a` |
 ## 审计说明
 - review-v2/review-v3 将工具重复展示误判为文件重复；编排器以标题和终态计数核验每版均只有一份正文，review-v5 通过 diff 再确认。
 - Matthews 2012 的青少年横断面估计只作背景，不用于成人队列样本量。
 - 旧 `receipt-v6.md` 只审计 V6，不作为 V7 最终回执。
+- review-v7 漏检 S5 作者与 S7/S8 DOI 错配；V8/V9 与独立 review 保留完整修复链。
