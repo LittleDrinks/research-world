@@ -4,6 +4,9 @@ protocol: contest-research-workflow-2026-09-01
 status: completed
 final: v3.md
 final_review: review-v3.md
+matched_baseline: baseline-matched-v6.md
+matched_review: review-baseline-matched-v6.md
+matched_receipt: receipt-baseline-matched-v6.md
 ---
 # q049 运行记录
 ## 问题
@@ -24,24 +27,30 @@ Gravity keeps planets in stable orbits around the sun. Yet orbits do decay very 
 | `baseline-matched-v2.md` | `01a05e0b-4ecc-7866-b6fa-51a5e78ebcbf` | `contest-qwen/qwen3-max` | 21 | 113326 | 555520 | 3244 | 未选 attempt 2；单次写入但长度不足且无来源 |
 | `review-baseline-matched.md` | `01a05e0e-29a6-7ae4-b576-9f83ffa8a0be` | `contest-qwen/qwen3.7-max` | 33 | 168772 | 1296768 | 30502 | attempt 1/2 比较；发现定量错误 |
 | `baseline-matched-v3.md` | `01a05e12-6fe4-7a37-9851-6e9928edd212` | `contest-qwen/qwen3-max` | 19 | 105927 | 388992 | 2523 | 未选 attempt 3；写入未核实的 `10^150` 年 |
-| `baseline-matched-v4.md` | `01a05e15-bb6b-76c9-8dd9-fa631bb76608` | `contest-qwen/qwen3-max` | 23 | 159036 | 561664 | 8093 | 选定 matched baseline；一次 Session、三次 write |
-| `review-baseline-matched-v4.md` | `01a05e1a-2fe5-73a2-898d-256e8dbdccd5` | `contest-qwen/qwen3.7-max` | 28 | 282890 | 1254528 | 16512 | benchmark `deliverable`；baseline 6/12；关键定量 2/3 |
+| `baseline-matched-v4.md` | `01a05e15-bb6b-76c9-8dd9-fa631bb76608` | `contest-qwen/qwen3-max` | 23 | 159036 | 561664 | 8093 | 未选 attempt 4；违反最多六次检索、一次 write 的自定控制 |
+| `review-baseline-matched-v4.md` | `01a05e1a-2fe5-73a2-898d-256e8dbdccd5` | `contest-qwen/qwen3.7-max` | 28 | 282890 | 1254528 | 16512 | attempt 4 评审；后续分支验收否决其协议合规性 |
+| `baseline-matched-v5.md` | `01a05e40-1e01-7328-8454-b5ae761d51de` | `contest-qwen/qwen3-max` | 25 | 135692 | 555008 | 10937 | 未选 attempt 5；实际 5234 字符、三次仓库 write，并使用禁用来源 |
+| `baseline-matched-v6.md` | `01a05e45-a299-7a05-b089-d721ecc89764` | `contest-qwen/qwen3-max` | 27 | 1182967 | 393984 | 12902 | 选定 attempt 6；raw 4708 字符、一次仓库 write；Peters 复算正确 |
+| 无产物 | `01a05e4b-a17d-7e61-a1fa-df919f374c1c` | `contest-qwen/qwen3-max` | 28 | 134808 | 792704 | 4028 | 未选 attempt 7；超过检索控制后主动停止，未写仓库产物 |
+| `review-baseline-matched-v6.md` | `01a05e4e-e52a-7aec-8570-14f7c2bc777f` | `contest-qwen/qwen3.7-max` | 37 | 239614 | 1706496 | 24193 | benchmark `deliverable`；baseline 6/12，V1 9/12 |
+| 无产物 | `01a05e59-0f72-7d68-bf85-a4c61ed42c68` | `contest-qwen/qwen3-coder-plus` | 5 | 11883 | 0 | 53 | `failed`；上游拒绝 tool role，未生成收据 |
+| `receipt-baseline-matched-v6.md` | `01a05e5a-0533-76d7-b904-a94f7ad80f5c` | `contest-qwen/qwen3.7-max` | 12 | 108308 | 468864 | 8716 | 独立回算 Session、模型、token、write、哈希与 RESULT；`deliverable` |
 成功的 `gpt-5.6-sol` reviewer Session 中出现过上游 `401/503` 重试；模型随后继续完成任务。失败的 `gpt-5.3-codex` Session 未生成内容，未被覆盖或计入成功评审。
 ## 同条件对照
-最初的 `baseline.md` 与 V1 实际长度和 calls 不匹配，只保留为历史直接回答。四个全新 attempt 全部留痕；attempt 4 由独立 reviewer 选为 matched baseline。两侧相同原题、`qwen3-max`、anysearch 权限和 3500–5000 中文字目标，均在一个独立 Session 内完成。
-| 指标 | Matched direct attempt 4 | Workflow V1 |
+最初的 `baseline.md` 与 V1 实际长度和 calls 不匹配，只保留为历史直接回答。七个全新 attempt 全部留痕；attempt 6 由独立 reviewer 判定为可交付 matched baseline。两侧相同原题、`qwen3-max`、检索权限和 3500–5000 中文字目标，均在一个独立 Session 内完成；实际检索路径分别为 Crossref 与 anysearch，不冒充同行为或因果。
+| 指标 | Matched direct attempt 6 | Workflow V1 |
 |---|---:|---:|
 | 模型 | `contest-qwen/qwen3-max` | `contest-qwen/qwen3-max` |
-| 文件字符 `wc -m` | 4218 | 4970（生成时） |
-| 模型调用 | 23 | 25 |
-| 非缓存输入 token | 159036 | 98844 |
-| 缓存读取 token | 561664 | 373120 |
-| 输出 token | 8093 | 4567 |
+| 文件字符 `wc -m` | 4708 | 4970（原始 write；当前投影 4968） |
+| 模型调用 | 27 | 25 |
+| 非缓存输入 token | 1182967 | 98844 |
+| 缓存读取 token | 393984 | 373120 |
+| 输出 token | 12902 | 4567 |
 | 六维 rubric | 6/12 | 9/12 |
-| 关键定量来源 | 2/3 | 全部来源 2/5 |
+| 显式来源 | 0 条 | 全部来源 2/5 有效 |
 | 可区分 Direction | 0 | 3 |
 | 可实施研究计划 | 无 | 有，但 V1 判据错误 |
-Matched direct attempt 4 的 Peters 时间和 Ghosh 转述均错两个数量级；Workflow V1 增加了 Direction 比较和研究计划，但引用有效率更低，并含 22 个数量级的功率错误。最终版相对 V1 从 9/12 提升到 12/12，引用从 2/5 提升到 5/5；改善发生在独立评审、两次修订和一次限定计算之后，不能只归因于 Workflow。Attempt 4 token 高于 V1，作为实测成本差异报告，不事后重采样刷预算。
+Matched direct attempt 6 的 Peters 时间经独立复算正确，但无显式 URL/DOI、Direction 或研究计划，不能作为学术答案直接采用。Workflow V1 增加了 Direction 比较和研究计划，但引用有效率只有 2/5，并含 22 个数量级的功率错误。最终版相对 V1 从 9/12 提升到 12/12，引用从 2/5 提升到 5/5；改善发生在独立评审、两次修订和一次限定计算之后，不能只归因于 Workflow。Attempt 6 token 显著高于 V1，作为实测成本差异报告，不事后重采样刷预算。
 ## 实际计算
 V3 使用 Peters 圆轨道公式核验地球-太阳引力波耗散。输入、公式、命令、输出和退出码写入 `v3.md`；输出为 `P = 196.291 W`、`t = 3.374e+30 s = 1.069e+23 years`。输出文本 SHA-256 为 `7a546ef6f2dd84fdaf967de502583353a6d35abea74b10f3f209412dbb2a2361`。最终 reviewer 独立复算数值并重算该哈希，结果一致。
 ## 文件哈希
@@ -60,7 +69,11 @@ V3 使用 Peters 圆轨道公式核验地球-太阳引力波耗散。输入、�
 | `baseline-matched-v3.md` | `21d42887f740922599d4f89f9b1d6428225fdf668b5784f106b0e0d8b08cfc5e` |
 | `baseline-matched-v4.md` | `900c0e1351694896692bad2da26207f2c786f70af34b9c3de446a4c02310653f` |
 | `review-baseline-matched-v4.md` | `41f52319488ac932cf94d9f94896ddfc35add7415235697a66a3a27c7979821b` |
+| `baseline-matched-v5.md` | `ad68926ebc6a462ed95794c8723b4f62144bae983e9c4d0ae4d42ff7494d0eec` |
+| `baseline-matched-v6.md` | `7f13d8dd0a682aa470fcffaa1098f8a140cc2d43006035aecb3ab4122cb42d1b` |
+| `review-baseline-matched-v6.md` | `942c6d9551e69683b5c4820e41d605d3c014097fbb7ab94bbde6dd57775c936a` |
+| `receipt-baseline-matched-v6.md` | `47e2785acbe9f313795338c0f9fc2c54aecbe92508a9a7349b65f53a0bda1e02` |
 ## 未解决项
 - V3 将约 1% 水星失稳概率错归于 Batygin & Laughlin 2008；该概率应由 Laskar & Gastineau 2009 支持。最终评审判为不影响实施与主结论的 Minor，交付时保留披露。
 - V3 未把限定计算脚本作为 Artifact 保存，但公开了公式、输入、命令、输出和输出哈希；最终 reviewer 已独立复现。
-- Matched baseline attempt 4 只用于公平 benchmark，不可作为可靠科学答案直接采用；其 Peters 时间与 Ghosh 比值均错两个数量级，独立 reviewer 已明确披露。
+- Matched baseline attempt 6 只用于公平 benchmark，不可作为学术答案直接采用；其关键数值正确，但没有显式来源标识、Direction 或研究计划，独立 reviewer 已明确披露。
