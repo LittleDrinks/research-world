@@ -1,23 +1,23 @@
 # 首批五案例结果
 | Project | 验证形态 | V1 | 最终版 | 引用 | 终态 | 最终证据 |
 |---|---|---:|---:|---:|---|---|
-| `q049` | 引文约束、限定计算、同模型直接回答 | 9/12 | 12/12 | 6/6 | `completed` | `q049/v5.md`、`q049/review-v5.md`、`q049/receipt-v5.md`、`q049/run.md` |
-| `q089` | 效率边界、材料路线、TPV 计划 | 10/12 | 12/12 | 8/8 | `completed` | `q089/v7.md`、`q089/review-v8.md`、`q089/run.md` |
-| `q021` | 冲突证据、临床 pilot、ITT | 10/12 | 12/12 | 8/8 | `waiting_human` | `q021/v8.md`、`q021/review-v8.md`、`q021/run.md` |
-| `q112` | 功能单位、LCA、复用 break-even | 7/12 | 12/12 | 9/9 | `waiting_human` | `q112/v6.md`、`q112/review-v7.md`、`q112/run.md` |
-| `q098` | 三机制比较、人体时序 pilot | 7/12 | 12/12 | 8/8 | `waiting_human` | `q098/v10.md`、`q098/review-v10.md`、`q098/run.md` |
+| `q049` | 引文约束、限定计算、同模型直接回答 | 9/12 | 12/12 | 6/6 | `completed` | `q049/v5.md`、`q049/review-v5.md`、`q049/receipt-v5.md`、`q049/run.md`；matched 展示链为 `baseline-matched-v9.md`、`review-baseline-matched-v10.md`、`receipt-baseline-matched-v9.md` |
+| `q089` | 效率边界、材料路线、TPV 计划 | 10/12 | 12/12 | 8/8 | `completed` | `q089/v7.md`、`q089/review-v9.md`、`q089/receipt-v10.md`、`q089/run.md` |
+| `q021` | 冲突证据、临床 pilot、ITT | 10/12 | 12/12 | 8/8 | `waiting_human` | `q021/v8.md`、`q021/review-v9.md`、`q021/receipt-v10.md`、`q021/run.md` |
+| `q112` | 功能单位、LCA、复用 break-even | 7/12 | 12/12 | 9/9 | `waiting_human` | `q112/v6.md`、`q112/review-v7.md`、`q112/receipt-v7.md`、`q112/run.md` |
+| `q098` | 三机制比较、人体时序 pilot | 7/12 | 12/12 | 8/8 | `waiting_human` | `q098/v10.md`、`q098/review-v10.md`、`q098/receipt-v12.md`、`q098/run.md` |
 ## 同条件对照
-q049 的 matched `qwen3-max` 直接回答为 6/12，Workflow V1 为 9/12，最终版为 12/12。两侧 raw artifact 长度为 4708/4970 字符、calls 为 27/25；直接回答没有显式来源记录，Workflow V1 全部来源 2/5 有效，最终版 6/6。V1 增加三个 Direction 与研究计划，但可靠性没有自动提升：matched baseline 的 Peters 数值正确却不可追溯，V1 的功率错 22 个数量级并含错配 DOI。最终改善发生在独立评审、修订和一次限定计算之后；生成模型保持 `qwen3-max`，评审模型发生变化，不能把全部提升只归因于 Workflow。六个未选 attempt 与选择理由均保留在 `q049/run.md`。
+q049 冻结的 matched `qwen3-max` attempt 6 为 6/12，Workflow V1 为 9/12，最终版为 12/12。两侧 raw artifact 长度为 4708/4970 字符、calls 为 27/25；attempt 6 没有显式来源记录，Workflow V1 全部来源 2/5 有效，最终版 6/6。`baseline-matched-v9.md` 是独立 Session 产生的可追溯展示投影，修正水星 Peters 时间、条件质量损失外移并补齐来源，不回写 attempt 6 的冻结长度、调用、token 或评分。V1 增加三个 Direction 与研究计划，但可靠性没有自动提升：attempt 6 的地球 Peters 数值正确却不可追溯，V1 的功率错 22 个数量级并含错配 DOI。最终改善发生在独立评审、修订和限定计算之后；模型变化单独披露，不能把全部提升只归因于 Workflow。六个未选 attempt 与后续修订均保留在 `q049/run.md`。
 ## 代价
 | Project | 模型调用 | 非缓存输入 token | 缓存读取 token | 输出 token |
 |---|---:|---:|---:|---:|
-| `q049` | 522 | 4083153 | 15175808 | 253717 |
-| `q089` | 256 | 1498774 | 6476928 | 157845 |
-| `q021` | 355 | 2256928 | 9117312 | 183101 |
-| `q112` | 234 | 1568324 | 5640448 | 128180 |
-| `q098` | 365 | 2671240 | 10272512 | 208905 |
-| **合计** | **1732** | **12078419** | **46683008** | **931748** |
-统计包含基线、生成、评审、修订和失败 Session；各 Session 明细与文件哈希见对应 `run.md`。
+| `q049` | 624 | 4710187 | 20874368 | 380657 |
+| `q089` | 280 | 1612961 | 6948096 | 169321 |
+| `q021` | 378 | 2397392 | 9661952 | 199319 |
+| `q112` | 245 | 1633848 | 5829376 | 129887 |
+| `q098` | 395 | 2799851 | 11077504 | 224486 |
+| **合计** | **1922** | **13154239** | **54391296** | **1103670** |
+统计包含基线、生成、评审、修订和失败 Session；113 个 Session UUIDv7 唯一，107 个文件 SHA-256 均与当前内容一致，明细见对应 `run.md`。
 ## 放大前结论
 - 三方向、来源和研究计划在 V1 中出现，不代表科学可靠；五题首轮均需评审或修订。
 - 错误模式集中在精确数字错引、来源元数据拼接、比较对象不等价、观察性设计因果过度、样本量与终点不匹配、planned 被写成 executed。

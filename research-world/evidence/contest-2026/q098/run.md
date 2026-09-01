@@ -4,6 +4,7 @@ protocol: contest-research-workflow-2026-09-01
 status: waiting_human
 final: v10.md
 final_review: review-v10.md
+final_receipt: receipt-v12.md
 ---
 # q098 运行记录
 ## 问题
@@ -33,6 +34,9 @@ Why do we need sleep?
 | `review-v9.md` | `01a05ec2-ed31-7d94-b162-eff2abc39cf8` | `contest-qwen/qwen3.7-max` | 10 | 76539 | 274560 | 7482 | `deliverable`；12/12；来源 8/8；零 open findings |
 | `v10.md` | `01a05ed8-dedd-7933-b0cc-3b23e3065aee` | `contest-qwen/qwen3-max` | 11 | 31867 | 171264 | 5431 | 补全 S5 权威题名的 Brief communication 前缀 |
 | `review-v10.md` | `01a05edc-80ec-717a-a4d2-81b799ea5e7a` | `contest-qwen/qwen3.7-max` | 17 | 87011 | 523776 | 10890 | `deliverable`；12/12；来源 8/8；真实 reviewer UUID |
+| `receipt-v10.md` | `01a05ef6-9878-7507-ae77-c5e8dc01cac6` | `contest-qwen/qwen3-max` | 10 | 42537 | 188288 | 2269 | 回执漏列 review-v10 审计对象；保留并重跑 |
+| `receipt-v11.md` | `01a05ef8-958d-7e07-8a94-c5d2d687be22` | `contest-qwen/qwen3-max` | 7 | 26870 | 90624 | 1349 | 回执错误自造 UUIDv4；保留并由 v12 取代 |
+| `receipt-v12.md` | `01a05efa-7498-7d30-bc41-cffd0ba81d92` | `custom/gpt-5.6-terra` | 13 | 59204 | 526080 | 11963 | `deliverable`；真实运行态 auditor UUIDv7；审计 v10/review-v10 |
 失败的 `gpt-5.6-sol` reviewer Session 未生成内容且未被覆盖；全新 `qwen3.7-max` Session 完成 V1 评审。模型切换单独披露，不把改进只归因于 Workflow。
 ## 结果
 V1 已覆盖突触稳态、类淋巴和免疫代谢三方向，但混淆疫苗研究并让观察性设计承担因果结论。V2 的修订又用不相关论文支撑 HOMA-IR 效应和方差。最终版改为 120 名完成者的前瞻性 precision pilot；V8 以 NCBI 修正 S5 作者和两条疫苗论文 DOI，V9 修正 S3 页码。Fisher-z 只作为粗相关精度基准，不冒充调整模型功效，三方向证据、局限和可区分预测均保留。
@@ -62,8 +66,12 @@ V1 已覆盖突触稳态、类淋巴和免疫代谢三方向，但混淆疫苗�
 | `review-v9.md` | `ab76206f2868783aa4ecf8987a737103cfce00d1c9729ebff017bb692090069a` |
 | `v10.md` | `324a1a9c5eaffdd78c2f95a9294282df5d93d9630a5dfc14d9fa80e11fb92c1b` |
 | `review-v10.md` | `d7089814bf81e341d9cb16271c907b52ac4512842864a251b7940b06cfa96dad` |
+| `receipt-v10.md` | `5b36111570f2d19f4da6732697e7d85ee26759ce9f8994a6ba581aced4a28f06` |
+| `receipt-v11.md` | `4d4d9985aeb715b973f9575d56e7b7d796f359de2157efd7c097471e89db90cd` |
+| `receipt-v12.md` | `3f33cd8dba59317084fc5250b759a4b8508455573eff9d07e823240e28b2631d` |
 ## 审计说明
 - review-v2/review-v3 将工具重复展示误判为文件重复；编排器以标题和终态计数核验每版均只有一份正文，review-v5 通过 diff 再确认。
 - Matthews 2012 的青少年横断面估计只作背景，不用于成人队列样本量。
 - 旧 `receipt-v6.md` 只审计 V6，不作为 V7 最终回执。
 - review-v7 漏检 S5 作者与 S7/S8 DOI 错配；V8/V9 与独立 review 保留完整修复链。
+- receipt-v10 漏列 review-v10 审计对象，receipt-v11 自造 UUIDv4；两次尝试均保留，当前 receipt-v12 使用真实运行态 auditor UUIDv7。
