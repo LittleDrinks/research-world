@@ -40,7 +40,7 @@ V3 使用 Peters 圆轨道公式核验地球-太阳引力波耗散。输入、�
 | 文件 | SHA-256 |
 |---|---|
 | `baseline.md` | `52d5d8175092d36cbfaf82b4663d22e087fd5e7a20f6c11cef199c5a0ef5dac4` |
-| `v1.md` | `74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5` |
+| `v1.md` | `7883753678e5efdbbd88618f89d79afbb6a0fda59eeb571c7b32b3bd0ee5f652` |
 | `review-v1.md` | `96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74` |
 | `v2.md` | `f52147e11870e864caf6a420ad8abbf16edc8324a2844a47723af0a2b2ac8008` |
 | `review-v2.md` | `de3c4080cf75477c45277a820fdf4a17cb1f3ba3b90712950dc6bc66a4d7a0f4` |
