@@ -4,7 +4,7 @@ protocol: contest-research-workflow-2026-09-01
 status: completed
 final: v5.md
 final_review: review-v5.md
-final_receipt: receipt-v5.md
+final_receipt: receipt-v6.md
 matched_baseline: baseline-matched-v9.md
 matched_review: review-baseline-matched-v10.md
 matched_receipt: receipt-baseline-matched-v9.md
@@ -42,6 +42,7 @@ Gravity keeps planets in stable orbits around the sun. Yet orbits do decay very 
 | `v5.md` | `01a05ed8-deed-7ad4-8e41-715198ec6381` | `contest-qwen/qwen3-max` | 13 | 59071 | 229888 | 5036 | 将 artifact 内“当前终态”改为“当前研究结论”；科学内容零漂移 |
 | `review-v5.md` | `01a05edb-c929-7bc5-8e0b-87f556e74251` | `contest-qwen/qwen3.7-max` | 15 | 157174 | 540672 | 13907 | `deliverable`；12/12；来源 6/6；仅给 reviewer verdict |
 | `receipt-v5.md` | `01a05ee1-6f4c-7a29-ac3a-f11bf0acad9e` | `contest-qwen/qwen3.7-max` | 11 | 62988 | 206976 | 6206 | 可归因审计回执；记录 auditor/reviewer UUID、哈希和 RESULT |
+| `receipt-v6.md` | `01a05f3f-f617-7380-8f59-344f3b2029b9` | `custom/gpt-5.6-terra` | 6 | 29853 | 208384 | 10151 | `deliverable`；补齐来源 frontmatter，复核 v5/review-v5 与 6/6 来源 |
 | `baseline-matched-v7.md` | `01a05ef6-9884-7843-86b2-20c6cab09c33` | `contest-qwen/qwen3-max` | 5 | 20707 | 44672 | 3702 | 证据角色修订；后续评审发现两项定量错误 |
 | `review-baseline-matched-v7.md` | `01a05ef8-9585-7d65-a7a2-6669128fd27c` | `contest-qwen/qwen3-max` | 11 | 28598 | 183168 | 2705 | 错误自造 reviewer UUIDv4；保留并重跑 |
 | `review-baseline-matched-v8.md` | `01a05efa-7470-7f50-8875-ad2f272de28b` | `custom/gpt-5.6-terra` | 12 | 99804 | 620544 | 22044 | `revise`；发现水星 Peters 时间、质量损失外移与来源投影缺陷 |
@@ -95,6 +96,7 @@ V3 使用 Peters 圆轨道公式核验地球-太阳引力波耗散。输入、�
 | `v5.md` | `51dc9f52a52fb9379e9a2c148eeafe2fc5579dd5da498d6dd6cda9028ecd460f` |
 | `review-v5.md` | `96b19f719b7a340fce43e2d3e192e67901d21c057c977bf08e5837d9d4c6f853` |
 | `receipt-v5.md` | `dbdf4f3834e2e5793230af38b9338c7eda421a5e52b2dd81d2fd1fbdbc4d6636` |
+| `receipt-v6.md` | `9f5cfbe0d5a3f9511fbe3ed7e1e4e3be3e3072433cd08f41cf199a902f653dbd` |
 | `baseline-matched-v7.md` | `56b3cb6f0e4f576a5c64a8ac88b82f62f3551cca2493258f55f8492f8ed4b13b` |
 | `review-baseline-matched-v7.md` | `8be38d58dc72d3c24493b84822d517310f9fb41dcc5706eccf62fd37fd388562` |
 | `review-baseline-matched-v8.md` | `bcd6d55c8f93c692f7783eafa7f28c95359e1719a15fd81825d8449175262c78` |

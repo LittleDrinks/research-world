@@ -3,8 +3,8 @@ project: q098
 protocol: contest-research-workflow-2026-09-01
 status: waiting_human
 final: v10.md
-final_review: review-v10.md
-final_receipt: receipt-v12.md
+final_review: review-v11.md
+final_receipt: receipt-v13.md
 ---
 # q098 运行记录
 ## 问题
@@ -37,6 +37,8 @@ Why do we need sleep?
 | `receipt-v10.md` | `01a05ef6-9878-7507-ae77-c5e8dc01cac6` | `contest-qwen/qwen3-max` | 10 | 42537 | 188288 | 2269 | 回执漏列 review-v10 审计对象；保留并重跑 |
 | `receipt-v11.md` | `01a05ef8-958d-7e07-8a94-c5d2d687be22` | `contest-qwen/qwen3-max` | 7 | 26870 | 90624 | 1349 | 回执错误自造 UUIDv4；保留并由 v12 取代 |
 | `receipt-v12.md` | `01a05efa-7498-7d30-bc41-cffd0ba81d92` | `custom/gpt-5.6-terra` | 13 | 59204 | 526080 | 11963 | `deliverable`；真实运行态 auditor UUIDv7；审计 v10/review-v10 |
+| `review-v11.md` | `01a05f3f-f612-72e0-a196-8bb2854bf37d` | `custom/gpt-5.6-terra` | 7 | 46621 | 293120 | 11631 | `deliverable`；12/12；来源 8/8；补齐来源 frontmatter |
+| `receipt-v13.md` | `01a05f4a-b3f2-71f2-8682-856dc4c8fa28` | `custom/gpt-5.6-terra` | 8 | 23388 | 243712 | 7529 | `deliverable`；独立复核 v10/review-v11、8/8 来源与文件哈希 |
 失败的 `gpt-5.6-sol` reviewer Session 未生成内容且未被覆盖；全新 `qwen3.7-max` Session 完成 V1 评审。模型切换单独披露，不把改进只归因于 Workflow。
 ## 结果
 V1 已覆盖突触稳态、类淋巴和免疫代谢三方向，但混淆疫苗研究并让观察性设计承担因果结论。V2 的修订又用不相关论文支撑 HOMA-IR 效应和方差。最终版改为 120 名完成者的前瞻性 precision pilot；V8 以 NCBI 修正 S5 作者和两条疫苗论文 DOI，V9 修正 S3 页码。Fisher-z 只作为粗相关精度基准，不冒充调整模型功效，三方向证据、局限和可区分预测均保留。
@@ -69,6 +71,8 @@ V1 已覆盖突触稳态、类淋巴和免疫代谢三方向，但混淆疫苗�
 | `receipt-v10.md` | `5b36111570f2d19f4da6732697e7d85ee26759ce9f8994a6ba581aced4a28f06` |
 | `receipt-v11.md` | `4d4d9985aeb715b973f9575d56e7b7d796f359de2157efd7c097471e89db90cd` |
 | `receipt-v12.md` | `3f33cd8dba59317084fc5250b759a4b8508455573eff9d07e823240e28b2631d` |
+| `review-v11.md` | `336b9f323781da08dbcfbdd1ee2b54e3347ea43ab10e3aa8d0a21cab985b65e5` |
+| `receipt-v13.md` | `ff981a0f1690e1250bfaf1dc5e582ae20f2d83f5086d7b3301bdf96328ef71ab` |
 ## 审计说明
 - review-v2/review-v3 将工具重复展示误判为文件重复；编排器以标题和终态计数核验每版均只有一份正文，review-v5 通过 diff 再确认。
 - Matthews 2012 的青少年横断面估计只作背景，不用于成人队列样本量。
