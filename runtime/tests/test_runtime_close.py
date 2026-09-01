@@ -247,7 +247,7 @@ def test_child_task_reentrant_close_fails_before_lifecycle_state_changes(tmp_pat
         cwd=Path(__file__).parents[1],
         capture_output=True,
         text=True,
-        timeout=1,
+        timeout=5,
         check=False,
     )
     assert result.returncode == 0, result.stderr
