@@ -33,6 +33,9 @@ class ControlledAdapter:
     async def cancel(self, handle, request):
         self.calls.append(("cancel", request.message_id))
 
+    async def close(self):
+        return None
+
 
 class TrackingTransport(httpx.AsyncBaseTransport):
     def __init__(self, app):
