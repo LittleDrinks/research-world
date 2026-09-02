@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import builtins
 import json
+import logging
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -9,6 +10,7 @@ from typing import Any
 from jsonschema import Draft202012Validator
 
 SCHEMA = Path(__file__).parents[1] / "schemas" / "agent.schema.json"
+LOG = logging.getLogger(__name__)
 
 
 class RuntimeError(builtins.RuntimeError):
@@ -69,6 +71,7 @@ class AgentSpec:
             _validator().iter_errors(value), key=lambda item: list(item.path)
         )
         if errors:
+            LOG.error("agent spec invalid: %s", errors[0].message)
             raise RuntimeError(errors[0].message)
         options = AgentOptions(**value.get("options", {}))
         arrays = {key: tuple(value.get(key, [])) for key in ("skills", "tools")}
