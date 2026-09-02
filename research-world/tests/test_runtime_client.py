@@ -66,6 +66,23 @@ class FailingConnection:
         raise self.error
 
 
+class RecordingExtensionRuntime(RuntimeClient):
+    def __init__(self):
+        super().__init__("http://runtime:8098", "project:test")
+        self.kernel = object()
+        self.calls = []
+
+    @asynccontextmanager
+    async def _connect(self, _client):
+        yield self
+
+    async def ext_method(self, method, params):
+        self.calls.append((method, params))
+        if method == "runtime/launch":
+            return {"session_id": "session:test"}
+        return {"valid": True}
+
+
 def test_runtime_url_uses_acp_websocket():
     assert _websocket_url("http://runtime:8098") == "ws://runtime:8098/acp/"
     assert _websocket_url("https://runtime.test/base") == "wss://runtime.test/base/acp/"
@@ -94,6 +111,49 @@ async def test_internal_runtime_extension_error_becomes_capability_error():
 
     with pytest.raises(RuntimeCapabilityError, match="runtime unavailable"):
         await runtime.validate_agent({"id": "bad"})
+
+
+@pytest.mark.asyncio
+async def test_validate_and_launch_inject_default_runtime_ref():
+    runtime = RecordingExtensionRuntime()
+    spec = {
+        "id": "research-assistant",
+        "name": "研究助手",
+        "endpoint": "openai-compatible",
+        "model": "qwen3.7-flash",
+        "instructions": "讨论",
+    }
+
+    await runtime.validate_agent(spec)
+    await runtime.launch(spec, "/workspace")
+
+    assert runtime.calls[0][1]["agent_spec"]["runtime"] == {
+        "id": "openai-compatible",
+        "realm": "container:runtime",
+    }
+    assert runtime.calls[1][1]["agent_spec"]["runtime"] == {
+        "id": "openai-compatible",
+        "realm": "container:runtime",
+    }
+    assert "runtime" not in spec
+
+
+@pytest.mark.asyncio
+async def test_existing_runtime_ref_passes_through_untouched():
+    runtime = RecordingExtensionRuntime()
+    ref = {"id": "codex", "realm": "container:runtime"}
+    spec = {
+        "id": "reviewer",
+        "name": "审稿",
+        "runtime": ref,
+        "endpoint": "openai-compatible",
+        "model": "m",
+        "instructions": "i",
+    }
+
+    await runtime.launch(spec, "/workspace")
+
+    assert runtime.calls[0][1]["agent_spec"]["runtime"] is ref
 
 
 @pytest.mark.asyncio

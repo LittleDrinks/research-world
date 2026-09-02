@@ -1,4 +1,5 @@
 import json
+import logging
 
 import pytest
 from runtime.acp_agent import _default_spec
@@ -28,6 +29,14 @@ def spec(**values):
 def test_agent_spec_rejects_legacy_fields(legacy):
     with pytest.raises(SpecError):
         AgentSpec.parse({**spec(), **legacy})
+
+
+def test_agent_spec_parse_failure_logs_validation_error(caplog):
+    with caplog.at_level(logging.ERROR, logger="runtime.types"):
+        with pytest.raises(SpecError):
+            AgentSpec.parse({"id": "researcher"})
+    assert "agent spec invalid" in caplog.text
+    assert "required property" in caplog.text
 
 
 @pytest.mark.parametrize("value", [

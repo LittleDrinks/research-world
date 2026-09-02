@@ -39,4 +39,5 @@ async def serve() -> None:
     config = Config()
     config.bind = [f"0.0.0.0:{os.getenv('RUNTIME_PORT', '8098')}"]
     config.alpn_protocols = ["h2", "http/1.1"]
+    config.accesslog = "-"
     await hypercorn_serve(create_app(), config)
