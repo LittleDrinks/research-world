@@ -28,6 +28,9 @@ class Adapter:
     async def cancel(self, handle, request):
         return None
 
+    async def close(self):
+        return None
+
 async def collect(runtime, turn_id):
     return [event async for event in runtime.subscribe(turn_id)]
 
@@ -62,6 +65,9 @@ class Adapter:
         return AdapterResult(result_text="answer")
     async def cancel(self, handle, request): return None
 
+    async def close(self):
+        return None
+
 async def collect(runtime, turn_id):
     return [event async for event in runtime.subscribe(turn_id)]
 
@@ -89,6 +95,9 @@ class Adapter:
     async def start(self, request): return object()
     async def submit(self, handle, request, emit): return AdapterResult(result_text="resumed")
     async def cancel(self, handle, request): return None
+
+    async def close(self):
+        return None
 
 async def collect(runtime, turn_id):
     return [event async for event in runtime.subscribe(turn_id)]
@@ -132,6 +141,9 @@ class Adapter:
     async def cancel(self, handle, request):
         self.calls.append(["cancel", self.adapter_id, request.message_id])
 
+    async def close(self):
+        return None
+
 async def collect(runtime, turn_id):
     return [event async for event in runtime.subscribe(turn_id)]
 
@@ -167,6 +179,9 @@ class Adapter:
         await self.gates[request.message_id].wait()
         return AdapterResult(result_text="answer:" + request.message_id)
     async def cancel(self, handle, request):
+        return None
+
+    async def close(self):
         return None
 
 async def collect(runtime, turn_id):
@@ -207,6 +222,9 @@ class Adapter:
     async def cancel(self, handle, request):
         return None
 
+    async def close(self):
+        return None
+
 async def main():
     adapter = Adapter()
     runtime = Runtime(Path(sys.argv[1]), {"fake": adapter})
@@ -233,6 +251,9 @@ class Adapter:
         await self.gates[request.message_id].wait()
         return AdapterResult(result_text="answer:" + request.message_id)
     async def cancel(self, handle, request): return None
+
+    async def close(self):
+        return None
 
 async def collect(runtime, turn_id):
     return [event async for event in runtime.subscribe(turn_id)]
@@ -314,6 +335,9 @@ class Adapter:
     async def cancel(self, handle, request):
         self.calls.append(["cancel", request.message_id])
 
+    async def close(self):
+        return None
+
 async def main():
     runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
     run = await runtime.launch({"id": "main", "adapter": "fake"}, session_id="session-main")
@@ -347,6 +371,9 @@ class Adapter:
         return AdapterResult(result_text="resumed")
     async def cancel(self, handle, request):
         self.calls.append(["cancel", request.message_id])
+
+    async def close(self):
+        return None
 
 async def collect(runtime, turn_id):
     return [event async for event in runtime.subscribe(turn_id)]
@@ -404,6 +431,9 @@ class Adapter:
     async def submit(self, handle, request, emit): return None
     async def cancel(self, handle, request): return None
 
+    async def close(self):
+        return None
+
 async def main():
     runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
     try:
@@ -443,6 +473,9 @@ class Adapter:
         return AdapterResult(status="cancelled", result_text="discard-me")
     async def cancel(self, handle, request): return None
 
+    async def close(self):
+        return None
+
 async def collect(runtime, turn_id):
     return [event async for event in runtime.subscribe(turn_id)]
 
@@ -472,6 +505,9 @@ class Adapter:
     async def submit(self, handle, request, emit):
         return AdapterResult(status="cancelled", result_text="discard-me")
     async def cancel(self, handle, request): return None
+
+    async def close(self):
+        return None
 
 async def collect(runtime, turn_id):
     return [event async for event in runtime.subscribe(turn_id)]
@@ -556,6 +592,9 @@ class Adapter:
     async def cancel(self, handle, request):
         return None
 
+    async def close(self):
+        return None
+
 async def collect(runtime, turn_id):
     return [event async for event in runtime.subscribe(turn_id)]
 
@@ -602,6 +641,9 @@ class Adapter:
     async def submit(self, handle, request, emit): self.calls.append("submit")
     async def cancel(self, handle, request): self.calls.append("cancel")
 
+    async def close(self):
+        return None
+
 root = Path(sys.argv[1])
 before = (root / "runs.sqlite3").read_bytes()
 adapter = Adapter()
@@ -625,6 +667,9 @@ class Adapter:
     async def start(self, request): return object()
     async def submit(self, handle, request, emit): raise AssertionError("recovery called adapter")
     async def cancel(self, handle, request): raise AssertionError("recovery called adapter")
+
+    async def close(self):
+        return None
 
 async def collect(runtime, turn_id):
     return [event async for event in runtime.subscribe(turn_id)]
@@ -651,6 +696,9 @@ class Adapter:
     async def submit(self, handle, request, emit): raise AssertionError("recovery called adapter")
     async def cancel(self, handle, request): raise AssertionError("recovery called adapter")
 
+    async def close(self):
+        return None
+
 try:
     Runtime(Path(sys.argv[1]), {"fake": Adapter()})
 except Exception as error:
@@ -673,6 +721,9 @@ class Adapter:
     async def submit(self, handle, request, emit):
         return None
     async def cancel(self, handle, request):
+        return None
+
+    async def close(self):
         return None
 
 try:
@@ -840,9 +891,7 @@ def test_same_shape_store_with_missing_constraints_rejects_duplicate_submit_seq(
     assert result.stdout.startswith("RunStoreError:runtime store")
 
 
-def test_missing_adapter_fails_startup_without_fallback(tmp_path):
-    created = _output(_run_process(_COMPLETED_PROCESS, tmp_path))
-    script = """
+_MISSING_ADAPTER_PROCESS = """
 from pathlib import Path
 import sys
 from runtime.runtime import Runtime
@@ -852,12 +901,19 @@ class Adapter:
     async def start(self, request): return object()
     async def submit(self, handle, request, emit): return None
     async def cancel(self, handle, request): return None
+
+    async def close(self):
+        return None
 try:
     Runtime(Path(sys.argv[1]), {"other": Adapter()})
 except ValueError as error:
     print(error)
 """
-    result = _run_process(script, tmp_path, created["run_id"])
+
+
+def test_missing_adapter_fails_startup_without_fallback(tmp_path):
+    created = _output(_run_process(_COMPLETED_PROCESS, tmp_path))
+    result = _run_process(_MISSING_ADAPTER_PROCESS, tmp_path, created["run_id"])
     assert result.stdout.strip() == "runtime adapter is unavailable: fake"
 
 
@@ -953,6 +1009,9 @@ class Adapter:
     async def submit(self, handle, request, emit): return None
     async def cancel(self, handle, request): return None
 
+    async def close(self):
+        return None
+
 async def main():
     runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
     run = await runtime.launch({"id": "main", "adapter": "fake"}, session_id="session-main")
@@ -973,6 +1032,9 @@ class Adapter:
     async def start(self, request): return object()
     async def submit(self, handle, request, emit): await asyncio.Event().wait()
     async def cancel(self, handle, request): return None
+
+    async def close(self):
+        return None
 
 async def main():
     runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
@@ -999,6 +1061,9 @@ class Adapter:
     async def submit(self, handle, request, emit): self.calls.append("submit")
     async def cancel(self, handle, request): self.calls.append("cancel")
 
+    async def close(self):
+        return None
+
 adapter = Adapter()
 try:
     Runtime(Path(sys.argv[1]), {"fake": adapter})
@@ -1022,6 +1087,9 @@ class Adapter:
     async def start(self, request): self.calls.append("start")
     async def submit(self, handle, request, emit): self.calls.append("submit")
     async def cancel(self, handle, request): self.calls.append("cancel")
+
+    async def close(self):
+        return None
 
 root = Path(sys.argv[1])
 journal = root / "runs.sqlite3-journal"
@@ -1066,6 +1134,9 @@ class Adapter:
     async def start(self, request): return object()
     async def submit(self, handle, request, emit): return None
     async def cancel(self, handle, request): return None
+
+    async def close(self):
+        return None
 
 async def main():
     runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})

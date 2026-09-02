@@ -4,6 +4,7 @@ import asyncio
 import json
 import uuid
 from collections.abc import Mapping
+from contextvars import ContextVar
 from copy import deepcopy
 from dataclasses import dataclass, field
 from inspect import iscoroutinefunction
@@ -22,6 +23,7 @@ from .trace import TraceLedger
 
 
 _RUNTIME_EVENT_TYPES = {"turn_start", "turn_end", "child_result"}
+_CLOSE_RUNTIME = ContextVar("runtime_close", default=None)
 
 
 @dataclass
@@ -58,10 +60,7 @@ class _Turn:
 
 class Runtime:
     def __init__(
-        self,
-        data_root: Path,
-        adapters: dict[str, _RuntimeAdapter],
-        *,
+        self, data_root: Path, adapters: dict[str, _RuntimeAdapter], *,
         kernel: KernelInterface | None = None,
     ):
         _require_data_root(data_root)
@@ -75,6 +74,7 @@ class Runtime:
         self._delegations: dict[str, tuple[str, str]] = {}
         self._adapter_reservations: dict[int, _Turn] = {}
         self._registry_lock = asyncio.Lock()
+        self._close_task: asyncio.Task | None = None
         self._restore()
 
     def _restore(self):
@@ -142,6 +142,7 @@ class Runtime:
     ) -> dict[str, Any]:
         snapshot = _snapshot(agent_spec)
         async with self._registry_lock:
+            self._require_open()
             run = self._register_run(snapshot, session_id, None, None)
         return _run_view(run)
 
@@ -188,8 +189,61 @@ class Runtime:
     ) -> dict[str, Any]:
         message_id, payload = _message(message)
         async with self._registry_lock:
+            self._require_open()
             turn = self._register_turn(session_id, message_id, payload)
         return _turn_view(turn)
+
+    async def close(self) -> None:
+        self._require_close_caller()
+        async with self._registry_lock:
+            if self._close_task is None:
+                self._close_task = asyncio.create_task(self._shutdown())
+            task = self._close_task
+        await _wait_for_close(task)
+
+    async def _close_adapters(self) -> None:
+        results = await asyncio.gather(
+            *(self._close_adapter(adapter) for adapter in self._adapters.values())
+        )
+        _raise_close_error(results)
+
+    async def _close_adapter(self, adapter) -> BaseException | None:
+        try:
+            await adapter.close()
+        except BaseException as error:
+            return error
+        return None
+
+    async def _shutdown(self) -> None:
+        token = _CLOSE_RUNTIME.set(self)
+        try:
+            async with self._registry_lock:
+                turns = tuple(turn for turn in self._turns.values() if turn.status == "running")
+            results = await asyncio.gather(
+                *(self.cancel(turn.request.turn_id) for turn in turns),
+                return_exceptions=True,
+            )
+            waits = await asyncio.gather(
+                *(self._wait_execution(turn) for turn in turns),
+                return_exceptions=True,
+            )
+            await self._close_adapters()
+            _raise_close_error((*results, *waits))
+        finally:
+            _CLOSE_RUNTIME.reset(token)
+
+    def _require_close_caller(self) -> None:
+        current = asyncio.current_task()
+        running_turn = any(
+            turn.task is current and turn.status == "running"
+            for turn in self._turns.values()
+        )
+        if _CLOSE_RUNTIME.get() is self or current is self._close_task or running_turn:
+            raise RuntimeError("runtime close cannot run from an active turn")
+
+    def _require_open(self) -> None:
+        if self._close_task is not None:
+            raise RuntimeError("runtime is closed")
 
     def _register_turn(self, session_id, message_id, payload):
         run = self._require_session(session_id)
@@ -263,22 +317,27 @@ class Runtime:
     ) -> dict[str, Any]:
         snapshot = _snapshot(agent_spec)
         async with self._registry_lock:
+            self._require_open()
             self._require_parent_turn(parent_run_id, parent_turn_id)
             run = self._register_run(snapshot, None, parent_run_id, parent_turn_id)
             self._delegations[run.id] = (parent_run_id, parent_turn_id)
         return _run_view(run)
 
     async def _execute(self, turn: _Turn) -> None:
+        token = _CLOSE_RUNTIME.set(self)
         try:
-            await self._run_adapter(turn)
-        except asyncio.CancelledError as error:
-            await self._mark_adapter_finished(turn)
-            await self._handle_cancelled(turn, error)
-        except Exception as error:
-            await self._mark_adapter_finished(turn)
-            await self._finish(
-                turn, "error", None, str(error), force=turn.cancel_requested
-            )
+            try:
+                await self._run_adapter(turn)
+            except asyncio.CancelledError as error:
+                await self._mark_adapter_finished(turn)
+                await self._handle_cancelled(turn, error)
+            except Exception as error:
+                await self._mark_adapter_finished(turn)
+                await self._finish(
+                    turn, "error", None, str(error), force=turn.cancel_requested
+                )
+        finally:
+            _CLOSE_RUNTIME.reset(token)
 
     async def _run_adapter(self, turn: _Turn) -> None:
         if turn.cancel_requested:
@@ -513,6 +572,32 @@ class Runtime:
             raise KeyError(f"turn not found: {turn_id}") from None
 
 
+async def _wait_for_close(task: asyncio.Task) -> Any:
+    cancelled = False
+    while not task.done():
+        try:
+            await asyncio.shield(task)
+        except asyncio.CancelledError:
+            cancelled = True
+        except BaseException:
+            break
+    try:
+        result = task.result()
+    except BaseException as error:
+        if cancelled:
+            raise asyncio.CancelledError from error
+        raise
+    if cancelled:
+        raise asyncio.CancelledError
+    return result
+
+
+def _raise_close_error(values) -> None:
+    error = next((value for value in values if isinstance(value, BaseException)), None)
+    if error is not None:
+        raise RuntimeError("runtime close failed") from error
+
+
 def _adapter_map(adapters) -> dict[str, _RuntimeAdapter]:
     if not isinstance(adapters, dict):
         raise TypeError("adapters must be a dict")
@@ -526,7 +611,7 @@ def _adapter_map(adapters) -> dict[str, _RuntimeAdapter]:
 
 
 def _is_adapter(adapter):
-    methods = ("start", "submit", "cancel")
+    methods = ("start", "submit", "cancel", "close")
     return (
         all(iscoroutinefunction(getattr(adapter, name, None)) for name in methods)
         and isinstance(getattr(adapter, "adapter_id", None), str)

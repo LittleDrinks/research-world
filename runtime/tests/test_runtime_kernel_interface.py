@@ -56,6 +56,9 @@ class KernelIntegrationAdapter:
     async def cancel(self, handle, request):
         return None
 
+    async def close(self):
+        return None
+
 
 class InvalidLocalMapAdapter:
     adapter_id = "invalid"
@@ -80,6 +83,9 @@ class InvalidLocalMapAdapter:
         return AdapterResult(result_text="unreachable")
 
     async def cancel(self, handle, request):
+        return None
+
+    async def close(self):
         return None
 
 

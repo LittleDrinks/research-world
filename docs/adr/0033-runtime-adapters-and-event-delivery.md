@@ -9,6 +9,10 @@ sources:
     title: MVP 规格：主 Agent 协作研究闭环与双深 Module 切换
     url: https://github.com/LittleDrinks/research-world/issues/169
     accessed: 2026-08-31
+  - id: issue-229
+    title: Runtime：幂等关闭执行与 Adapter 资源
+    url: https://github.com/LittleDrinks/research-world/issues/229
+    accessed: 2026-09-01
   - id: adr-practice
     title: Maintain an architecture decision record
     url: https://learn.microsoft.com/en-us/azure/well-architected/architect-role/architecture-decision-record
@@ -77,7 +81,7 @@ Trace 是按 Turn 追加的 Runtime 执行事实。Runtime 先持久化事件再
 跨 Turn 因果顺序只由持久化位次证明，与 Temporal 从有序 Event History 恢复、KurrentDB 区分流内序号与全局事务日志位次一致：Run store 的 events 表以 `INTEGER PRIMARY KEY AUTOINCREMENT` 在写入事务内分配全局单调位次 `pos`，Turn 起始事件的位次在同一 BEGIN IMMEDIATE 事务内记入 turns.start_pos。冻结上下文恰好等于终态事件位次先于该 Turn 起始位次的 completed/limit 结果，按提交序排列；事件的 wall-clock `time` 只是展示信息，相等或回退都不证明或否定可用性。
 events 表是一条 append-only 因果日志：已提交位次从 1 开始完整连续、无缺口，与 KurrentDB 流内 revision 顺序递增及 SQLite AUTOINCREMENT 已提交 ID 单调且不重用一致；删除已提交事件后重排 seq 不能伪造连续性，因为 sqlite_sequence 保留最大已提交位次。启动恢复对照该持久分配状态校验 COUNT 与 MAX(pos)：事件数为 0 时 sqlite_sequence 不得有 events 行，否则三者必须相等，缺失或被篡改即缺口。
 恢复校验的多表读取 enclosed 在单一读事务内，与 SQLite 读事务看到不变快照、写被串行化一致；并发构造函数各自看到某一提交点的完整一致快照，不会读到跨提交混合的 runs/turns/events 状态。启动恢复在任何 Adapter 调用前校验位次完整连续、按 seq 单调、start_pos 与起始事件一致、上下文因果完备，不一致即 RunStoreError fail closed，store 不被改写；旧格式 store 直接拒绝，不写 migration。
-Runtime Adapter 只负责识别、启动、提交、取消和产生规范化事件；Run 恢复、Trace 持久化、上下文快照、委派与事件重连由 Runtime 负责。Adapter 的位置、协议、生命周期和实现配置不越过 Runtime 边界，Penguin bearer token 不进入 Web、control、Kernel、Session 或 Trace。
+Runtime Adapter 只负责识别、启动、提交、取消、关闭和产生规范化事件；Run 恢复、Trace 持久化、上下文快照、委派与事件重连由 Runtime 负责。Runtime 关闭设置一次性准入屏障，先通过 Cancel 终结并等待活跃 Turn，再对每个共享 Adapter 关闭一次；Subscribe 仍可读取已持久化终态，重复关闭复用同一结果，Adapter 关闭异常统一为明确的 Runtime 错误。Adapter 的位置、协议、生命周期和实现配置不越过 Runtime 边界，Penguin bearer token 不进入 Web、control、Kernel、Session 或 Trace。
 transport/session.py 是 Kernel 与 Runtime 之间的无状态协调层，不是第三深模块；顺序是持久化用户消息 -> Runtime Submit -> 将主 Agent 终态回答投影到同一消息。Session 读取、Submit、Subscribe、Cancel 使用分离的 HTTP 路径，transport 不拥有 Project、Run 或 Trace。
 HTTP 事件订阅使用标准 SSE。Server 将 Trace `seq` 写入 SSE `id`，`Last-Event-ID` 与可选 `after_seq` 映射到 Subscribe 游标；浏览器为每个活跃 Turn 建立独立 EventSource，关闭订阅只结束订阅，不取消 Turn。刷新先读取 Kernel Session；没有最终回答的 Message 以相同 Message id 重复 Submit，Runtime 返回原 Turn 后重放 Trace，transport 只投影一次终态回答。
 `@ai-sdk/react useChat` 不拥有产品的 Agent 或 Chat 状态；Pydantic AI UI Adapter 不进入请求执行链。两者的 UI 或执行语义不能取代 Runtime 的 Submit、Subscribe、Cancel 与 Turn 归属。

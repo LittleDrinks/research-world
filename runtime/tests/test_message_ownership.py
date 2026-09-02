@@ -27,6 +27,8 @@ class Adapter:
     async def submit(self, handle, request, emit): return AdapterResult(result_text="answer")
     async def cancel(self, handle, request): return None
 
+    async def close(self): return None
+
 async def main():
     runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
     run = await runtime.launch({"id": "main", "adapter": "fake"}, session_id="session-a")
@@ -50,6 +52,8 @@ class Adapter:
     async def start(self, request): self.calls.append("start"); return object()
     async def submit(self, handle, request, emit): self.calls.append("submit")
     async def cancel(self, handle, request): self.calls.append("cancel")
+
+    async def close(self): return None
 
 async def main():
     adapter = Adapter()
@@ -84,6 +88,8 @@ class Adapter:
         self.calls.append("submit")
         return AdapterResult(result_text="answer")
     async def cancel(self, handle, request): self.calls.append("cancel")
+
+    async def close(self): return None
 
 async def main():
     ready, go = Path(sys.argv[2]), Path(sys.argv[3])
@@ -121,6 +127,9 @@ class CountingAdapter:
 
     async def cancel(self, handle, request):
         self.calls.append(("cancel", request.message_id))
+
+    async def close(self):
+        return None
 
 
 class HoldingAdapter(CountingAdapter):

@@ -26,6 +26,8 @@ class Adapter:
     async def submit(self, handle, request, emit): return AdapterResult(result_text="answer")
     async def cancel(self, handle, request): return None
 
+    async def close(self): return None
+
 async def main():
     session_id = sys.argv[2]
     runtime = Runtime(Path(sys.argv[1]), {"fake": Adapter()})
@@ -51,6 +53,8 @@ class Adapter:
     async def start(self, request): self.calls.append("start"); return object()
     async def submit(self, handle, request, emit): self.calls.append("submit"); return AdapterResult(result_text="new")
     async def cancel(self, handle, request): self.calls.append("cancel")
+
+    async def close(self): return None
 
 async def main():
     adapter = Adapter()
@@ -80,6 +84,9 @@ class Adapter:
 
     async def cancel(self, handle, request):
         self.calls.append(("cancel", request.message_id))
+
+    async def close(self):
+        return None
 
 
 async def events(runtime, turn_id):

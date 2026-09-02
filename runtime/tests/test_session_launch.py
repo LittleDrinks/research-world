@@ -30,6 +30,9 @@ class HoldAdapter:
         self.calls.append("cancel")
         self.release.set()
 
+    async def close(self):
+        return None
+
 
 @pytest.mark.asyncio
 async def test_launch_recovers_session_root_run_in_fresh_runtime(tmp_path):
