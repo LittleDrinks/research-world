@@ -11,6 +11,7 @@ required=(
   docs/adr/0033-runtime-adapters-and-event-delivery.md
   docs/adr/0034-direct-kernel-fact-recording.md
   docs/adr/0038-web-model-conversation-closure.md
+  docs/adr/0039-runtime-http-launch-submit.md
   docs/adr/0040-provider-webchat-runtime-ownership.md
   docs/agents/domain.md
   docs/agents/issue-tracker.md
@@ -42,6 +43,7 @@ current=(
   docs/adr/0033-runtime-adapters-and-event-delivery.md
   docs/adr/0034-direct-kernel-fact-recording.md
   docs/adr/0038-web-model-conversation-closure.md
+  docs/adr/0039-runtime-http-launch-submit.md
   docs/adr/0040-provider-webchat-runtime-ownership.md
   docs/agents/domain.md
   docs/agents/issue-tracker.md
@@ -121,21 +123,19 @@ for term in \
   '模型访问配置' \
   '部署级设置' \
   'Runtime 在其进程内解析' \
-  'baseurl 与 apikey 只进入 Runtime' \
-  'browser/control、公开 API、Trace 与日志不携带密钥' \
   '一个 Run 可同时承载多个活跃 Turn' \
   '关闭事件订阅不取消 Turn'; do
   require_text CONTEXT.md "$term"
 done
 
-require_text MEMORY.md '模型访问配置是部署级设置'
-require_text MEMORY.md 'Runtime 在其进程内解析'
-require_text MEMORY.md 'browser/control、公开 API、Trace 与日志不携带密钥'
-
 require_text docs/adr/0040-provider-webchat-runtime-ownership.md '唯一永久路径'
 require_text docs/adr/0040-provider-webchat-runtime-ownership.md 'runtime.runtime.Runtime'
+require_text docs/adr/0040-provider-webchat-runtime-ownership.md 'HTTP Launch/Submit/Subscribe'
 require_text docs/adr/0040-provider-webchat-runtime-ownership.md 'ACP 与 `service.Runtime`'
 require_text docs/adr/0040-provider-webchat-runtime-ownership.md 'RW_MODEL_NAME'
+require_text docs/adr/0040-provider-webchat-runtime-ownership.md '`baseurl` 与 `apikey` 只进入 Runtime 进程'
+require_text docs/adr/0040-provider-webchat-runtime-ownership.md 'browser/control、公开 API、Trace 与日志不携带密钥'
+require_text docs/adr/0040-provider-webchat-runtime-ownership.md '可理解的错误显式失败'
 require_text AGENTS.md '模型凭证只进入 Runtime 进程'
 
 require_text AGENTS.md '$anysearch'
@@ -151,7 +151,7 @@ require_text AGENTS.md 'end-to-end wall-clock duration'
 
 require_text docs/adr/0033-runtime-adapters-and-event-delivery.md 'status: accepted'
 require_text docs/adr/0033-runtime-adapters-and-event-delivery.md 'supersedes:'
-for term in Launch Submit Subscribe Cancel Delegate 'Message id' 'Trace `seq`' 'Last-Event-ID' EventSource '独立 Runtime JSON/SSE 服务' '按预期 Session 作用域校验 Subscribe' '在 SSE 响应开始前完成校验' 'Adapter 原生身份恢复' 'Runtime Settings 管理面不属于五动作执行接口' 'Runtime 不得因为底层 harness 的实现方式把同一 Run 的重叠 Turn 改为互斥或拒绝' '@ai-sdk/react useChat' 'Pydantic AI UI Adapter' 'Penguin Harness Adapter'; do
+for term in Launch Submit Subscribe Cancel Delegate 'Message id' 'Trace `seq`' 'Last-Event-ID' EventSource '独立 Runtime JSON/SSE 服务' '按预期 Session 作用域校验 Subscribe' '在 SSE 响应开始前完成校验' 'Adapter 原生身份恢复' 'Runtime 不得因为底层 harness 的实现方式把同一 Run 的重叠 Turn 改为互斥或拒绝' '@ai-sdk/react useChat' 'Pydantic AI UI Adapter' 'Penguin Harness Adapter'; do
   require_text docs/adr/0033-runtime-adapters-and-event-delivery.md "$term"
 done
 
@@ -163,14 +163,23 @@ done
 
 require_text docs/adr/0038-web-model-conversation-closure.md 'status: accepted'
 require_text docs/adr/0038-web-model-conversation-closure.md 'supersedes:'
-for term in '稳定 UUID 幂等键' '唯一 `session_id`' '重复 Submit 返回原 Turn' '未绑定 Session、跨 Session Message 与 Child Run 目标在 Runtime Adapter 启动和 Trace 写入前失败' '非空 `completed` 或 `limit` 回答' 'Last-Event-ID' 'Web 模型设置属于本闭环范围' '测试、保存、掩码读取、替换、清除' 'Research World 设置 facade 只转发' 'Runtime Settings 管理面不属于五动作执行接口' '未配置模型时 Compose 和应用仍保持健康' 'Chat 不提交模型 Turn' 'Compose 管理 Penguin Harness Adapter 的固定 v0.2.9 server 进程' '每次启动铸造新的 bearer token' '每次新请求重新读取 token 文件' 'control/Web 不获得 token' '不设计外部生成或手工轮换' '仓库根环境文件不注入模型凭证'; do
+for term in '稳定 UUID 幂等键' '唯一 `session_id`' '重复 Submit 返回原 Turn' '未绑定 Session、跨 Session Message 与 Child Run 目标在 Runtime Adapter 启动和 Trace 写入前失败' '非空 `completed` 或 `limit` 回答' 'Last-Event-ID' 'Compose 管理 Penguin Harness Adapter 的固定 v0.2.9 server 进程' '每次启动铸造新的 bearer token' '每次新请求重新读取 token 文件' 'control/Web 不获得 token' '不设计外部生成或手工轮换'; do
   require_text docs/adr/0038-web-model-conversation-closure.md "$term"
 done
 require_text docs/adr/0038-web-model-conversation-closure.md '以 `0600` 写入专用数据根的 token 文件'
-require_text docs/adr/0038-web-model-conversation-closure.md '明文 apikey 可短暂进入 Web password input 和明确的测试、保存或替换请求'
 
-require_text docs/adr/0040-provider-webchat-runtime-ownership.md 'status: accepted'
-require_text docs/adr/0040-provider-webchat-runtime-ownership.md 'supersedes:'
+require_text docs/adr/0039-runtime-http-launch-submit.md 'status: accepted'
+require_text docs/adr/0039-runtime-http-launch-submit.md 'RuntimeHttpClient'
+
+for term in \
+  'status: accepted' \
+  'supersedes:' \
+  '0018: Agent-side endpoint binding scope' \
+  '0033: Penguin-owned deployment model access config' \
+  '0038: Web model settings management operations' \
+  '0039: Launch/Submit-only'; do
+  require_text docs/adr/0040-provider-webchat-runtime-ownership.md "$term"
+done
 
 require_text docs/agents/domain.md 'CONTEXT.md'
 require_text docs/agents/domain.md 'ADR-0033'
@@ -195,7 +204,6 @@ require_text docs/agents/domain.md '[ADR-0033](../adr/0033-runtime-adapters-and-
 require_text docs/agents/domain.md '[ADR-0034](../adr/0034-direct-kernel-fact-recording.md)'
 require_text docs/agents/domain.md '[ADR-0038](../adr/0038-web-model-conversation-closure.md)'
 require_text CONTEXT.md 'Penguin Harness Adapter'
-require_text docs/adr/0033-runtime-adapters-and-event-delivery.md 'Docker/MVP 默认交付 Adapter'
 require_text docs/adr/0033-runtime-adapters-and-event-delivery.md '不静默切换、占位或模拟另一个 Adapter'
 if rg -n 'https?://' AGENTS.md CONTEXT.md docs/agents; then
   printf 'external source URL outside ADR frontmatter\n' >&2
