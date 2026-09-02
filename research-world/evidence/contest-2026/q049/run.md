@@ -2,9 +2,9 @@
 project: q049
 protocol: contest-research-workflow-2026-09-01
 status: completed
-final: v6.md
-final_review: review-v6.md
-final_receipt: receipt-v7.md
+final: v7.md
+final_review: review-v7.md
+final_receipt: receipt-v8.md
 matched_baseline: baseline-matched-v9.md
 matched_review: review-baseline-matched-v10.md
 matched_receipt: receipt-baseline-matched-v9.md
@@ -46,6 +46,9 @@ Gravity keeps planets in stable orbits around the sun. Yet orbits do decay very 
 | `v6.md` | `01a05f67-6558-73c1-ab25-fe7d64ddf2c1` | `contest-qwen/qwen3-max` | 6 | 44415 | 39296 | 4229 | 移除生成指令式自我描述；科学内容与 v5 一致 |
 | `review-v6.md` | `01a05f71-605a-72f2-8794-c212a321d464` | `custom/gpt-5.6-terra` | 14 | 77052 | 808448 | 20252 | `deliverable`；12/12；来源 6/6；独立复算三项数值与四类主源 |
 | `receipt-v7.md` | `01a05f7d-eb58-73d3-91a7-3f25f4e9ba70` | `custom/gpt-5.6-terra` | 8 | 52768 | 249390 | 9996 | `deliverable`；独立复核 v6/review-v6、来源、哈希与执行边界 |
+| `v7.md` | `01a05f99-1c8c-794b-b3d3-1db41b48b0f0` | `contest-qwen/qwen3-max` | 21 | 86905 | 224256 | 1914 | 紧凑排版投影；零空行；科学内容与 v6 一致 |
+| `review-v7.md` | `01a05fa3-b792-7822-8037-fe839e48a01c` | `custom/gpt-5.6-terra` | 17 | 103135 | 797871 | 21978 | `deliverable`；12/12；来源 6/6；复算三项数值与四类主源 |
+| `receipt-v8.md` | `01a05fb1-087d-7090-8261-a8e0a465c753` | `custom/gpt-5.6-terra` | 8 | 37979 | 194758 | 7011 | `deliverable`；独立复核 v7/review-v7、哈希、格式与执行边界 |
 | `baseline-matched-v7.md` | `01a05ef6-9884-7843-86b2-20c6cab09c33` | `contest-qwen/qwen3-max` | 5 | 20707 | 44672 | 3702 | 证据角色修订；后续评审发现两项定量错误 |
 | `review-baseline-matched-v7.md` | `01a05ef8-9585-7d65-a7a2-6669128fd27c` | `contest-qwen/qwen3-max` | 11 | 28598 | 183168 | 2705 | 错误自造 reviewer UUIDv4；保留并重跑 |
 | `review-baseline-matched-v8.md` | `01a05efa-7470-7f50-8875-ad2f272de28b` | `custom/gpt-5.6-terra` | 12 | 99804 | 620544 | 22044 | `revise`；发现水星 Peters 时间、质量损失外移与来源投影缺陷 |
@@ -103,6 +106,9 @@ V3 使用 Peters 圆轨道公式核验地球-太阳引力波耗散。输入、�
 | `v6.md` | `c44f3bd614585fd702b3fade7403164957627ab638080b8680b7fbfddb294ffe` |
 | `review-v6.md` | `f9a3a74da25a983886f37f52d03a5fb9e5ed7276363f1c848bcd77e8f028d79e` |
 | `receipt-v7.md` | `4256e8b88127d04c9a39be6ffdaae001deb94c537c216d688e6ca5cd9ffe9c39` |
+| `v7.md` | `dde87b3fe5779ced4a23b3f28eb00bf68bdc1251e190c7eeb0ec67e1f1420287` |
+| `review-v7.md` | `c921e44571c6d83078376745c10227671d0cd2f3b9ce938822dd9d94a67fb3c1` |
+| `receipt-v8.md` | `44fe29e6dc1ecac99304cf435ef63bdf6ff7767c02ef9528f560a90694758ea5` |
 | `baseline-matched-v7.md` | `56b3cb6f0e4f576a5c64a8ac88b82f62f3551cca2493258f55f8492f8ed4b13b` |
 | `review-baseline-matched-v7.md` | `8be38d58dc72d3c24493b84822d517310f9fb41dcc5706eccf62fd37fd388562` |
 | `review-baseline-matched-v8.md` | `bcd6d55c8f93c692f7783eafa7f28c95359e1719a15fd81825d8449175262c78` |

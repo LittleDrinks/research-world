@@ -2,9 +2,9 @@
 project: q089
 protocol: contest-research-workflow-2026-09-01
 status: completed
-final: v7.md
-final_review: review-v10.md
-final_receipt: receipt-v11.md
+final: v8.md
+final_review: review-v11.md
+final_receipt: receipt-v12.md
 ---
 # q089 运行记录
 ## 问题
@@ -32,6 +32,9 @@ How can we break the current limit on energy-conversion efficiencies?
 | `receipt-v10.md` | `01a05efa-7469-7143-9d21-72e73c77390b` | `custom/gpt-5.6-terra` | 7 | 48918 | 223488 | 7715 | `deliverable`；真实运行态 auditor UUIDv7；审计 v7/review-v9 |
 | `review-v10.md` | `01a05f67-6574-7b50-86ab-b18f2fa7cc5b` | `custom/gpt-5.6-terra` | 20 | 67403 | 817724 | 17473 | `deliverable`；12/12；来源 8/8；补齐 project/role 身份元数据 |
 | `receipt-v11.md` | `01a05f71-6086-7413-8292-e2c11a588174` | `custom/gpt-5.6-terra` | 9 | 37641 | 219303 | 5537 | `deliverable`；独立复核 v7/review-v10、来源、哈希与执行边界 |
+| `v8.md` | `01a05f99-1c99-74e5-afd3-d0af80d01144` | `contest-qwen/qwen3-max` | 10 | 26268 | 127744 | 5418 | 紧凑排版与客观主语投影；科学内容与 v7 一致 |
+| `review-v11.md` | `01a05fa3-b786-7df1-b3ed-4bcb5f3854d4` | `custom/gpt-5.6-terra` | 7 | 46203 | 277760 | 11681 | `deliverable`；12/12；来源 8/8；TPV 主线与执行边界 |
+| `receipt-v12.md` | `01a05fb1-0841-7612-8a7e-64585b3446d5` | `custom/gpt-5.6-terra` | 10 | 44177 | 294400 | 7485 | `deliverable`；独立复核 v8/review-v11、哈希、格式与执行边界 |
 ## 结果
 V1 将不同能量转换体系的“当前极限”拆成热力学、详细平衡、实验记录和商业效率四个边界；最终主线收敛为 TPV 光子回收，模拟和消融均保留为 planned。V3 达到 12/12 后，来源元数据投影又在 V4-V6 引入题名、版本标题和作者错配；V6 独立复核以 Crossref 发现不存在或不属于论文的作者，判为不可交付。V7 修复 S3/S5/S8 后恢复 12/12、来源 8/8，科学正文不变。
 review-v10 与 receipt-v11 分别固定真实 reviewer/auditor UUIDv7；历史 review/receipt 保留但不参与当前链。
@@ -60,6 +63,9 @@ V3 Session 将文件写到仓库根 `q089/v3.md`。编排器核验目标文件�
 | `receipt-v10.md` | `968607a888fd12eb77108a725857453e17af915c14c9a2e1423bf257c6056cbd` |
 | `review-v10.md` | `feb52df81836383b1bde1f2d5bc21551405ec120fb15efb67c1614e64f23791b` |
 | `receipt-v11.md` | `1943c7a139d528458ee5ec1f733f74423112f85b3c69ba37fc9ce79b3a3322e0` |
+| `v8.md` | `b9a6f9544659c9fb086cc1d55d36280b5fbdc1019790d5ab46a697b2172fd251` |
+| `review-v11.md` | `595b7c96c51325c5a03d8b22ff2524db12692c3c58775bc1f96948a3302ef31e` |
+| `receipt-v12.md` | `e66c929d172b95803083b80593edddf1abf51d2085bc2e2d8c73fad27d9e1cbe` |
 ## 未解决项
 - 评审只验证研究计划和引文，不等价于已完成 TPV 模拟或器件实验。
 - V3 文件归位由编排器执行，因而其路径修复不是模型自主行为。

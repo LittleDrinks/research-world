@@ -2,9 +2,9 @@
 project: q021
 protocol: contest-research-workflow-2026-09-01
 status: waiting_human
-final: v8.md
-final_review: review-v10.md
-final_receipt: receipt-v11.md
+final: v9.md
+final_review: review-v11.md
+final_receipt: receipt-v12.md
 ---
 # q021 运行记录
 ## 问题
@@ -35,6 +35,9 @@ Can we ever overcome antibiotic resistance?
 | `receipt-v10.md` | `01a05efa-7456-7102-8fe7-27ede829d823` | `custom/gpt-5.6-terra` | 9 | 55993 | 327424 | 11332 | `deliverable`；真实运行态 auditor UUIDv7；审计 v8/review-v9 |
 | `review-v10.md` | `01a05f67-655d-7eb0-bf62-bbfad75b27c6` | `custom/gpt-5.6-terra` | 29 | 81685 | 1514747 | 16817 | `deliverable`；12/12；来源 8/8；角色元数据与客观表述闭合 |
 | `receipt-v11.md` | `01a05f71-6078-70f1-b8e8-a362d0b5ebc0` | `custom/gpt-5.6-terra` | 7 | 22734 | 216320 | 6749 | `deliverable`；独立复核 v8/review-v10、来源、哈希与执行边界 |
+| `v9.md` | `01a05f99-1ca6-7b91-b963-f941987e9d11` | `contest-qwen/qwen3-max` | 9 | 18443 | 110976 | 5942 | 紧凑排版与客观主语投影；科学内容与 v8 一致 |
+| `review-v11.md` | `01a05fa3-b799-7033-bb34-dac94d65e641` | `custom/gpt-5.6-terra` | 11 | 75530 | 461056 | 13494 | `deliverable`；12/12；来源 8/8；pilot/IRB 与执行边界 |
+| `receipt-v12.md` | `01a05fb1-0874-7802-8f6f-803767bd8ddb` | `custom/gpt-5.6-terra` | 9 | 39405 | 236879 | 8558 | `deliverable`；独立复核 v9/review-v11、哈希、格式与执行边界 |
 失败的 `gpt-5.6-sol` reviewer Session 未生成文件且未被覆盖；全新 `qwen3.7-max` Session 完成 V3 评审。模型切换单独披露，不把后续改进只归因于 Workflow。
 ## 结果
 V1 已有三条机制路线，但 V2 将实验室报告时间误当临床医嘱终点，并用无来源标准差支撑正式 RCT。V3 将任务收缩为 n=30 可行性 pilot；V4 修复 ITT、panel 外病原和终点边界；V5 修正 PMID 及未来样本量取整，但独立分支验收发现 Banerjee DOI 仍拼接错误。V6 修正 DOI；V7 的来源投影又暴露 S7 题名与作者错误；V8 以 DOI、PMID、PMCID 和权威页面交叉核验 8/8 来源。六维分数最终达到 12/12。
@@ -66,6 +69,9 @@ review-v10 与 receipt-v11 分别固定真实 reviewer/auditor UUIDv7；历史 r
 | `receipt-v10.md` | `ab0943f2b27ec1ccfbef66781f12a7de8c0ff2ac4ed6a7662d6cce1b6d7c8664` |
 | `review-v10.md` | `e76a8c550ec2577330fb5f0750ebede2985ce16b1f9a795674b422bc74d9d7ae` |
 | `receipt-v11.md` | `49b358d9bc26bc1e5d00853dfded0ffafe40ce60704c1c742d3fa0a1a7551b3b` |
+| `v9.md` | `542e39390419f067d9e6d2be117c861823ecc45d968fbaca9d29f0b3adf9a931` |
+| `review-v11.md` | `4c14e39c3a7e309809b06c62c179ad6bde58d37aae236c293bed4245061d5f4b` |
+| `receipt-v12.md` | `83d0345a5fa14ad592bf2817f6e25cf52d61717d0292d6b4f4488649e4e9bbd5` |
 ## 审计说明
 - review-v4 声称 V4 内容重复；编排器以标题和终态计数核验文件各仅一份，review-v5 通过 diff 再次确认无重复。
 - review-v5 错把 `10.1093/cid/civ478` 判为 Banerjee 论文 DOI；全新分支验收以 PubMed、PMC 和 DOI 交叉核验发现错误，V6 与 review-v6 保留修复链。
