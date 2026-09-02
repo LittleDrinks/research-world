@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "test": "playwright test",
+    "test": "playwright test --config playwright.config.js",
+    "test:t2": "playwright test --config playwright.t2.config.js",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
