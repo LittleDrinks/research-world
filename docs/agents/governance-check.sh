@@ -136,6 +136,7 @@ require_text docs/adr/0040-provider-webchat-runtime-ownership.md 'RW_MODEL_NAME'
 require_text docs/adr/0040-provider-webchat-runtime-ownership.md '`baseurl` 与 `apikey` 只进入 Runtime 进程'
 require_text docs/adr/0040-provider-webchat-runtime-ownership.md 'browser/control、公开 API、Trace 与日志不携带密钥'
 require_text docs/adr/0040-provider-webchat-runtime-ownership.md '可理解的错误显式失败'
+require_text docs/adr/0040-provider-webchat-runtime-ownership.md '重复 Submit 并返回已有 Turn'
 require_text AGENTS.md '模型凭证只进入 Runtime 进程'
 
 require_text AGENTS.md '$anysearch'
@@ -176,7 +177,8 @@ for term in \
   'supersedes:' \
   '0018: Agent-side endpoint binding scope' \
   '0033: Penguin-owned deployment model access config' \
-  '0038: Web model settings management operations' \
+  '0038: the missing-model-config gate' \
+  'Penguin Session/Task → Penguin HTTP/SSE execution mapping' \
   '0039: Launch/Submit-only'; do
   require_text docs/adr/0040-provider-webchat-runtime-ownership.md "$term"
 done
