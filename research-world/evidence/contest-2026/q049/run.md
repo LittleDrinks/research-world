@@ -4,17 +4,19 @@ protocol: contest-research-workflow-2026-09-01
 status: completed
 final: v8.md
 final_review: review-v8.md
-final_receipt: receipt-v9.md
-matched_baseline: baseline-matched-v9.md
-matched_review: review-baseline-matched-v10.md
-matched_receipt: receipt-baseline-matched-v9.md
+final_receipt: receipt-v10.md
+compute_baseline: baseline-matched-v2.md
+compute_review: review-baseline-budget-v2.md
+length_baseline: baseline-matched-v6.md
+length_review: review-baseline-matched-v6.md
+display_projection: baseline-matched-v9.md
 ---
 # q049 运行记录
 ## 问题
 Why don't the orbits of planets decay and cause them to crash into each other?
 Gravity keeps planets in stable orbits around the sun. Yet orbits do decay very gradually. Eventually, the planets will swirl into the sun.
 ## 版本与评审
-| 产物 | Pi Session id | 模型 | 调用 | 非缓存输入 token | 缓存读取 token | 输出 token | 结果 |
+| 产物 | Agent Session id | 模型 | 调用 | 非缓存输入 token | 缓存读取 token | 输出 token | 结果 |
 |---|---|---|---:|---:|---:|---:|---|
 | `baseline.md` | `01a0599a-eaa0-7819-90ca-403042218cd4` | `contest-qwen/qwen3-max` | 14 | 113047 | 238592 | 2417 | 直接回答；8/12；关键数值来源 3/3 |
 | `v1.md` | `01a0599b-f95f-74e2-b861-aba3c5fd1fe6` | `contest-qwen/qwen3-max` | 25 | 98844 | 373120 | 4567 | 9/12；引用 2/5；`revise` |
@@ -60,22 +62,31 @@ Gravity keeps planets in stable orbits around the sun. Yet orbits do decay very 
 | `v8.md` | `01a05fd4-8bd4-7484-afd1-8ca2105ac4cb` | `contest-qwen/qwen3-max` | 5 | 41223 | 38912 | 4170 | 移除版本变更自我指涉；科学内容不变 |
 | `review-v8.md` | `01a05fd9-122e-7bc1-ab3c-513690287236` | `custom/gpt-5.6-terra` | 22 | 120900 | 1232384 | 27376 | `deliverable`；12/12；来源 6/6；补齐两条边界来源投影 |
 | `receipt-v9.md` | `01a05fe5-4570-73d1-9fbe-0f118d8d48ef` | `custom/gpt-5.6-terra` | 12 | 51038 | 524288 | 18910 | `deliverable`；独立复核 v8/review-v8、来源、哈希与执行边界 |
+| `baseline-matched-v10.md` | `01a06031-134e-71c1-9176-326a6a1cdcd7` | `contest-qwen/qwen3-max` | 25 | 208136 | 981760 | 4291 | 未选 attempt 8；自造 UUID、非一手来源并在字数反馈后重写 |
+| `baseline-matched-v11.md` | `01a06034-c9fe-73ab-ab4b-fe2464bd7d64` | `contest-qwen/qwen3-max` | 17 | 115531 | 476032 | 3506 | 未选 attempt 9；实际零检索，五条 DOI 与主张无关 |
+| `review-baseline-matched-v11.md` | `01a06038-db6a-7c12-8a93-a3f74c3acf79` | `custom/gpt-5.6-terra` | 24 | 168016 | 1569005 | 33560 | `revise`；3/12；检索与预算条件均不合格 |
+| `baseline-matched-v12.md` | `01a060fc-c843-72f6-8819-dd121c4cb74a` | `contest-qwen/qwen3-max` | 18 | 86404 | 463488 | 1525 | 未选 attempt 10；真实检索且单次写入，但仅 2070 字符并错写模型字段 |
+| 无产物 | `01a06102-69e3-7e18-b360-47f3cfe61b7e` | `contest-qwen/qwen3-max` | 5 | 10636 | 0 | 73 | attempt 11 `failed`；上游容量 503，未写文件 |
+| 无产物 | `01a0610e-8c99-7f52-8971-52b448b65833` | `contest-qwen/qwen3-max` | 4 | 0 | 0 | 0 | attempt 12 `failed`；上游容量 503，未写文件 |
+| `review-baseline-budget-v2.md` | `01a06112-6772-7883-95c2-dba589b88899` | `custom/gpt-5.6-terra` | 55 | 93191 | 3263685 | 29264 | `eligible`；attempt 2 为实算近似对照，非严格 token 或长度匹配 |
+| 无产物 | `01a06139-16f0-7a40-a13d-bbad59364e23` | `custom/gpt-5.6-terra` | 7 | 65129 | 189633 | 5952 | `stopped_by_user`；终审写入前按用户暂停指令关闭 tab |
+| `receipt-v10.md` | `01a06149-17bc-7111-9df3-ff2c80079154` | `custom/gpt-5.6-terra` | 22 | 181123 | 2458112 | 42815 | `deliverable`；复核当前 final/review、冻结 V1、双轴对照、哈希与终态所有权 |
 成功的 `gpt-5.6-sol` reviewer Session 中出现过上游 `401/503` 重试；模型随后继续完成任务。失败的 `gpt-5.3-codex` Session 未生成内容，未被覆盖或计入成功评审。
 ## 同条件对照
-最初的 `baseline.md` 与 V1 实际长度和 calls 不匹配，只保留为历史直接回答。七个全新 attempt 全部留痕；attempt 6 由独立 reviewer 判定为可交付 matched baseline。两侧相同原题、`qwen3-max`、检索权限和 3500–5000 中文字目标，均在一个独立 Session 内完成；实际检索路径分别为 Crossref 与 anysearch，不冒充同行为或因果。
-| 指标 | Matched direct attempt 6 | Workflow V1 |
-|---|---:|---:|
-| 模型 | `contest-qwen/qwen3-max` | `contest-qwen/qwen3-max` |
-| 文件字符 `wc -m` | 4708 | 4970（原始 write；当前投影 4968） |
-| 模型调用 | 27 | 25 |
-| 非缓存输入 token | 1182967 | 98844 |
-| 缓存读取 token | 393984 | 373120 |
-| 输出 token | 12902 | 4567 |
-| 六维 rubric | 6/12 | 9/12 |
-| 显式来源 | 0 条 | 全部来源 2/5 有效 |
-| 可区分 Direction | 0 | 3 |
-| 可实施研究计划 | 无 | 有，但 V1 判据错误 |
-Matched direct attempt 6 的 Peters 时间经独立复算正确，但无显式 URL/DOI、Direction 或研究计划，不能作为学术答案直接采用。Workflow V1 增加了 Direction 比较和研究计划，但引用有效率只有 2/5，并含 22 个数量级的功率错误。最终版相对 V1 从 9/12 提升到 12/12，来源从 2/5 提升到 6/6；改善发生在独立评审、修订和一次限定计算之后，不能只归因于 Workflow。Attempt 6 token 显著高于 V1，作为实测成本差异报告，不事后重采样刷预算。
+不存在同时严格匹配计算量与输出长度的单一直接回答。attempt 2 是独立 reviewer 接受的实算近似对照：同题、同模型、同检索权限、各 5 次成功搜索和一次最终 write，calls 与非缓存输入相差 16.00%/14.65%；其缓存、输出、总 token 和长度差异仍须披露。attempt 6 仅近似匹配长度与 calls，其非缓存输入为 V1 的 11.968 倍，不称 compute matched。
+| 指标 | 实算近似 attempt 2 | 长度近似 attempt 6 | Workflow V1 |
+|---|---:|---:|---:|
+| 模型 | `qwen3-max` | `qwen3-max` | `qwen3-max` |
+| 文件字符 `wc -m` | 2388 | 4708 | 4970（原始 write） |
+| 模型调用 | 21 | 27 | 25 |
+| 非缓存输入 token | 113326 | 1182967 | 98844 |
+| 缓存读取 token | 555520 | 393984 | 373120 |
+| 输出 token | 3244 | 12902 | 4567 |
+| 六维 rubric | 4/12 | 6/12 | 9/12 |
+| 显式来源 | 0 条 | 0 条 | 5 条，2/5 有效 |
+| 可区分 Direction | 0 | 0 | 3 |
+| 可实施研究计划 | 无 | 无 | 有，但 V1 判据错误 |
+两个直接回答都不能作为学术答案采用。Workflow V1 增加 Direction 比较和研究计划，但引用有效率仅 2/5，并含 22 个数量级的功率错误。最终版相对 V1 从 9/12 提升到 12/12、来源从 2/5 提升到 6/6；改善发生在独立评审、修订和一次限定计算之后，不能只归因于 Workflow。对照限制作为实测差异报告，不再重采样刷预算。
 `baseline-matched-v9.md` 是后续独立 Session 形成的可追溯展示投影：修正水星 Peters 时间为 `4.343e22` 年、按条件质量损失率复算外移为 `0.005%`，并补齐四类主源和完整输入。该投影不回写 attempt 6 的冻结模型、长度、调用、token、检索路径或 6/12 评分。
 ## 实际计算
 V3 使用 Peters 圆轨道公式核验地球-太阳引力波耗散。输入、公式、命令、输出和退出码写入 `v3.md`；输出为 `P = 196.291 W`、`t = 3.374e+30 s = 1.069e+23 years`。输出文本 SHA-256 为 `7a546ef6f2dd84fdaf967de502583353a6d35abea74b10f3f209412dbb2a2361`。最终 reviewer 独立复算数值并重算该哈希，结果一致。
@@ -83,7 +94,7 @@ V3 使用 Peters 圆轨道公式核验地球-太阳引力波耗散。输入、�
 | 文件 | SHA-256 |
 |---|---|
 | `baseline.md` | `52d5d8175092d36cbfaf82b4663d22e087fd5e7a20f6c11cef199c5a0ef5dac4` |
-| `v1.md` | `7883753678e5efdbbd88618f89d79afbb6a0fda59eeb571c7b32b3bd0ee5f652` |
+| `v1.md` | `74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5` |
 | `review-v1.md` | `96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74` |
 | `v2.md` | `f52147e11870e864caf6a420ad8abbf16edc8324a2844a47723af0a2b2ac8008` |
 | `review-v2.md` | `de3c4080cf75477c45277a820fdf4a17cb1f3ba3b90712950dc6bc66a4d7a0f4` |
@@ -123,8 +134,14 @@ V3 使用 Peters 圆轨道公式核验地球-太阳引力波耗散。输入、�
 | `v8.md` | `e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643` |
 | `review-v8.md` | `987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4` |
 | `receipt-v9.md` | `90339a46a903ee92de81de78337e46db5a382b21a428a9a8c57b75751e3de4a2` |
+| `baseline-matched-v10.md` | `aa62baf60f8a640a72d2f3c2a8f154d0ab925c9ec785a8682215e7a1a6b6d187` |
+| `baseline-matched-v11.md` | `2fa6246ba0505ea9413b881197bed8e0f7a50d8b961bdd5b2e56fde1176d7def` |
+| `review-baseline-matched-v11.md` | `292e186b94c24bba6c1afe16c072870cf26fce5160b9791ffa26337495eb78c3` |
+| `baseline-matched-v12.md` | `ace2313b0c64b65e57b0f46a8c41dbdf0deaa6d6e79b1fc4a4e52c8a6d71f7aa` |
+| `review-baseline-budget-v2.md` | `1f05644c0bdf9aee91e71fb43fe939bc08b2c0cc1a81abb43bd870402d52bdb6` |
+| `receipt-v10.md` | `514ebcf41b3b7e6866801a230deb4fa04afca9df748514c6c4c5223df1ead103` |
 ## 未解决项
 - V3 的约 1% 水星失稳概率来源归因错误已在 V4 修正为 Laskar & Gastineau 2009；Batygin & Laughlin 2008 仅支撑构造的 1.261 Gyr 失稳轨迹。
 - V3 未把限定计算脚本作为 Artifact 保存，但公开了公式、输入、命令、输出和输出哈希；最终 reviewer 已独立复现。
-- Matched baseline attempt 6 只用于公平 benchmark，不可作为学术答案直接采用；其关键数值正确，但没有显式来源标识、Direction 或研究计划，独立 reviewer 已明确披露。
+- attempt 2 与 attempt 6 分别只提供实算近似和长度近似对照；不存在严格双匹配，二者均不可作为学术答案直接采用。
 - receipt-v4 的 `auditor_session: current` 与 V4 artifact 的“当前终态”均保留为被拒历史；V5/review-v5/receipt-v5 已分别闭合角色边界与可归因性。

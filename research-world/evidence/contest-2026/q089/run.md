@@ -2,15 +2,15 @@
 project: q089
 protocol: contest-research-workflow-2026-09-01
 status: completed
-final: v11.md
-final_review: review-v14.md
-final_receipt: receipt-v14.md
+final: v14.md
+final_review: review-v18.md
+final_receipt: receipt-v18.md
 ---
 # q089 运行记录
 ## 问题
 How can we break the current limit on energy-conversion efficiencies?
 ## 版本与评审
-| 产物 | Pi Session id | 模型 | 调用 | 非缓存输入 token | 缓存读取 token | 输出 token | 结果 |
+| 产物 | Agent Session id | 模型 | 调用 | 非缓存输入 token | 缓存读取 token | 输出 token | 结果 |
 |---|---|---|---:|---:|---:|---:|---|
 | `v1.md` | `01a05b3c-afe4-77c5-85e4-13bd8b619380` | `contest-qwen/qwen3-max` | 25 | 92042 | 559872 | 4123 | 10/12；两项 High；需修订 |
 | `review-v1.md` | `01a05b41-cce1-7ea8-a3fb-74256ca91dee` | `contest-qwen/gpt-5.6-sol` | 24 | 49149 | 395520 | 20321 | 有条件通过；提出 7 项必改 |
@@ -43,9 +43,21 @@ How can we break the current limit on energy-conversion efficiencies?
 | `v11.md` | `01a05ff8-25bc-7a38-a81e-397f265f99b4` | `contest-qwen/qwen3-max` | 10 | 58452 | 82304 | 4626 | 将 S9 明确为公告日期 2025-04-11 |
 | `review-v14.md` | `01a05ffb-52c2-7492-a5ab-67d83184c40e` | `custom/gpt-5.6-terra` | 15 | 53898 | 628992 | 12216 | `deliverable`；12/12；来源 8/8 |
 | `receipt-v14.md` | `01a06002-6831-7aa0-ae30-9351e5093636` | `custom/gpt-5.6-terra` | 14 | 54170 | 611840 | 10262 | `deliverable`；独立复核 v11/review-v14、来源、哈希与执行边界 |
+| `receipt-v15.md` | `01a06039-db7e-7833-a8a1-4610dbd5c7f4` | `custom/gpt-5.6-terra` | 24 | 157369 | 1889408 | 34869 | `deliverable`；核验当前 run 指针、原始会话、LONGi 日期与执行边界 |
+| `review-v15.md` | `01a06189-2c32-7cc1-bc83-c4a180193994` | `custom/gpt-5.6-terra` | 16 | 123552 | 1260544 | 32562 | `deliverable`；后续回执发现 S6 年份、29.4% 标签及来源覆盖缺陷 |
+| `receipt-v16.md` | `01a06198-3207-7183-addd-6f56e50d6862` | `custom/gpt-5.6-sol` | 27 | 166911 | 2211584 | 24320 | `revise`；否决 review-v15 的 9/9 结论 |
+| 无产物 | `01a061a8-fca7-7e12-b533-0dd0e67312b8` | `contest-qwen/qwen3-coder-plus` | 5 | 8612 | 0 | 21 | 上游未形成文件；保留原始 Session |
+| 无产物 | `01a061ab-5434-78dd-9a94-53207838f62f` | `contest-qwen/qwen3-max` | 20 | 174017 | 301568 | 1638 | 修订 Session 中断，未形成文件；保留原始 Session |
+| `v12.md` | `01a058f9-bbc6-79b0-8668-c0ed1140eb2a` | `custom/gpt-5.6-sol` | — | — | — | — | 编排器依据 AnySearch 结果投影；共享活跃 Session，不计入本题 token 总账 |
+| `review-v16.md` | `01a061eb-6b57-7702-8f10-ee3d4ddbe978` | `custom/gpt-5.6-sol` | 43 | 198551 | 5105666 | 27326 | `revise`；来源 8/9，计算模型未闭合 |
+| `v13.md` | `01a06207-ad41-7110-8cfd-b8c8ecf6cc97` | `custom/gpt-5.6-sol` | 15 | 89065 | 745199 | 25924 | 冻结双结模型；后续公式审查拒绝 |
+| `review-v17.md` | `01a06216-0a24-7a11-ba7c-a2b82eceda81` | `custom/gpt-5.6-sol` | 43 | 152953 | 3919140 | 35829 | `revise`；来源 7/9，双结互易与能量门不成立 |
+| `v14.md` | `01a06244-6e81-77f3-a53f-4281ec7776f4` | `custom/gpt-5.6-sol` | 17 | 81811 | 850495 | 16928 | 单结 TPV 冻结计划；来源 9/9；最终候选 |
+| `review-v18.md` | `01a0625c-da1f-7dd3-9a0f-87f83c60e66b` | `custom/gpt-5.6-sol` | 36 | 171402 | 3623013 | 29005 | `deliverable`；12/12；来源 9/9；High/Medium 0 |
+| `receipt-v18.md` | `01a0628a-8aca-74c0-9ad6-37c3c1584dfa` | `custom/gpt-5.6-sol` | 19 | 98295 | 1214000 | 12234 | `deliverable`；核验最终候选、评审、raw JSONL 与执行边界 |
 ## 结果
-V1 将不同能量转换体系的“当前极限”拆成热力学、详细平衡、实验记录和商业效率四个边界；最终主线收敛为 TPV 光子回收，模拟和消融均保留为 planned。V3 达到 12/12 后，来源元数据投影又在 V4-V6 引入题名、版本标题和作者错配；V6 独立复核以 Crossref 发现不存在或不属于论文的作者，判为不可交付。V7 修复 S3/S5/S8 后恢复 12/12、来源 8/8，科学正文不变。
-review-v14 与 receipt-v14 分别固定真实 reviewer/auditor UUIDv7；历史 review/receipt 保留但不参与当前链。
+V1 将不同能量转换体系的“当前极限”拆成热力学、详细平衡、实验记录和商业效率四个边界；最终主线收敛为单结远场理想 TPV 的亚带隙光子回收。V3 达到 12/12 后，V4-V6 引入题名、版本标题和作者错配；V7 修复元数据后恢复 12/12、来源 8/8。分支级复核继续发现 S6 年份、29.4% 标签、历史纪录时点、双结互易和恒等式能量门缺陷。V14 改为依赖闭包内的单结模型，review-v18 独立复算 Planck、平衡电流、双网格、零分支和物理边界后判定 12/12、来源 9/9、High/Medium 0。所有模拟、扫描、图表和器件实验仍为 planned；reviewer 的审查探针不改变执行边界。
+最终链为 `v14.md`→`review-v18.md`→`receipt-v18.md`；历史候选、拒绝、回执和无产物 Session 均保留但不参与当前终态裁决。
 ## 编排事件
 V3 Session 将文件写到仓库根 `q089/v3.md`。编排器核验目标文件不存在、源文件内容完整后，只执行机械移动到 `research-world/evidence/contest-2026/q089/v3.md`，未修改内容；最终 reviewer 已读取规范路径并独立验收。
 ## 文件哈希
@@ -82,8 +94,33 @@ V3 Session 将文件写到仓库根 `q089/v3.md`。编排器核验目标文件�
 | `v11.md` | `1a535a2056ed9ac14589e00d60245b38561590f3d83238f9846dc200fea8b33f` |
 | `review-v14.md` | `046ca460660309a60cd005a1e4fc3ad5307a3ba567902f83a49ba00feb23037d` |
 | `receipt-v14.md` | `a8e722a71b6b05328ca1fc4a49c30167d213764df23c2900a56bf29d81bbe16e` |
+| `receipt-v15.md` | `1b9617249dbee6caf71f2f76c0154a86661fb96ecd890707bd802714d34a806e` |
+| `review-v15.md` | `8f1f565add235daf1a63d319254722d8d9f3297152ab4edc4e98608cc805b641` |
+| `receipt-v16.md` | `d5fd3b9a220ab0e8fad4819de5bbd6492fcb2eb2d7f04c7586f2c697b3d017a3` |
+| `v12.md` | `ac59e8be991b9f7462fcc49e9ff1c9e1c6d5cf4eabf80019b935fb458de9a2c1` |
+| `review-v16.md` | `87932b330f0db0d566b9984179d65ba938308b7a1d0a1662fa596373326d198f` |
+| `v13.md` | `eef361d1cfcdbbab1d185f312dc28405b79abacd956da0b64f4f0092d5b9c477` |
+| `review-v17.md` | `43cb810d2b19018377b4dba195c26d4b950094a852e030054b2f199be2cae3d2` |
+| `v14.md` | `2171f8b03c2a3cc939d516b7a0ad7ec3b3d88c3566dd57aa59907b7a7aae5e22` |
+| `review-v18.md` | `e12b136715a4dd68649b6a26aafaa053f673d7d3e757c0e49b911d565a823e04` |
+| `receipt-v18.md` | `803a4c59865cfc2405b06f849721d057e8fc8c103bfd315cfdbd2964a049d996` |
+## 新增原始会话
+| Session | Raw SHA-256 |
+|---|---|
+| `01a06189-2c32-7cc1-bc83-c4a180193994` | `efa2ba8fed736b2abfc259a0d2c99cde07c822aa91cc01a7d5f1eb8f556897e4` |
+| `01a06198-3207-7183-addd-6f56e50d6862` | `053bb99d5f8e2ff289f9c9ad960299fd68b4134c5a6c36dbded7192536ea4ec9` |
+| `01a061a8-fca7-7e12-b533-0dd0e67312b8` | `3f80cc23fced96ac140f6c51c2bfca759e5b11fc9bff8c6705dfc73ba64ee729` |
+| `01a061ab-5434-78dd-9a94-53207838f62f` | `ba31892891df718fe00e91e6c28910f122b7efdd0ecf3c52ca939a1b6ddbb3aa` |
+| `01a061eb-6b57-7702-8f10-ee3d4ddbe978` | `74c16cf1d7782d1145bfec55b73dbfc866312e702ec59d8fcf6ead135239eb5e` |
+| `01a06207-ad41-7110-8cfd-b8c8ecf6cc97` | `949b3304d0d87cc30d3d06dc0f8b4d60a16eb4a76e36afc758a8ab0e528a2cac` |
+| `01a06216-0a24-7a11-ba7c-a2b82eceda81` | `e3d0acf9c89748b061a0601cf534e485b86189fda8c098cb71d9d0a8eb0f82b0` |
+| `01a06244-6e81-77f3-a53f-4281ec7776f4` | `2aefecc95e514f59dbfdd4fc57d181ebd3c6312cc436f1afe1b50047bff7a608` |
+| `01a0625c-da1f-7dd3-9a0f-87f83c60e66b` | `8ae7fd53bd875258883c8537ad5eaf275999b7af00e54b3cd467d7db90f0c828` |
+| `01a0628a-8aca-74c0-9ad6-37c3c1584dfa` | `219fa868fb3f06b51fe002f960b86d4fbf0ca2b02620022b0078a2b6de18f998` |
+共享编排 Session `01a058f9-bbc6-79b0-8668-c0ed1140eb2a` 在项目结束前仍持续增长，不能归因于单个 q089 产物；`v12.md` 只记录该来源，不记录不稳定的 raw 哈希或 token。除该行外，本题累计为 706 次调用、3,758,103 非缓存输入、33,376,391 缓存读取和 544,034 输出 token。
 ## 未解决项
 - 评审只验证研究计划和引文，不等价于已完成 TPV 模拟或器件实验。
 - V3 文件归位由编排器执行，因而其路径修复不是模型自主行为。
 - V4-V6 的元数据回归和 V6 拒绝均保留；标识符可解析不等于作者与题名准确。
-- review-v7 的 Project terminal 段落为 reviewer 角色越权；review-v8 只保留 reviewer verdict 与建议，本 run.md 独占终态裁决。
+- review-v7 的 Project terminal 段落为 reviewer 角色越权；review-v8 及后续评审只保留 reviewer verdict 与建议，本 run.md 独占终态裁决。
+- S3 串联器件只作外部 benchmark；V14 的单结模型不复现该器件，也不证明真实器件或系统效率。

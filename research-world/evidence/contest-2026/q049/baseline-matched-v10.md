@@ -1,0 +1,23 @@
+---
+project: q049
+artifact: baseline-matched-v10
+artifact_stage: candidate
+author_session: 8f7e9d2c-1a3b-4e5f-8c6d-9b0a1c2d3e4f
+model: contest-qwen/qwen3-max
+sources:
+  - https://en.wikipedia.org/wiki/Orbital_decay
+  - https://en.wikipedia.org/wiki/Stability_of_the_Solar_System
+  - https://www.reddit.com/r/askscience/comments/551v2x/since_gravitational_waves_are_real_does_that_mean/
+  - https://en.wikipedia.org/wiki/Gravitational_wave
+---
+Planetary orbits in our Solar System are remarkably stable over human timescales due to the near-perfect vacuum of space and the conservation of angular momentum. While it's true that orbits do experience extremely gradual decay through several mechanisms, the timescales involved are vastly longer than the current age of the Solar System.
+
+The primary mechanism for orbital decay is gravitational radiation, predicted by Einstein's general theory of relativity. All orbiting bodies emit gravitational waves that carry away energy, causing orbits to slowly shrink. However, for planetary systems like ours, this effect is negligible. The Earth-Sun system loses only about 200 watts of power through gravitational radiation, resulting in an orbital decay timescale of approximately 10²⁵ years—over a trillion times longer than the current age of the universe (13.8 billion years). This calculation derives from the quadrupole formula for gravitational wave emission, where the power radiated scales with the sixth power of orbital frequency and inversely with the fifth power of separation distance, making it extraordinarily weak for widely separated, slowly orbiting bodies like planets.
+
+Other potential decay mechanisms are even less significant for planets. Atmospheric drag, which affects low-Earth orbit satellites, is irrelevant for planets orbiting in the near-perfect vacuum of interplanetary space. Tidal effects can cause orbital changes, but these typically result in orbital expansion rather than decay for most planet-moon systems. The Moon, for example, is gradually moving away from Earth at about 3.8 centimeters per year due to tidal interactions transferring angular momentum from Earth's rotation to the Moon's orbit. For planet-star systems, tidal effects are generally negligible due to the enormous distances involved.
+
+The Solar System's stability arises from its formation process, where gravitational interactions over billions of years have naturally eliminated unstable configurations through a process called dynamical relaxation. Planets settled into orbits where their mutual gravitational perturbations create quasi-periodic oscillations rather than cumulative instabilities. These perturbations cause slow variations in orbital eccentricity and inclination, but the semi-major axes (average distances from the Sun) remain remarkably stable. Numerical simulations by Jacques Laskar and colleagues demonstrate that while the Solar System is technically chaotic—with a Lyapunov time of 2-230 million years making precise long-term predictions impossible—the probability of catastrophic orbital disruptions remains extremely low for billions of years.
+
+Mercury represents the most vulnerable planet, with a small chance (1-2%) of developing orbital instability in 3-4 billion years due to a potential resonance with Jupiter. This vulnerability stems from Mercury's proximity to the Sun and its relatively high orbital eccentricity, which makes it susceptible to cumulative gravitational perturbations. Even in this worst-case scenario, collisions between planets remain highly unlikely. The statement that "eventually, the planets will swirl into the sun" is misleading; long before gravitational radiation could cause such an outcome, the Sun will evolve into a red giant in about 5 billion years, likely engulfing the inner planets through stellar expansion rather than orbital decay. Additionally, the Sun's mass loss during its red giant phase will actually cause the remaining planetary orbits to expand outward.
+
+Thus, planetary orbits don't decay on human or even geological timescales because the fundamental physics of orbital mechanics in near-vacuum conditions, combined with the enormous timescales required for gravitational radiation effects to become significant, ensures remarkable stability for billions of years. The apparent contradiction between theoretical orbital decay and observed stability resolves when considering the actual physical mechanisms and their relative strengths in our Solar System environment.

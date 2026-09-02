@@ -4,13 +4,13 @@ protocol: contest-research-workflow-2026-09-01
 status: waiting_human
 final: v11.md
 final_review: review-v13.md
-final_receipt: receipt-v12.md
+final_receipt: receipt-v13.md
 ---
 # q112 运行记录
 ## 问题
 Can we create an environmentally friendly replacement for plastics?
 ## 版本与评审
-| 产物 | Pi Session id | 模型 | 调用 | 非缓存输入 token | 缓存读取 token | 输出 token | 结果 |
+| 产物 | Agent Session id | 模型 | 调用 | 非缓存输入 token | 缓存读取 token | 输出 token | 结果 |
 |---|---|---|---:|---:|---:|---:|---|
 | `v1.md` | `01a05d99-7ac5-79c5-9cf3-db6598a2b9e8` | `contest-qwen/qwen3-max` | 30 | 190156 | 712960 | 5845 | 7/12；材料与应用不等价；存在虚构 DOI |
 | 无产物 | `01a05da0-e5f7-79d3-bc1f-e7a106820c02` | `contest-qwen/gpt-5.6-sol` | 1 | 0 | 0 | 0 | `failed`；无 assistant 内容或评审文件 |
@@ -43,6 +43,7 @@ Can we create an environmentally friendly replacement for plastics?
 | `v11.md` | `01a06002-67cb-7e94-87fd-bbb6fd661546` | `contest-qwen/qwen3-max` | 9 | 65431 | 54400 | 4064 | 改为当地许可且明确接受合格材料的设施 |
 | `review-v13.md` | `01a06005-abc7-75f1-beeb-001ac619227e` | `custom/gpt-5.6-terra` | 11 | 44030 | 377088 | 11290 | `deliverable`；12/12；来源 9/9 |
 | `receipt-v12.md` | `01a0600a-4da4-7033-b687-8139ab6ceada` | `custom/gpt-5.6-terra` | 9 | 34243 | 302848 | 8492 | `deliverable`；独立复核 v11/review-v13、来源、哈希与执行边界 |
+| `receipt-v13.md` | `01a06039-db8c-7080-8455-880f3334c38c` | `custom/gpt-5.6-terra` | 24 | 145811 | 1446026 | 28907 | `deliverable`；核验当前 run 指针、原始会话、来源和标准语义 |
 失败的 `gpt-5.6-sol` reviewer Session 未生成内容且未被覆盖；全新 `qwen3.7-max` Session 完成 V1 评审。模型切换单独披露，不把改进只归因于 Workflow。
 ## 结果
 V1 把不可替代的碳酸饮料材料体系放在同一比较中。V2 改为 1,000 次 750 mL 冷食外带容器服务，比较 rPET、工业堆肥 PLA/PHA 和可复用 PP；后续评审修复错用标准、来源元数据、ReCiPe 单位和复用 break-even 方程。最终模型 `N_eff=(1-r^D)/(1-r)`，逐影响类别比较 `P/N_eff+W+T+rL` 与单次方案，所有阈值均为待批准设计参数。
@@ -81,6 +82,7 @@ V1 把不可替代的碳酸饮料材料体系放在同一比较中。V2 改为 1
 | `v11.md` | `d3d31ef832fecfe3a98b0165b3de00da710c57cb66b6508687e3b0c702cc2651` |
 | `review-v13.md` | `9e89852cbcf1ad0a1b3e47670384e4287cab5c068a42013b90dff278e13fc214` |
 | `receipt-v12.md` | `ced4c946845d90f4d3b778ffadd36c277effe1dfd7713efa3be8a0860ae7e2a5` |
+| `receipt-v13.md` | `b067d9163480790a12d153b7a546a973af26841b026f8f71c6f76bd8745434e4` |
 ## 未解决项
 - 计划质量不等价于材料性能、LCA 或运营系统已被实证验证。
 - 自定义性能阈值与基础设施阈值仍需研究团队和利益相关方批准。

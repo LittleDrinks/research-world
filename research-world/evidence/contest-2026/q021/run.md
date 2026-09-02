@@ -4,13 +4,13 @@ protocol: contest-research-workflow-2026-09-01
 status: waiting_human
 final: v10.md
 final_review: review-v12.md
-final_receipt: receipt-v13.md
+final_receipt: receipt-v15.md
 ---
 # q021 运行记录
 ## 问题
 Can we ever overcome antibiotic resistance?
 ## 版本与评审
-| 产物 | Pi Session id | 模型 | 调用 | 非缓存输入 token | 缓存读取 token | 输出 token | 结果 |
+| 产物 | Agent Session id | 模型 | 调用 | 非缓存输入 token | 缓存读取 token | 输出 token | 结果 |
 |---|---|---|---:|---:|---:|---:|---|
 | `v1.md` | `01a05b3c-afcf-7f1a-bc09-c60298afc0f6` | `contest-qwen/qwen3-max` | 22 | 174529 | 393728 | 4350 | 10/12；需修订 |
 | `review-v1.md` | `01a05b41-cce1-7a5b-bd7d-6fa686b6461a` | `contest-qwen/gpt-5.6-sol` | 15 | 34316 | 199168 | 11669 | 5/5 引用；提出最小必改 |
@@ -38,9 +38,12 @@ Can we ever overcome antibiotic resistance?
 | `v9.md` | `01a05f99-1ca6-7b91-b963-f941987e9d11` | `contest-qwen/qwen3-max` | 9 | 18443 | 110976 | 5942 | 紧凑排版与客观主语投影；科学内容与 v8 一致 |
 | `review-v11.md` | `01a05fa3-b799-7033-bb34-dac94d65e641` | `custom/gpt-5.6-terra` | 11 | 75530 | 461056 | 13494 | `deliverable`；12/12；来源 8/8；pilot/IRB 与执行边界 |
 | `receipt-v12.md` | `01a05fb1-0874-7802-8f6f-803767bd8ddb` | `custom/gpt-5.6-terra` | 9 | 39405 | 236879 | 8558 | `deliverable`；独立复核 v9/review-v11、哈希、格式与执行边界 |
-| `v10.md` | `01a05fd4-8beb-76f6-8686-a4d8cb510e49` | `contest-qwen/qwen3-max` | 3 | 16155 | 30848 | 5112 | 移除版本变更自我指涉；科学内容不变 |
+| `v10.md` | `01a05fd4-8beb-76f6-8686-a4d8cb510e49` | `contest-qwen/qwen3-max` | 3 | 16155 | 30848 | 5112 | 科学内容不变；当前字节恢复为作者原始写入 |
 | `review-v12.md` | `01a05fd9-123c-7ed3-9600-cd8e65992dc8` | `custom/gpt-5.6-terra` | 22 | 120973 | 1337856 | 23962 | `deliverable`；12/12；来源 8/8 |
 | `receipt-v13.md` | `01a05fe5-4531-7cb0-b013-4d6f2843955a` | `custom/gpt-5.6-terra` | 18 | 75181 | 913920 | 26491 | `deliverable`；独立复核 v10/review-v12、来源、哈希与执行边界 |
+| `receipt-v14.md` | `01a06039-db62-7d21-b365-7a6b578832a2` | `custom/gpt-5.6-terra` | 19 | 185491 | 1339209 | 44783 | `revise`；发现当前 v10 缺少作者原始 write 的候选 RESULT |
+| `v11.md` | `01a060fe-989a-72bf-bf0f-fc054fa9c9f7` | `contest-qwen/qwen3-max` | 14 | 24012 | 96896 | 5460 | 未选候选；上游 503/502 后恢复并写入，v10 原始字节恢复已直接解决审计项 |
+| `receipt-v15.md` | `01a0610a-1966-7c11-b9d4-811aa17ba6bc` | `custom/gpt-5.6-terra` | 15 | 77222 | 599618 | 18556 | `deliverable`；确认 v10 与原始 author write 逐字节一致 |
 失败的 `gpt-5.6-sol` reviewer Session 未生成文件且未被覆盖；全新 `qwen3.7-max` Session 完成 V3 评审。模型切换单独披露，不把后续改进只归因于 Workflow。
 ## 结果
 V1 已有三条机制路线，但 V2 将实验室报告时间误当临床医嘱终点，并用无来源标准差支撑正式 RCT。V3 将任务收缩为 n=30 可行性 pilot；V4 修复 ITT、panel 外病原和终点边界；V5 修正 PMID 及未来样本量取整，但独立分支验收发现 Banerjee DOI 仍拼接错误。V6 修正 DOI；V7 的来源投影又暴露 S7 题名与作者错误；V8 以 DOI、PMID、PMCID 和权威页面交叉核验 8/8 来源。六维分数最终达到 12/12。
@@ -75,11 +78,15 @@ review-v12 与 receipt-v13 分别固定真实 reviewer/auditor UUIDv7；历史 r
 | `v9.md` | `542e39390419f067d9e6d2be117c861823ecc45d968fbaca9d29f0b3adf9a931` |
 | `review-v11.md` | `4c14e39c3a7e309809b06c62c179ad6bde58d37aae236c293bed4245061d5f4b` |
 | `receipt-v12.md` | `83d0345a5fa14ad592bf2817f6e25cf52d61717d0292d6b4f4488649e4e9bbd5` |
-| `v10.md` | `172715a461245c8e8a47eb65d107193ef3c70f1373504472c0f4b296e4ebd347` |
+| `v10.md` | `9f8aac874355fc952258c25a9a609c993b1b634131bdb5b7e04661a6ee810422` |
 | `review-v12.md` | `1eb41ae4cb22ffe8970abd2f8b77b4a222531763983e8d3a57a764a6fd89b14b` |
 | `receipt-v13.md` | `17eb31d146eb2583c8786c3151bfa4f75b144f827196d67bb9b6641e0a7c527e` |
+| `receipt-v14.md` | `bbed1721d3f202afd0a91da262c2438ecc49fa2e7662b44e6f0cbcb13bc160ed` |
+| `v11.md` | `11f417eae9ce45ac28739ea0f1f7a0e20fae85b7c7fc7c6c2302df636db9e8b3` |
+| `receipt-v15.md` | `fe6db6f20cdcefc096f87b19c3864c37b919661eb8ab33e038abed4f929ae648` |
 ## 审计说明
 - review-v4 声称 V4 内容重复；编排器以标题和终态计数核验文件各仅一份，review-v5 通过 diff 再次确认无重复。
 - review-v5 错把 `10.1093/cid/civ478` 判为 Banerjee 论文 DOI；全新分支验收以 PubMed、PMC 和 DOI 交叉核验发现错误，V6 与 review-v6 保留修复链。
 - review-v7 发现 V7 将 S7 论文题名与作者错配；V8 与 review-v8 保留修复和 8/8 交叉核验链。旧 `receipt-v6.md` 只审计 V6，不作为 V8 最终回执。
 - 未来正式 RCT 的 10% 非劣效界值和约 660 例只用于规划，仍需领域专家和统计学家批准。
+- `receipt-v14.md` 发现 v10 曾缺作者写入的末行 `RESULT: CANDIDATE`；当前字节已恢复为原始 Pi write payload，候选 RESULT 不裁决 Project 终态。修复 Session `01a060fe-989a-72bf-bf0f-fc054fa9c9f7` 遇到 503/502 后恢复并写出未选 v11；它不替代当前 v10。
