@@ -42,6 +42,15 @@ def _raise_request_error(error: RequestError) -> None:
     raise RuntimeCapabilityError(message) from error
 
 
+DEFAULT_RUNTIME_REF = {"id": "openai-compatible", "realm": "container:runtime"}
+
+
+def _with_runtime_ref(agent_spec: dict) -> dict:
+    if "runtime" in agent_spec:
+        return agent_spec
+    return {**agent_spec, "runtime": dict(DEFAULT_RUNTIME_REF)}
+
+
 class RuntimeClient:
     def __init__(self, url: str, project_id: str | None = None):
         self.url = _websocket_url(url)
@@ -56,11 +65,15 @@ class RuntimeClient:
 
     async def validate_agent(self, agent_spec: dict) -> dict:
         return await self._extension(
-            "runtime/agents/validate", {"agent_spec": agent_spec}
+            "runtime/agents/validate", {"agent_spec": _with_runtime_ref(agent_spec)}
         )
 
     async def launch(self, agent_spec: dict, workspace: str, **values) -> str:
-        payload = {"agent_spec": agent_spec, "workspace": workspace, **values}
+        payload = {
+            "agent_spec": _with_runtime_ref(agent_spec),
+            "workspace": workspace,
+            **values,
+        }
         result = await self._extension("runtime/launch", payload)
         return result["session_id"]
 
