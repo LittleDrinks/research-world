@@ -159,14 +159,14 @@ auditor_sessions: 5
 | audit-001-025.md | 01a06163-656c-7fa0-87a9-f150b89a3352 | gpt-5.6-terra | 26 | 161912 | 2685440 | 39753 | b1718b8eae5dbdcb5d0c820c106fe058133033948df01f151f62aab8373935a0 | 37032bff0ccdf4206ec52d8dd59f33c679ee62ea3d9b5632714f81d919d74b71 | audited |
 | audit-026-050.md | 01a06163-74cf-73f0-aff4-e2bd5af2c017 | gpt-5.6-terra | 34 | 192324 | 3824128 | 49381 | d913ad8bbdee77b4edc65ad71c56abb7b10582fc4f7e7984704dd25be4278324 | 13a37d68f5e753b6a98166bb85aa3c7fe21f9663ae54ffa679b384eb3d1d07c3 | audited |
 | audit-051-075.md | 01a06163-83ad-71f0-9ac1-4e7b1dc83251 | gpt-5.6-terra | 42 | 244035 | 4367864 | 64101 | 423ad4e2e323f8aac42cb00afff9a0d5825e2640f6b8c3afe10a2cfce78508ec | aecd52627fc111732b3ad8775d960d03377d532feaccd14679725616a1172b93 | audited |
-| audit-076-100.md | 01a06163-9333-7213-83cf-2d307de028bd | gpt-5.6-terra | 55 | 171393 | 5788148 | 49119 | abfe6fd0c0cc66dccf311b0127a2ffc8ebd79cde65232b1d1c9c872883ad1cd7 | 9bb9cfc8a0ecbe2851954e187e9684e42717367eae479ebd8002989a4375c263 | audited |
+| audit-076-100.md | 01a06163-9333-7213-83cf-2d307de028bd | gpt-5.6-terra | 55 | 172697 | 5923649 | 52989 | abfe6fd0c0cc66dccf311b0127a2ffc8ebd79cde65232b1d1c9c872883ad1cd7 | 9bb9cfc8a0ecbe2851954e187e9684e42717367eae479ebd8002989a4375c263 | audited |
 | audit-101-125.md | 01a06163-a267-7020-9ac7-dd5d61e28c1b | gpt-5.6-terra | 49 | 187127 | 5155141 | 46732 | 07e276d2b0a8cf6f083e1b61235a8b89eb7e60dbc4606b4a671e9c24e1efa163 | 0c512ef72d80894ab19a709ad36c761d02a099468dcb6cec810d167206d849f3 | audited |
 ## 代价
 | 范围 | Session | 调用 | 非缓存输入 token | 缓存读取 token | 输出 token |
 |---|---:|---:|---:|---:|---:|
 | 125 个作者 | 125 | 2296 | 25956281 | 75086336 | 321272 |
 | 人工暂停 | 5 | 90 | 956919 | 2827648 | 7027 |
-| 五组独立审计 | 5 | 206 | 956791 | 21820721 | 249086 |
-| **合计** | **135** | **2592** | **27869991** | **99734705** | **577385** |
+| 五组独立审计 | 5 | 206 | 958095 | 21956222 | 252956 |
+| **合计** | **135** | **2592** | **27871295** | **99870206** | **581255** |
 125 个作者 Session UUIDv7 唯一，实际模型均为 contest-qwen/qwen3-max。五组审计覆盖 125 行且互不重叠；每个候选字节序列均由对应 raw write 回读，候选与 raw JSONL 哈希记录于上表。未来实验和计算未冒充 executed 结果。
 RESULT: COMPLETED
