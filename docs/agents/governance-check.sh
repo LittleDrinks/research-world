@@ -11,6 +11,7 @@ required=(
   docs/adr/0033-runtime-adapters-and-event-delivery.md
   docs/adr/0034-direct-kernel-fact-recording.md
   docs/adr/0038-web-model-conversation-closure.md
+  docs/adr/0040-provider-webchat-runtime-ownership.md
   docs/agents/domain.md
   docs/agents/issue-tracker.md
   docs/agents/triage-labels.md
@@ -41,6 +42,7 @@ current=(
   docs/adr/0033-runtime-adapters-and-event-delivery.md
   docs/adr/0034-direct-kernel-fact-recording.md
   docs/adr/0038-web-model-conversation-closure.md
+  docs/adr/0040-provider-webchat-runtime-ownership.md
   docs/agents/domain.md
   docs/agents/issue-tracker.md
   docs/agents/triage-labels.md
@@ -88,10 +90,9 @@ for term in \
   'Runtime Adapter' \
   'Pi Adapter' \
   'Penguin Harness Adapter' \
-  'Research World 设置 facade' \
+  'OpenAI-compatible Adapter' \
   '模型访问配置' \
   '部署级设置' \
-  'Penguin 是唯一持久所有者' \
   'Server-Sent Events (SSE)' \
   'Record' \
   'Connect' \
@@ -119,17 +120,23 @@ for term in \
   'Agent 不持有模型访问配置或 Runtime Adapter 绑定' \
   '模型访问配置' \
   '部署级设置' \
-  'Penguin 是唯一持久所有者' \
+  'Runtime 在其进程内解析' \
+  'baseurl 与 apikey 只进入 Runtime' \
+  'browser/control、公开 API、Trace 与日志不携带密钥' \
   '一个 Run 可同时承载多个活跃 Turn' \
   '关闭事件订阅不取消 Turn'; do
   require_text CONTEXT.md "$term"
 done
-require_text CONTEXT.md '只转发模型设置操作（测试、保存、掩码读取、替换与清除）；不负责对话协调'
-require_text CONTEXT.md '明文 apikey 可短暂进入 Web password input 和明确的测试、保存或替换请求'
 
 require_text MEMORY.md '模型访问配置是部署级设置'
-require_text MEMORY.md 'Research World 设置 facade 只转发测试、保存、掩码读取、替换与清除'
-require_text MEMORY.md 'Penguin 是唯一持久所有者'
+require_text MEMORY.md 'Runtime 在其进程内解析'
+require_text MEMORY.md 'browser/control、公开 API、Trace 与日志不携带密钥'
+
+require_text docs/adr/0040-provider-webchat-runtime-ownership.md '唯一永久路径'
+require_text docs/adr/0040-provider-webchat-runtime-ownership.md 'runtime.runtime.Runtime'
+require_text docs/adr/0040-provider-webchat-runtime-ownership.md 'ACP 与 `service.Runtime`'
+require_text docs/adr/0040-provider-webchat-runtime-ownership.md 'RW_MODEL_NAME'
+require_text AGENTS.md '模型凭证只进入 Runtime 进程'
 
 require_text AGENTS.md '$anysearch'
 require_text AGENTS.md 'TDD'
@@ -162,10 +169,14 @@ done
 require_text docs/adr/0038-web-model-conversation-closure.md '以 `0600` 写入专用数据根的 token 文件'
 require_text docs/adr/0038-web-model-conversation-closure.md '明文 apikey 可短暂进入 Web password input 和明确的测试、保存或替换请求'
 
+require_text docs/adr/0040-provider-webchat-runtime-ownership.md 'status: accepted'
+require_text docs/adr/0040-provider-webchat-runtime-ownership.md 'supersedes:'
+
 require_text docs/agents/domain.md 'CONTEXT.md'
 require_text docs/agents/domain.md 'ADR-0033'
 require_text docs/agents/domain.md 'ADR-0034'
 require_text docs/agents/domain.md 'ADR-0038'
+require_text docs/agents/domain.md 'ADR-0040'
 require_text docs/agents/issue-tracker.md 'gh issue view <number> --comments'
 for file in "${current[@]}"; do
   rg -q '^# ' "$file" || {
@@ -183,7 +194,7 @@ require_text docs/agents/domain.md '[CONTEXT.md](../../CONTEXT.md)'
 require_text docs/agents/domain.md '[ADR-0033](../adr/0033-runtime-adapters-and-event-delivery.md)'
 require_text docs/agents/domain.md '[ADR-0034](../adr/0034-direct-kernel-fact-recording.md)'
 require_text docs/agents/domain.md '[ADR-0038](../adr/0038-web-model-conversation-closure.md)'
-require_text CONTEXT.md 'Penguin Harness Adapter（Docker/MVP 默认）'
+require_text CONTEXT.md 'Penguin Harness Adapter'
 require_text docs/adr/0033-runtime-adapters-and-event-delivery.md 'Docker/MVP 默认交付 Adapter'
 require_text docs/adr/0033-runtime-adapters-and-event-delivery.md '不静默切换、占位或模拟另一个 Adapter'
 if rg -n 'https?://' AGENTS.md CONTEXT.md docs/agents; then
