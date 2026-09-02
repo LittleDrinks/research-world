@@ -415,7 +415,10 @@ class Runtime:
 
     def _parent_result(self, turn, status, result_text, error):
         link = self._delegations.get(turn.request.run_id)
-        if link is None or self._turn(link[1]).status != "running":
+        if link is None:
+            return None
+        parent = self._turn(link[1])
+        if parent.status != "running" or parent.native_identity_rejected:
             return None
         return link[0], link[1], _child_result_data(turn, status, result_text, error)
 
