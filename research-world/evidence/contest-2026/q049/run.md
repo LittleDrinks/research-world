@@ -2,9 +2,9 @@
 project: q049
 protocol: contest-research-workflow-2026-09-01
 status: completed
-final: v7.md
-final_review: review-v7.md
-final_receipt: receipt-v8.md
+final: v8.md
+final_review: review-v8.md
+final_receipt: receipt-v9.md
 matched_baseline: baseline-matched-v9.md
 matched_review: review-baseline-matched-v10.md
 matched_receipt: receipt-baseline-matched-v9.md
@@ -57,6 +57,9 @@ Gravity keeps planets in stable orbits around the sun. Yet orbits do decay very 
 | `baseline-matched-v9.md` | `01a05f12-6e5d-7931-a8cb-585b1cc893ce` | `custom/gpt-5.6-terra` | 12 | 69618 | 733184 | 17595 | 新候选；补齐两组 Peters 全部输入、单位、公式与输出 |
 | `review-baseline-matched-v10.md` | `01a05f18-d17a-7910-ac13-60791233da3d` | `custom/gpt-5.6-terra` | 14 | 102891 | 1025536 | 18660 | `deliverable`；复算三项数值并核验四类主源 |
 | `receipt-baseline-matched-v9.md` | `01a05f1f-d312-7c60-a8b8-ceaf0d54e2a6` | `custom/gpt-5.6-terra` | 15 | 83602 | 742656 | 15515 | `deliverable`；真实运行态 auditor/reviewer/author UUIDv7 |
+| `v8.md` | `01a05fd4-8bd4-7484-afd1-8ca2105ac4cb` | `contest-qwen/qwen3-max` | 5 | 41223 | 38912 | 4170 | 移除版本变更自我指涉；科学内容不变 |
+| `review-v8.md` | `01a05fd9-122e-7bc1-ab3c-513690287236` | `custom/gpt-5.6-terra` | 22 | 120900 | 1232384 | 27376 | `deliverable`；12/12；来源 6/6；补齐两条边界来源投影 |
+| `receipt-v9.md` | `01a05fe5-4570-73d1-9fbe-0f118d8d48ef` | `custom/gpt-5.6-terra` | 12 | 51038 | 524288 | 18910 | `deliverable`；独立复核 v8/review-v8、来源、哈希与执行边界 |
 成功的 `gpt-5.6-sol` reviewer Session 中出现过上游 `401/503` 重试；模型随后继续完成任务。失败的 `gpt-5.3-codex` Session 未生成内容，未被覆盖或计入成功评审。
 ## 同条件对照
 最初的 `baseline.md` 与 V1 实际长度和 calls 不匹配，只保留为历史直接回答。七个全新 attempt 全部留痕；attempt 6 由独立 reviewer 判定为可交付 matched baseline。两侧相同原题、`qwen3-max`、检索权限和 3500–5000 中文字目标，均在一个独立 Session 内完成；实际检索路径分别为 Crossref 与 anysearch，不冒充同行为或因果。
@@ -117,6 +120,9 @@ V3 使用 Peters 圆轨道公式核验地球-太阳引力波耗散。输入、�
 | `baseline-matched-v9.md` | `6d017687fa1c716c9f56ae6162b3ad3c4299a54ac9cc40353a31e3604e7e6fa1` |
 | `review-baseline-matched-v10.md` | `4e93a995cb39062e16d8b5a6ef3a605fd28785d7c2280c38aa6ae3c20e90bcf4` |
 | `receipt-baseline-matched-v9.md` | `e27640f13b756bf149e2e5a62764b77c3634d0fd9fff664e4e65206870766caa` |
+| `v8.md` | `e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643` |
+| `review-v8.md` | `987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4` |
+| `receipt-v9.md` | `90339a46a903ee92de81de78337e46db5a382b21a428a9a8c57b75751e3de4a2` |
 ## 未解决项
 - V3 的约 1% 水星失稳概率来源归因错误已在 V4 修正为 Laskar & Gastineau 2009；Batygin & Laughlin 2008 仅支撑构造的 1.261 Gyr 失稳轨迹。
 - V3 未把限定计算脚本作为 Artifact 保存，但公开了公式、输入、命令、输出和输出哈希；最终 reviewer 已独立复现。

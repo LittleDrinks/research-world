@@ -2,9 +2,9 @@
 project: q112
 protocol: contest-research-workflow-2026-09-01
 status: waiting_human
-final: v8.md
-final_review: review-v10.md
-final_receipt: receipt-v10.md
+final: v11.md
+final_review: review-v13.md
+final_receipt: receipt-v12.md
 ---
 # q112 运行记录
 ## 问题
@@ -35,6 +35,14 @@ Can we create an environmentally friendly replacement for plastics?
 | `v8.md` | `01a05f99-1cb9-764b-a97f-c9c456b7e958` | `contest-qwen/qwen3-max` | 10 | 15185 | 114944 | 4409 | 紧凑排版投影；科学内容与 v7 一致 |
 | `review-v10.md` | `01a05fa3-b7b7-7c82-a49c-50fb43406ffe` | `custom/gpt-5.6-terra` | 26 | 75384 | 1422848 | 17261 | `deliverable`；12/12；来源 9/9；三路线/LCA 与执行边界 |
 | `receipt-v10.md` | `01a05fb1-0873-7921-9ebc-37013a5b371f` | `custom/gpt-5.6-terra` | 13 | 48274 | 361876 | 8756 | `deliverable`；独立复核 v8/review-v10、哈希、格式与执行边界 |
+| `v9.md` | `01a05fd4-8bfe-73a6-ad0e-bc072b7f3871` | `contest-qwen/qwen3-max` | 5 | 47023 | 30848 | 3699 | 移除版本变更自我指涉；后续审计发现标准语义越界 |
+| `review-v11.md` | `01a05fd9-12a1-7b82-ad8a-bc9edf75719a` | `custom/gpt-5.6-terra` | 18 | 77560 | 964096 | 24796 | `deliverable`；12/12；来源 9/9 |
+| `receipt-v11.md` | `01a05fe5-456e-7e02-8d47-538aa5c5fa33` | `custom/gpt-5.6-terra` | 13 | 74100 | 523008 | 22819 | `revise`；发现 EN 13432 认证语义错用 |
+| `v10.md` | `01a05ff5-a944-7e0a-8c3b-9bd304e26f13` | `contest-qwen/qwen3-max` | 11 | 79157 | 97664 | 4784 | 将数值阈值明确为内部预注册筛选条件 |
+| `review-v12.md` | `01a05ffb-52a9-7f70-b77b-11062ef9951c` | `custom/gpt-5.6-terra` | 10 | 58684 | 386560 | 14802 | `revise`；发现设施认证措辞仍越界 |
+| `v11.md` | `01a06002-67cb-7e94-87fd-bbb6fd661546` | `contest-qwen/qwen3-max` | 9 | 65431 | 54400 | 4064 | 改为当地许可且明确接受合格材料的设施 |
+| `review-v13.md` | `01a06005-abc7-75f1-beeb-001ac619227e` | `custom/gpt-5.6-terra` | 11 | 44030 | 377088 | 11290 | `deliverable`；12/12；来源 9/9 |
+| `receipt-v12.md` | `01a0600a-4da4-7033-b687-8139ab6ceada` | `custom/gpt-5.6-terra` | 9 | 34243 | 302848 | 8492 | `deliverable`；独立复核 v11/review-v13、来源、哈希与执行边界 |
 失败的 `gpt-5.6-sol` reviewer Session 未生成内容且未被覆盖；全新 `qwen3.7-max` Session 完成 V1 评审。模型切换单独披露，不把改进只归因于 Workflow。
 ## 结果
 V1 把不可替代的碳酸饮料材料体系放在同一比较中。V2 改为 1,000 次 750 mL 冷食外带容器服务，比较 rPET、工业堆肥 PLA/PHA 和可复用 PP；后续评审修复错用标准、来源元数据、ReCiPe 单位和复用 break-even 方程。最终模型 `N_eff=(1-r^D)/(1-r)`，逐影响类别比较 `P/N_eff+W+T+rL` 与单次方案，所有阈值均为待批准设计参数。
@@ -65,6 +73,14 @@ V1 把不可替代的碳酸饮料材料体系放在同一比较中。V2 改为 1
 | `v8.md` | `99d576e6a05fd90e4321d9a5d0323f261f0cbb3f9c942ecd6fc38196b2cd0b13` |
 | `review-v10.md` | `4f03fb3f72e56ac51c0f718dfa909b735ba0f9a4b8e2ea7b217fe7599e4a7ef6` |
 | `receipt-v10.md` | `e961312a1dd6ca28734cdc20e119b4f62da39089cc2e1cd9796e3192756ae617` |
+| `v9.md` | `63c860eabec64c4e123d8013098baf7bf9579de4d6d1effda487d03ada0ccc6b` |
+| `review-v11.md` | `9dfa177df6b7f4b12a0899a7edad634ed2d0508ee298172453f22f06a3b5e22f` |
+| `receipt-v11.md` | `fe5ebea72d5f14cb749df28bf113a6b79f9f33f83887b4c1dea4ab475e778d68` |
+| `v10.md` | `1e2a784004dde94ea16586723f209dbeec9f3ef279ddb114e0eb691f50868ac0` |
+| `review-v12.md` | `76358d89faf94bee44b937281b6e0d2d3066600f9fb4e7509ac4db21e00d386d` |
+| `v11.md` | `d3d31ef832fecfe3a98b0165b3de00da710c57cb66b6508687e3b0c702cc2651` |
+| `review-v13.md` | `9e89852cbcf1ad0a1b3e47670384e4287cab5c068a42013b90dff278e13fc214` |
+| `receipt-v12.md` | `ced4c946845d90f4d3b778ffadd36c277effe1dfd7713efa3be8a0860ae7e2a5` |
 ## 未解决项
 - 计划质量不等价于材料性能、LCA 或运营系统已被实证验证。
 - 自定义性能阈值与基础设施阈值仍需研究团队和利益相关方批准。

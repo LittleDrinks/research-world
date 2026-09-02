@@ -2,9 +2,9 @@
 project: q098
 protocol: contest-research-workflow-2026-09-01
 status: waiting_human
-final: v11.md
-final_review: review-v12.md
-final_receipt: receipt-v14.md
+final: v12.md
+final_review: review-v13.md
+final_receipt: receipt-v15.md
 ---
 # q098 运行记录
 ## 问题
@@ -42,6 +42,9 @@ Why do we need sleep?
 | `v11.md` | `01a05f99-1ced-70dc-a4cb-dbb743d95ca7` | `contest-qwen/qwen3-max` | 7 | 24317 | 71040 | 4532 | 紧凑排版与客观主语投影；科学内容与 v10 一致 |
 | `review-v12.md` | `01a05fa3-b7cd-7951-9f16-30e482036cb3` | `custom/gpt-5.6-terra` | 21 | 94643 | 980795 | 19188 | `deliverable`；12/12；来源 8/8；补齐独立 reviewer 身份 |
 | `receipt-v14.md` | `01a05fb1-0836-70c2-bdc3-226775469d44` | `custom/gpt-5.6-terra` | 11 | 36693 | 285224 | 7213 | `deliverable`；独立复核 v11/review-v12、哈希、格式与执行边界 |
+| `v12.md` | `01a05fd4-8c03-7569-9af8-9f166cd18c40` | `contest-qwen/qwen3-max` | 5 | 30827 | 51328 | 4384 | 移除版本变更自我指涉；科学内容不变 |
+| `review-v13.md` | `01a05fd9-1252-7f60-acf5-a779467d738c` | `custom/gpt-5.6-terra` | 20 | 67157 | 957440 | 26218 | `deliverable`；12/12；来源 8/8 |
+| `receipt-v15.md` | `01a05fe5-4576-7ac3-8ab7-57401ad9249b` | `custom/gpt-5.6-terra` | 9 | 55322 | 269056 | 12689 | `deliverable`；独立复核 v12/review-v13、来源、哈希与执行边界 |
 失败的 `gpt-5.6-sol` reviewer Session 未生成内容且未被覆盖；全新 `qwen3.7-max` Session 完成 V1 评审。模型切换单独披露，不把改进只归因于 Workflow。
 ## 结果
 V1 已覆盖突触稳态、类淋巴和免疫代谢三方向，但混淆疫苗研究并让观察性设计承担因果结论。V2 的修订又用不相关论文支撑 HOMA-IR 效应和方差。最终版改为 120 名完成者的前瞻性 precision pilot；V8 以 NCBI 修正 S5 作者和两条疫苗论文 DOI，V9 修正 S3 页码。Fisher-z 只作为粗相关精度基准，不冒充调整模型功效，三方向证据、局限和可区分预测均保留。
@@ -79,6 +82,9 @@ V1 已覆盖突触稳态、类淋巴和免疫代谢三方向，但混淆疫苗�
 | `v11.md` | `34f221f1dbea4a308b2c66e794c15a6fbaed20e20716ddc3588925b54e4b552a` |
 | `review-v12.md` | `addc24514fa720383a80dc60d442fe56b32f4d33f2959583bfabccc80988c89d` |
 | `receipt-v14.md` | `ea1baf9ead0cc64fb454f60e087694d7d557232a1604cb3e09f787eb8bc0bc22` |
+| `v12.md` | `865aa07f50479ea59237887aaf4c5d594371f9638b82ae51766f7585aecc47ab` |
+| `review-v13.md` | `4af25f861fd1016a6c4d11eb39ca9485f9ae30e072c75f021a9ae1eb0cd55364` |
+| `receipt-v15.md` | `60a85b8d09f808cf9a55e10209fc9b02d51c17d6564ae8560a3fdaab231af14c` |
 ## 审计说明
 - review-v2/review-v3 将工具重复展示误判为文件重复；编排器以标题和终态计数核验每版均只有一份正文，review-v5 通过 diff 再确认。
 - Matthews 2012 的青少年横断面估计只作背景，不用于成人队列样本量。

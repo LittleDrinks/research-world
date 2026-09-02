@@ -2,9 +2,9 @@
 project: q089
 protocol: contest-research-workflow-2026-09-01
 status: completed
-final: v8.md
-final_review: review-v11.md
-final_receipt: receipt-v12.md
+final: v11.md
+final_review: review-v14.md
+final_receipt: receipt-v14.md
 ---
 # q089 运行记录
 ## 问题
@@ -35,9 +35,17 @@ How can we break the current limit on energy-conversion efficiencies?
 | `v8.md` | `01a05f99-1c99-74e5-afd3-d0af80d01144` | `contest-qwen/qwen3-max` | 10 | 26268 | 127744 | 5418 | 紧凑排版与客观主语投影；科学内容与 v7 一致 |
 | `review-v11.md` | `01a05fa3-b786-7df1-b3ed-4bcb5f3854d4` | `custom/gpt-5.6-terra` | 7 | 46203 | 277760 | 11681 | `deliverable`；12/12；来源 8/8；TPV 主线与执行边界 |
 | `receipt-v12.md` | `01a05fb1-0841-7612-8a7e-64585b3446d5` | `custom/gpt-5.6-terra` | 10 | 44177 | 294400 | 7485 | `deliverable`；独立复核 v8/review-v11、哈希、格式与执行边界 |
+| `v9.md` | `01a05fd4-8be5-7713-83b1-0c1372b9a18e` | `contest-qwen/qwen3-max` | 6 | 46996 | 62336 | 4140 | 移除版本变更自我指涉；后续评审发现 TPV 基线不足 |
+| `review-v12.md` | `01a05fd9-1280-7692-9ab8-4eff803e5d85` | `custom/gpt-5.6-terra` | 15 | 67456 | 748800 | 20872 | `revise`；补齐 LONGi 定量来源与 TPV 计算基线 |
+| `v10.md` | `01a05fe5-4488-7240-af78-40caadd1eadb` | `contest-qwen/qwen3-max` | 9 | 55058 | 66560 | 5006 | 冻结 TPV 计算、消融和能量守恒基线 |
+| `review-v13.md` | `01a05fe9-e149-7ec3-abde-b5d8ff3a8ca4` | `custom/gpt-5.6-terra` | 18 | 80095 | 634171 | 13584 | `deliverable`；12/12；来源 8/8 |
+| `receipt-v13.md` | `01a05ff0-9b18-78e3-9876-b5fa3cec1a11` | `custom/gpt-5.6-terra` | 18 | 84787 | 735744 | 15757 | `revise`；发现 LONGi 网页日期字段不精确 |
+| `v11.md` | `01a05ff8-25bc-7a38-a81e-397f265f99b4` | `contest-qwen/qwen3-max` | 10 | 58452 | 82304 | 4626 | 将 S9 明确为公告日期 2025-04-11 |
+| `review-v14.md` | `01a05ffb-52c2-7492-a5ab-67d83184c40e` | `custom/gpt-5.6-terra` | 15 | 53898 | 628992 | 12216 | `deliverable`；12/12；来源 8/8 |
+| `receipt-v14.md` | `01a06002-6831-7aa0-ae30-9351e5093636` | `custom/gpt-5.6-terra` | 14 | 54170 | 611840 | 10262 | `deliverable`；独立复核 v11/review-v14、来源、哈希与执行边界 |
 ## 结果
 V1 将不同能量转换体系的“当前极限”拆成热力学、详细平衡、实验记录和商业效率四个边界；最终主线收敛为 TPV 光子回收，模拟和消融均保留为 planned。V3 达到 12/12 后，来源元数据投影又在 V4-V6 引入题名、版本标题和作者错配；V6 独立复核以 Crossref 发现不存在或不属于论文的作者，判为不可交付。V7 修复 S3/S5/S8 后恢复 12/12、来源 8/8，科学正文不变。
-review-v10 与 receipt-v11 分别固定真实 reviewer/auditor UUIDv7；历史 review/receipt 保留但不参与当前链。
+review-v14 与 receipt-v14 分别固定真实 reviewer/auditor UUIDv7；历史 review/receipt 保留但不参与当前链。
 ## 编排事件
 V3 Session 将文件写到仓库根 `q089/v3.md`。编排器核验目标文件不存在、源文件内容完整后，只执行机械移动到 `research-world/evidence/contest-2026/q089/v3.md`，未修改内容；最终 reviewer 已读取规范路径并独立验收。
 ## 文件哈希
@@ -66,6 +74,14 @@ V3 Session 将文件写到仓库根 `q089/v3.md`。编排器核验目标文件�
 | `v8.md` | `b9a6f9544659c9fb086cc1d55d36280b5fbdc1019790d5ab46a697b2172fd251` |
 | `review-v11.md` | `595b7c96c51325c5a03d8b22ff2524db12692c3c58775bc1f96948a3302ef31e` |
 | `receipt-v12.md` | `e66c929d172b95803083b80593edddf1abf51d2085bc2e2d8c73fad27d9e1cbe` |
+| `v9.md` | `3fc04650518395ba4131bfcd9f7b9e2ac7bf00be2d7ae45025a8c5d6a6cff352` |
+| `review-v12.md` | `521ffdb68a099dad21abb7265f9d7fd09e2ef73bb4da0a427ddfe7bdbb854c9c` |
+| `v10.md` | `7e14d6c16cf0480c388503a989baf20dcf89443bb3fe92baa29672b5518bcf44` |
+| `review-v13.md` | `1c21997d0ac54762dac399d7af4dba61c15d1fb757f538892dbc176703dd94eb` |
+| `receipt-v13.md` | `89880368a36343ad4a6314398b7e8718e8314fac930e937e68bfccb5a4ea3d34` |
+| `v11.md` | `1a535a2056ed9ac14589e00d60245b38561590f3d83238f9846dc200fea8b33f` |
+| `review-v14.md` | `046ca460660309a60cd005a1e4fc3ad5307a3ba567902f83a49ba00feb23037d` |
+| `receipt-v14.md` | `a8e722a71b6b05328ca1fc4a49c30167d213764df23c2900a56bf29d81bbe16e` |
 ## 未解决项
 - 评审只验证研究计划和引文，不等价于已完成 TPV 模拟或器件实验。
 - V3 文件归位由编排器执行，因而其路径修复不是模型自主行为。
