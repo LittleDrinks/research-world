@@ -1,12 +1,15 @@
 """按官方模板填充 P1–P20 技术方案报告。
 
-用法: /path/to/python fill_report.py（仓库根 research-world/ 下运行）
+用法: /path/to/python fill_report.py（任意目录可运行）
 输入: docs/赛道一-方向1A-科学假设生成与研究计划设计-提交要求及模板.docx
 输出: evidence/contest-2026/report/技术方案报告-ResearchWorld-filled.docx
+--final DIR: 嵌入 DIR/报名表-p{1,2}.png（盖章报名表截图，不入 git），
+  输出改为 DIR/技术方案报告-final.docx；截图缺失时保持占位不变
 
 原则：P13–P19 数字与 evidence/contest-2026/submission-evidence.md 完全一致；
 团队信息/报名截图/部署 URL/视频链接留【待用户补充】占位，不编造。
 """
+import argparse
 from pathlib import Path
 
 import docx
@@ -67,6 +70,50 @@ def clear_underscore_lines(doc):
         if t and set(t) == {"_"}:
             for r in list(p.runs):
                 r._element.getparent().remove(r._element)
+
+
+def _keep_next(p):
+    pPr = p._element.get_or_add_pPr()
+    if pPr.find(qn("w:keepNext")) is None:
+        pPr.append(pPr.makeelement(qn("w:keepNext"), {}))
+
+
+def _append_centered(after_el, parent):
+    """在 after_el 后插入居中空段并返回该段。"""
+    from docx.oxml import OxmlElement
+    from docx.text.paragraph import Paragraph
+
+    el = OxmlElement("w:p")
+    after_el.addnext(el)
+    p = Paragraph(el, parent)
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    return p
+
+
+def embed_form_screenshots(doc, png_dir):
+    """把盖章报名表第1、2页截图嵌入 P1 占位段（宽15cm，小标题在上）。"""
+    from docx.shared import Cm
+
+    pngs = [png_dir / f"报名表-p{i}.png" for i in (1, 2)]
+    if not all(p.exists() for p in pngs):
+        return
+    anchor = next(p for p in doc.paragraphs if "此处贴入盖章版报名表" in p.text)
+    for r in list(anchor.runs):
+        r._element.getparent().remove(r._element)
+    anchor.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    fmt(anchor.add_run("报名表第 1 页（盖章版）"), 10.5, bold=True)
+    _keep_next(anchor)
+    el = anchor._element
+    for i, png in enumerate(pngs, 1):
+        img = _append_centered(el, anchor._parent)
+        img.add_run().add_picture(str(png), width=Cm(15))
+        el = img._element
+        if i < len(pngs):
+            _keep_next(img)
+            t = _append_centered(el, anchor._parent)
+            fmt(t.add_run(f"报名表第 {i + 1} 页（盖章版）"), 10.5, bold=True)
+            _keep_next(t)
+            el = t._element
 
 
 def insert_figure(doc, prefix, png, caption, width=5.7):
@@ -565,6 +612,10 @@ def unpagebreak_headings(doc):
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--final", metavar="DIR", help="嵌入 DIR/报名表-p{1,2}.png，输出 DIR/技术方案报告-final.docx")
+    args = ap.parse_args()
+
     doc = docx.Document(str(TEMPLATE))
     unpagebreak_headings(doc)
 
@@ -576,6 +627,8 @@ def main():
                 r._element.getparent().remove(r._element)
             fmt(p.add_run("【待用户补充】此处贴入盖章版报名表第一页、第二页截图（含个人信息，不入 git，提交时由用户手工插入）。"), 10.5, bold=True)
             break
+    if args.final:
+        embed_form_screenshots(doc, Path(args.final))
     fill_table(doc, 0, 0, 1, [
         [PENDING + "：以挑战杯系统报名名称为准】"],
         ["Research World：面向 125 个科学问题的科学假设生成与研究计划设计智能体系统（建议稿）"],
@@ -696,8 +749,10 @@ def main():
             body.remove(child)
         else:
             break
-    doc.save(str(OUT))
-    print(f"saved {OUT}")
+    out = Path(args.final) / "技术方案报告-final.docx" if args.final else OUT
+    out.parent.mkdir(parents=True, exist_ok=True)
+    doc.save(str(out))
+    print(f"saved {out}")
 
 
 if __name__ == "__main__":
