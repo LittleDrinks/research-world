@@ -40,7 +40,7 @@ ai4sci-wt-clean @ 1e31789（1332 tracked 文件，~300M）
 | `docs/sjtu-booklet.pdf` | 8.1M | a8402e4（2026-08-12）；仅 prototype/research-world-readability.html 引用；未进 readme 提交链。若为组委会手册唯一本地副本需人工确认后外链替代 |
 | `docs/implementation-gap.md`（41 行） | 4K | 822947e（2026-08-26）；issue 状态快照表，与 GitHub Issues（唯一活源）重复维护，基线停在 `07ea3e9`；readme 提交链不引用 |
 | `research-world/web/src/prototype/` 未路由部分：`ConversationOrchestrationPrototype.jsx`、`MapAuthoringPrototype.jsx`、`chat-runtime-kimi/` | 220K | App.jsx 只路由 `prototype/agent-runtime`（32 行）；其余组件 0 引用；设计已实现进正式组件 |
-| 死依赖：research-world/pyproject.toml 的 `markdown`、`python-dotenv`、`mcp`；web/package.json 的 `d3-force` | — | server/worker/scripts/Dockerfile/compose 对三者 0 import；web src 对 d3-force 0 引用（chat.css 命中为 `.failed` CSS 误报）；`mcp` 仅 runtime/ 使用，不该重复声明在 research-world |
+| 死依赖：research-world/pyproject.toml 的 `python-dotenv`、`mcp`；web/package.json 的 `d3-force` | — | server/worker/Dockerfile/compose 对两者 0 import；web src 对 d3-force 0 引用（chat.css 命中为 `.failed` CSS 误报）；`mcp` 仅 runtime/ 使用，不该重复声明在 research-world。**勘误（review 307-R1）**：`markdown` 为活依赖——`scripts/build-results-site.py`（#293 结果站唯一构建路径）在用，pyproject 声明即为此，保留 |
 | `docs/答疑-常见问题.md`（56 行） | 8K | a8402e4（2026-08-12）组委会/报名 FAQ 团队笔记；0 引用；依赖时点是报名答辩结束，非仅 tag |
 ## ② 建议合并/精简
 | 对象 | 现状 | 建议 |
@@ -74,7 +74,7 @@ ai4sci-wt-clean @ 1e31789（1332 tracked 文件，~300M）
 ## 死依赖线索
 | 声明处 | 死依赖 | 核查方式 |
 | --- | --- | --- |
-| research-world/pyproject.toml | `markdown`、`python-dotenv`、`mcp` | server/worker/scripts 全量 import 扫描 0 命中；Dockerfile/compose 无 dotenv 引用 |
+| research-world/pyproject.toml | `python-dotenv`、`mcp` | server/worker 全量 import 扫描 0 命中；Dockerfile/compose 无 dotenv 引用；`markdown` 为活依赖（scripts/build-results-site.py 在用，见第 43 行勘误） |
 | research-world/web/package.json | `d3-force` | src 0 引用 |
 | runtime/pyproject.toml | 无 | 7 项依赖全部命中 |
 删除依赖行同样等 tag 后随代码清理一并执行。
