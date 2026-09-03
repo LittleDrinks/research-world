@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>q049 · Why don’t the orbits of planets decay and cause them to crash into each other? · Q001–Q125 结果站</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="top"><a href="../">← 总看板</a> · <a href="../q048/">q048</a> · <strong>q049</strong> · <a href="../q050/">q050</a></nav>
+<main>
+<h1><code>q049</code> Why don’t the orbits of planets decay and cause them to crash into each other?</h1><p class="meta">Astronomy · 终态 <span class="badge partial">partial</span> · 模型 contest-qwen/qwen3-max · verified False</p><blockquote class="summary"><strong>结论摘要：</strong>Solar-system dynamics are long-lived, but an inevitable inward planetary fate is not established.</blockquote><section><h2>作者候选结论（原文）</h2><p>行星轨道稳定性问题界定：太阳系行星轨道为何不衰减并相互碰撞？已知引力维持稳定轨道，但轨道确实会逐渐衰减，最终行星将螺旋坠入太阳。关键未知在于衰减速率、稳定机制及时间尺度。</p>
+<p>已知与未知：已知牛顿力学下二体系统轨道稳定，广义相对论预言引力波辐射导致轨道能量损失。未知包括多体混沌效应的长期影响、共振重叠的精确作用、以及实际衰减时间尺度是否超过宇宙年龄。</p>
+<p>Direction 1：引力波辐射衰减机制。证据：广义相对论严格预言双星系统通过引力波辐射损失能量，轨道衰减。Ghosh（2016）计算显示地球轨道螺旋时间约10^25年，比宇宙年龄（1.38×10^10年）大15个数量级。反证：引力波效应在行星质量尺度极微弱，LIGO仅能探测致密天体合并。局限：忽略其他耗散机制，假设孤立二体系统。可区分预测：脉冲星双星PSR B1913+16观测到轨道衰减与理论一致，但行星系统无此现象。</p>
+<p>Direction 2：多体混沌稳定性机制。证据：Malhotra等（2001）数值模拟显示太阳系存在混沌，李雅普诺夫时间5-10百万年，但轨道保持定性稳定。行星间共振重叠导致混沌，但逃逸时间远超太阳寿命。反证：水星轨道偏心率可能大幅变化，但小质量使其不影响全局稳定。局限：数值模拟时间尺度有限，无法完全验证百亿年演化。可区分预测：内行星动力学分离（&gt;26希尔半径）提供稳定性，外行星较窄分离（&lt;14希尔半径）但质量大形成独立子系统。</p>
+<p>Direction 3：耗散力矩平衡机制。证据：潮汐相互作用、星际介质阻力、太阳风等耗散力理论上导致轨道衰减。Leeds大学（2024）研究显示恒星磁场可耗散热木星的引力潮汐。反证：太阳系行星距离遥远，潮汐效应可忽略；星际介质密度极低（~1原子/cm³）。局限：缺乏精确测量太阳系耗散参数，模型依赖不确定输入。可区分预测：近距离系外行星应显示明显轨道衰减，而远距离行星稳定。</p>
+<p>比较选择：Direction 2（多体混沌稳定性）最具解释力。引力波机制（Direction 1）虽理论完备但效应过小；耗散机制（Direction 3）缺乏观测支持。混沌理论整合了牛顿力学与现代非线性动力学，解释了"边缘稳定"特性：轨道混沌但保持定性稳定数十亿年。</p>
+<p>研究计划：数据来源为NASA JPL星历表、ESA Gaia目录、脉冲星计时阵列数据。方法采用N体数值积分（REBOUND软件包），结合混沌分析（李雅普诺夫指数计算）和广义相对论修正。对照设置包括：(1)纯牛顿力学，(2)加入引力波辐射，(3)加入耗散力。主要判据为轨道参数（半长轴、偏心率）的长期稳定性，以太阳主序星寿命（10^10年）为时间基准。产物为稳定性相图、衰减时间尺度表、混沌指标。资源需求：高性能计算集群（1000 CPU小时），开源天文软件。伦理安全：纯理论研究，无风险。停止条件：发现任何行星轨道在10^10年内显著不稳定（偏心率&gt;0.3或半长轴变化&gt;10%）；回退方案：聚焦单一行星-太阳子系统分析。</p>
+<p>明确结论：行星轨道不衰减碰撞的根本原因是太阳系处于"边缘混沌稳定"状态。引力波辐射等耗散机制存在但效应微弱（衰减时间&gt;&gt;宇宙年龄），多体动力学的特殊构型（内行星宽分离、外行星大质量子系统）提供了长期稳定性。轨道确实会衰减，但时间尺度远超太阳系寿命，因此在实际天文时间尺度上可视为稳定。</p>
+<p>RESULT: CANDIDATE</p></section><section id="audit"><h2>独立审计（<a href="../audit-026-050/">audit-026-050</a>）</h2><p class="meta">审计模型 gpt-5.6-terra · 2026-09-02 17:41:02+08:00</p><p>审计终态 <span class="badge partial">partial</span></p><p><strong>结论：</strong>Solar-system dynamics are long-lived, but an inevitable inward planetary fate is not established.</p><p><strong>证据评估：</strong>PNAS, one unverified orbital-decay paper, and an institution; <code>verified: false</code>; raw Pi log located.</p><p><strong>判定理由：</strong>The candidate's decay-and-fate premise is not defensibly evidenced.</p></section><section id="sources"><h2>证据链（frontmatter sources）</h2><ul class="sources"><li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC60054/">Chaos and stability of the solar system</a> — authors: Renu Malhotra; Matthew Holman; Takashi Ito · journal: Proceedings of the National Academy of Sciences · year: 2001 · doi: 10.1073/pnas.231384098</li><li><a href="https://www.journalijar.com/article/13816/the-inspiral-time-and-the-orbital-decay-of-the-planets-of-the-solar-system-due-to-gravitational-waves/">The Inspiral Time And The Orbital Decay Of The Planets Of The Solar System Due To Gravitational Waves</a> — authors: Anathnath Ghosh · journal: International Journal of Advanced Research · year: 2016 · doi: 10.21474/IJAR01/2445</li><li><a href="https://observatoiredeparis.psl.eu/why-is-the-solar-system-so.html">Why is the Solar System so stable?</a> — authors: Observatoire de Paris · year: 2023</li></ul></section>
+</main>
+<footer>数据源 <code>evidence/contest-2026/all/</code> · 数据生成时点 2026-09-02 · 全量保留失败与缺口（completed 8, partial 117, waiting_human 0, failed 0） · <a href="https://github.com/LittleDrinks/research-world">LittleDrinks/research-world</a></footer>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>q027 · Why are some genomes so big and others very small? · Q001–Q125 结果站</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="top"><a href="../">← 总看板</a> · <a href="../q026/">q026</a> · <strong>q027</strong> · <a href="../q028/">q028</a></nav>
+<main>
+<h1><code>q027</code> Why are some genomes so big and others very small?</h1><p class="meta">Biology · 终态 <span class="badge partial">partial</span> · 模型 contest-qwen/qwen3-max · verified True · executed 2026-09-02</p><blockquote class="summary"><strong>结论摘要：</strong>Lineage-specific transposable-element expansion is selected as the leading genome-size driver.</blockquote><section><h2>作者候选结论（原文）</h2><p>问题界定：真核生物基因组大小（C值）在不同物种间差异超过64,000倍，从微孢子虫Encephalitozoon intestinalis的2.3 Mb到巴黎百合Paris japonica的150 Gb。这种巨大变异与生物复杂性缺乏相关性，即"简单"生物可能拥有比"复杂"生物更大的基因组，这构成了经典的C值悖论。</p>
+<p>已知/未知：已知大部分基因组大小变异源于非编码DNA，特别是转座元件的差异扩增；已知基因数量在不同生物间相对保守（约20倍变异），而基因组大小变异达200,000倍；已知细胞大小、核质比等表型特征与基因组大小相关。未知的是驱动特定谱系中转座元件爆发性扩增的确切机制；未知自然选择如何在不同生态背景下权衡基因组大小的成本与收益；未知为什么某些谱系能有效清除多余DNA而其他谱系则积累大量重复序列。</p>
+<p>Direction 1：转座元件驱动假说。证据显示LTR逆转录转座子（如gypsy和copia家族）的谱系特异性扩增是基因组大小变异的主要驱动力，在棉花属中Gorge3 gypsy样元件的爆发性扩增导致了三倍的基因组扩张。反证/局限在于并非所有大基因组都由相同类型的转座元件主导，且小基因组物种（如拟南芥）同样含有转座元件但能有效控制其扩增。可区分预测：如果此假说成立，则基因组大小相近的远缘物种应含有不同的优势转座元件家族，而亲缘关系近但基因组大小差异大的物种应显示特定转座元件家族的差异扩增模式。</p>
+<p>Direction 2：核骨架功能假说。该假说认为额外DNA提供核骨架功能以维持较大的细胞和核体积，支持更高的合成和储存能力。证据包括基因组大小与细胞大小、细胞周期持续时间的广泛相关性，以及飞行生物（鸟类、蝙蝠）具有较小基因组以支持高代谢率。反证/局限在于存在大型生物具有小基因组的反例（如恐龙），且内复制产生的大细胞中异染色质区域实际复制不足。可区分预测：如果核骨架功能是主要驱动力，则环境压力下需要快速生长或大细胞体积的物种应演化出更大的基因组，而资源受限环境中的物种应选择较小基因组。</p>
+<p>Direction 3：进化偶然性假说。该假说认为基因组大小变异主要是随机突变事件的结果，自然选择作为"修补匠"而非"设计师"，只要系统功能正常就允许各种解决方案存在。证据包括不同谱系独立演化出截然不同的性决定机制和异染色质沉默策略，表明自然选择不追求最优解。反证/局限在于无法解释为什么某些功能约束（如飞行代谢需求）会趋同地选择小基因组。可区分预测：如果偶然性主导，则基因组大小演化应显示强烈的谱系特异性模式，缺乏跨谱系的统一规律，且历史偶然事件的影响应超过当前适应性需求。</p>
+<p>比较并选择：三个方向各有支撑证据，但转座元件驱动假说提供了最直接的分子机制解释，并得到实验证据支持（如棉花、玉米研究）。核骨架功能假说解释了基因组大小的表型后果但未说明初始扩增机制。进化偶然性假说最具哲学深度但难以直接验证。综合来看，转座元件的谱系特异性扩增是基因组大小变异的直接原因，而核骨架功能和进化偶然性共同塑造了这些变异的命运。因此选择转座元件驱动假说作为主要研究方向，同时考虑其他因素的调节作用。</p>
+<p>研究计划：数据来源包括已测序的植物和动物基因组（重点关注基因组大小差异显著的近缘物种对），转座元件注释数据库，以及实验测量的细胞学参数。方法采用比较基因组学分析转座元件组成，系统发育重建基因组大小演化历史，结合细胞学实验验证表型关联。对照/基线设置为基因组大小相近但亲缘关系远的物种对比，以及亲缘关系近但基因组大小差异大的物种对比。主要判据包括：1）特定转座元件家族扩增与基因组大小变化的时间一致性；2）转座元件活性与宿主防御机制的共演化证据；3）基因组大小与生态适应性的统计关联。产物包括基因组大小演化模型、转座元件扩增动力学参数、以及预测框架。资源需求包括基因组测序数据、高性能计算集群进行重复序列分析、以及细胞学实验设备。伦理/安全方面无特殊风险，因为研究基于公共数据和非致病生物。停止/回退条件：如果发现转座元件扩增与基因组大小变化无显著相关性，或发现其他机制（如全基因组复制）起主导作用，则重新评估研究方向。</p></section><section id="audit"><h2>独立审计（<a href="../audit-026-050/">audit-026-050</a>）</h2><p class="meta">审计模型 gpt-5.6-terra · 2026-09-02 17:41:02+08:00</p><p>审计终态 <span class="badge partial">partial</span></p><p><strong>结论：</strong>Lineage-specific transposable-element expansion is selected as the leading genome-size driver.</p><p><strong>证据评估：</strong>Two reviews and one study, no authority/database; raw Pi log located.</p><p><strong>判定理由：</strong>The source gate lacks an authority/database source.</p></section><section id="sources"><h2>证据链（frontmatter sources）</h2><ul class="sources"><li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC4246714/">The C-value Enigma in Plants and Animals: A Review of Parallels and an Appeal for Partnership</a> — authors: T Ryan Gregory · year: 2005 · journal: Annals of Botany</li><li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10587719/">C-value paradox: Genesis in misconception that natural selection follows anthropocentric parameters of &#x27;economy&#x27; and &#x27;optimum&#x27;</a> — authors: Subhash C Lakhotia · year: 2023 · journal: Biophysics and Biochemistry Advances</li><li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC1581434/">Differential lineage-specific amplification of transposable elements is responsible for genome size variation in Gossypium</a> — authors: Jennifer S Hawkins et al. · year: 2006 · journal: Genome Research</li></ul></section>
+</main>
+<footer>数据源 <code>evidence/contest-2026/all/</code> · 数据生成时点 2026-09-02 · 全量保留失败与缺口（completed 8, partial 117, waiting_human 0, failed 0） · <a href="https://github.com/LittleDrinks/research-world">LittleDrinks/research-world</a></footer>
+</body>
+</html>

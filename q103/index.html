@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>q103 · Is it possible to predict the future? · Q001–Q125 结果站</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="top"><a href="../">← 总看板</a> · <a href="../q102/">q102</a> · <strong>q103</strong> · <a href="../q104/">q104</a></nav>
+<main>
+<h1><code>q103</code> Is it possible to predict the future?</h1><p class="meta">Neuroscience · 终态 <span class="badge partial">partial</span> · 模型 contest-qwen/qwen3-max · verified 2026-09-02</p><blockquote class="summary"><strong>结论摘要：</strong>AI can improve short-horizon forecasts but cannot erase intrinsic chaotic or stochastic limits.</blockquote><section><h2>作者候选结论（原文）</h2><p>问题界定：预测未来的能力受限于系统复杂性、混沌动力学和观测不确定性。已知线性系统可精确预测，但现实世界多为非线性复杂系统；未知在于如何量化不同系统的可预测性极限及AI能否突破传统限制。</p>
+<p>已知/未知：已知洛伦兹系统等混沌系统存在李雅普诺夫时间尺度的可预测性极限（约2周大气预测），复杂系统可通过低维嵌入表征。未知在于高维系统中局部可预测性的精确量化、AI模型是否能学习超越物理极限的预测能力，以及如何区分真实预测与统计巧合。</p>
+<p>Direction 1：基于低维流形映射的预测框架。证据：Wu等人（2024）提出特征-重构流形映射（FRMM）框架，通过将高维复杂系统映射到低维流形实现多变量同步预测，在印度季风、EEG信号、外汇市场等数据中实现20步前预测（相关系数ρ&gt;0.86）。反证/局限：该方法依赖于系统存在低维结构假设，对具有突变或临界转换的系统效果有限；预测步长受嵌入维度和时滞参数限制，无法实现长期预测。可区分预测：若系统确实存在低维吸引子，则FRMM应优于传统高维回归方法；若系统本质上是高维随机过程，则FRMM优势消失。</p>
+<p>Direction 2：基于局部动力学指数的可预测性量化。证据：Dong等人（2024）开发基于递归理论的局部可预测性指数αη，直接测量相空间中邻近轨迹的保持概率，在洛伦兹系统中准确识别叶瓣切换区域的低可预测性，在欧洲-大西洋天气型中验证NAO-型具有最高可预测性。反证/局限：该方法需要未来状态计算，无法直接用于实时预测（需通过类比状态代理）；对高噪声数据敏感，且依赖于距离度量的选择。可区分预测：αη应能区分相同全局李雅普诺夫指数下不同相空间区域的局部可预测性差异，而传统指数无法做到。</p>
+<p>Direction 3：机器学习突破传统可预测性极限。证据：Vonich等人（2026）证明现代AI天气模型可能突破14天传统预测极限，通过学习多尺度相互作用实现30天以上有效预测；Huai等人（2017）显示非线性局部李雅普诺夫指数可量化混沌系统的局部可预测性极限。反证/局限：Bonavita（2024）指出当前ML模型存在物理不一致性，可能产生看似合理但物理错误的预测；AI模型的黑箱特性使其难以区分真实学习与过拟合。可区分预测：若AI真正学习了物理规律，则其预测误差增长应遵循物理约束；若仅为统计拟合，则在训练分布外会快速失效。</p>
+<p>比较选择：Direction 1适合具有明确低维结构的系统，计算效率高但适用范围有限；Direction 2提供严格的可预测性理论框架，但实时应用需额外步骤；Direction 3潜力最大但可靠性存疑。综合考虑，Direction 2的理论严谨性与Direction 3的实际性能结合最有前景，即用局部可预测性指数指导AI模型的不确定性量化。</p>
+<p>研究计划：数据采用ERA5再分析数据（1979-2022）、Lorenz-63/Rössler混沌系统模拟数据、金融市场高频数据。方法结合FRMM框架与局部可预测性指数αη，开发混合预测模型。对照/基线包括传统ARIMA、LSTM、纯物理模型及现有AI天气模型。主要判据为预测相关系数ρ、RMSE及αη与实际预测误差的相关性。产物为开源预测框架及可预测性评估工具包。资源需求包括GPU计算集群及气象/金融数据访问权限。伦理/安全考虑确保预测结果明确标注不确定性，避免误导决策。停止/回退条件：若混合模型在基准测试中无法显著优于单一方法（p&lt;0.05），或αη与预测性能无显著相关性（r&lt;0.3）。</p>
+<p>明确结论：未来预测的可能性取决于具体系统和时间尺度。对于具有低维结构的复杂系统，结合流形学习与局部可预测性量化的混合方法可实现稳健短期预测；但对于本质上高维或随机的系统，存在根本性预测极限。AI虽能提升预测性能，但无法突破混沌系统的内在不确定性，其价值在于更准确地量化而非消除这种不确定性。</p>
+<p>RESULT: CANDIDATE</p></section><section id="audit"><h2>独立审计（<a href="../audit-101-125/">audit-101-125</a>）</h2><p class="meta">审计模型 gpt-5.6-terra · 2026-09-02 17:44:30+08:00</p><p>审计终态 <span class="badge partial">partial</span></p><p><strong>结论：</strong>AI can improve short-horizon forecasts but cannot erase intrinsic chaotic or stochastic limits.</p><p><strong>证据评估：</strong>3 Directions, selection, and prospective plan present; scholarly sources lack an authority/database; live check found the 30-day result optimizes against a known future trajectory.</p><p><strong>判定理由：</strong><code>project: contest-2026</code> and operational-forecast inference overclaim the checked source.</p></section><section id="sources"><h2>证据链（frontmatter sources）</h2><ul class="sources"><li><a href="https://www.nature.com/articles/s41467-024-46598-w">Predicting multiple observations in complex systems through low-dimensional embeddings</a> — authors: T Wu et al. · journal: Nature Communications · year: 2024</li><li><a href="https://arxiv.org/html/2409.14865v1">Revisiting the predictability of dynamical systems: a new local data-driven approach</a> — authors: Chenyu Dong, Davide Faranda, Adriano Gualandi, Valerio Lucarini, Gianmarco Mengaldo · journal: arXiv · year: 2024</li><li><a href="https://journals.ametsoc.org/view/journals/aies/5/3/AIES-D-26-0009.1.xml">Atmospheric Predictability beyond 30 Days with Machine Learning</a> — authors: PT Vonich et al. · journal: Artificial Intelligence for the Earth Systems · year: 2026</li><li><a href="https://www.tandfonline.com/doi/full/10.1080/16742834.2017.1346457">Quantifying local predictability of the Lorenz system using nonlinear local Lyapunov exponent</a> — authors: XW HUAI et al. · journal: Journal of Meteorological Research · year: 2017</li></ul></section>
+</main>
+<footer>数据源 <code>evidence/contest-2026/all/</code> · 数据生成时点 2026-09-02 · 全量保留失败与缺口（completed 8, partial 117, waiting_human 0, failed 0） · <a href="https://github.com/LittleDrinks/research-world">LittleDrinks/research-world</a></footer>
+</body>
+</html>

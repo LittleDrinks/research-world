@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>q088 · How can we develop manufacturing systems on Mars? · Q001–Q125 结果站</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="top"><a href="../">← 总看板</a> · <a href="../q087/">q087</a> · <strong>q088</strong> · <a href="../q089/">q089</a></nav>
+<main>
+<h1><code>q088</code> How can we develop manufacturing systems on Mars?</h1><p class="meta">Engineering &amp; Materials Science · 终态 <span class="badge partial">partial</span> · 模型 contest-qwen/qwen3-max · verified False</p><blockquote class="summary"><strong>结论摘要：</strong>A sealed regolith-processing and autonomous-robot system is a plausible early Mars manufacturing path.</blockquote><section><h2>作者候选结论（原文）</h2><p>火星制造系统开发的核心挑战在于如何在极端环境下实现自主化、资源就地利用（ISRU）和可靠生产。火星表面环境恶劣，温度波动范围从-153°C到+20°C，大气压力仅为地球的0.6%，且缺乏保护性磁场，导致高能宇宙射线和微陨石威胁持续存在。这些条件对传统制造工艺构成根本性障碍。</p>
+<p>已知火星表面覆盖着丰富的风化层（regolith），主要成分为硅酸盐和氧化铝，可作为建筑材料的基础原料。NASA和ESA的研究证实，通过地质聚合物反应可将风化层转化为结构材料，但该过程需要水和碱性粘合剂。未知的是如何在火星低气压和低温条件下有效控制化学反应速率，以及如何实现大规模自动化生产系统的长期可靠性。</p>
+<p>Direction 1：基于地质聚合物的3D打印制造系统。证据显示，在60°C和1巴压力下，钠硅酸盐粘合剂与60%火星风化层混合物可达到9MPa的抗弯强度。反证在于火星表面2°C和0.01-0.1巴条件下，水分迅速蒸发导致反应无法完成，试样强度不足。可区分预测：该系统需要封闭式加热反应舱，能源消耗高但材料利用率可达90%以上。</p>
+<p>Direction 2：熔融硫基制造技术。硫在火星上可能以硫酸盐形式存在，熔点约115°C，无需水参与反应。优势是在真空条件下稳定性好，固化速度快。局限是硫的脆性和热循环下的性能退化，且需要复杂的硫提取工艺。可区分预测：该路线适合制造密封件和管道，但不适合承重结构，工作温度窗口窄（115-160°C）。</p>
+<p>Direction 3：自主机器人集群协同制造。ESA的ExoMars和NASA的Perseverance已验证了火星表面自主导航和操作能力。通过多机器人分工协作，可实现挖掘、运输、加工一体化。反证是当前通信延迟（8.6-24分钟）限制了实时协调，且单点故障风险高。可区分预测：该方案初期投资大但扩展性强，适合建设大型基础设施，制造精度依赖于本地传感而非地球遥控。</p>
+<p>比较选择：Direction 1在技术成熟度上领先，已有实验室验证数据支持；Direction 2在环境适应性上最优，但材料性能数据不足；Direction 3在规模化潜力上最大，但系统复杂度最高。综合考虑，Direction 1配合封闭式反应舱是最可行的近期方案，可作为基础技术平台逐步集成Direction 3的自主化能力。</p>
+<p>研究计划：数据来源包括火星风化层模拟物（MMS-2）、NASA公开的火星环境参数、ESA机器人操作数据。方法采用对照实验，比较不同温度（2°C、23°C、60°C）、压力（0.01巴、0.1巴、1巴）和粘合剂浓度（30%-55%）下的材料性能。对照组为地球标准条件下的相同配方。主要判据为抗弯强度≥5MPa、密度≥1800kg/m³、孔隙率≤15%。产物包括优化的制造参数集、原型设备设计图、可行性评估报告。资源需求包括热真空 chamber、材料测试设备、3D打印机改装套件。伦理安全方面需确保无有害物质释放，所有实验在封闭环境中进行。停止条件为连续三次试样强度低于3MPa，回退方案转向Direction 2的硫基技术路线。</p>
+<p>明确结论：火星制造系统必须采用封闭式环境控制策略，优先发展基于地质聚合物的3D打印技术，同时集成自主机器人系统以减少人类干预。关键技术突破点在于开发低能耗的原位加热和压力维持系统，以及建立可靠的远程质量监控机制。
+RESULT: CANDIDATE</p></section><section id="audit"><h2>独立审计（<a href="../audit-076-100/">audit-076-100</a>）</h2><p class="meta">审计模型 gpt-5.6-terra · 2026-09-02 17:50:17+08:00</p><p>审计终态 <span class="badge partial">partial</span></p><p><strong>结论：</strong>A sealed regolith-processing and autonomous-robot system is a plausible early Mars manufacturing path.</p><p><strong>证据评估：</strong>NASA/ESA plus unannotated URLs; fewer than two traceable primary records and no status split.</p><p><strong>判定理由：</strong>Live check gives Mars mean pressure near 6–7 mbar, not the stated 0.01–0.1 bar design range.</p></section><section id="sources"><h2>证据链（frontmatter sources）</h2><ul class="sources"><li>https://pmc.ncbi.nlm.nih.gov/articles/PMC10385076/</li><li>https://www.nasa.gov/overview-in-situ-resource-utilization/</li><li>https://www.sciencedirect.com/science/article/abs/pii/S0032063319301618</li><li>https://www.esa.int/Enabling_Support/Operations/Controlling_robots_that_search_for_Mars_life</li><li>https://www.leonardo.com/en/press-release-detail/-/detail/19-07-2022-bringing-mars-home-leonardo-signs-contract-with-the-european-space-agency-to-produce-the-robotic-arm-that-will-help-retrieve-samples-of-the-red-planet</li></ul></section>
+</main>
+<footer>数据源 <code>evidence/contest-2026/all/</code> · 数据生成时点 2026-09-02 · 全量保留失败与缺口（completed 8, partial 117, waiting_human 0, failed 0） · <a href="https://github.com/LittleDrinks/research-world">LittleDrinks/research-world</a></footer>
+</body>
+</html>

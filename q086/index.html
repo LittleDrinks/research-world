@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>q086 · What is the optimum hardware for quantum computers? · Q001–Q125 结果站</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="top"><a href="../">← 总看板</a> · <a href="../q085/">q085</a> · <strong>q086</strong> · <a href="../q087/">q087</a></nav>
+<main>
+<h1><code>q086</code> What is the optimum hardware for quantum computers?</h1><p class="meta">Physics · 终态 <span class="badge partial">partial</span> · 模型 contest-qwen/qwen3-max · verified False</p><blockquote class="summary"><strong>结论摘要：</strong>Superconducting qubits are the strongest near-term scale path, with no universally optimum hardware.</blockquote><section><h2>作者候选结论（原文）</h2><p>量子计算硬件的核心挑战在于如何在保持量子态相干性的同时实现可扩展的量子比特操控。当前主要技术路线包括超导量子比特、离子阱量子比特和拓扑量子比特，每种方案在相干时间、门保真度、可扩展性和操作复杂性方面存在根本性权衡。</p>
+<p>已知的是超导量子比特利用约瑟夫森结电路在毫开尔文温度下工作，具有纳秒级快速门操作和成熟的半导体制造兼容性，但相干时间较短（微秒级）且需要复杂的低温基础设施。离子阱量子比特使用电磁场囚禁的单个离子，具有极长的相干时间（秒级）和高门保真度（&gt;99.99%），但门操作速度慢（微秒至毫秒级）且激光系统复杂。拓扑量子比特理论上通过马约拉纳费米子等准粒子的非局域性质提供内在容错能力，但实验实现仍面临重大挑战，尚未有功能性演示。</p>
+<p>未知的关键问题包括：哪种硬件架构能在保持高保真度的同时实现百万级量子比特规模；如何有效降低容错量子计算的物理资源开销；以及不同平台在特定应用领域的实际性能优势边界。</p>
+<p><strong>Direction 1：超导量子比特优化路线</strong>
+证据显示IBM的1121量子比特Condor处理器和谷歌的表面码纠错演示证明了超导平台的可扩展性优势。超导量子比特的快速门操作（纳秒级）和与现有半导体工艺的兼容性使其成为近期最有希望实现大规模集成的方案。反证在于其较短的相干时间和对低温环境的依赖增加了系统复杂性，且串扰问题限制了保真度提升。可区分预测：超导平台将在未来5年内率先实现包含数千物理量子比特的中等规模处理器，但在容错阈值以下的逻辑错误率改善将遇到瓶颈。</p>
+<p><strong>Direction 2：离子阱量子比特精密控制路线</strong>
+证据表明IonQ的256量子比特Aria系统实现了超过400万的量子体积，且Hild等人演示了低于10^-6的逻辑量子比特错误率。离子阱的全对全连接性和长相干时间使其特别适合需要高精度量子态控制的应用。局限在于慢速门操作和复杂的激光控制系统阻碍了大规模扩展，单阱架构存在物理尺寸限制。可区分预测：离子阱平台将在量子化学模拟和精密测量等需要高保真度的应用中保持优势，但难以在短期内突破数百量子比特规模。</p>
+<p><strong>Direction 3：拓扑量子比特容错优先路线</strong>
+理论证据显示拓扑量子比特通过全局拓扑性质编码信息，可提供内在的噪声鲁棒性，大幅降低容错计算的资源开销。微软等机构的研究表明马约拉纳零模的实验观测取得进展。然而，反证是至今没有机构成功演示功能性拓扑量子比特，材料纯度和纳米尺度控制要求极高，且操作速度预期较慢。可区分预测：如果拓扑量子比特在未来10年内实现，将直接跨越容错阈值，但在此之前其他平台将主导实用量子计算发展。</p>
+<p>比较三种路线，超导量子比特在可扩展性和工业支持方面领先，适合近期大规模集成；离子阱在保真度和相干性方面最优，适合高精度专用应用；拓扑量子比特虽具革命性潜力但风险最高。考虑到量子计算发展的紧迫性和现有技术成熟度，超导路线提供了最佳的风险-回报平衡，而混合架构可能最终整合各平台优势。</p>
+<p>研究计划采用对比实验方法，数据来源包括公开的量子处理器基准测试结果、学术论文中的性能指标和厂商技术文档。方法上建立多维评估框架，涵盖相干时间、门保真度、可扩展性、操作复杂性和应用适配性。对照基线设为当前最先进的经典超级计算机在相同问题上的性能。主要判据为量子体积、逻辑错误率和特定算法加速比。产物包括详细的硬件平台比较报告、性能预测模型和应用适配指南。所需资源为访问云量子计算平台（IBM Quantum、IonQ等）进行基准测试验证。伦理安全方面确保不涉及敏感军事或密码学应用。停止条件为发现某平台在所有关键指标上显著优于其他方案，回退方案为转向混合架构研究。</p>
+<p>RESULT: CANDIDATE</p></section><section id="audit"><h2>独立审计（<a href="../audit-076-100/">audit-076-100</a>）</h2><p class="meta">审计模型 gpt-5.6-terra · 2026-09-02 17:50:17+08:00</p><p>审计终态 <span class="badge partial">partial</span></p><p><strong>结论：</strong>Superconducting qubits are the strongest near-term scale path, with no universally optimum hardware.</p><p><strong>证据评估：</strong>One preprint plus Microsoft and a vendor blog; no two original papers or status split.</p><p><strong>判定理由：</strong>Platform choice rests on insufficient evidence and unverified vendor-derived performance assertions.</p></section><section id="sources"><h2>证据链（frontmatter sources）</h2><ul class="sources"><li><a href="https://arxiv.org/html/2607.07222v1">Quantum Computing: A New Frontier for Science and Society</a> — type: peer-reviewed preprint</li><li><a href="https://quantum.microsoft.com/en-us/insights/education/concepts/types-of-qubits">Types of qubits</a> — type: authoritative institution</li><li><a href="https://originqc.com/blogs/superconducting-vs-trapped-ion">Superconducting vs Trapped Ion: Which Quantum Architecture Fits You?</a> — type: authoritative institution</li></ul></section>
+</main>
+<footer>数据源 <code>evidence/contest-2026/all/</code> · 数据生成时点 2026-09-02 · 全量保留失败与缺口（completed 8, partial 117, waiting_human 0, failed 0） · <a href="https://github.com/LittleDrinks/research-world">LittleDrinks/research-world</a></footer>
+</body>
+</html>

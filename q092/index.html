@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>q092 · Can DNA act as an information storage medium? · Q001–Q125 结果站</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="top"><a href="../">← 总看板</a> · <a href="../q091/">q091</a> · <strong>q092</strong> · <a href="../q093/">q093</a></nav>
+<main>
+<h1><code>q092</code> Can DNA act as an information storage medium?</h1><p class="meta">Information Science · 终态 <span class="badge partial">partial</span> · 模型 contest-qwen/qwen3-max · verified 2026-09-02</p><blockquote class="summary"><strong>结论摘要：</strong>DNA archival storage works experimentally but remains costly and slow for specialized cold data.</blockquote><section><h2>作者候选结论（原文）</h2><p>DNA作为信息存储介质的可行性研究</p>
+<p>问题界定：数字时代数据爆炸式增长，传统存储介质面临密度、寿命和维护成本的严峻挑战。DNA作为天然遗传信息载体，具有超高存储密度（理论值达4.6×10²⁰字节/克）、超长保存期限（低温下可达数万年）和极低维护成本等优势，可能成为下一代数字信息存储的理想介质。</p>
+<p>已知与未知：已知DNA可编码任意数字信息，已有成功案例存储数百KB至200MB数据；已知当前合成成本高昂（约$12,400/MB），读写速度慢；未知大规模商业化路径、长期稳定性验证、标准化编码方案和随机访问机制的最优实现。</p>
+<p>Direction 1：化学合成寡核苷酸存储。证据：Church等（2012）首次实现大规模DNA存储，编码659KB数据包括书籍、图像和程序；Goldman等（2013）存储739KB多种格式文件，实现100%准确恢复。反证/局限：合成成本高，同聚物序列导致测序错误，GC含量偏差影响稳定性。可区分预测：随着合成技术进步，成本将下降2-3个数量级，使DNA存储在50年内对冷数据归档具有经济可行性。</p>
+<p>Direction 2：酶促DNA合成。证据：Wyss研究所开发模板无关的从头酶促DNA合成技术，利用末端脱氧核苷酸转移酶（TdT）电子控制核苷酸添加，预计可大幅降低成本并减少有毒副产物。反证/局限：酶促合成技术尚处早期阶段，通量和准确性待验证，长链合成效率未知。可区分预测：该方法可实现更长DNA链合成，避免化学合成的长度限制，为TB-ZB级存储提供可持续路径。</p>
+<p>Direction 3：活体DNA存储。证据：Davis（1988）首次在大肠杆菌质粒中编码"Microvenus"图标；Gibson等（2010）在合成支原体基因组中嵌入7920位"水印"序列。反证/局限：生物突变导致信息失真，细胞分裂造成拷贝数不稳定，伦理和生物安全风险。可区分预测：适用于需要自我复制和环境响应的特殊应用场景，但不适合通用数字归档。</p>
+<p>比较选择：化学合成路线技术最成熟，已验证可行性但成本高；酶促合成最具可持续性前景，可能解决成本瓶颈；活体存储适用场景有限且风险高。推荐优先发展化学合成优化和酶促合成两条路线，前者用于近期应用，后者用于长期突破。</p>
+<p>研究计划：数据方面，选择多格式冷数据集（文本、图像、音频）进行编码测试；方法采用改进的DNA Fountain编码结合RS纠错码，优化GC含量和避免同聚物；对照设置传统磁带存储和不同DNA编码方案；主要判据包括存储密度、恢复准确率、成本效益比和长期稳定性；产物为可验证的DNA存储原型系统和标准化协议；资源需求包括DNA合成仪、测序平台和计算集群；伦理安全方面确保合成DNA无生物功能，符合合成生物学安全规范；停止条件为成本无法降至磁带存储10倍以内或错误率超过10⁻⁶；回退方案转向混合存储架构。</p>
+<p>明确结论：DNA作为信息存储介质在技术上完全可行，已有多项peer-reviewed研究验证其原理和初步应用。虽然当前成本和速度限制了大规模商用，但随着合成生物学和测序技术的快速发展，DNA存储有望在未来10-50年内成为冷数据归档的重要解决方案，特别是在需要超长保存期限和超高密度的特定应用场景中。</p>
+<p>RESULT: CANDIDATE</p></section><section id="audit"><h2>独立审计（<a href="../audit-076-100/">audit-076-100</a>）</h2><p class="meta">审计模型 gpt-5.6-terra · 2026-09-02 17:50:17+08:00</p><p>审计终态 <span class="badge partial">partial</span></p><p><strong>结论：</strong>DNA archival storage works experimentally but remains costly and slow for specialized cold data.</p><p><strong>证据评估：</strong>Two foundational primary studies plus reviews and Wyss/Microsoft records; no explicit status split.</p><p><strong>判定理由：</strong>No explicit executed/planned boundary.</p></section><section id="sources"><h2>证据链（frontmatter sources）</h2><ul class="sources"><li>Leveraging nature to advance data storage: DNA as a storage medium — authors: Abram KZ, Udaondo Z · journal: Microbial Biotechnology · year: 2023 · doi: 10.1111/1751-7915.14291 · pmid: 37300423 · pmcid: PMC10443336</li><li>DNA storage: research landscape and future prospects — authors: Dong Y, Sun F, Ping Z, Ouyang Q, Qian L · journal: National Science Review · year: 2020 · doi: 10.1093/nsr/nwaa007 · pmid: 34692128 · pmcid: PMC8288837</li><li>Toward practical high-capacity low-maintenance storage of digital information in synthesised DNA — authors: Goldman N, Bertone P, Chen S, Dessimoz C, LeProust EM, Sipos B, Birney E · journal: Nature · year: 2013 · doi: 10.1038/nature11875 · pmid: 23354052 · pmcid: PMC3672958</li><li>Next-generation digital information storage in DNA — authors: Church GM, Gao Y, Kosuri S · journal: Science · year: 2012 · doi: 10.1126/science.1226355 · pmid: 22903519</li><li><a href="https://wyss.harvard.edu/technology/dna-data-storage/">DNA Data Storage</a> — organization: Wyss Institute at Harvard University · accessed: 2026-09-02</li><li><a href="https://www.microsoft.com/en-us/research/project/dna-storage/">DNA Storage</a> — organization: Microsoft Research · accessed: 2026-09-02</li></ul></section>
+</main>
+<footer>数据源 <code>evidence/contest-2026/all/</code> · 数据生成时点 2026-09-02 · 全量保留失败与缺口（completed 8, partial 117, waiting_human 0, failed 0） · <a href="https://github.com/LittleDrinks/research-world">LittleDrinks/research-world</a></footer>
+</body>
+</html>

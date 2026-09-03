@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>q110 · Will we be able to predict catastrophic weather events (tsunamis, hurricanes, earthquakes) more accurately? · Q001–Q125 结果站</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="top"><a href="../">← 总看板</a> · <a href="../q109/">q109</a> · <strong>q110</strong> · <a href="../q111/">q111</a></nav>
+<main>
+<h1><code>q110</code> Will we be able to predict catastrophic weather events (tsunamis, hurricanes, earthquakes) more accurately?</h1><p class="meta">Ecology · 终态 <span class="badge completed">completed</span> · 模型 contest-qwen/qwen3-max · verified 2026-09-02</p><blockquote class="summary"><strong>结论摘要：</strong>Earthquakes are not precisely predictable, whereas probabilistic tsunami alerts and ensemble hurricane forecasts can improve warnings.</blockquote><section><h2>作者候选结论（原文）</h2><p><strong>问题界定</strong>
+精确预测突发性破坏事件（地震、热带气旋、海啸）仍是未解难题。2004年印度洋海啸造成超20万人死亡，凸显预测能力的紧迫性。目前天气预报对未来一周准确率达80-90%，但地震预测仍不精确甚至存在争议，部分科学家认为地震不可预测。</p>
+<p><strong>已知/未知</strong>
+已知现代观测网络、卫星成像技术和计算机模型正提升预测能力。未知的是基础物理理论和动力学模型仍需完善，数据质量和数量不足，计算能力限制大规模模型运行。地震预测缺乏可靠前兆信号，海啸预警依赖地震参数反演，飓风强度预测仍有较大误差。</p>
+<p><strong>Direction 1：机器学习地震预测</strong>
+证据：Moghadamnejad等（2026）综述显示机器学习在地震预测中展现潜力，监督学习中回归模型、随机森林、XGBoost表现最佳；深度学习中人工神经网络、LSTM、CNN效果显著。基于8644篇研究的评分系统证实这些算法的有效性。
+反证/局限：Geller（1997）批判性回顾指出地震预测研究百年无明显成功，突破性声明经不起检验。USGS明确表示从未预测过大地震，也不期望短期内掌握预测方法。机器学习面临数据变异、特征选择和模型可解释性挑战。
+可区分预测：若地震存在可检测的前兆模式，机器学习应能识别并提前数小时至数天预警；若地震本质为混沌系统，则任何算法都无法实现可靠预测。</p>
+<p><strong>Direction 2：概率性海啸预警</strong>
+证据：Selva等（2021）提出概率性海啸预报（PTF），通过不确定性量化提升预警准确性。该方法结合实时地震参数与长期地震构造行为，即使仅获震中和震级估计也能生成可靠预警。Song等（2024）开发的人工神经网络能在短时间内预测最大海啸高度和到达时间，与数值模型结果高度一致。
+反证/局限：海啸预警严重依赖地震参数准确性，初始震级估计误差会导致预警级别大幅波动。PTF方法需要完善的海底观测网络，在缺乏数据区域效果受限。神经网络模型需要大量训练数据，对罕见巨型海啸泛化能力存疑。
+可区分预测：概率性方法应能减少误报率同时保持高检测率；传统确定性方法在临界震级附近会产生不稳定预警，而概率方法能平滑过渡。</p>
+<p><strong>Direction 3：多尺度飓风集成预报</strong>
+证据：NOAA（2025）升级飓风分析预报系统（HAFS），引入多风暴模型同时预测多个热带气旋相互作用。Martinez-Amaya等（2023）证明集成方法能改善极端飓风事件预报，结合大气建模与统计技术提升准确性。AI辅助预报提供额外指导，增强公共安全响应。
+反证/局限：飓风强度预测仍是最大挑战，现有模型对快速增强现象捕捉不足。气候变化增加预报复杂性，历史数据代表性下降。计算资源限制高分辨率全球模型运行频率。
+可区分预测：集成预报应显著降低强度预测误差，特别是对快速增强飓风；单一模型无法有效处理风暴间相互作用和气候变化影响。</p>
+<p><strong>比较选择</strong>
+三个方向机制不同：地震预测聚焦前兆信号识别，海啸预警侧重灾害传播模拟，飓风预报强调大气动力学建模。地震预测科学争议最大但潜在收益最高；海啸预警技术相对成熟但依赖基础设施；飓风预报实用性强且持续改进。选择Direction 2（概率性海啸预警）因其在科学可行性和实际应用间取得最佳平衡，已有成功部署案例且能直接挽救生命。</p>
+<p><strong>研究计划</strong>
+数据：整合全球地震台网、海底压力计、GPS位移数据、历史海啸记录。使用NOAA、USGS、IOC等权威机构开放数据集。
+方法：开发混合概率模型，结合贝叶斯推断与深度学习。采用加权逻辑树建立海啸情景，生成大数据训练ANN模型。
+对照/基线：对比传统确定性预警系统（如CAT-INGV）、纯统计模型、纯物理模型。评估指标包括预警时间、误报率、漏报率、高度预测误差。
+主要判据：预警时间≥15分钟，高度预测误差≤20%，误报率≤10%。系统需在10秒内完成计算以满足实时要求。
+产物：开源概率海啸预警软件包、实时预警API、可视化决策支持界面、技术文档和用户手册。
+资源：高性能计算集群、海洋观测数据访问权限、地震学和海洋学专家咨询、测试部署环境。
+伦理/安全：确保预警信息准确传达，避免恐慌；建立人工审核机制处理临界情况；保护数据隐私和系统安全。
+停止/回退：若模型在独立测试中无法达到主要判据，或发现基础物理假设错误，则停止开发并转向改进现有确定性系统。</p>
+<p><strong>明确结论</strong>
+当前技术水平下，地震精确预测仍不可行，但概率性海啸预警和集成飓风预报已取得实质性进展。通过融合机器学习与物理模型，海啸预警系统可在保持低误报率的同时提供足够逃生时间。未来突破依赖于基础理论完善、观测网络扩展和计算能力提升，而非单纯算法优化。</p>
+<p>RESULT: CANDIDATE</p></section><section id="audit"><h2>独立审计（<a href="../audit-101-125/">audit-101-125</a>）</h2><p class="meta">审计模型 gpt-5.6-terra · 2026-09-02 17:44:30+08:00</p><p>审计终态 <span class="badge completed">completed</span></p><p><strong>结论：</strong>Earthquakes are not precisely predictable, whereas probabilistic tsunami alerts and ensemble hurricane forecasts can improve warnings.</p><p><strong>证据评估：</strong>3 Directions, selection, and prospective plan present; two cited empirical studies plus NOAA authority meet the evidence gate; no execution is claimed.</p><p><strong>判定理由：</strong>No independent scientific, source, structure, metadata, execution-boundary, or overclaim defect found.</p></section><section id="sources"><h2>证据链（frontmatter sources）</h2><ul class="sources"><li>Moghadamnejad, A., et al. (2026). Ranking Earthquake Prediction Algorithms: A Comprehensive Review of Machine Learning and Deep Learning Methods. Soil Dynamics and Earthquake Engineering, 200, 109740.</li><li>Geller, R. J. (1997). Earthquake prediction: a critical review. Geophysical Journal International, 131(3), 425-450.</li><li>Selva, J., et al. (2021). Probabilistic tsunami forecasting for early warning. Philosophical Transactions of the Royal Society A, 379(2207), 20200283.</li><li>Song, M. J., et al. (2024). Early warning for maximum tsunami heights and arrival time based on an artificial neural network. Coastal Engineering, 192, 104987.</li><li>NOAA Research. (2025). NOAA researchers to accelerate hurricane forecast improvements.</li><li>Martinez-Amaya, J., et al. (2023). Improved forecasting of extreme hurricane events by ensemble methods. Frontiers in Earth Science, 11, 1223154.</li></ul></section>
+</main>
+<footer>数据源 <code>evidence/contest-2026/all/</code> · 数据生成时点 2026-09-02 · 全量保留失败与缺口（completed 8, partial 117, waiting_human 0, failed 0） · <a href="https://github.com/LittleDrinks/research-world">LittleDrinks/research-world</a></footer>
+</body>
+</html>

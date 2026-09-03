@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>q030 · How do migratory animals know where they’re going? · Q001–Q125 结果站</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="top"><a href="../">← 总看板</a> · <a href="../q029/">q029</a> · <strong>q030</strong> · <a href="../q031/">q031</a></nav>
+<main>
+<h1><code>q030</code> How do migratory animals know where they’re going?</h1><p class="meta">Biology · 终态 <span class="badge partial">partial</span> · 模型 contest-qwen/qwen3-max · verified 2026-09-02 · executed 2026-09-02</p><blockquote class="summary"><strong>结论摘要：</strong>Migration is best explained by context-dependent integration of multiple navigational cues.</blockquote><section><h2>作者候选结论（原文）</h2><p>问题界定：迁徙动物如何在长距离移动中准确导航至目的地是生物学长期未解之谜。动物迁徙跨越数千公里，穿越陌生环境，却能精准返回繁殖地或越冬地，表明其具备复杂的导航机制。</p>
+<p>已知/未知：已知迁徙动物利用多种线索进行导航，包括地磁场、天体位置（太阳、星星）、视觉地标和嗅觉线索。未知的是这些不同机制如何整合工作，以及各机制在不同物种和环境条件下的相对重要性。核心争议在于是否存在主导机制，以及动物如何在不同尺度上实现"地图"（定位）和"罗盘"（定向）功能。</p>
+<p>Direction 1：磁感应机制（Magnetoreception）
+证据：Panagopoulos（2024）提出离子强制振荡-电压门控离子通道（IFO-VGIC）机制，认为动物细胞膜中的电压门控离子通道可作为电磁传感器，通过地磁场对移动离子的作用力来感知磁场强度和方向。Lohmann实验室研究证实海龟、鲑鱼等动物利用地磁线索进行长距离迁徙导航，实验显示幼龟在模拟不同地理位置的磁场中会游向相应方向。
+反证/局限：磁铁矿假说认为生物体内磁铁矿晶体作为生物罗盘，但缺乏直接证据证明其与神经系统的连接。自由基对假说依赖光敏隐花色素蛋白，难以解释夜间迁徙或深海动物的导航能力。IFO-VGIC机制虽有理论计算支持，但缺乏体内实验证据。
+可区分预测：若IFO-VGIC机制正确，则所有动物都应具备基础磁感应能力，且该能力应受动物运动速度影响；若磁铁矿机制主导，则仅特定物种具备此能力，且不受运动状态影响。</p>
+<p>Direction 2：天体导航机制（Celestial Navigation）
+证据：皇家学会研究（2018）证实多种迁徙鸟类利用星辰导航，特别是通过识别星空旋转中心来确定地理极点位置。蜣螂等昆虫也被观察到利用银河系进行定向。鸟类同时使用太阳罗盘进行日间导航，并能补偿太阳位置的日变化。
+反证/局限：天体导航在阴天或水下环境中失效，无法解释动物在完全黑暗条件下的导航能力。许多迁徙发生在夜间，但星光强度极低，对视觉系统要求极高。跨赤道迁徙时星空模式完全改变，动物需要复杂的认知转换能力。
+可区分预测：若天体导航为主导机制，则遮蔽天体线索应完全破坏导航能力；若为辅助机制，则动物在天体不可见时仍能依靠其他线索导航。</p>
+<p>Direction 3：多模态整合机制（Multimodal Integration）
+证据：Lohmann实验室研究表明动物采用分层导航策略，在不同尺度使用不同线索：大尺度上依赖地磁"地图"，中尺度使用天体"罗盘"，小尺度依靠视觉地标和嗅觉线索。维吉尼亚大学鸽子实验显示，当嗅觉线索被排除时，远距离地标成为主要导航依据。
+反证/局限：多模态整合需要复杂的神经处理能力，难以解释简单生物（如昆虫）的精确导航。不同线索可能存在冲突，动物如何解决冲突尚不清楚。缺乏对整合中枢神经机制的直接证据。
+可区分预测：若为真正的多模态整合，则干扰单一线索只会部分影响导航精度；若存在主导机制，则干扰该机制应导致导航完全失败。</p>
+<p>比较并选择：三种机制各有优势，但多模态整合机制最符合现有证据。磁感应提供全球覆盖的定位能力，天体导航提供精确的方向参考，而地标和嗅觉线索在终点区域提供精细定位。单一机制无法解释动物在各种环境条件下的鲁棒导航能力。选择多模态整合作为主要研究方向，重点探究不同机制间的权重分配和冲突解决策略。</p>
+<p>研究计划：
+数据：收集迁徙鸟类（如欧洲知更鸟）、海龟和昆虫的导航行为数据；获取地磁场强度、天体位置、地形特征等环境数据；记录不同干扰条件下（磁场屏蔽、天体遮蔽、嗅觉阻断）的导航表现。
+方法：结合野外追踪（GPS标签）、受控实验室实验（亥姆霍兹线圈系统模拟磁场、天文穹顶模拟星空）和神经生理记录；使用机器学习分析多线索整合模式。
+对照/基线：对照组为正常环境条件下的导航行为；基线包括单一线索缺失条件下的导航精度下降程度。
+主要判据：导航成功率、路径效率、误差分布；神经活动模式与线索可用性的相关性；不同物种间整合策略的保守性或差异性。
+产物：多模态导航计算模型；不同物种导航策略分类框架；环境线索权重分配算法。
+资源：动物行为实验室、磁场模拟设备、天文模拟系统、神经记录设备；合作机构包括UNC Lohmann实验室和欧洲迁徙研究中心。
+伦理/安全：遵循动物福利准则，最小化实验干扰；野外研究获得相应许可；数据隐私保护。
+停止/回退：若发现某一线索在所有测试物种中均不起作用，则重新评估该线索的重要性；若多模态整合假说被证伪，则转向单一主导机制研究。</p>
+<p>明确结论：迁徙动物的导航能力源于多模态感觉线索的动态整合，而非单一机制。地磁场提供全球定位框架，天体线索提供方向参考，局部环境线索实现精确到达。这种分层策略确保了在各种环境条件下的导航鲁棒性，体现了进化对复杂导航挑战的优雅解决方案。</p>
+<p>RESULT: CANDIDATE</p></section><section id="audit"><h2>独立审计（<a href="../audit-026-050/">audit-026-050</a>）</h2><p class="meta">审计模型 gpt-5.6-terra · 2026-09-02 17:41:02+08:00</p><p>审计终态 <span class="badge partial">partial</span></p><p><strong>结论：</strong>Migration is best explained by context-dependent integration of multiple navigational cues.</p><p><strong>证据评估：</strong>Two papers plus a lab page; IFO-VGIC is speculative in an unsettled field; raw Pi log located.</p><p><strong>判定理由：</strong>A proposed magnetic mechanism receives causal weight without direct validation.</p></section><section id="sources"><h2>证据链（frontmatter sources）</h2><ul class="sources"><li><a href="https://www.nature.com/articles/s41598-024-77883-9">Biophysical mechanism of animal magnetoreception, orientation and navigation</a> — id: nature-2024-magnetoreception · authors: DJ Panagopoulos · journal: Scientific Reports · year: 2024</li><li><a href="https://lohmannlab.web.unc.edu/magnetoreception/">Magnetoreception</a> — id: lohmann-lab-magnetoreception · authors: KJ Lohmann · institution: University of North Carolina at Chapel Hill · year: 2026</li><li><a href="https://royalsocietypublishing.org/rspb/article/285/1871/20172322/84679/How-animals-follow-the-starsHow-Animals-Follow-the">How animals follow the stars</a> — id: royal-society-stars · authors: Various · journal: Proceedings B · year: 2018</li></ul></section>
+</main>
+<footer>数据源 <code>evidence/contest-2026/all/</code> · 数据生成时点 2026-09-02 · 全量保留失败与缺口（completed 8, partial 117, waiting_human 0, failed 0） · <a href="https://github.com/LittleDrinks/research-world">LittleDrinks/research-world</a></footer>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>q017 · How is immune homeostasis maintained and regulated? · Q001–Q125 结果站</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="top"><a href="../">← 总看板</a> · <a href="../q016/">q016</a> · <strong>q017</strong> · <a href="../q018/">q018</a></nav>
+<main>
+<h1><code>q017</code> How is immune homeostasis maintained and regulated?</h1><p class="meta">Medicine &amp; Health · 终态 <span class="badge partial">partial</span> · 模型 contest-qwen/qwen3-max · verified 2026-09-02</p><blockquote class="summary"><strong>结论摘要：</strong>Treg networks regulate systemic and tissue-specific immune homeostasis.</blockquote><section><h2>作者候选结论（原文）</h2><p>免疫稳态指免疫系统维持内部平衡的状态，失衡会导致疾病和感染。已知调节性T细胞（Tregs）通过多种机制维持免疫稳态，包括细胞因子分泌、代谢调控和细胞接触抑制。未知之处在于不同组织微环境中Treg亚群的特异性调控机制，以及如何在炎症条件下精确调节Treg活性而不损害保护性免疫应答。</p>
+<p>Direction 1：中心Treg（cTreg）依赖IL-2维持稳态。证据显示cTreg高表达CCR7和CD62L，定位于次级淋巴组织T细胞区，通过旁分泌IL-2信号维持生存。反证是IL-2或CD25缺陷小鼠仍保留部分Treg功能，表明存在IL-2非依赖机制。可区分预测：阻断IL-2信号应特异性减少cTreg而保留效应Treg（eTreg）。</p>
+<p>Direction 2：效应Treg（eTreg）依赖TCR共刺激信号。证据表明eTreg高表达ICOS，在非淋巴组织中通过抗原识别和共刺激维持。局限性是ICOS信号主要促进eTreg生存而非增殖，且不同组织微环境可能需要不同共刺激分子。可区分预测：ICOS阻断应选择性减少外周组织eTreg而不影响淋巴组织cTreg。</p>
+<p>Direction 3：组织特异性Treg亚群适应局部微环境。证据显示脂肪组织Treg表达PPARγ，肠道Treg表达RORγt，肿瘤浸润Treg高表达CCR8。反证是这些亚群的稳定性受炎症条件影响，可能转分化为效应T细胞。可区分预测：组织特异性转录因子缺失应导致相应组织免疫稳态破坏但不影响其他部位。</p>
+<p>横向比较显示三个方向机制互补：cTreg提供全身性自我耐受基础，eTreg介导外周组织特异性调控，组织特异性亚群实现局部微环境适应。选择Direction 1+2组合策略，因其覆盖主要稳态维持途径且具有明确的分子靶点。</p>
+<p>研究计划：数据来源为人外周血和组织样本的单细胞RNA测序数据及小鼠模型；方法采用流式细胞术、基因敲除小鼠和体外功能实验；对照设置包括野生型、IL-2缺陷型和ICOS缺陷型小鼠；主要判据为不同Treg亚群频率、功能标记物表达和自身免疫表型；产物为Treg亚群分类图谱和调控网络；资源需求包括流式细胞仪、小鼠饲养设施和单细胞测序平台；伦理考虑涉及人样本获取需知情同意；停止条件为发现不可逆的自身免疫毒性，回退方案为恢复IL-2治疗。</p>
+<p>科学结论：免疫稳态由多层次Treg调控网络维持，其中IL-2依赖的cTreg和TCR共刺激依赖的eTreg构成基础稳态维持系统，组织特异性亚群提供局部适应性调控。该结论基于当前实验证据，未解决的问题包括人类组织特异性Treg的完整图谱和炎症条件下Treg稳定性的分子决定因素。</p>
+<p>RESULT: CANDIDATE</p></section><section id="audit"><h2>独立审计（<a href="../audit-001-025/">audit-001-025</a>）</h2><p class="meta">审计模型 gpt-5.6-terra · 2026-09-02 17:28:08+08:00</p><p>审计终态 <span class="badge partial">partial</span></p><p><strong>结论：</strong>Treg networks regulate systemic and tissue-specific immune homeostasis.</p><p><strong>证据评估：</strong>Three reviews plus a journal focus page; no original-study set or authority.</p><p><strong>判定理由：</strong>Source gate fails.</p></section><section id="sources"><h2>证据链（frontmatter sources）</h2><ul class="sources"><li>Immune Tolerance Regulation Is Critical to Immune Homeostasis — id: han2025 · authors: Lei Han; Tianxiang Wu; Qin Zhang; Anning Qi; Xiaohui Zhou · journal: Journal of Immunology Research · year: 2025 · doi: 10.1155/jimr/5006201 · pmid: 39950084 · pmcid: PMC11824399</li><li>Regulatory T cells in homeostasis and disease: molecular mechanisms and therapeutic potential — id: wang2025 · authors: L Wang · journal: Signal Transduction and Targeted Therapy · year: 2025 · doi: 10.1038/s41392-025-02326-4</li><li>Regulatory T cell homeostasis: steady-state maintenance and modulation during inflammation — id: smigiel2014 · authors: Kate S Smigiel; Shivani Srivastava; J Michael Stolley; Daniel J Campbell · journal: Immunological Reviews · year: 2014 · doi: 10.1111/imr.12170 · pmid: 24712458 · pmcid: PMC4083836</li><li><a href="https://www.nature.com/collections/mxwslsscsf">Homeostasis — Nature Reviews Immunology Focus on Homeostatic immune responses</a> — id: nature2014 · journal: Nature Reviews Immunology · year: 2014</li></ul></section>
+</main>
+<footer>数据源 <code>evidence/contest-2026/all/</code> · 数据生成时点 2026-09-02 · 全量保留失败与缺口（completed 8, partial 117, waiting_human 0, failed 0） · <a href="https://github.com/LittleDrinks/research-world">LittleDrinks/research-world</a></footer>
+</body>
+</html>

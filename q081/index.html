@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>q081 · Can humans make intense lasers with incoherence comparable to sunlight? · Q001–Q125 结果站</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="top"><a href="../">← 总看板</a> · <a href="../q080/">q080</a> · <strong>q081</strong> · <a href="../q082/">q082</a></nav>
+<main>
+<h1><code>q081</code> Can humans make intense lasers with incoherence comparable to sunlight?</h1><p class="meta">Physics · 终态 <span class="badge partial">partial</span> · 模型 contest-qwen/qwen3-max · verified 2026-09-02</p><blockquote class="summary"><strong>结论摘要：</strong>Broadband incoherent lasers can mitigate selected LPIs but impose energy and hot-electron trade-offs.</blockquote><section><h2>作者候选结论（原文）</h2><p>问题界定：激光驱动惯性约束聚变面临激光-等离子体不稳定性（LPI）的根本挑战，这些不稳定性会散射激光能量并产生有害的高能电子，破坏聚变靶丸的对称压缩。传统单色激光因共振效应加剧LPI，而具有类似太阳光宽带特性的非相干强激光可能通过破坏共振条件来抑制这些不稳定性。</p>
+<p>已知/未知：已知太阳光作为非相干宽带光源具有宽频谱和随机偏振特性；已知LPI如受激布里渊散射（SBS）、受激拉曼散射（SRS）和双等离子体衰变（TPD）是聚变能量耦合的主要障碍；已知宽带激光可提高LPI阈值。未知的是最佳带宽范围、不同LPI机制对带宽的响应差异、宽带激光是否会导致其他不利效应，以及如何在保持高能量输出的同时实现有效的宽带特性。</p>
+<p>Direction 1：宽带光学参量放大技术路线。依据FLUX系统采用的非线性光学方法，通过光学参量放大（OPA）和和频产生（SFG）实现红外到紫外的宽带转换，带宽可达1.5%。反证/局限：增益窄化效应限制了可实现的带宽，且宽带脉冲能量比单色脉冲低55%，影响最终强度。可区分预测：该路线应能有效抑制SBS和TPD，但对SRS的抑制效果有限，且会产生更多高能电子。</p>
+<p>Direction 2：低相干前端种子源路线。基于PHELIX设施的实验，使用钛宝石激光器的放大的自发辐射作为宽带种子源，结合预补偿技术实现0.5%相对带宽。反证/局限：色差效应导致聚焦光斑增大，限制了可达到的强度；系统复杂性增加，稳定性挑战大。可区分预测：该方法应显示SBS和TPD的明显减少，但SRS侧向散射会增加，热电子温度和数量会上升。</p>
+<p>Direction 3：准宽带偏振随机化路线。采用Xiong等人提出的准宽带方案，通过偏振随机化和光束平滑技术模拟太阳光的非相干特性。反证/局限：带宽提升有限，主要依赖偏振效应而非真正的频谱展宽，对某些LPI机制的抑制效果不确定。可区分预测：应能改善光束均匀性，减少热点形成，但对绝对不稳定性阈值的提升不如真实宽带方案显著。</p>
+<p>比较选择：宽带光学参量放大路线（Direction 1）最具前景，因其带宽最大（1.5% vs 0.5%），且FLUX系统已证明可交付&gt;100J能量用于实验。虽然存在能量损失，但其对SBS和TPD的有效抑制对于直接驱动聚变至关重要。PHELIX实验数据证实宽带确实能抑制部分LPI，但意外发现SRS增加和热电子增多，这需要在设计中予以考虑。</p>
+<p>研究计划：
+数据：使用FLUX或类似宽带激光系统，参数包括带宽（0.1%-2%）、波长（351nm UV）、脉冲能量（10-100J）、脉冲持续时间（1-3ns）、强度（10^14-10^16 W/cm²）。
+方法：对比实验设计，相同靶材（聚对二甲苯/铜层状靶）在单色vs宽带激光照射下的LPI表现；全孔径背散射诊断、侧向散射光谱仪、热电子磁谱仪、硬X射线滤波诊断。
+对照/基线：单色激光（带宽&lt;0.15%）作为对照组，宽带激光（0.5%-1.5%）作为实验组，固定其他参数。
+主要判据：SBS/SRS/TPD反射率降低&gt;50%；热电子温度控制在可接受范围（&lt;100keV）；能量耦合效率提升&gt;20%。
+产物：宽带激光LPI抑制效果的定量关系；最优带宽-强度-靶参数组合；热电子产生机制的新理解。
+资源：高能激光设施（如OMEGA、PHELIX或NIF）、等离子体诊断设备、数值模拟代码（LPSE、PIC）。
+伦理/安全：高能激光操作安全协议；辐射防护；数据共享和同行评审。
+停止/回退：若宽带导致不可控的SRS增长或热电子过量；若带宽&gt;2%仍无法有效抑制LPI；若能量损失超过50%使聚变增益不可行。</p>
+<p>明确结论：人类能够制造具有类似太阳光非相干特性的强激光，宽带技术（特别是1.5%带宽的OPA-SFG方案）可有效抑制SBS和TPD等关键LPI，但会意外增强SRS并增加热电子产生。这种权衡效应表明，单纯增加带宽不足以解决所有LPI问题，需要综合优化带宽、脉冲整形和靶设计。该技术为实现可控聚变点火提供了重要路径，但需进一步研究以平衡不同不稳定性之间的复杂相互作用。</p>
+<p>RESULT: CANDIDATE</p></section><section id="audit"><h2>独立审计（<a href="../audit-076-100/">audit-076-100</a>）</h2><p class="meta">审计模型 gpt-5.6-terra · 2026-09-02 17:50:17+08:00</p><p>审计终态 <span class="badge partial">partial</span></p><p><strong>结论：</strong>Broadband incoherent lasers can mitigate selected LPIs but impose energy and hot-electron trade-offs.</p><p><strong>证据评估：</strong>Two peer records plus an LLE institutional page; no explicit planned/executed split.</p><p><strong>判定理由：</strong>No explicit boundary distinguishes performed work from the proposed experiment.</p></section><section id="sources"><h2>证据链（frontmatter sources）</h2><ul class="sources"><li>A future of inertial confinement fusion without laser-plasma instabilities — authors: D.H. Froula et al. · journal: Physics of Plasmas · year: 2025 · doi: 10.1063/5.0198742</li><li>Experimental study of laser plasma instabilities with broadband laser pulses at the GSI PHELIX laser facility — authors: C. Kanstein et al. · journal: Plasma Physics and Controlled Fusion · year: 2025 · doi: 10.1088/1361-6587/ae1871</li><li><a href="https://www.lle.rochester.edu/publications/flux-a-next-generation-broadband-laser-for-direct-drive-fusion-experiments/">FLUX: A Next-Generation Broadband Laser for Direct-Drive Fusion Experiments</a> — authors: C. Dorrer et al. · institution: Laboratory for Laser Energetics, University of Rochester · year: 2026</li></ul></section>
+</main>
+<footer>数据源 <code>evidence/contest-2026/all/</code> · 数据生成时点 2026-09-02 · 全量保留失败与缺口（completed 8, partial 117, waiting_human 0, failed 0） · <a href="https://github.com/LittleDrinks/research-world">LittleDrinks/research-world</a></footer>
+</body>
+</html>

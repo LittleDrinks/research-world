@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>q069 · Is there a diffraction limit? · Q001–Q125 结果站</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="top"><a href="../">← 总看板</a> · <a href="../q068/">q068</a> · <strong>q069</strong> · <a href="../q070/">q070</a></nav>
+<main>
+<h1><code>q069</code> Is there a diffraction limit?</h1><p class="meta">Physics · 终态 <span class="badge partial">partial</span> · 模型 contest-qwen/qwen3-max · verified 2026-09-02</p><blockquote class="summary"><strong>结论摘要：</strong>Diffraction limits conventional far-field optics, while super-resolution methods trade resolution against speed and phototoxicity.</blockquote><section><h2>作者候选结论（原文）</h2><p>问题界定：光学显微镜的衍射极限是传统光学成像的根本物理限制，由恩斯特·阿贝于1873年提出，规定传统光学显微镜的最大分辨率约为光波长的一半（约200-250纳米）。这一限制源于光的波动性质和衍射现象，使得小于该尺度的细节无法被区分。2014年诺贝尔化学奖授予了三位科学家，表彰他们开发出突破衍射极限的超分辨率荧光显微技术。</p>
+<p>已知/未知：已知衍射极限的物理基础源于光的波动性和干涉现象，表现为艾里斑的形成，其大小由公式r=0.61λ/NA决定。已知三种主要的超分辨率技术路径：受激发射损耗显微术（STED）、结构光照明显微术（SIM）和单分子定位显微术（包括PALM/STORM）。未知的是各种技术在活体细胞成像中的长期适用性、多色成像的探针开发限制，以及如何在保持高分辨率的同时实现高速三维成像。</p>
+<p>Direction 1：受激发射损耗显微术（STED）。证据：STED使用两束激光，一束激发荧光分子发光，另一束环形激光通过受激发射淬灭除纳米级体积外的所有荧光，从而获得优于阿贝极限的分辨率。2000年由Stefan Hell开发，可实现20-30纳米的二维分辨率。反证/局限：需要高强度的淬灭激光，可能对活细胞造成光毒性；探针选择有限，需要特殊染料耐受高强度激光；成像速度相对较慢，难以捕捉快速动态过程。可区分预测：STED应能在固定样品中提供稳定的高分辨率图像，但在长时间活细胞成像中会因光损伤而受限。</p>
+<p>Direction 2：结构光照明显微术（SIM）。证据：SIM通过条纹状照明图案与样品结构产生莫尔条纹，通过数学处理提取高频信息，将分辨率提高至约100纳米。该技术接近传统荧光显微镜，不需要特殊探针。反证/局限：分辨率提升仅限于传统极限的两倍左右，因为照明图案本身受衍射限制；需要采集多幅图像进行重建，降低了时间分辨率；对样品的光稳定性要求较高。可区分预测：SIM应在多色成像和活细胞观察中表现优异，但无法达到STED或单分子技术的超高分辨率水平。</p>
+<p>Direction 3：单分子定位显微术（PALM/STORM）。证据：通过控制荧光分子的开关状态，每次只激活稀疏分布的分子，精确定位其中心位置（可达5纳米精度），多次循环后重构超分辨率图像。2006年由Eric Betzig和William Moerner分别独立开发。反证/局限：成像速度慢，因为需要数千次循环；对探针的光物理性质要求苛刻；活细胞成像中分子运动会导致定位模糊；抗体标记的尺寸（&gt;10纳米）限制了实际定位精度。可区分预测：单分子技术应在静态或慢速动态样品中提供最高空间分辨率，但在快速生物过程中会因采样不足而产生伪影。</p>
+<p>比较选择：三种技术各有优势。STED适合需要稳定高分辨率的固定样品研究；SIM适合活细胞多色成像和相对温和的实验条件；单分子技术适合追求极限分辨率的静态结构分析。基于研究目标，单分子定位显微术提供了最高的理论分辨率（~5-20纳米），且不依赖高强度激光，更适合长期活细胞观察，尽管成像速度较慢。因此选择Direction 3作为主要研究方向。</p>
+<p>研究计划：数据方面，使用标准荧光微球（直径20-100纳米）和已知结构的生物样品（如微管网络）进行方法验证。方法采用直接STORM（dSTORM）技术，利用常规有机染料的闪烁特性，避免复杂的探针对设计。对照/基线设置包括传统宽场显微镜图像和SIM图像进行比较。主要判据为分辨率测量（通过傅里叶环相关分析）、定位精度（通过重复定位同一分子）和信噪比评估。产物包括超分辨率图像数据集、定量分辨率分析报告和优化的成像协议。资源需求包括配备EMCCD相机的倒置显微镜、合适的激光器（405nm、488nm、561nm、647nm）、dSTORM缓冲液和标准样品。伦理/安全方面，所有实验使用商业化的生物样品和标准实验室安全规程。停止/回退条件：如果定位精度无法达到50纳米以下，或活细胞成像中光毒性导致细胞死亡率超过20%，则回退到SIM技术。</p>
+<p>明确结论：衍射极限确实存在，但可通过超分辨率技术有效突破。单分子定位显微术提供了最佳的分辨率性能和活细胞兼容性平衡，是未来研究的优选方向。</p>
+<p>RESULT: CANDIDATE</p></section><section id="audit"><h2>独立审计（<a href="../audit-051-075/">audit-051-075</a>）</h2><p class="meta">审计模型 gpt-5.6-terra · 2026-09-02 17:46:28+08:00</p><p>审计终态 <span class="badge partial">partial</span></p><p><strong>结论：</strong>Diffraction limits conventional far-field optics, while super-resolution methods trade resolution against speed and phototoxicity.</p><p><strong>证据评估：</strong>Raw match; Nobel, PMC, vendor, and unclear article URLs do not form the normal source set; none.</p><p><strong>判定理由：</strong>The selected single-molecule method contradicts its own stated live-cell limitation.</p></section><section id="sources"><h2>证据链（frontmatter sources）</h2><ul class="sources"><li>https://www.nobelprize.org/prizes/chemistry/2014/press-release/</li><li>https://pmc.ncbi.nlm.nih.gov/articles/PMC3085433/</li><li>https://www.microscopyu.com/techniques/super-resolution/the-diffraction-barrier-in-optical-microscopy</li><li>https://www.sciencedirect.com/science/article/pii/S0896627314010836</li><li>https://www.nature.com/articles/nphoton.2009.100</li></ul></section>
+</main>
+<footer>数据源 <code>evidence/contest-2026/all/</code> · 数据生成时点 2026-09-02 · 全量保留失败与缺口（completed 8, partial 117, waiting_human 0, failed 0） · <a href="https://github.com/LittleDrinks/research-world">LittleDrinks/research-world</a></footer>
+</body>
+</html>

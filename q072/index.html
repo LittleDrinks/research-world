@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>q072 · What are the fundamental principles of collective motion? · Q001–Q125 结果站</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="top"><a href="../">← 总看板</a> · <a href="../q071/">q071</a> · <strong>q072</strong> · <a href="../q073/">q073</a></nav>
+<main>
+<h1><code>q072</code> What are the fundamental principles of collective motion?</h1><p class="meta">Physics · 终态 <span class="badge partial">partial</span> · 模型 contest-qwen/qwen3-max · verified False · executed literature review and analysis</p><blockquote class="summary"><strong>结论摘要：</strong>Collective motion emerges from local interactions, but no single model spans all biological and physical systems.</blockquote><section><h2>作者候选结论（原文）</h2><p>集体运动的基本原理问题涉及从微观个体行为到宏观协调模式的涌现机制。尽管鸟群、鱼群、细菌群体和人群等系统在尺度和认知能力上存在巨大差异，但都展现出相似的时空相干性模式。这一现象的核心在于理解简单局部相互作用如何产生复杂的集体行为。</p>
+<p>已知研究表明集体运动普遍存在三个基本特征：相变行为、标度律和普适性。未知领域包括不同系统间机制的深层统一性、噪声在有序-无序转变中的精确作用，以及生物系统中认知因素对纯物理模型的修正程度。现有理论主要基于自驱动粒子模型，但对真实生物系统的适用性仍需验证。</p>
+<p>Direction 1：基于对齐机制的Vicsek模型框架。证据显示该模型通过局部速度对齐加噪声成功再现了从无序到有序的相变，实验验证了鱼群和鸟群中的类似行为。反证在于该模型无法解释某些生物系统中的复杂交互，如蝗虫群体中观察到的非对齐主导行为。可区分预测：在高密度低噪声条件下应出现长程有序，且相变应为一级相变伴随液气共存区。</p>
+<p>Direction 2：基于吸引-排斥规则的行为机制。Warren等人提出的三区域模型（远距离吸引、中距离对齐、近距离排斥）能更好解释人类群体动力学。证据来自虚拟现实实验和真实人群观测。局限性在于参数依赖性强，难以推广到非人类系统。可区分预测：应存在最优交互距离，在此距离下集体效率最高，且不同物种的交互范围应与感知能力相关。</p>
+<p>Direction 3：基于活性物质物理的连续介质理论。Toner-Tu理论将集体运动描述为具有自发流动的非平衡态，预测了特殊的声子谱和长程关联。证据来自细菌群体和细胞迁移的流体力学测量。反证是该理论在稀疏系统中失效，且忽略了个体内在异质性。可区分预测：应观察到Goldstone模和特定的密度波模式，这些在离散粒子模型中不存在。</p>
+<p>比较三个方向，Vicsek模型提供了最简洁的普适框架，适合跨系统比较；行为机制模型更具生物学真实性但适用范围有限；连续介质理论在高密度极限下有效但缺乏微观基础。综合考虑，Vicsek框架结合行为细节修正可能是最有前景的方向，既能保持理论简洁性又能解释系统特异性。</p>
+<p>研究计划：数据来源包括公开的动物轨迹数据集（STARFLAG鸟群数据、fish-schooling视频）、人工群体实验数据和数值模拟结果。方法采用多尺度分析：微观层面用粒子追踪，介观层面用相关函数分析，宏观层面用序参量测量。对照设置包括随机运动基线、单向流动控制组和不同噪声水平实验组。主要判据为序参量值、相关长度和相变临界点的准确预测。产物包括可复现的模拟代码、实验协议和跨系统比较框架。资源需求为高性能计算集群用于大规模模拟，合作实验室提供生物实验数据。伦理方面确保动物实验符合福利标准，人类数据匿名化处理。停止条件为发现根本性理论缺陷或获得足够证据支持单一机制；回退方案为转向混合模型或多机制并存假设。</p>
+<p>明确结论：集体运动的基本原理源于局部相互作用规则在非平衡条件下的涌现，但具体机制因系统而异。Vicsek型对齐机制提供了核心框架，但需结合系统特异性因素才能完整描述自然界的集体行为多样性。
+RESULT: CANDIDATE</p></section><section id="audit"><h2>独立审计（<a href="../audit-051-075/">audit-051-075</a>）</h2><p class="meta">审计模型 gpt-5.6-terra · 2026-09-02 17:46:28+08:00</p><p>审计终态 <span class="badge partial">partial</span></p><p><strong>结论：</strong>Collective motion emerges from local interactions, but no single model spans all biological and physical systems.</p><p><strong>证据评估：</strong>Raw match; one original paper, two reviews, and no authority/database; E only.</p><p><strong>判定理由：</strong>The source gate fails and the zone-model and Toner-Tu claims are uncited.</p></section><section id="sources"><h2>证据链（frontmatter sources）</h2><ul class="sources"><li>Novel Type of Phase Transition in a System of Self-Driven Particles — id: vicsek-1995 · authors: Vicsek, Tamás; Czirók, András; Ben-Jacob, Eshel; Cohen, Inon; Shochet, Ofer · journal: Physical Review Letters · year: 1995 · volume: 75 · pages: 1226-1229 · doi: 10.1103/PhysRevLett.75.1226</li><li>Collective motion — id: vicsek-2012 · authors: Vicsek, Tamás; Zafeiris, Anna · journal: Physics Reports · year: 2012 · volume: 517 · pages: 71-140 · doi: 10.1016/j.physrep.2012.03.004</li><li>Collective Motion in Human Crowds — id: warren-2018 · authors: Warren, William H. · journal: Current Directions in Psychological Science · year: 2018 · volume: 27 · pages: 279-284 · doi: 10.1177/0963721418773377</li></ul></section>
+</main>
+<footer>数据源 <code>evidence/contest-2026/all/</code> · 数据生成时点 2026-09-02 · 全量保留失败与缺口（completed 8, partial 117, waiting_human 0, failed 0） · <a href="https://github.com/LittleDrinks/research-world">LittleDrinks/research-world</a></footer>
+</body>
+</html>

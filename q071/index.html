@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>q071 · What are the limits of heat transfer in matter? · Q001–Q125 结果站</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="top"><a href="../">← 总看板</a> · <a href="../q070/">q070</a> · <strong>q071</strong> · <a href="../q072/">q072</a></nav>
+<main>
+<h1><code>q071</code> What are the limits of heat transfer in matter?</h1><p class="meta">Physics · 终态 <span class="badge partial">partial</span> · 模型 contest-qwen/qwen3-max · verified 2026-09-02</p><blockquote class="summary"><strong>结论摘要：</strong>Heat-transfer limits depend on transport regime; quantum and near-field limits do not reduce to one universal mechanism.</blockquote><section><h2>作者候选结论（原文）</h2><p>热量传递在物质中的极限问题涉及从宏观到量子尺度的多重物理机制。材料科学研究为解决高功率密度热传递挑战提供了关键路径，从纳米级电路到工业规模的发电厂都面临这一基础性限制。</p>
+<p>已知方面包括傅里叶定律描述的宏观热传导、对流和辐射三种基本传热机制，以及热导率K=DρcP的基本关系（D为热扩散率，ρ为密度，cP为比热容）。实验测量技术如激光闪射分析法（LFA）能够准确测定固体材料的热传输性质。未知方面主要集中在微观机制的本质、量子效应在室温下的作用、以及不同尺度下传热极限的统一理论框架。</p>
+<p>Direction 1：量子热导极限机制。量子物理学预测单个传输通道存在基本最大热导，即热导量子G0,Th = π²kB²T/(3h)，其中kB为玻尔兹曼常数，T为温度，h为普朗克常数。该机制认为在纳米尺度下，热流通过离散的量子通道传输，每个通道的最大热导受量子力学基本限制。证据来自低温实验中观察到的量子化热导现象，特别是在电子和光子系统中得到验证。反证和局限在于声子介导的量子热导在实际悬浮微结构中难以观测，实验与理论存在显著差异，部分原因是测量平台设计和数据分析假设的不适当。可区分预测是当系统尺寸减小到纳米级别且温度低于1K时，热导应呈现量子化平台而非连续变化。</p>
+<p>Direction 2：辐射扩散主导机制。该机制认为热传递本质上是电磁辐射的扩散过程，特别是在红外区域。Hofmeister的研究表明，热传导实际上是红外光的吸收和再发射过程，热扩散率D与材料的光谱吸收特性直接相关。证据来自激光闪射分析数据，显示热传输性质与材料刚度（杨氏模量）和热膨胀系数的关系符合ρcP ∝ αvolΞ的理论预测。反证和局限在于该模型主要适用于实验室温度下的固体，在高温或等离子体状态下可能不适用。可区分预测是热导率应与材料的红外吸收光谱密切相关，透明材料的热导率应显著低于不透明材料。</p>
+<p>Direction 3：近场辐射热传递极限。MIT研究团队推导出纳米尺度下两物体间热交换的最大公式，该极限取决于物体材料性质和间距。该机制强调在纳米间距下，倏逝波隧穿效应使热传递远超经典黑体辐射极限。证据来自理论计算显示纳米间距金属板间的热传递可比现有结构提高数个数量级。反证和局限在于实际实现需要精确控制纳米间距和表面形貌，目前技术难以在实际器件中达到理论极限。可区分预测是在亚微米间距下，特定材料组合（如铝基结构）应表现出异常高的热传递效率。</p>
+<p>比较三个方向，量子热导极限提供了最根本的物理上限但仅在极低温下显现；辐射扩散机制解释了常规条件下的热传递行为但缺乏对极限的明确界定；近场辐射热传递则在室温纳米器件中具有实际应用前景。综合考虑科学严谨性和技术可行性，近场辐射热传递方向最具研究价值，因为它既基于坚实的量子电动力学理论，又能在实际工程条件下进行验证和应用。</p>
+<p>研究计划包括：数据方面收集不同材料（金属、半导体、绝缘体）在纳米间距下的热传递实验数据，以及材料光学性质和表面形貌表征数据；方法采用结合理论建模、数值模拟和精密实验的多尺度研究方法，重点使用激光闪射分析和扫描热显微镜技术；对照/基线设置包括经典傅里叶热传导预测、黑体辐射极限和已发表的纳米热传递数据；主要判据是实测热传递效率与理论极限的接近程度，以及材料参数对极限值的影响规律；产物包括优化的纳米热传递器件设计方案、热传递极限预测模型和材料选择指南；资源需求包括纳米加工设备、低温测量系统和高性能计算资源；伦理/安全考虑涉及纳米材料的环境影响评估和高温实验的安全防护；停止/回退条件包括实验数据与理论预测偏差超过50%或无法实现稳定的纳米间距控制。</p>
+<p>明确结论：热量传递在物质中的极限受多重机制共同约束，在宏观尺度由傅里叶定律主导，在纳米尺度受量子效应和近场辐射增强效应支配。最根本的极限由量子热导给出，但在实际应用中，近场辐射热传递极限更具工程意义。未来突破将依赖于对材料光谱特性和纳米结构的精确调控。</p>
+<p>RESULT: CANDIDATE</p></section><section id="audit"><h2>独立审计（<a href="../audit-051-075/">audit-051-075</a>）</h2><p class="meta">审计模型 gpt-5.6-terra · 2026-09-02 17:46:28+08:00</p><p>审计终态 <span class="badge partial">partial</span></p><p><strong>结论：</strong>Heat-transfer limits depend on transport regime; quantum and near-field limits do not reduce to one universal mechanism.</p><p><strong>证据评估：</strong>Raw match; three papers but no authority/database and no boundary declaration.</p><p><strong>判定理由：</strong>A broad contested mechanism is asserted without independently balanced evidence.</p></section><section id="sources"><h2>证据链（frontmatter sources）</h2><ul class="sources"><li>Hofmeister, A. M. (2024). Theory and Measurement of Heat Transport in Solids: How Rigidity and Spectral Properties Govern Behavior. Materials, 17(18), 4469. https://doi.org/10.3390/ma17184469</li><li>Polanco, C. A., et al. (2023). The phonon quantum of thermal conductance: Are simulations and measurements estimating the same quantity? Science Advances, 9(41), eadi7439. https://doi.org/10.1126/sciadv.adi7439</li><li>Miller, O. D., Johnson, S. G., &amp; Rodriguez, A. W. (2015). Shape-independent limits to near-field radiative heat transfer. Physical Review Letters, 115(20), 204302. https://doi.org/10.1103/PhysRevLett.115.204302</li></ul></section>
+</main>
+<footer>数据源 <code>evidence/contest-2026/all/</code> · 数据生成时点 2026-09-02 · 全量保留失败与缺口（completed 8, partial 117, waiting_human 0, failed 0） · <a href="https://github.com/LittleDrinks/research-world">LittleDrinks/research-world</a></footer>
+</body>
+</html>

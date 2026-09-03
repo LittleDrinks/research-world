@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>q003 · Will the Navier–Stokes problem ever be solved? · Q001–Q125 结果站</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="top"><a href="../">← 总看板</a> · <a href="../q002/">q002</a> · <strong>q003</strong> · <a href="../q004/">q004</a></nav>
+<main>
+<h1><code>q003</code> Will the Navier–Stokes problem ever be solved?</h1><p class="meta">Mathematical Sciences · 终态 <span class="badge partial">partial</span> · 模型 qwen3.7-flash · verified True</p><blockquote class="summary"><strong>结论摘要：</strong>Three-dimensional global regularity remains open, with energy-cascade analysis proposed.</blockquote><section><h2>作者候选结论（原文）</h2><p>Navier-Stokes方程描述流体运动，但其解的存在性与光滑性在三维空间中仍未证明。该问题被列为克雷数学研究所千禧年大奖难题之一，核心在于：给定初始速度场，是否存在全局定义且光滑的速度矢量与压力标量场满足方程？已知二维情形已有全局光滑解，小初值条件下三维解也存在；但一般初值下三维解是否会在有限时间内“爆破”（blowup）仍是开放问题。未知在于非线性对流项(v·∇)v与粘性耗散项νΔv的竞争机制，以及湍流奇异性是否会导致解的破裂。
+Direction A基于弱解框架，依据Leray(1934)构造的能量不等式弱解，反证是弱解可能不唯一或缺乏正则性，预测若能证明弱解的唯一性或部分正则性则可推进存在性。Direction B探索尺度不变性与超临界障碍，依据Tao(2016)对平均化Navier-Stokes方程的有限时间爆破构造，反证是平均化模型可能丢失真实方程的关键结构，预测若能在真实方程中建立类似能量级串机制则支持爆破可能性。Direction C转向随机扰动或几何约束，依据某些带噪声或特殊对称性的Navier-Stokes变体存在全局解，反证是这些简化可能回避了真实湍流的核心非线性，预测若随机化能抑制高频模增长则暗示确定性情形也可能存在全局解。
+横向比较，Direction A最保守但基础坚实，Direction B最具突破潜力但模型简化存疑，Direction C提供新视角但物理相关性待验。选择Direction B因其直接挑战爆破机制且Tao的工作提供了可计算的路径。研究计划：数据为高分辨率数值模拟的三维Navier-Stokes解；方法为构造类似Tao的轴对称模型并分析能量级串；对照为经典Leray弱解与二维全局解；主要判据为高频模能量是否在有限时间内发散；产物为爆破或全局存在性的理论证据；资源需高性能计算与偏微分方程专家协作；伦理无特殊风险；停止条件为模型无法复现Tao的爆破行为或发现决定性反例。科学结论是Navier-Stokes问题尚未解决，下一步应实现Tao模型的数值验证并探索其与真实方程的差距。
+RESULT: CANDIDATE</p></section><section id="audit"><h2>独立审计（<a href="../audit-001-025/">audit-001-025</a>）</h2><p class="meta">审计模型 gpt-5.6-terra · 2026-09-02 17:28:08+08:00</p><p>审计终态 <span class="badge partial">partial</span></p><p><strong>结论：</strong>Three-dimensional global regularity remains open, with energy-cascade analysis proposed.</p><p><strong>证据评估：</strong>Clay materials plus Wikipedia; no two original papers.</p><p><strong>判定理由：</strong>Source gate fails; model metadata conflicts with raw Session.</p></section><section id="sources"><h2>证据链（frontmatter sources）</h2><ul class="sources"><li><a href="https://www.claymath.org/millennium/navier-stokes-equation/">Navier-Stokes Equation</a> — author: Clay Mathematics Institute · year: 2026</li><li><a href="https://en.wikipedia.org/wiki/Navier%E2%80%93Stokes_existence_and_smoothness">Navier–Stokes existence and smoothness</a> — author: Wikipedia contributors · year: 2026</li><li><a href="https://www.claymath.org/wp-content/uploads/2022/06/navierstokes.pdf">Official Problem Description</a> — author: Charles L. Fefferman · year: 2000 · doi: 10.48550/arXiv.math/0001001</li></ul></section>
+</main>
+<footer>数据源 <code>evidence/contest-2026/all/</code> · 数据生成时点 2026-09-02 · 全量保留失败与缺口（completed 8, partial 117, waiting_human 0, failed 0） · <a href="https://github.com/LittleDrinks/research-world">LittleDrinks/research-world</a></footer>
+</body>
+</html>

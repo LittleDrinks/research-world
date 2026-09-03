@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>q011 · How can matter be programmed into living materials? · Q001–Q125 结果站</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="top"><a href="../">← 总看板</a> · <a href="../q010/">q010</a> · <strong>q011</strong> · <a href="../q012/">q012</a></nav>
+<main>
+<h1><code>q011</code> How can matter be programmed into living materials?</h1><p class="meta">Chemistry · 终态 <span class="badge partial">partial</span> · 模型 contest-qwen/qwen3-max · verified 2026-09-02</p><blockquote class="summary"><strong>结论摘要：</strong>Engineered living materials allow limited programming while predictable multicellular control remains open.</blockquote><section><h2>作者候选结论（原文）</h2><p>问题界定：物质编程为活体材料指通过合成生物学将生命功能（自组织、环境响应、自修复）赋予非生命基质，形成工程化活体材料（ELMs）。已知：基于细菌纤维素、淀粉样蛋白（如curli/TasA系统）及细胞-材料共培养的ELMs已实现环境传感、生物制造与自修复；未知：多细胞系统长期稳定性、基因回路可预测性及规模化生产的工程瓶颈。</p>
+<p>Direction 1（基因回路驱动）：依据Luo等（2023）综述，通过设计遗传电路控制细胞分泌功能蛋白（如CsgA融合肽），实现材料功能编程。反证：大分子融合受限于分泌效率（&lt;10 kDa），且群体感应依赖局部密度，难以规模化。可区分预测：微流控封装可维持高密度诱导，但宏观结构均匀性不足。</p>
+<p>Direction 2（DNA纳米技术整合）：依据Srubar（2021），将DNA折纸结构嵌入活体基质，利用其精确自组装引导细胞空间排布。反证：DNA在胞外环境易降解，且与活细胞代谢耦合机制不明。可区分预测：脂质体包被可提升稳定性，但会阻断细胞-材料信号交换。</p>
+<p>Direction 3（仿生矿化协同）：依据NIST ELM项目，引导微生物矿化过程（如碳酸钙沉积）与细胞生长同步，形成有机-无机复合材料。反证：矿化速率与细胞代谢难以匹配，易导致结构脆性。可区分预测：pH响应启动子可动态调控矿化酶表达，但需复杂反馈回路。</p>
+<p>横向比较：Direction 1证据最充分（Luo2023, Wang2022），技术成熟度高；Direction 2理论新颖但实证薄弱；Direction 3工程可行性存疑。选择Direction 1为主路径，因其模块化设计支持功能迭代，且已有可扩展的3D打印平台（Huang2023）。</p>
+<p>研究计划：数据—公开ELM表征数据集（NIST）；方法—构建IPTG诱导CsgA-GFP融合系统，量化分泌效率与材料荧光强度；对照—野生型curli系统；主要判据—单位细胞荧光强度≥10^4 AU；产物—可编程活体水凝胶；资源—BL21(DE3)菌株、微流控芯片；伦理—封闭系统防逃逸；停止条件—连续三批材料强度变异系数&gt;30%。科学结论：当前ELMs可通过合成生物学实现有限功能编程，但复杂多细胞系统的可预测性仍是核心挑战，需发展新型基因回路与材料界面。
+RESULT: CANDIDATE</p></section><section id="audit"><h2>独立审计（<a href="../audit-001-025/">audit-001-025</a>）</h2><p class="meta">审计模型 gpt-5.6-terra · 2026-09-02 17:28:08+08:00</p><p>审计终态 <span class="badge partial">partial</span></p><p><strong>结论：</strong>Engineered living materials allow limited programming while predictable multicellular control remains open.</p><p><strong>证据评估：</strong>Three reviews plus NIST; no two original papers.</p><p><strong>判定理由：</strong>Unsupported secretion-size claim and source-gate failure.</p></section><section id="sources"><h2>证据链（frontmatter sources）</h2><ul class="sources"><li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10903423/">Engineering living materials by synthetic biology</a> — id: Luo2023 · authors: Jiren Luo, Jiangfeng Chen, Yaoge Huang, Lingchong You, Zhuojun Dai · journal: APL Bioengineering · year: 2023 · volume: 4 · issue: 1 · pages: 4805 · doi: 10.1063/5.0115645 · pmcid: PMC10903423</li><li><a href="https://www.sciencedirect.com/science/article/abs/pii/S1367593122000734">Engineered living materials (ELMs) design: From function to application</a> — id: Wang2022 · authors: Y Wang, et al. · journal: Current Opinion in Chemical Biology · year: 2022 · volume: 68 · pages: 102134 · doi: 10.1016/j.cbpa.2022.102134</li><li><a href="https://onlinelibrary.wiley.com/doi/10.1002/adma.202006173">Engineered Living Materials: Perspectives on the Future of Building with Biology</a> — id: Srubar2021 · authors: Wil V. Srubar III, et al. · journal: Advanced Materials · year: 2021 · volume: 33 · issue: 19 · pages: 2006173 · doi: 10.1002/adma.202006173</li><li><a href="https://www.nist.gov/elms">Engineered Living Materials Program</a> — id: NIST_ELM · organization: National Institute of Standards and Technology (NIST) · retrieved: 2026-09-02</li></ul></section>
+</main>
+<footer>数据源 <code>evidence/contest-2026/all/</code> · 数据生成时点 2026-09-02 · 全量保留失败与缺口（completed 8, partial 117, waiting_human 0, failed 0） · <a href="https://github.com/LittleDrinks/research-world">LittleDrinks/research-world</a></footer>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>q014 · Will we ever find a cure for the common cold? · Q001–Q125 结果站</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="top"><a href="../">← 总看板</a> · <a href="../q013/">q013</a> · <strong>q014</strong> · <a href="../q015/">q015</a></nav>
+<main>
+<h1><code>q014</code> Will we ever find a cure for the common cold?</h1><p class="meta">Medicine &amp; Health · 终态 <span class="badge partial">partial</span> · 模型 contest-qwen/qwen3-max · verified 2026-09-02</p><blockquote class="summary"><strong>结论摘要：</strong>SETD3 targeting is a promising but preclinical common-cold strategy.</blockquote><section><h2>作者候选结论（原文）</h2><p>问题界定：普通感冒由200多种病毒引起，其中鼻病毒占50-80%病例。这些病毒高度变异且存在160多种血清型，导致重复感染和疫苗开发困难。目前尚无特效抗病毒治疗或预防疫苗。</p>
+<p>已知/未知：已知鼻病毒通过接触传播，症状通常7-10天自限。现有治疗仅针对症状缓解，包括锌补充剂、抗组胺药和减充血剂等，但效果有限。未知的是能否开发广谱抗病毒药物靶向宿主因子而非病毒本身，以及SETD3蛋白抑制剂的临床安全性和有效性。</p>
+<p>Direction 1（靶向宿主SETD3蛋白）：Stanford-UCSF研究发现，鼻病毒复制依赖宿主细胞SETD3蛋白。敲除SETD3的人类细胞中病毒复制减少1000倍，SETD3缺陷小鼠对肠道病毒感染完全免疫。证据显示该方法对多种肠道病毒有效，包括鼻病毒、脊髓灰质炎病毒和EV-D68。反证是SETD3在正常生理中的功能尚不完全清楚，长期抑制可能产生副作用。可区分预测：SETD3抑制剂应能同时预防多种肠道病毒感染，而传统抗病毒药仅针对特定病毒株。</p>
+<p>Direction 2（传统抗病毒药物开发）：历史上rupintrivir等3C蛋白酶抑制剂在体外有效但临床试验失败，因无法显著减少有症状感冒频率。证据显示鼻病毒高突变率导致快速耐药。局限性在于需要针对每种血清型开发不同药物，成本效益低。可区分预测：传统抗病毒药对特定血清型有效但易产生耐药，而宿主靶向策略不易产生耐药。</p>
+<p>Direction 3（免疫调节和预防策略）：锌补充剂在预防研究中显示儿童感冒次数减少（RR 0.64），口服锌治疗可缩短成人感冒病程1.65天。证据来自多项RCT和meta分析。反证是效果不一致且有不良反应（恶心、味觉异常）。可区分预测：免疫调节策略主要缩短病程而非预防感染，对儿童效果不如成人。</p>
+<p>横向比较：Direction 1最具突破性潜力，通过靶向宿主因子实现广谱抗病毒效果且不易产生耐药；Direction 2受限于病毒多样性而前景有限；Direction 3提供症状缓解但无法根治。选择Direction 1作为主要研究路线，因其机制新颖、证据强、可扩展至其他肠道病毒感染。</p>
+<p>研究计划：数据来源包括人类支气管上皮细胞系、原代细胞和动物模型。方法采用CRISPR筛选验证SETD3相互作用蛋白，开发小分子SETD3抑制剂。对照组使用野生型细胞和载体对照。主要判据为病毒载量减少≥90%且细胞活力&gt;95%。产物为先导化合物和临床前数据。资源需要BSL-2实验室、高通量筛选平台和动物设施。伦理考虑包括动物福利和未来临床试验安全性。停止条件：发现SETD3抑制导致严重细胞毒性或发育异常；回退方案：转向其他宿主因子如PI4KIIIβ。</p>
+<p>科学结论：基于当前证据，靶向宿主SETD3蛋白是治愈普通感冒最有希望的策略，已在细胞和动物模型中证实有效性。然而，该方法尚未进入人体临床试验，安全性未知。传统抗病毒药物因病毒多样性而效果有限，免疫调节策略仅能缓解症状。因此，普通感冒的根治性治疗仍未实现，但SETD3靶向疗法代表了重大突破方向。</p>
+<p>RESULT: CANDIDATE</p></section><section id="audit"><h2>独立审计（<a href="../audit-001-025/">audit-001-025</a>）</h2><p class="meta">审计模型 gpt-5.6-terra · 2026-09-02 17:28:08+08:00</p><p>审计终态 <span class="badge partial">partial</span></p><p><strong>结论：</strong>SETD3 targeting is a promising but preclinical common-cold strategy.</p><p><strong>证据评估：</strong>One original SETD3 paper plus reviews and CDC.</p><p><strong>判定理由：</strong>Cell/mouse evidence is inflated into a cure claim.</p></section><section id="sources"><h2>证据链（frontmatter sources）</h2><ul class="sources"><li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3928210/">Prevention and treatment of the common cold: making sense of the evidence</a> — id: pmc3928210 · authors: Allan GM; Arroll B · journal: CMAJ · year: 2014 · doi: 10.1503/cmaj.121442</li><li><a href="https://med.stanford.edu/news/all-news/2019/09/in-human-cells-and-mice-a-cure-for-the-common-cold.html">A genome-wide CRISPR screen identifies SETD3 as a host factor required for enterovirus replication</a> — id: nature_microbiology_2019 · authors: Diep J; Ooi YS; Wilkinson A; Andino R; Krogan N; Gozani O; Carette JA · journal: Nature Microbiology · year: 2019 · doi: 10.1038/s41564-019-0551-1</li><li><a href="https://www.cdc.gov/rhinoviruses/about/index.html">About Rhinoviruses</a> — id: cdc_rhinovirus · organization: Centers for Disease Control and Prevention · year: 2026</li><li><a href="https://www.ncbi.nlm.nih.gov/books/NBK532961/">Upper Respiratory Tract Infections With Focus on The Common Cold</a> — id: statpearls_urti · authors: Tobin EH; Thomas M; Bomar PA · organization: StatPearls Publishing · year: 2025</li></ul></section>
+</main>
+<footer>数据源 <code>evidence/contest-2026/all/</code> · 数据生成时点 2026-09-02 · 全量保留失败与缺口（completed 8, partial 117, waiting_human 0, failed 0） · <a href="https://github.com/LittleDrinks/research-world">LittleDrinks/research-world</a></footer>
+</body>
+</html>

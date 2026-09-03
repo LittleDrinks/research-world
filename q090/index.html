@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>q090 · Is a future of only self-driving cars realistic? · Q001–Q125 结果站</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="top"><a href="../">← 总看板</a> · <a href="../q089/">q089</a> · <strong>q090</strong> · <a href="../q091/">q091</a></nav>
+<main>
+<h1><code>q090</code> Is a future of only self-driving cars realistic?</h1><p class="meta">Engineering &amp; Materials Science · 终态 <span class="badge partial">partial</span> · 模型 contest-qwen/qwen3-max · verified 2026-09-02 · executed retrieval and analysis only</p><blockquote class="summary"><strong>结论摘要：</strong>Only gradual, geofenced automation with redundant sensing and infrastructure is currently defensible.</blockquote><section><h2>作者候选结论（原文）</h2><p>问题界定：自动驾驶汽车能否实现完全取代人类驾驶的未来？核心挑战包括传感器技术局限、通信基础设施不足、车辆间协同能力欠缺以及公众接受度低。当前自动驾驶系统在复杂环境下的可靠性、安全性和可扩展性仍存在根本性障碍。</p>
+<p>已知/未知：已知当前L2-L3级辅助驾驶已商业化，但L4-L5级完全自动驾驶在技术、法规和社会层面均未成熟。未知的是哪种技术路线能最终突破规模化部署的瓶颈，以及社会接受度能否随技术进步而显著提升。</p>
+<p>Direction 1：多传感器融合路线（LiDAR+摄像头+雷达）。证据：学术研究表明多传感器融合提供冗余感知，LiDAR提供精确3D测距，摄像头擅长物体分类，雷达在恶劣天气下稳定（Velasco-Hernandez, 2021）。Waymo等公司采用此方案已实现有限区域的L4运营。反证/局限：成本高昂（单辆车传感器成本超$75,000），系统复杂性导致维护困难，且仍无法处理所有边缘情况（Martínez-Díaz, 2018）。可区分预测：此路线将率先在限定区域（如Robotaxi服务）实现商业化，但难以快速普及到私家车市场。</p>
+<p>Direction 2：纯视觉路线（摄像头-only + AI）。证据：Tesla的纯视觉方案证明深度学习可从2D图像推断3D信息，成本显著降低（仅需$200摄像头），且数据驱动方法具有持续改进潜力。反证/局限：缺乏直接测距能力，在恶劣天气（雾、雪、强光）下性能急剧下降，且依赖大量标注数据和计算资源（Chougule, 2023）。可区分预测：此路线可能通过规模效应和算法优化逐步提升性能，但在极端条件下永远需要人类接管，难以达到真正的L5。</p>
+<p>Direction 3：车联网路线（V2X通信基础设施）。证据：美国交通部研究显示V2X技术可使车辆提前获知盲区危险，减少90%以上交叉路口事故（DOT, 2019）。5G-V2X提供低延迟通信，支持车辆间协同决策。反证/局限：需要大规模基础设施投资（每公里道路改造成本约$50,000），标准化进程缓慢，且无法解决单车感知问题（ScienceDirect, 2023）。可区分预测：此路线将首先在智慧城市试点区域部署，但全球推广需要数十年时间。</p>
+<p>比较选择：多传感器融合路线在安全性上最优但成本最高；纯视觉路线最具商业可行性但安全性存疑；V2X路线提供系统级安全但依赖基础设施。综合考虑，短期内多传感器融合将在特定场景领先，长期看V2X与传感器融合的结合可能是终极方案，纯视觉路线可能作为低成本补充。</p>
+<p>研究计划：数据：收集三种路线在相同测试场景下的性能数据（KITTI、nuScenes数据集）；方法：构建仿真环境对比各路线在1000个边缘案例中的表现；对照/基线：人类驾驶员在相同场景的表现；主要判据：安全性（事故率）、可靠性（接管频率）、成本效益比；产物：技术路线评估报告和路线图；资源：自动驾驶仿真平台（CARLA）、真实道路测试许可、专家评审团队；伦理/安全：所有测试在封闭环境进行，确保零风险；停止/回退：如任一路线在关键安全指标上显著落后于人类驾驶员，则重新评估技术可行性。</p>
+<p>明确结论：完全自动驾驶汽车的未来并非不现实，但实现路径比预期更复杂。单一技术路线难以解决所有挑战，最可能的成功方案是多传感器融合与V2X通信的渐进式结合，在特定场景先行部署，而非一次性全面替代。公众接受度的提升需要透明的安全记录和明确的责任框架，这可能比技术突破更具决定性。</p>
+<p>RESULT: CANDIDATE</p></section><section id="audit"><h2>独立审计（<a href="../audit-076-100/">audit-076-100</a>）</h2><p class="meta">审计模型 gpt-5.6-terra · 2026-09-02 17:50:17+08:00</p><p>审计终态 <span class="badge partial">partial</span></p><p><strong>结论：</strong>Only gradual, geofenced automation with redundant sensing and infrastructure is currently defensible.</p><p><strong>证据评估：</strong>Review-heavy journal set plus DOT/AAA; executed-only.</p><p><strong>判定理由：</strong>Cost and safety figures are unlinked to sources and planned work is not separated.</p></section><section id="sources"><h2>证据链（frontmatter sources）</h2><ul class="sources"><li><a href="https://www.sciencedirect.com/science/article/pii/S2352146518302606">Autonomous vehicles: theoretical and practical challenges</a> — authors: Martínez-Díaz, M. · year: 2018 · type: peer-reviewed journal</li><li><a href="https://ieeexplore.ieee.org/document/10335609/">A Comprehensive Review on Limitations of Autonomous Vehicles</a> — authors: Chougule, A. · year: 2023 · type: peer-reviewed journal</li><li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8003231/">Sensor and Sensor Fusion Technology in Autonomous Vehicles</a> — authors: Velasco-Hernandez, G. · year: 2021 · type: peer-reviewed journal</li><li><a href="https://www.sciencedirect.com/science/article/abs/pii/S0965856423002847">Public acceptance of autonomous vehicles: Examining the factors influencing adoption</a> — authors: Koh, L.Y. · year: 2023 · type: peer-reviewed journal</li><li><a href="https://www.sciencedirect.com/science/article/pii/S2590198223002270">Vehicle-to-everything (V2X) in the autonomous vehicles domain</a> — authors: Various · year: 2023 · type: peer-reviewed journal</li><li><a href="https://www.transportation.gov/v2x">U.S. Department of Transportation V2X Communications</a> — type: government authority</li><li><a href="https://aaafoundation.org/research/users-trust-in-and-concerns-about-automated-driving-systems/">AAA Foundation for Traffic Safety: Users&#x27; Trust in Automated Driving Systems</a> — type: research institution</li></ul></section>
+</main>
+<footer>数据源 <code>evidence/contest-2026/all/</code> · 数据生成时点 2026-09-02 · 全量保留失败与缺口（completed 8, partial 117, waiting_human 0, failed 0） · <a href="https://github.com/LittleDrinks/research-world">LittleDrinks/research-world</a></footer>
+</body>
+</html>
