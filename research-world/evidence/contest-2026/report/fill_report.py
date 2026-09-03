@@ -535,7 +535,7 @@ P20_TABLE = [
     ["qwen3-max 经阿里云百炼 OpenAI 兼容端点；调用凭证截图【待用户补充：不泄露密钥的百炼调用凭证截图】；.env（apikey/baseurl）不入库"],
     ["evidence/contest-2026/all/q001–q125.md＋index.md＋5 份 audit-*.md；结果站走 GitHub Pages（push 即更新）；固定存档 tag：contest-2026-submission"],
     ["q049：project.json、v1–v8、review-v1–v8、receipt-v10、run.md（含对照 attempt 1–7 与显示投影）；q089/q021/q112/q098 同构证据链"],
-    ["[DEPLOY-URL]（部署完成后回填真实可交互地址与示例请求/响应）；T2 Playwright 5 项验收（流式/刷新恢复/无内部泄露/纯文本轮/凭证失败可见）见 web/test-results/t2/"],
+    ["[DEPLOY-URL]（部署完成后回填真实可交互地址与示例请求/响应）；T2 Playwright 5 项验收（流式/刷新恢复/无内部泄露/纯文本轮/凭证失败可见）见 web/test-results/t2/；产品边界：研究工作流以 CLI 交付（Pi Session＋运行账本），Web 界面提供真实模型对话与图谱查看"],
     ["【待用户补充：≤10 分钟粗剪版，上传夸克网盘后回填链接】"],
 ]
 
