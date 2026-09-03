@@ -74,7 +74,7 @@ ai4sci-wt-clean @ 1e31789（1332 tracked 文件，~300M）
 ## 死依赖线索
 | 声明处 | 死依赖 | 核查方式 |
 | --- | --- | --- |
-| research-world/pyproject.toml | `markdown`、`python-dotenv`、`mcp` | server/worker/scripts 全量 import 扫描 0 命中；Dockerfile/compose 无 dotenv 引用 |
+| research-world/pyproject.toml | `python-dotenv`、`mcp` | server/worker 全量 import 扫描 0 命中；Dockerfile/compose 无 dotenv 引用；`markdown` 为活依赖（scripts/build-results-site.py 在用，见第 43 行勘误） |
 | research-world/web/package.json | `d3-force` | src 0 引用 |
 | runtime/pyproject.toml | 无 | 7 项依赖全部命中 |
 删除依赖行同样等 tag 后随代码清理一并执行。
