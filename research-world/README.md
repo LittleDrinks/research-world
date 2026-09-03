@@ -1,4 +1,12 @@
 # Research World
+
+## 评测者入口
+
+- **125 题全量结果站点**：<https://littledrinks.github.io/research-world/>（随仓库维护更新；终态与缺口全量保留）
+- **五深度案例证据链**：`evidence/contest-2026/`（q049/q089/q021/q112/q098 的 V1→独立评审→final 版本链、运行账本与哈希）
+- **本地复现**：仓库根配置 `.env`（小写 `apikey`/`baseurl`，凭证不入库）后执行 `cd research-world && docker compose up --build -d`，前端 <http://localhost:8095>
+- **技术方案报告**：`evidence/contest-2026/report/`（官方模板 P1–P20 填充版）
+- 提交时点存档 tag：`contest-2026-submission`
 单问题研究控制面：SQLite 图谱是唯一真源，artifact 按 SHA-256 寻址；节点上的对话经 orchestrator 决策为 workflow，双审准入。
 ## Start
 ```bash
