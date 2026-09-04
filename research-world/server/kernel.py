@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import secrets
 import sqlite3
 from dataclasses import dataclass, field
@@ -252,7 +253,7 @@ class ResearchKernel:
         return await self._require_threads().create(
             _project_id(command),
             value.get("title", "新对话"),
-            value.get("agent_id", "research-assistant"),
+            value.get("agent_id", "pi-chat"),
             value.get("node_ids", []),
         )
 
@@ -610,6 +611,8 @@ def _allocate_workspace(projects_root: Path) -> Path:
     root.mkdir(parents=True, exist_ok=True)
     workspace = root / secrets.token_hex(12)
     workspace.mkdir(mode=0o700)
+    owner = root.stat()
+    os.chown(workspace, owner.st_uid, owner.st_gid)
     return workspace
 
 

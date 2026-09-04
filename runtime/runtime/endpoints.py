@@ -109,7 +109,14 @@ def provider_endpoint(
 
 
 def load_endpoints() -> list[Endpoint]:
-    return [_openai_endpoint(row) for row in _endpoint_rows()]
+    return [*[_openai_endpoint(row) for row in _endpoint_rows()], _pi_endpoint()]
+
+
+def _pi_endpoint() -> Endpoint:
+    return Endpoint(
+        "pi", "Pi local config", "pi", ("default",), (), 200, None,
+        available=True,
+    )
 
 
 def _endpoint_rows() -> list[dict[str, Any]]:

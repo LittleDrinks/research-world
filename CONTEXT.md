@@ -25,6 +25,8 @@ _Avoid_: 静默删除、改写历史
 _Avoid_: 图谱状态机、强制数据库 Gate
 **Agent Runtime**：一个 Agent 从启动到结束的全流程生命周期，包含 model、API、harness、Tools 与执行环境。
 _Avoid_: Endpoint、模型服务、传输协议
+**Runtime Adapter**：Agent Runtime 内部连接既有 Agent CLI 的声明与协议实现；CLI 拥有模型循环、原生 Tool、认证、上下文与恢复，Adapter 只负责识别、启动、消息传输、取消和 Trajectory 投影。
+_Avoid_: 模型代理、凭据转换层、第二套 Agent loop
 **Session**：一次 Agent 对话的上下文。
 _Avoid_: Thread、研究事实
 **Trajectory**：一个 Agent 的工作日志，包含模型输出、Tool Call、Tool I/O、父子 Session 关系与结束原因。

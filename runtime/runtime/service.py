@@ -18,7 +18,7 @@ from .config import prepare_session_auth
 from .adapters import ToolDefinition, discover_adapters
 from .endpoints import Endpoint, EndpointPool, load_endpoints
 from .runtimes import (
-    CodexRuntimeAdapter,
+    ProcessRuntimeAdapter,
     RuntimeAdapter,
     RuntimePool,
     load_runtimes,
@@ -146,8 +146,7 @@ class Runtime:
     def _eligible_endpoints(self, adapter):
         return (item for item in self.endpoints.values() if item.models
                 and adapter.accepts(item)
-                and (isinstance(adapter, CodexRuntimeAdapter)
-                     or item.public()["available"]))
+                and (adapter.owns_process or item.public()["available"]))
 
     def cancel(self, session_id: str) -> None:
         active = self._active_turns.get(session_id)
@@ -402,7 +401,7 @@ def _validate_spec(spec: AgentSpec, recognized: dict, runtime) -> None:
     if not runtime.accepts(endpoint):
         raise CapabilityNotFound("endpoint is not available for runtime")
     if runtime.owns_process and spec.tools:
-        raise CapabilityNotFound("codex cannot expose selected Tool schemas")
+        raise CapabilityNotFound("process runtime cannot expose selected Tool schemas")
     _validate_dependencies(spec, recognized)
 
 
@@ -460,6 +459,7 @@ def _session_meta(spec, value, skills, tool_plan, capabilities, endpoint):
 
 def _session_state(spec, workspace, value, trace_path, adapter):
     state = {**_launch_identity(spec, workspace, value), "runtime_binding": _adapter_identity(adapter)}
+    state["session_name"] = value.get("session_name") or spec.name
     if spec.runtime.id == "codex":
         home = trace_path.parent / "codex-home"
         prepare_session_auth(home)
@@ -522,7 +522,7 @@ def _require_executable_identity(state, adapter) -> None:
 
 
 def _adapter_identity(adapter):
-    if isinstance(adapter, CodexRuntimeAdapter):
+    if isinstance(adapter, ProcessRuntimeAdapter):
         return adapter.provider.executable_identity
     return None
 
@@ -635,6 +635,7 @@ def _provider_context(meta, state, events):
         "runtime_session_id": events[0]["session_id"],
         "provider_session_id": state.get("provider_session_id"),
         "codex_home": state.get("codex_home", ""),
+        "session_name": state.get("session_name", ""),
     }
 
 
