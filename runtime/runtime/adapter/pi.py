@@ -171,8 +171,11 @@ class PiEventParser:
         if event.get("willRetry") is True:
             return
         message = _last_assistant(event.get("messages"))
-        if self.cancel_requested and message.get("stopReason") == "aborted" and self.agent_error is None:
+        if self.cancel_requested and self.agent_error is None and _aborted_message(message):
             raise _PiCancelled()
+        self._accept_message(message)
+
+    def _accept_message(self, message):
         try:
             _validate_stop_reason(message)
         except PiAdapterError as error:
@@ -450,6 +453,12 @@ def _text_value(item: Any) -> str:
     if not isinstance(value, str):
         raise PiAdapterError("pi_protocol", "pi assistant text is invalid")
     return value
+
+
+def _aborted_message(message):
+    return message.get("stopReason") == "aborted" or (
+        message.get("stopReason") == "error" and message.get("errorMessage") == "This operation was aborted"
+    )
 
 
 def _validate_stop_reason(message: dict[str, Any]) -> None:
