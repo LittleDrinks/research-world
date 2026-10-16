@@ -21,6 +21,7 @@ from .admission import (
 from .artifacts import ArtifactIntegrityError, ArtifactStore
 from .observations import observation_submission
 from .presets import agent_draft, require_capabilities_ready
+from .project_export import export_project
 from .report_delivery import MAX_EVIDENCE_BYTES, artifact_display, render_html, validate_html
 from .reporting import (
     REPORT_INPUT_TOKEN_BUDGET,
@@ -419,6 +420,10 @@ class ResearchKernel:
     def _query_report_projection(self, query: KernelQuery) -> dict:
         _validate_fields(query.values, set(), set())
         return self._report_projection(_project_id(query))
+
+    async def _query_project_export(self, query: KernelQuery) -> bytes:
+        _validate_fields(query.values, set(), set())
+        return await export_project(self._world, self._runtime, _project_id(query))
 
     def _query_report_bibtex(self, query: KernelQuery) -> dict:
         _validate_fields(query.values, {"artifact_id"}, {"artifact_id"})

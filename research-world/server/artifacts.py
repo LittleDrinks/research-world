@@ -39,17 +39,24 @@ class ArtifactStore:
         if not metadata.exists():
             raise KeyError(artifact_id)
         record = self._read_metadata(metadata, artifact_id)
-        if record.get("id") != artifact_id or record.get("sha256") != digest:
+        if not isinstance(record, dict) or record.get("id") != artifact_id or record.get("sha256") != digest or record.get("project_id") != self.project_id:
             raise ArtifactIntegrityError("metadata_mismatch", artifact_id)
         return {**record, "path": str(self._content_path(digest))}
 
     def read(self, artifact_id: str) -> bytes:
         record = self.get(artifact_id)
-        content = Path(record["path"]).read_bytes()
+        try:
+            content = Path(record["path"]).read_bytes()
+        except OSError as error:
+            raise ArtifactIntegrityError("content_missing", artifact_id) from error
         self._verify_content(artifact_id, content)
         if len(content) != record["size"]:
             raise ArtifactIntegrityError("size_mismatch", artifact_id)
         return content
+
+    def records(self) -> list[dict]:
+        paths = sorted(self.root.glob("*/*.json"))
+        return [self.get(f"artifact:{path.stem}") for path in paths]
 
     @staticmethod
     def identifier(content: bytes) -> str:

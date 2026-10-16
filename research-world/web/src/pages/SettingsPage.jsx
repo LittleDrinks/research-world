@@ -1,6 +1,6 @@
-import { Settings } from "lucide-react";
+import { Download, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { setProjectAuto } from "../api";
+import { projectExportUrl, setProjectAuto } from "../api";
 import { EmptyState } from "../components/bits";
 import { useWorld } from "../context/WorldContext";
 import { formatDate } from "../utils/labels";
@@ -20,6 +20,7 @@ export function SettingsPage() {
       <div><dt>规模</dt><dd>{project.node_count} 节点 · {project.run_count} 运行</dd></div>
     </dl>
     <AutoToggle project={project} refresh={refresh} setError={setError} />
+    <ProjectExport projectId={project.id} />
     <ExitProject /></section>;
 }
 
@@ -31,6 +32,11 @@ function AutoToggle({ project, refresh, setError }) {
   };
   return <label className="auto-toggle settings-auto"><input type="checkbox" checked={Boolean(project.auto)} onChange={toggle} />
     <span>Auto 模式：运行获批后自动推进，无需人工逐步确认</span></label>;
+}
+
+
+function ProjectExport({ projectId }) {
+  return <a className="button secondary settings-export" href={projectExportUrl(projectId)} download><Download size={15} />下载研究包</a>;
 }
 
 
