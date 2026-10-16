@@ -11,3 +11,9 @@ prototype
 benchmarks
 datasets
 docs
+
+# Local evaluation tools and outputs.
+/private-evaluation/
+
+.env
+.env.*
