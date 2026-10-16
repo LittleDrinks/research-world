@@ -4,6 +4,7 @@ import json
 
 from .corpus import checksum,document,sessions_for
 from .redact import trajectory
+from .directions import import_directions
 
 
 class Writer:
@@ -25,7 +26,7 @@ class Writer:
         if len(matches)>1:raise ValueError('Duplicate import identity')
         if matches:
             current=matches[0]
-            if current.content!=value or current.artifact_ids!=tuple(artifacts):raise ValueError(f'Imported content changed: {key}')
+            if current.type!=kind or current.content!=value or current.artifact_ids!=tuple(artifacts):raise ValueError(f'Imported content changed: {key}')
             return current
         revoked=self.kernel.history(project.id)
         if any((r.get('object') or {}).get('content',{}).get('origin')==value['origin'] for r in revoked):
@@ -52,6 +53,7 @@ def import_project(writer,item,raw_index):
     writer.link(project,main,archive)
     _versions(writer,project,question,item,attachments)
     _sources(writer,project,main,item)
+    import_directions(writer,project,question,item)
     return {'qid':item['qid'],'project_id':project.id,'artifacts':len(attachments['files']),
             'raw_imported':attachments['raw_count'],'raw_missing':attachments['missing'],'corpus_status':item['corpus_status']}
 
@@ -78,7 +80,7 @@ def _candidate(writer,project,question,item,attachments):
     content={'title':'历史候选报告 · '+item['qid'],'text':body,'historical_status':item['corpus_status'],
              'verified':False,'author_session':item['author'],'model':item['model'],
              'attachments':_names(attachments,ids),'source_sha256':artifact.sha256,'note':'历史研究材料；交付状态不代表科学问题已解决。'}
-    node=writer.record(project,'all/'+item['qid'],'direction',content,ids)
+    node=writer.record(project,'all/'+item['qid'],'source',content,ids)
     writer.link(project,node,question)
     return node
 
@@ -92,7 +94,7 @@ def _versions(writer,project,question,item,attachments):
         related=[artifact.id,*_review_artifacts(writer,item,attachments,path,final)]
         content={'title':f'深度案例 {path.stem}'+(' · 最终交付版' if final else ''),'text':body,'verified':False,
                  'historical_status':deep.get('status') if final else 'historical_version','declared_metadata':json.loads(json.dumps(meta,default=str)),'source_sha256':artifact.sha256,'attachments':_names(attachments,related)}
-        node=writer.record(project,f'{item["qid"]}/{path.name}','direction',content,related)
+        node=writer.record(project,f'{item["qid"]}/{path.name}','source',content,related)
         writer.link(project,node,question)
 
 
