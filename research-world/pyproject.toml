@@ -13,6 +13,7 @@ dependencies = [
   "pybtex>=0.26.1",
   "latex2mathml==3.81.0",
   "pillow==12.3.0",
+  "pyyaml==6.0.3",
 ]
 
 [dependency-groups]
