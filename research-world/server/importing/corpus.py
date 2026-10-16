@@ -67,6 +67,7 @@ def raw_sessions(inventory,source=None):
         path=Path(value['path'])
         if checksum(path.read_bytes())!=value['sha256']:
             raise ValueError(f"Trajectory changed: {value['session_id']}")
+        if not value.get('source_path'):raise ValueError('Missing original trajectory source_path')
         result[value['session_id']]=value
     return result
 

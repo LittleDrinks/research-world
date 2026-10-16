@@ -4,6 +4,11 @@ import re
 
 _SECRET=re.compile(r'(?i)api.?key|authorization|password|secret|access.?token|refresh.?token|^token$|cookie|base_?url')
 _INLINE=re.compile(r'''(?i)(\b(?:[\w-]{0,64}(?:api.?key|password|secret|access.?token|refresh.?token|base_?url)|token|authorization)["']?\s*[:=]\s*["']?)[^\s,"';}]+''')
+_LABEL=r"\b[\w-]{0,64}(?:api.?key|password|secret|access.?token|refresh.?token|base_?url|token|authorization|credential)"
+_PREFIX=_LABEL+r"(?:\\?[\"'])?\s*[:=]\s*"
+_ESCAPED=re.compile(rf"(?is)({_PREFIX})\\([\"'])(.*?)\\\2")
+_QUOTED=re.compile(rf"(?is)({_PREFIX})([\"'])(?:\\.|(?!\2)[^\\])*\2")
+_COOKIE=re.compile(r"(?im)\b(?:set-)?cookie\s*:\s*[^\r\n]+")
 _BEARER=re.compile(r'''(?i)\b(Bearer|Basic)\s+[^\s,"'}]+''')
 _KEY=re.compile(r'\b(?:sk-[A-Za-z0-9_-]{12,}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})')
 _URL_AUTH=re.compile(r'(https?://)[^/\s:@]+:[^/\s@]+@')
@@ -14,6 +19,12 @@ def sanitize(value):
         return {key:'<redacted>' if _SECRET.search(key) else sanitize(item) for key,item in value.items()}
     if isinstance(value,list):return [sanitize(item) for item in value]
     if not isinstance(value,str):return value
+    if value.lstrip().startswith(('{','[','\"')):
+        try:return json.dumps(sanitize(json.loads(value)),ensure_ascii=False)
+        except ValueError:pass
+    value=_COOKIE.sub('Cookie: <redacted>',value)
+    value=_ESCAPED.sub(r'\1<redacted>',value)
+    value=_QUOTED.sub(r'\1<redacted>',value)
     value=_KEY.sub('<redacted>',_URL_AUTH.sub(r'\1<redacted>@',value))
     return _INLINE.sub(r'\1<redacted>',_BEARER.sub(r'\1 <redacted>',value))
 

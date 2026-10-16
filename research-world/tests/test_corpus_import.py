@@ -84,3 +84,26 @@ def test_codex_metadata_and_inline_credentials_are_sanitized(tmp_path):
     cleaned=trajectory(path).decode()
     assert all(value not in cleaned for value in ['private-path','example-secret','private-password','sk-123456789abcdefghijklmnop'])
     assert 'response_item' in cleaned and 'abc' in cleaned
+
+
+@pytest.mark.parametrize('text',[
+    'Cookie: session=fixture-credential; other=fixture-credential',
+    'password="hello fixture-credential world"',
+    r'prefix {\"api_key\": \"fixture-credential\"}',
+    json.dumps({'output':json.dumps({'api_key':'fixture-credential'})}),
+])
+def test_sensitive_text_encodings_are_redacted(text):
+    from server.importing.redact import sanitize
+    assert 'fixture-credential' not in sanitize(text)
+
+
+def test_manifest_preserves_original_location_separately_from_read_path(tmp_path):
+    source,item,kernel=fixture(tmp_path);writer=Writer(kernel,source)
+    raw=tmp_path/'copied-log.jsonl';raw.write_text('{"type":"message","text":"research"}\n')
+    item['raw_sha256']=hashlib.sha256(raw.read_bytes()).hexdigest()
+    info={'path':str(raw),'sha256':item['raw_sha256'],'source_path':'.pi/agent/sessions/original.jsonl','ledger_references':[]}
+    result=import_project(writer,item,{'session-id':info})
+    archive=next(r for r in kernel.list_records(result['project_id']) if r.content['origin']['key']=='archive')
+    manifest=next(a['id'] for a in archive.content['attachments'] if a['name']=='导入清单.json')
+    entry=json.loads(kernel.read_artifact(result['project_id'],manifest))['trajectories'][0]
+    assert entry['source_path']==info['source_path'] and 'path' not in entry
