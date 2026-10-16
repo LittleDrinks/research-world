@@ -40,3 +40,8 @@ def test_reference_is_only_consumed_by_scoring(tmp_path,monkeypatch):
     result=suite(tmp_path).evaluate(execution,task,{'id':1,'evidence':{}},tmp_path)
     assert result['status']=='invalid_output'
     assert result['prediction']=={'id':1,'evidence':{}}
+
+
+def test_unmeasured_recovery_duration_is_not_reported_as_zero():
+    from benchmarks.suites.scifact.suite import _seconds
+    assert _seconds([{'seconds':1},{'seconds':None}]) is None

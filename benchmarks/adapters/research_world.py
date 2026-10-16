@@ -81,14 +81,7 @@ class ResearchWorld:
         self._cancelled.add(str(folder))
         if not (folder/'request.json').exists():
             return {'status':'cancelling','cleanup_pending':True}
-        state=folder/'execution.json'
-        if not state.exists():
-            state=folder/'started.json'
-        if state.exists():
-            result=json.loads(state.read_text())
-        else:
-            request=json.loads((folder/'request.json').read_text())
-            result={'status':'runtime_failed','project_id':request['project_id']}
+        result=_saved_execution(folder)
         self._cleanup(result,folder)
         return result
 
@@ -97,7 +90,7 @@ class ResearchWorld:
             raise TimeoutError('Execution cancelled by caller')
 
     def recover(self, folder):
-        result = json.loads((folder/'execution.json').read_text())
+        result = _saved_execution(folder)
         self._cleanup(result, folder)
         self._export(result, folder)
         save(folder/'execution.json', result)
@@ -155,3 +148,13 @@ def _session_path(result):
 
 def _turn(detail, turn_id):
     return next(turn for turn in detail['run']['turns'] if turn['id']==turn_id)
+
+
+def _saved_execution(folder):
+    result={'status':'runtime_failed','answer':'','seconds':None,
+            'input_tokens':None,'output_tokens':None,'cost':None}
+    for name in ['execution.json','started.json']:
+        if (folder/name).exists():
+            return result | json.loads((folder/name).read_text())
+    request=json.loads((folder/'request.json').read_text())
+    return result | {'project_id':request['project_id']}

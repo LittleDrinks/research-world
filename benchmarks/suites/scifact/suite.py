@@ -48,7 +48,7 @@ class SciFact:
         metrics=score(self.paths['evaluator'],output/'gold.jsonl',root/'predictions.jsonl',root/'metrics.json')
         save(root/'cases.json',cases)
         return {'metrics':metrics,'completed':sum(r['status']=='completed' for r in cases),
-                'total':len(cases),'seconds':round(sum(r['seconds'] for r in cases),3)}
+                'total':len(cases),'seconds':_seconds(cases)}
 
 
 def _diagnose(gold,task,result):
@@ -59,3 +59,8 @@ def _diagnose(gold,task,result):
             'retrieval_missed_documents':sorted(set(expected)-candidates),
             'prediction_matches_gold_labels':actual==expected,
             'note':'retrieval and label differences are observations, not causal attribution'}
+
+
+def _seconds(cases):
+    values=[case.get('seconds') for case in cases]
+    return round(sum(values),3) if all(value is not None for value in values) else None

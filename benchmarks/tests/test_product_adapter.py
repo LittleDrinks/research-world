@@ -118,3 +118,17 @@ def test_recovery_retries_detail_when_only_session_identity_was_saved(tmp_path):
     recovered=product.recover(folder)
     assert recovered['cleanup_pending'] is False and server.cancelled
     assert recovered['turn_id']=='turn' and server.submissions==1
+
+
+def test_request_only_checkpoint_can_recover_an_accepted_run(tmp_path):
+    folder=tmp_path/'case'
+    folder.mkdir()
+    server=AcceptedTimeout()
+    server.body={'agent_id':'agent','message_id':'persisted-message','content':'prompt'}
+    (folder/'request.json').write_text(json.dumps({'project_id':'project','body':server.body}))
+    product=adapter(server)
+    recovered=product.recover(folder)
+    assert recovered['session_id']=='session' and recovered['turn_id']=='turn'
+    assert recovered['cleanup_pending'] is False and server.cancelled
+    assert server.submissions==0
+    assert (folder/'execution.json').exists() and (folder/'trajectory.json').exists()
