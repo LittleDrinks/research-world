@@ -56,3 +56,12 @@ def test_missing_source_spans_are_rejected():
     from server.importing.directions import _extract
     with pytest.raises(ValueError,match='Empty direction'):
         _extract('original',{'title':'Missing excerpt','spans':[]})
+
+
+def test_q112_routes_retain_dispersed_conditions_and_evidence():
+    routes=load_directions(EVIDENCE,'q112')['directions']
+    assert '[S6]' in routes[0]['text'] and 'C_min' in routes[0]['text']
+    assert 'not EN 13432 certification requirements' in routes[1]['text']
+    assert '[S7]' in routes[2]['text'] and 'N_eff' in routes[2]['text']
+    assert 'Remains a hypothesis' in routes[2]['text']
+    assert all('No LCA calculations' in route['text'] for route in routes)
