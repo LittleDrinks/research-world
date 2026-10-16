@@ -1,2 +1,4 @@
-# 项目记忆
-模型访问配置是部署级设置。Research World 设置 facade 只转发测试、保存、掩码读取、替换与清除；Penguin 是唯一持久所有者，Research World、Runtime、Research Kernel、Agent、Session、Trace、control 与 Web 不持久化或返回明文 apikey。
+# 项目状态
+- #320 整合全部未合并产品分支，以 Pi 执行科研 Session；独立验收前不视为交付。
+- 旧产品架构说明已删除；领域词汇在 CONTEXT.md，Pi 执行边界在 ADR 0040，运行步骤在 research-world/README.md。
+- 赛题运行产物与评测证据保留，不作为本次产品验收结果。
