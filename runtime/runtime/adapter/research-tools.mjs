@@ -1,3 +1,4 @@
+import {registerWorkspaceTools} from './workspace-tools.mjs';
 import { Type } from '@sinclair/typebox';
 
 const text = Type.String();
@@ -19,6 +20,7 @@ const definitions = {
 
 export default function(pi) {
   for (const name of JSON.parse(process.env.RW_SELECTED_TOOLS || '[]')) {
+    if(name==='workspace'){registerWorkspaceTools(pi);continue;}
     const [description, parameters] = definitions[name];
     pi.registerTool({name, label: name, description, parameters,
       async execute(_id, args, signal) {

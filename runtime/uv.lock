@@ -1517,6 +1517,7 @@ workspace = [
     { name = "jupyterlab" },
     { name = "matplotlib" },
     { name = "numpy" },
+    { name = "psutil" },
 ]
 
 [package.metadata]
@@ -1540,6 +1541,7 @@ workspace = [
     { name = "jupyterlab", specifier = "==4.6.4" },
     { name = "matplotlib", specifier = "==3.11.2" },
     { name = "numpy", specifier = "==2.5.4" },
+    { name = "psutil", specifier = "==7.2.2" },
 ]
 
 [[package]]

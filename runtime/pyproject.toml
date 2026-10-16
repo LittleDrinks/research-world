@@ -19,6 +19,7 @@ dev = [
   "respx==0.23.1",
 ]
 workspace = [
+    "psutil==7.2.2",
     "ipykernel==7.4.0",
     "jupyterlab==4.6.4",
     "matplotlib==3.11.2",

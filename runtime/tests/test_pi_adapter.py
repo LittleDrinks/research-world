@@ -50,6 +50,13 @@ for line in sys.stdin:
     command = json.loads(line)
     record({"command": command})
     if command["type"] == "abort":
+        if active_message in {"cancel-tool", "cancel-tool-fetch"}:
+            message = {"role":"assistant","content":[],"stopReason":"aborted","errorMessage":"This operation was aborted"}
+            if active_message == "cancel-tool-fetch": message["stopReason"]="error"
+            else: print(json.dumps({"type":"message_update","assistantMessageEvent":{"type":"error","reason":"aborted","error":message}}),flush=True)
+            print(json.dumps({"type":"agent_end","messages":[message]}),flush=True)
+            print(json.dumps({"type":"agent_settled"}),flush=True)
+            raise SystemExit
         if active_message == "cancel-protocol-error":
             print(json.dumps({"type": "unknown"}), flush=True)
             continue
@@ -93,7 +100,7 @@ for line in sys.stdin:
         os._exit(7)
     if command["message"] == "incomplete":
         raise SystemExit
-    if command["message"] == "cancel":
+    if command["message"] in {"cancel", "cancel-tool", "cancel-tool-fetch"}:
         continue
     if command["message"] == "cancel-protocol-error":
         record({"stage": "cancel-ready"})
@@ -716,3 +723,17 @@ def test_invalid_entry_content_and_dates_are_rejected(patch):
     entry={'type':'custom','customType':'state','id':'x','parentId':None,'timestamp':'2026-10-16T00:00:00Z',**patch}
     with pytest.raises(PiAdapterError,match='session entry'):
         PiEventParser().consume(json.dumps({'type':'entry_appended','entry':entry}).encode())
+
+
+@pytest.mark.parametrize("prompt", ["cancel-tool", "cancel-tool-fetch"])
+async def test_user_cancel_after_tool_abort_is_cancelled_not_provider_error(tmp_path,monkeypatch,prompt):
+    _fake_pi(tmp_path)
+    monkeypatch.setenv("PATH",f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    runtime=Runtime(tmp_path/"data",{"pi":PiAdapter.detect()})
+    await runtime.launch({"adapter":"pi","workspace":str(tmp_path)},session_id="tool-session")
+    turn=await runtime.submit("tool-session",{"id":"m","content":prompt})
+    await _wait_for_command(tmp_path,"prompt")
+    await runtime.cancel(turn['id'])
+    events=await _events(runtime,turn['id'])
+    assert events[-1]['data']=={'status':'cancelled','result_text':None}
+    await runtime.close()

@@ -120,7 +120,7 @@ class PiAdapter:
             raise
         finally:
             if self.bridge and handle.token:
-                self.bridge.release(handle.token)
+                await self.bridge.close(handle.token)
 
     async def cancel(self, handle: PiHandle, request: TurnRequest) -> None:
         handle.cancelled = True
@@ -133,6 +133,7 @@ class PiAdapter:
 class PiEventParser:
     def __init__(self):
         self.acknowledged = False
+        self.cancel_requested = False
         self.agent_ended = False
         self.agent_error: PiAdapterError | None = None
         self.finished = False
@@ -144,7 +145,7 @@ class PiEventParser:
         if kind == "response":
             self._response(event)
         elif kind == "message_update":
-            return _text_delta(event)
+            return _text_delta(event, self.cancel_requested and self.agent_error is None)
         elif kind in TOOL_PHASES:
             return [_tool_event(kind, event)]
         elif kind == "entry_appended":
@@ -170,6 +171,11 @@ class PiEventParser:
         if event.get("willRetry") is True:
             return
         message = _last_assistant(event.get("messages"))
+        if self.cancel_requested and self.agent_error is None and _aborted_message(message):
+            raise _PiCancelled()
+        self._accept_message(message)
+
+    def _accept_message(self, message):
         try:
             _validate_stop_reason(message)
         except PiAdapterError as error:
@@ -249,6 +255,7 @@ async def _read(handle, parser, emit) -> None:
             if handle.cancelled:
                 raise _PiCancelled()
             raise _exit_error(process, parser.agent_ended)
+        parser.cancel_requested = handle.cancelled
         for event in parser.consume(line):
             await emit(event)
 
@@ -357,7 +364,7 @@ def _event_type(event: dict[str, Any]) -> str:
     return value
 
 
-def _text_delta(event: dict[str, Any]) -> list[dict[str, Any]]:
+def _text_delta(event: dict[str, Any], cancel_requested=False) -> list[dict[str, Any]]:
     update = event.get("assistantMessageEvent")
     if not isinstance(update, dict):
         raise PiAdapterError("pi_protocol", "pi message update is invalid")
@@ -367,6 +374,7 @@ def _text_delta(event: dict[str, Any]) -> list[dict[str, Any]]:
     if kind in REASONING_PHASES:
         return [_reasoning_event(kind, update)]
     if kind == "error":
+        if cancel_requested and update.get("reason") == "aborted": raise _PiCancelled()
         detail = update.get("error") or update.get("errorMessage")
         raise PiAdapterError("pi_process", _error_detail(detail, "pi model request failed"))
     if kind in MESSAGE_UPDATE_TYPES:
@@ -445,6 +453,12 @@ def _text_value(item: Any) -> str:
     if not isinstance(value, str):
         raise PiAdapterError("pi_protocol", "pi assistant text is invalid")
     return value
+
+
+def _aborted_message(message):
+    return message.get("stopReason") == "aborted" or (
+        message.get("stopReason") == "error" and message.get("errorMessage") == "This operation was aborted"
+    )
 
 
 def _validate_stop_reason(message: dict[str, Any]) -> None:

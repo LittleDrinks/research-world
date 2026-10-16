@@ -47,7 +47,7 @@ async def test_delegate_child_cannot_write_or_delegate():
         async def subscribe(self,*args):
             yield {'type':'turn_end','data':{'status':'completed','result_text':'review'}}
     bridge.runtime=Runtime()
-    token=bridge.bind(request(['graph','record','artifact','delegate','literature']))
+    token=bridge.bind(request(['graph','record','artifact','delegate','literature','workspace']))
     result=await bridge.invoke(token,'delegate',{'instructions':'review','task':'inspect'})
     assert bridge.runtime.spec['tools']==['graph','literature']
     assert result['result_text']=='review'

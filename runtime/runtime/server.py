@@ -10,6 +10,7 @@ from .product_http import product_router
 from .bridge import bridge_router
 from .workspace.manager import Workspaces
 from .workspace.http import workspace_router
+from .workspace.tools import WorkspaceTools, workspace_tools_router
 
 
 def create_app(runtime: Runtime, bridge=None, workspaces=None) -> FastAPI:
@@ -18,9 +19,12 @@ def create_app(runtime: Runtime, bridge=None, workspaces=None) -> FastAPI:
     _input_errors(app)
     app.include_router(runtime_router(runtime))
     app.include_router(product_router(runtime))
-    app.include_router(workspace_router(runtime,workspaces or Workspaces()))
+    workspaces = workspaces or Workspaces()
+    app.include_router(workspace_router(runtime,workspaces))
     if bridge is not None:
+        bridge.workspace_tools = WorkspaceTools(bridge, workspaces)
         app.include_router(bridge_router(bridge))
+        app.include_router(workspace_tools_router(bridge))
 
     @app.get("/health")
     async def health():

@@ -9,6 +9,8 @@ DEFAULT_INSTRUCTIONS = ('围绕科学问题开展研究，区分事实、推断�
     '需要文献时使用 literature。复杂任务可 delegate 独立研究或审查 Agent，'
     '根据返回意见决定下一步。需要保留研究进展时使用 record，证据关系使用 connect。'
     'Question只定义研究范围，不能参与supports/refutes；方向与问题用Direction指向Question的depends_on。'
+    '读写或运行文件时使用workspace的read/write/edit/bash，文件位于/workspace，与JupyterLab共享。'
+    'artifact仅发布不可变研究产物，不用于代替创建工作文件。'
     '禁止编造来源、实验结果或把研究计划写成已完成实验。最后给出简明工作摘要和下一步。')
 
 
@@ -38,7 +40,7 @@ class AgentProfiles:
 def default_profile(model):
     return {'id': 'research-assistant', 'name': '研究助手', 'model': model,
             'instructions': DEFAULT_INSTRUCTIONS, 'thinking': 'high',
-            'skills': [], 'tools': ['graph', 'record', 'connect', 'artifact', 'literature', 'delegate']}
+            'skills': [], 'tools': ['graph', 'record', 'connect', 'artifact', 'literature', 'delegate', 'workspace']}
 
 
 def validate_profile(value):

@@ -21,11 +21,11 @@ function useWorkspace(id){
 
 function Workspace({project}){
   const {state,busy,error,action}=useWorkspace(project.id);
-  return <section className="workspace-page"><header><FlaskConical/><div><h1>实验工作区</h1><p>{project.name} · 文件、Python 与 Pi 共用一个环境</p></div></header>
-    <div className="workspace-card"><div className="workspace-status"><strong>{busy?'正在处理…':LABELS[state?.status]||'正在读取状态…'}</strong>{state?.model&&<span>Pi 默认模型：{state.model}</span>}</div>
+  return <section className="workspace-page"><header><FlaskConical/><div><h1>实验工作区</h1><p>{project.name} · 对话中的 Agent 与你共享文件和 Python 环境</p></div></header>
+    <div className="workspace-card"><div className="workspace-status"><strong>{busy?'正在处理…':LABELS[state?.status]||'正在读取状态…'}</strong>{state?.model&&<span>工作区模型：{state.model}</span>}</div>
       {error&&<p role="alert" className="workspace-error">{error}</p>}
       <div className="form-actions"><WorkspaceActions state={state} busy={busy} action={action}/></div>
-      <p className="muted">停止工作区会结束其中的程序，文件和 Pi 会话会保留。删除项目会同时删除工作区资料。</p></div>
+      <p className="muted">停止工作区会结束其中的程序，文件会保留。删除项目会同时删除工作区资料。</p></div>
     <WorkspaceGuide/>
   </section>;
 }
@@ -41,8 +41,8 @@ function WorkspaceActions({state,busy,action}){
 function WorkspaceGuide(){
   return <div className="workspace-card"><h2>人和 Agent 使用同一份文件</h2><ol>
     <li>打开 JupyterLab，在文件列表创建或上传脚本、数据和 Notebook。</li>
-    <li>点击「+」→ Terminal，在终端输入 <code>pi</code>，让 Agent 读取、编辑和运行工作区里的文件。</li>
-    <li>你也可以直接编辑文件，在另一个终端执行 <code>python hello.py</code>，或选择 Notebook 的 Python (Research World) 内核。</li>
-    </ol><p>工作目录：<code>/workspace</code>。文件、终端和 Notebook 使用同一套 Python；Pi 使用原生会话与文件工具。</p>
-    <p className="muted">这里的 Pi 会话独立于「对话」页面。工作文件可修改，重要结果请另存为研究产物。</p></div>;
+    <li>回到「对话」，让研究助手读取、编辑或运行这些文件；首次使用时会自动启动工作区。</li>
+    <li>你也可以直接编辑文件，在 JupyterLab 的 Terminal 执行 <code>python hello.py</code>，或选择 Notebook 的 Python (Research World) 内核。</li>
+    </ol><p>工作目录：<code>/workspace</code>。文件、终端和 Notebook 使用同一套 Python；对话中的 Agent 使用同一工作目录。</p>
+    <p className="muted">Agent 需启用「工作区」工具。工作文件可修改，重要结果请另存为研究产物。</p></div>;
 }

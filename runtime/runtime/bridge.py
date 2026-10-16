@@ -15,6 +15,7 @@ class ToolBridge:
     def __init__(self):
         self.bindings = {}
         self.runtime = None
+        self.workspace_tools = None
 
     def bind(self, request):
         token = secrets.token_urlsafe(32)
@@ -24,10 +25,18 @@ class ToolBridge:
     def release(self, token):
         self.bindings.pop(token, None)
 
-    async def invoke(self, token, tool, values):
+    def authorize(self, token, tool):
         request = self.bindings.get(token)
         if request is None or tool not in request.agent_snapshot.get('tools', []):
             raise PermissionError('Tool is not selected for this Agent')
+        return request
+
+    async def close(self, token):
+        self.release(token)
+        if self.workspace_tools: await self.workspace_tools.close(token)
+
+    async def invoke(self, token, tool, values):
+        request = self.authorize(token, tool)
         if tool == 'delegate':
             return await self.delegate(request, values)
         if tool == 'literature':
