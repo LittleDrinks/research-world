@@ -32,6 +32,10 @@ jobs:
         run: |
           uv sync --frozen --dev
           uv run pytest -q
+      - name: Test SciFact product adapter
+        run: |
+          uv sync --project benchmarks --frozen
+          uv run --project benchmarks python -m pytest -q benchmarks/tests
       - name: Build web
         working-directory: research-world/web
         run: |
