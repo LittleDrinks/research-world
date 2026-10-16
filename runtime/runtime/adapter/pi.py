@@ -561,7 +561,9 @@ def _agent_options(command, snapshot):
 
 
 def _session_entry(event):
-    entry=event.get('entry')
-    if not isinstance(entry,dict) or not isinstance(entry.get('type'),str):
-        raise PiAdapterError('pi_protocol','pi session entry is invalid')
+    from .session_entry import validate_entry
+    try:
+        entry=validate_entry(event.get('entry'))
+    except ValueError:
+        raise PiAdapterError('pi_protocol','pi session entry is invalid') from None
     return {'type':'session_entry','data':{'entry':entry}}
