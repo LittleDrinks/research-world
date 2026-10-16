@@ -844,4 +844,4 @@ def _export_run(runtime, run):
 
 def _work_events(runtime, turn):
     return [event for event in runtime._trace.read(turn.request.turn_id)
-            if event['type'] in {'tool', 'child_result', 'turn_end'}]
+            if event['type'] in {'delta', 'tool', 'child_result', 'turn_end'}]

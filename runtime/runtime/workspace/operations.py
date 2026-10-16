@@ -2,7 +2,7 @@ import asyncio
 
 
 async def settle(operation):
-    task=asyncio.create_task(operation)
+    task=asyncio.ensure_future(operation)
     cancelled=False
     while not task.done():
         try:await asyncio.shield(task)

@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 TOOLS = {
+    'workspace': '读写、编辑和运行项目工作区文件，与 JupyterLab 共享',
     'graph': '查询当前项目的研究图谱',
     'record': '将研究方向或实验结果写入当前项目',
     'artifact': '保存不可变研究报告或实验产物',

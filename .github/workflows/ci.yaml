@@ -55,6 +55,9 @@ jobs:
           cd web
           npx playwright install --with-deps chromium
           npm test
+      - name: Workspace operation integration
+        working-directory: runtime
+        run: RW_DOCKER_TEST=1 uv run pytest -q tests/test_workspace_execution.py
       - name: Stop Compose
         if: always()
         working-directory: research-world
