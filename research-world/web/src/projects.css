@@ -9,9 +9,9 @@
 .projects-page > main { width: min(1000px, calc(100% - 44px)); margin: 0 auto; padding: 30px 0 70px; }
 .projects-page > .error-toast { width: min(1000px, calc(100% - 44px)); max-width: none; margin: 16px auto 0; }
 .project-list { display: grid; gap: 10px; }
-.project-list > button { width: 100%; min-height: 92px; display: grid; grid-template-columns: minmax(240px, 1fr) 160px 112px 24px; align-items: center; gap: 18px; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--text); background: var(--surface-raised); text-align: left; cursor: pointer; transition: border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard); }
-.project-list > button:hover { border-color: var(--line-strong); box-shadow: 0 4px 14px rgb(16 24 40 / .07); }
-.project-list > button.active { border-color: color-mix(in oklab, var(--state-selected) 55%, var(--line)); box-shadow: 0 0 0 3px color-mix(in oklab, var(--state-selected) 18%, transparent); }
+.project-open { width: 100%; min-height: 92px; display: grid; grid-template-columns: minmax(240px, 1fr) 160px 112px 24px; align-items: center; gap: 18px; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--text); background: var(--surface-raised); text-align: left; cursor: pointer; transition: border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard); }
+.project-row:hover { border-color: var(--line-strong); box-shadow: 0 4px 14px rgb(16 24 40 / .07); }
+.project-row.active { border-color: color-mix(in oklab, var(--state-selected) 55%, var(--line)); box-shadow: 0 0 0 3px color-mix(in oklab, var(--state-selected) 18%, transparent); }
 .project-name { min-width: 0; }
 .project-name b, .project-name small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .project-name b { font-size: 15px; color: var(--text-strong); }
@@ -26,9 +26,13 @@
   .projects-brand small { display: none; }
   .projects-bar .button { width: 38px; padding: 0; font-size: 0; }
   .projects-page > main { width: calc(100% - 28px); padding-top: 34px; }
-  .project-list > button { min-height: 112px; grid-template-columns: minmax(0, 1fr) 22px; gap: 8px; }
+  .project-open { min-height: 112px; grid-template-columns: minmax(0, 1fr) 22px; gap: 8px; }
   .project-counts, .project-list time { grid-column: 1; }
   .project-list svg { grid-column: 2; grid-row: 1 / 4; }
 }
 
 .project-search{display:flex;align-items:center;gap:14px;margin-bottom:20px;font-size:15px}.project-search input{flex:1;max-width:560px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-raised);color:var(--text);font-size:16px}
+
+.project-row{display:flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface-raised)}
+.project-row .project-open{flex:1;min-width:0;border:0;background:transparent;box-shadow:none}
+.project-delete{flex:none;margin-right:14px;color:var(--state-failed)}

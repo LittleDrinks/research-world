@@ -28,7 +28,10 @@ def create_product(kernel, runtime, profiles, workspace):
     _agent_routes(app, runtime, profiles)
     _project_routes(app, kernel, runtime)
     _artifact_routes(app, kernel)
-    app.include_router(session_router(SessionControl(kernel, runtime, profiles, workspace)))
+    control=SessionControl(kernel, runtime, profiles, workspace)
+    app.include_router(session_router(control))
+    from .project_control import project_deletion_router
+    app.include_router(project_deletion_router(control))
     app.include_router(kernel_graph_router(kernel))
     _frontend(app)
     return app

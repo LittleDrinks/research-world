@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import secrets
+import hashlib
+import shutil
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
@@ -148,6 +150,8 @@ class KernelInterface(Protocol):
 
     def list_projects(self) -> list[Project]: ...
 
+    def delete_project(self, project_id): ...
+
     def create_session(
         self, project_id: str, session_id: str, title: str = ""
     ) -> Session: ...
@@ -252,6 +256,16 @@ class _SQLiteKernel(KernelInterface):
                 "SELECT id,name,question,created_at FROM kernel_projects ORDER BY created_at,id"
             ).fetchall()
         return [Project(*row) for row in rows]
+
+    def delete_project(self, project_id):
+        self.get_project(project_id)
+        directory=self._artifacts/hashlib.sha256(project_id.encode()).hexdigest()
+        if directory.is_symlink():directory.unlink()
+        elif directory.exists():shutil.rmtree(directory)
+        with self._connect() as connection:
+            connection.execute('DELETE FROM kernel_session_archives WHERE project_id=?',(project_id,))
+            connection.execute('DELETE FROM kernel_revocations WHERE project_id=?',(project_id,))
+            connection.execute('DELETE FROM kernel_projects WHERE id=?',(project_id,))
 
     def create_session(
         self, project_id: str, session_id: str, title: str = ""

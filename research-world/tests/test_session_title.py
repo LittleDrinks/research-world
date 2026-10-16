@@ -1,3 +1,4 @@
+import asyncio
 from types import SimpleNamespace
 import pytest
 
@@ -21,7 +22,7 @@ async def test_title_agent_has_only_first_message_and_no_tools(tmp_path):
     project=kernel.create_project('Orbit','Question')
     session=kernel.create_session(project.id,'session','first message')
     runtime=TitleRuntime()
-    await _title(kernel,runtime,project.id,session.id,{'model':'test','tools':['graph'],'skills':['research-report']},'Why stable?')
+    await _title(kernel,runtime,project.id,session.id,{'model':'test','tools':['graph'],'skills':['research-report']},'Why stable?',asyncio.Lock())
     assert runtime.spec['tools']==runtime.spec['skills']==[]
     assert runtime.spec['thinking']=='off'
     assert 'message_to_summarize' in runtime.message['content']

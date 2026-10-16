@@ -12,6 +12,7 @@ def product_router(runtime):
     _session_routes(router, runtime)
     _turn_routes(router, runtime)
     _export_route(router, runtime)
+    _project_routes(router, runtime)
     return router
 
 
@@ -54,3 +55,12 @@ def _export_route(router, runtime):
     @router.get('/sessions/{session_id}/export')
     async def export(session_id: str):
         return runtime.export_session(session_id)
+
+
+def _project_routes(router,runtime):
+    from .errors import RuntimeConflictError
+
+    @router.delete('/projects/{project_id}')
+    async def delete(project_id: str):
+        try:return await runtime.delete_project(project_id)
+        except RuntimeConflictError as error:raise HTTPException(409,str(error)) from error

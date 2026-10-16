@@ -221,6 +221,24 @@ class Runtime:
             included = expanded
         return [_export_run(self, self._runs[run_id]) for run_id in sorted(included)]
 
+    async def delete_project(self, project_id):
+        async with self._registry_lock:
+            self._require_open()
+            ids={r.id for r in self._runs.values() if r.agent_snapshot.get('project_id')==project_id}
+            while extra:={r.id for r in self._runs.values() if r.parent_run_id in ids}-ids:ids.update(extra)
+            turns=[t for t in self._turns.values() if t.request.run_id in ids]
+            if any(t.status=='running' or t.task is not None and not t.task.done() for t in turns):
+                raise RuntimeConflictError('项目仍有运行中的任务，请先停止后再删除')
+            self._store.delete_runs(ids)
+            for turn in turns:
+                self._trace.forget(turn.request.turn_id)
+                self._turns.pop(turn.request.turn_id)
+            for run_id in ids:
+                run=self._runs.pop(run_id)
+                self._session_runs.pop(run.session_id,None)
+                self._delegations.pop(run_id,None)
+            return {'deleted_runs':len(ids)}
+
     def inspect_turn(self, turn_id):
         return _turn_view(self._turn(turn_id))
 
@@ -310,13 +328,13 @@ class Runtime:
         queue = self._trace.watch(turn_id)
         cursor = after_seq
         try:
-            while True:
+            while self._trace.exists(turn_id):
                 values = self._trace.read(turn_id, cursor)
                 for event in values:
+                    if not self._trace.exists(turn_id):return
                     cursor = event["seq"]
                     yield event
-                    if event["type"] == "turn_end":
-                        return
+                    if event["type"] == "turn_end":return
                 if values:
                     continue
                 if self._trace.terminal(turn_id):
