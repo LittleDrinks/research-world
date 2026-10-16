@@ -14,6 +14,7 @@ Remote root: `/data/zsm/ai4sci-design-bench-20260809`.
 | 图谱中的候选假设能否迁移到未见样本 | HypoBench | MIT 代码与 197 个数据配置已固定远端；代码编译通过，预检发现 18 条上游失效文件引用 | 用 accuracy/F1 和 OOD 退化裁决候选效用；只运行预检通过的配置，不裁决因果、实验真实性或创新性 |
 | 文献进入图谱前应提取多少证据 | EvidenceBench | commit `bf1d9633` 的 Original 96/37/293、18,462,271 bytes、1688 组 gold、16 个 null Results 全通过；`e5-large-v2@f169b11e` 20/20 文件完整，oracle=1.0；官方 with-instruction E5 全量 293 条 ER@optimal=0.2179172535、ER@10=0.4063205754，均 exit 0、零预算违规，147/147 checksum 通过 | 只裁决句级 Aspect Recall，不裁决 hypothesis 真伪；上游 preprocessor 的 dict 迭代缺陷在运行副本修正，官方 pipeline、模型、512 token 截断、scorer 与 evaluator 不变 |
 | 图谱证据能否替代整篇文献输入 | SciFact | 官方摘要 top-3 Hit one 0.8467；历史 claim-evidence 图为 0.74，有证据样本 0.5851/理论上限 0.5957 | 图谱替代旧对话，不替代新文献检索；摘要不代表多模态全文 |
+| Research World 来源检索能否完成 SciFact dev | SciFact 官方 tar、source/evaluator 固定 revision | BLOCKED：离线完整性门通过 `809/300/300/5183`、gold 引用、tar SHA-256 与 top-3；Runtime 最小真实请求 HTTP 403，完整 dev 为 0/300，未计分 | 仅缺经授权的模型与 embedding API 连通性；不是系统检索分数 |
 | 事实纠正应全局共享还是按需披露 | SciFact | Mini scoped/global 为 15/20、14/20；Luna 均 16/20；全局输入多用约 10.7–12.1 倍 Token | 使用 oracle evidence，只测作用域，不测自动检索 |
 | 图谱缺证据时能否自动升级检索 | SciFact | train calibration 阈值 0.38294 原样迁移 dev：Hit one 0.8830、回退 43.1% | 单数据集 TF-IDF；返回证据仍需审核 |
 | 候选实验能否真实复现 | ResearchHarness + Matbench | 一个 Luna 行动经执行、泄漏驳回、原会话退修、独立评分与无会话重跑；prediction 哈希一致，MAE 0.71517 | 仅一个 CPU 行动；未测失败执行和环境漂移 |
