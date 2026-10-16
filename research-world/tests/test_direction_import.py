@@ -65,3 +65,5 @@ def test_q112_routes_retain_dispersed_conditions_and_evidence():
     assert '[S7]' in routes[2]['text'] and 'N_eff' in routes[2]['text']
     assert 'Remains a hypothesis' in routes[2]['text']
     assert all('No LCA calculations' in route['text'] for route in routes)
+    assert all('Economic failure' not in route['text'] for route in routes[:2])
+    assert 'Compostable container screening' not in routes[2]['text']
