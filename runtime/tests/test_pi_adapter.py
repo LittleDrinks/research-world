@@ -672,3 +672,17 @@ def test_pi_detection_reports_incompatible_version(tmp_path, monkeypatch):
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     with pytest.raises(PiAdapterError, match="pi_configuration: unsupported pi version: 0.85.0"):
         PiAdapter.detect()
+
+
+def test_custom_session_entry_is_recorded_without_ending_turn():
+    from runtime.adapter.pi import PiEventParser
+    parser=PiEventParser()
+    value={'type':'entry_appended','entry':{'type':'custom','customType':'state','data':{'phase':'ready'}}}
+    assert parser.consume(json.dumps(value).encode())==[{'type':'session_entry','data':{'entry':value['entry']}}]
+    assert parser.finished is False
+
+
+def test_malformed_custom_session_entry_is_rejected():
+    from runtime.adapter.pi import PiEventParser
+    with pytest.raises(PiAdapterError,match='session entry'):
+        PiEventParser().consume(b'{"type":"entry_appended","entry":null}')
