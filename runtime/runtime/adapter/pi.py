@@ -145,7 +145,7 @@ class PiEventParser:
         if kind == "response":
             self._response(event)
         elif kind == "message_update":
-            return _text_delta(event)
+            return _text_delta(event, self.cancel_requested and self.agent_error is None)
         elif kind in TOOL_PHASES:
             return [_tool_event(kind, event)]
         elif kind == "entry_appended":
@@ -361,7 +361,7 @@ def _event_type(event: dict[str, Any]) -> str:
     return value
 
 
-def _text_delta(event: dict[str, Any]) -> list[dict[str, Any]]:
+def _text_delta(event: dict[str, Any], cancel_requested=False) -> list[dict[str, Any]]:
     update = event.get("assistantMessageEvent")
     if not isinstance(update, dict):
         raise PiAdapterError("pi_protocol", "pi message update is invalid")
@@ -371,6 +371,7 @@ def _text_delta(event: dict[str, Any]) -> list[dict[str, Any]]:
     if kind in REASONING_PHASES:
         return [_reasoning_event(kind, update)]
     if kind == "error":
+        if cancel_requested and update.get("reason") == "aborted": raise _PiCancelled()
         detail = update.get("error") or update.get("errorMessage")
         raise PiAdapterError("pi_process", _error_detail(detail, "pi model request failed"))
     if kind in MESSAGE_UPDATE_TYPES:

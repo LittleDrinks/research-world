@@ -52,6 +52,7 @@ for line in sys.stdin:
     if command["type"] == "abort":
         if active_message == "cancel-tool":
             message = {"role":"assistant","content":[],"stopReason":"aborted","errorMessage":"This operation was aborted"}
+            print(json.dumps({"type":"message_update","assistantMessageEvent":{"type":"error","reason":"aborted","error":message}}),flush=True)
             print(json.dumps({"type":"agent_end","messages":[message]}),flush=True)
             print(json.dumps({"type":"agent_settled"}),flush=True)
             raise SystemExit
