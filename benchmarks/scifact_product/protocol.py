@@ -5,6 +5,7 @@ import tarfile
 from pathlib import Path
 
 from benchmarks.literature_bench.scifact_integrity import read_jsonl, verify
+from benchmarks.product_adapter import save
 
 BASE_INSTRUCTIONS = ('Verify the scientific claim against ONLY the supplied retrieved abstracts. '
     'Return one JSON object, no markdown: {"id": CLAIM_ID, "evidence": {"DOC_ID": '
@@ -12,7 +13,7 @@ BASE_INSTRUCTIONS = ('Verify the scientific claim against ONLY the supplied retr
     'Use evidence={} for insufficient evidence. Select only necessary sentences, but include a complete rationale even if it needs more than three. '
     'A valid evidence set must cover the complete claim, not just shared terms. '
     'Never invent documents or sentence indices. Do not access external information.')
-RESEARCH_INSTRUCTIONS = (' First use record to save candidate source evidence and a provisional direction. '
+RESEARCH_INSTRUCTIONS = (' First use record once to save a concise provisional direction with the proposed verification and evidence indices, without copying full abstracts into the graph. '
     'Then delegate exactly one independent review, passing the claim and ALL supplied abstracts '
     'verbatim to that fresh Agent, plus your proposed answer. The reviewer must not access '
     'external sources. Use its feedback to finalize the requested JSON; do not return a report.')
@@ -86,10 +87,6 @@ def write_jsonl(path, rows):
     path.write_text(''.join(json.dumps(row,ensure_ascii=False)+'\n' for row in rows))
 
 
-def save(path, value):
-    path.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
-
-
 def _verify_files(args):
     with tarfile.open(args.archive) as archive:
         for name in ['corpus.jsonl','claims_train.jsonl','claims_dev.jsonl','claims_test.jsonl']:
@@ -107,3 +104,21 @@ def _verify_scorer(evaluator, output):
     expected=json.loads((fixture/'expected_metrics_small.json').read_text())
     if actual!=expected:
         raise ValueError('Official scorer fixture mismatch')
+
+
+def agent_profile(arm, run_id, model, thinking):
+    agent_id=f'scifact-{run_id}-{arm}'
+    return {'id':agent_id,'name':agent_id,'model':model,'thinking':thinking,
+            'instructions':BASE_INSTRUCTIONS+(RESEARCH_INSTRUCTIONS if arm=='research' else ''),
+            'tools':[] if arm=='baseline' else ['graph','record','connect','delegate'],'skills':[]}
+
+
+def interpret(execution, task):
+    result={**execution,'id':task['id'],'prediction':{'id':task['id'],'evidence':{}}}
+    if execution['status']!='completed':
+        return result
+    try:
+        result['prediction']=prediction(execution['answer'],task)
+    except (ValueError,TypeError,KeyError):
+        result['status']='invalid_output'
+    return result

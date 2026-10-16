@@ -5,9 +5,9 @@ import subprocess
 import uuid
 from pathlib import Path
 
-from .client import Product
+from benchmarks.product_adapter import ResearchWorld
 from .report import report
-from .protocol import prepare, save, score, write_jsonl
+from .protocol import prepare, save, score, write_jsonl, agent_profile, interpret
 
 
 def arguments():
@@ -31,16 +31,23 @@ def main():
         raise ValueError('Positive limit and timeout required')
     args.output.mkdir(parents=True,exist_ok=False)
     gold,tasks,verified=prepare(args,args.output)
-    product=Product(args.url,args.runtime_url,args.model,args.thinking,args.timeout)
-    product.model=args.model or product.request('GET','/runtime/catalog')['default_model']
+    product=ResearchWorld(args.url,args.runtime_url,args.timeout)
+    args.model=args.model or product.catalog()['default_model']
     run_id=uuid.uuid4().hex[:8]
-    manifest=_manifest(args,verified,product.model)
+    manifest=_manifest(args,verified,args.model)
     save(args.output/'manifest.json',manifest)
-    results={arm:_arm(args,product,arm,run_id,gold,tasks) for arm in ('baseline','research')}
+    results=_run_arms(args,product,run_id,gold,tasks)
     save(args.output/'summary.json',{'split':args.split,'n':len(tasks),'arms':results,
          'claim':'smoke only; no equal-token-budget causal comparison','cost':None})
     report(args.output)
     print(json.dumps(results,ensure_ascii=False),flush=True)
+
+
+def _run_arms(args,product,run_id,gold,tasks):
+    try:
+        return {arm:_arm(args,product,arm,run_id,gold,tasks) for arm in ('baseline','research')}
+    finally:
+        product.close()
 
 
 def _manifest(args,verified,model):
@@ -60,18 +67,27 @@ def _source_trees():
 def _arm(args,product,arm,run_id,gold,tasks):
     root=args.output/arm
     root.mkdir()
-    profile=product.profile(arm,run_id)
+    profile=agent_profile(arm,run_id,args.model,args.thinking)
+    product.install_agent(profile)
     save(root/'agent.json',profile)
     results=[]
     for task in tasks:
         print(f'{arm}: claim {task["id"]}',flush=True)
-        results.append(product.run_case(task,profile['id'],root/str(task['id'])))
+        results.append(_execute_case(product,task,profile,root))
     predictions=[r['prediction'] for r in results]
     write_jsonl(root/'predictions.jsonl',predictions)
     metrics=score(args.evaluator,args.output/'gold.jsonl',root/'predictions.jsonl',root/'metrics.json')
     save(root/'cases.json',[_case_score(args,root,g,t,r) for g,t,r in zip(gold,tasks,results)])
     return {'metrics':metrics,'completed':sum(r['status']=='completed' for r in results),
             'total':len(results),'seconds':round(sum(r['seconds'] for r in results),3)}
+
+
+def _execute_case(product,task,profile,root):
+    folder=root/str(task['id'])
+    execution=product.execute(task['claim'],json.dumps(task,ensure_ascii=False),profile['id'],folder)
+    result=interpret(execution,task)
+    save(folder/'result.json',result)
+    return result
 
 
 def _diagnose(gold,task,result):
