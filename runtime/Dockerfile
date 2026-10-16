@@ -12,6 +12,7 @@ COPY --from=agent-clis /usr/local/lib/node_modules/@openai/codex/vendor/x86_64-u
 COPY --from=agent-clis /usr/local/bin/node /usr/local/bin/node
 COPY --from=agent-clis /usr/local/lib/node_modules/@earendil-works/pi-coding-agent /usr/local/lib/node_modules/@earendil-works/pi-coding-agent
 RUN ln -s /usr/local/lib/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js /usr/local/bin/pi
+COPY research-world/kernel-contract/ /research-world/kernel-contract/
 COPY runtime/pyproject.toml runtime/uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     sed -i 's#https://files.pythonhosted.org/packages/#https://mirrors.aliyun.com/pypi/packages/#g' uv.lock \

@@ -23,7 +23,7 @@ function useRefresh(state, desiredProject) {
       }
       desiredProject.current = result.active_project_id || "";
       if (result.active_project_id) localStorage.setItem(LAST_PROJECT_KEY, result.active_project_id);
-      state.setData({ ...result, agents });
+      state.setData({ ...EMPTY, ...result, agents });
       state.setProjectId(result.active_project_id || "");
       state.setError("");
       return result;

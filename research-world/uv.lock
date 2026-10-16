@@ -652,6 +652,11 @@ wheels = [
 ]
 
 [[package]]
+name = "research-kernel-contract"
+version = "0.1.0"
+source = { directory = "kernel-contract" }
+
+[[package]]
 name = "research-world"
 version = "0.1.0a3"
 source = { editable = "." }
@@ -668,6 +673,7 @@ dependencies = [
     { name = "pybtex" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
+    { name = "research-kernel-contract" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
@@ -692,6 +698,7 @@ requires-dist = [
     { name = "pybtex", specifier = ">=0.26.1" },
     { name = "python-dotenv", specifier = "==1.1.1" },
     { name = "pyyaml", specifier = "==6.0.3" },
+    { name = "research-kernel-contract", directory = "kernel-contract" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.35.0" },
 ]
 

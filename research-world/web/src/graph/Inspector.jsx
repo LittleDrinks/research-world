@@ -1,162 +1,94 @@
-import { Activity, Check, Copy, GitBranch, Play } from "lucide-react";
+import { Check, Copy, GitBranch, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { useWorld } from "../context/WorldContext";
-import { nodeText, RUN_STATUS } from "../utils/labels";
-import { AdmissionControl } from "../components/AdmissionControl";
+import { Modal } from "../components/Modal";
+import { ArtifactDownload } from "../components/map/ArtifactDownload";
+import { KIND_LABELS, recordText } from "../utils/labels";
 
 
-const LABELS = { question: "问题", source: "来源", direction: "方向", experiment: "实验",
-  pending: "待审查", admitted: "已入图", ghost: "已驳回", proposed: "待验证", supported: "已支持", refuted: "已反驳",
-  uncertain: "不确定", approve: "通过", reject: "驳回", support: "支持方", challenge: "质疑方", mechanical: "机械校验" };
-
-
-export function Inspector({ node, nodes, edges, run, onSelect, onStart, onOpen }) {
-  if (!node) return <aside className="inspector inspector-empty">选择节点查看上下文。</aside>;
-  return <aside className="inspector"><div className="inspector-scroll"><NodeHeader node={node} run={run} onStart={onStart} onOpen={onOpen} />
-    {node.kind === "source" ? <SourceRecord node={node} onSelect={onSelect} /> : <NodeRecord node={node} />}
-    <Relations node={node} nodes={nodes} edges={edges} onSelect={onSelect} />
-    <Claims node={node} /><Reviews node={node} />{node.life_state === "admitted" && <NodeIdEntry node={node} />}</div></aside>;
-}
-
-
-function NodeHeader({ node, run, onStart, onOpen }) {
-  const title = nodeText(node);
-  return <header className="inspector-header"><div className="eyebrow"><span>{LABELS[node.kind]}</span><span>{LABELS[node.life_state]}</span>{node.direction_status && <span>{LABELS[node.direction_status]}</span>}</div>
-    <h1>{title}</h1>{node.rejection_reason && <p className="rejection-reason">{node.rejection_reason}</p>}
-    <AdmissionControl node={node} />
-    {run && <button className="button primary workflow-start" onClick={() => onOpen(run)}><Activity size={16} />{RUN_STATUS[run.status] || run.status} · 查看轨迹</button>}
-    {!run && node.life_state === "admitted" && <PipelineLauncher node={node} onStart={onStart} />}</header>;
-}
-
-
-function PipelineLauncher({ node, onStart }) {
-  const { data } = useWorld();
-  const pipelines = data.pipelines;
-  const [pipelineId, setPipelineId] = useState("");
+export function Inspector({ node, nodes, edges, artifacts = [], onSelect, onDeleteRecord, onDeleteRelation }) {
+  const [pending, setPending] = useState(null);
   const [busy, setBusy] = useState(false);
-  const effective = pipelines.some((item) => item.id === pipelineId) ? pipelineId : pipelines[0]?.id || "";
-  if (!pipelines.length) return null;
-  const launch = () => { setBusy(true); Promise.resolve(onStart(node, effective)).finally(() => setBusy(false)); };
-  return <div className="pipeline-launcher">
-    <select aria-label="选择流程" value={effective} onChange={(event) => setPipelineId(event.target.value)}>
-      {pipelines.map((pipeline) => <option key={pipeline.id} value={pipeline.id}>{pipeline.name || pipeline.id}</option>)}</select>
-    <button className="button primary" disabled={busy || !effective} onClick={launch}><Play size={15} />发起运行</button></div>;
+  if (!node) return <aside className="inspector inspector-empty">选择节点查看上下文。</aside>;
+  const confirm = async () => {
+    if (!pending) return;
+    setBusy(true);
+    try { await (pending.kind === "Record" ? onDeleteRecord(pending.id) : onDeleteRelation(pending.id)); setPending(null); }
+    catch { /* parent reports the failed operation */ }
+    finally { setBusy(false); }
+  };
+  return <aside className="inspector"><div className="inspector-scroll"><NodeHeader node={node} />
+    <NodeRecord node={node} /><RecordActions node={node} onRequest={() => setPending({ kind: "Record", id: node.id })} />
+    <Relations node={node} nodes={nodes} edges={edges} onSelect={onSelect} onDelete={(edge) => setPending({ kind: "Relation", id: edge.id })} />
+    <Artifacts node={node} artifacts={artifacts} /><NodeIdEntry node={node} />
+  </div><DeleteDialog pending={pending} busy={busy} onClose={() => setPending(null)} onConfirm={confirm} /></aside>;
+}
+
+
+function NodeHeader({ node }) {
+  return <header className="inspector-header"><div className="eyebrow"><span>{KIND_LABELS[node.kind] || node.kind}</span></div>
+    <h1>{recordText(node)}</h1></header>;
 }
 
 
 function NodeRecord({ node }) {
-  const entries = Object.entries(node.payload || {}).filter(([, value]) => value !== null && typeof value !== "object");
-  return <section className="inspector-section"><h2>节点记录</h2><dl className="node-record">{entries.map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{String(value)}</dd></div>)}</dl></section>;
+  const entries = Object.entries(node.content);
+  return <section className="inspector-section"><h2>节点记录</h2><dl className="node-record">
+    {entries.map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{formatContent(value)}</dd></div>)}
+  </dl></section>;
 }
 
 
-function SourceRecord({ node, onSelect }) {
-  const value = node.payload || {};
-  const relation = value.relationship || {};
-  return <><section className="inspector-section"><h2>书目元数据</h2><dl className="node-record">
-    <Record label="作者" value={(value.authors || []).join("、")} />
-    <Record label="年份 / Venue" value={[value.year, value.venue].filter(Boolean).join(" · ")} />
-    <Record label="DOI / URL" value={value.doi || value.url} />
-    <Record label="类型 / 许可" value={[value.source_type, value.license].filter(Boolean).join(" · ")} />
-    <Record label="访问状态" value={value.access_status} /></dl></section>
-    <ArtifactRecord artifact={value.artifact} />
-    <RelationshipRecord relation={relation} onSelect={onSelect} />
-    <RetrievalRecord retrieval={value.retrieval} /></>;
+function formatContent(value) {
+  return typeof value === "string" ? value : JSON.stringify(value);
 }
 
 
-function ArtifactRecord({ artifact }) {
-  return <section className="inspector-section"><h2>全文 Artifact</h2>{artifact ? <dl className="node-record">
-    <Record label="Artifact" value={artifact.id} /><Record label="Project File" value={artifact.project_file} />
-    <Record label="Media type" value={artifact.media_type} /><Record label="SHA-256" value={artifact.sha256} /></dl>
-    : <p className="muted">全文不可得</p>}</section>;
+function RecordActions({ node, onRequest }) {
+  return <section className="inspector-section"><button className="button secondary" aria-label={`删除 Record ${node.id}`} title={`删除 Record ${node.id}`} onClick={onRequest}><Trash2 size={15} />删除 Record</button></section>;
 }
 
 
-function RelationshipRecord({ relation, onSelect }) {
-  return <section className="inspector-section"><h2>Admission / Direction</h2><dl className="node-record">
-    <Record label="用途" value={relation.use} /><Record label="相关性" value={relation.relevance} />
-    <div><dt>Direction</dt><dd><button className="text-link" onClick={() => onSelect(relation.direction_id)}>
-      {relation.direction_id}</button></dd></div>
-    <Record label="Claims" value={(relation.claims || []).join("；") || "无"} />
-    <Record label="原文定位" value={(relation.locations || []).map(locationText).join("；") || "无"} /></dl></section>;
+function Relations({ node, nodes, edges, onSelect, onDelete }) {
+  const related = relatedRecords(node, nodes, edges);
+  return <section className="inspector-section"><h2><GitBranch size={15} />直接关系</h2>{related.length ? <ul className="relation-list">
+    {related.map(({ edge, adjacentId, record }) => <li key={edge.id}><div className="relation-row"><button className="relation-link" onClick={() => onSelect(adjacentId)}><span className={`polarity ${edge.polarity}`}>{relationLabel(edge.polarity)}</span><b>{record ? recordText(record) : adjacentId}</b></button><button className="icon-button" aria-label={`删除 Relation ${edge.id}`} title={`删除 Relation ${edge.id}`} onClick={(event) => { event.stopPropagation(); onDelete(edge); }}><Trash2 size={15} /></button></div></li>)}
+  </ul> : <p className="muted">暂无关系</p>}</section>;
 }
 
 
-function RetrievalRecord({ retrieval = {} }) {
-  return <section className="inspector-section"><h2>检索核验</h2><dl className="node-record">
-    <Record label="Query" value={retrieval.query} /><Record label="Database" value={retrieval.database} />
-    <Record label="核验时间" value={retrieval.verified_at} /></dl></section>;
+function DeleteDialog({ pending, busy, onClose, onConfirm }) {
+  if (!pending) return null;
+  const kind = pending.kind;
+  return <Modal title={`确认删除 ${kind}`} open onClose={busy ? () => {} : onClose}>
+    <div className="delete-confirmation"><p>将删除 {kind}。</p><code className="mono">{pending.id}</code>
+      {kind === "Record" ? <p>直接 Relation 将一并移除，关联 Artifact 保留。</p> : <p>两端 Record 保持不变。</p>}
+      <div className="form-actions"><button type="button" className="button secondary" disabled={busy} onClick={onClose}>取消</button><button type="button" className="button primary" disabled={busy} onClick={onConfirm}><Trash2 size={15} />{busy ? "删除中..." : `删除 ${kind}`}</button></div>
+    </div>
+  </Modal>;
 }
 
 
-function Record({ label, value }) {
-  return <div><dt>{label}</dt><dd>{String(value ?? "")}</dd></div>;
+function relatedRecords(node, nodes, edges) {
+  const byId = new Map(nodes.map((record) => [record.id, record]));
+  return edges.filter((edge) => edge.source === node.id || edge.target === node.id).map((edge) => {
+    const adjacentId = edge.source === node.id ? edge.target : edge.source;
+    return { edge, adjacentId, record: byId.get(adjacentId) };
+  });
 }
 
 
-function locationText(location) {
-  return `${location.locator}：${location.quote}`;
+function relationLabel(polarity) {
+  return { supports: "支持", refutes: "反驳", depends_on: "依赖" }[polarity] || polarity;
 }
 
 
-function Relations({ node, nodes, edges, onSelect }) {
-  const byId = new Map(nodes.map((item) => [item.id, item]));
-  const related = edges.filter((edge) => edge.source === node.id || edge.target === node.id).map((edge) => ({ edge, node: byId.get(edge.source === node.id ? edge.target : edge.source) })).filter((item) => item.node);
-  return <section className="inspector-section"><h2><GitBranch size={15} />证据关系</h2>{related.length ? <ul className="relation-list">{related.map(({ edge, node: item }) => <li key={`${edge.source}:${edge.target}:${edge.polarity}`}><button onClick={() => onSelect(item.id)}><span className={`polarity ${edge.polarity}`}>{edge.polarity === "supports" ? "支持" : "反驳"}</span><b>{nodeText(item)}</b></button></li>)}</ul> : <p className="muted">暂无关系</p>}</section>;
-}
-
-
-function Claims({ node }) {
-  const values = node.payload?.claims;
-  const claims = Array.isArray(values) ? values.filter(isClaim) : [];
-  if (!claims.length) return null;
-  return <section className="inspector-section"><h2>原子主张</h2><ol className="claim-list">
-    {claims.map((claim, index) => <li key={text(claim.id) || index}><header><b>{claim.text}</b><span>{label(claim.verdict)}</span></header>
-      <Evidence values={claim.evidence} /></li>)}</ol></section>;
-}
-
-
-function Reviews({ node }) {
-  if (!isRecord(node.rebuttal)) return null;
-  return <section className="inspector-section"><h2>审计意见</h2><div className="review-grid">
-    {Object.entries(node.rebuttal).map(([name, value]) => <Review key={name} name={name} value={value} />)}
-  </div></section>;
-}
-
-
-function Review({ name, value }) {
-  const review = isRecord(value) ? value : { argument: String(value ?? "") };
-  const title = label(review.stance) || name;
-  return <article><header><b>{title}</b><span>{label(review.decision || review.stance)}</span></header>
-    <p>{text(review.argument) || text(review.reason)}</p><Evidence values={review.evidence} /></article>;
-}
-
-
-function Evidence({ values = [] }) {
-  const items = Array.isArray(values) ? values.filter(text) : [];
-  if (!items.length) return null;
-  return <ul className="audit-evidence">{items.map((value, index) => <li key={`${value}:${index}`} className="mono">{String(value)}</li>)}</ul>;
-}
-
-
-function isRecord(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-
-function isClaim(value) {
-  return isRecord(value) && Boolean(text(value.text));
-}
-
-
-function text(value) {
-  return typeof value === "string" ? value : "";
-}
-
-
-function label(value) {
-  return text(value) ? LABELS[value] || value : "";
+function Artifacts({ node, artifacts }) {
+  const byId = new Map(artifacts.map((artifact) => [artifact.id, artifact]));
+  const linked = node.artifact_ids.map((id) => ({ id, artifact: byId.get(id) }));
+  if (!linked.length) return null;
+  return <section className="inspector-section"><h2>关联 Artifact</h2><ul className="audit-evidence">
+    {linked.map(({ id, artifact }) => <li key={id}><span className="mono">{artifact ? `${artifact.media_type} · ${id}` : id}</span>{artifact && <ArtifactDownload artifact={artifact} />}</li>)}
+  </ul></section>;
 }
 
 
@@ -164,7 +96,6 @@ function NodeIdEntry({ node }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => { await navigator.clipboard.writeText(node.id); setCopied(true); };
   return <section className="inspector-section"><h2>节点 ID</h2><div className="node-id">
-    <code className="mono">{node.id}</code>
-    <button className="icon-button" aria-label={copied ? "已复制节点 ID" : "复制节点 ID"} title={copied ? "已复制" : "复制节点 ID"} onClick={copy}>
+    <code className="mono">{node.id}</code><button className="icon-button" aria-label={copied ? "已复制节点 ID" : "复制节点 ID"} title={copied ? "已复制" : "复制节点 ID"} onClick={copy}>
       {copied ? <Check size={15} /> : <Copy size={15} />}</button></div></section>;
 }

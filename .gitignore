@@ -30,6 +30,7 @@ benchmarks/**/*.parquet
 benchmarks/**/*.pt
 benchmarks/**/*.safetensors
 .agents/
+/.scratch/tdd/
 /a.md
 /datasets/research-kernel-papers/raw/
 /scripts/sub2api-account-4-quota.sh

@@ -10,6 +10,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPATH=/app PATH=/app/.venv
 WORKDIR /app
 RUN pip install --index-url https://mirrors.aliyun.com/pypi/simple/ \
     --no-cache-dir uv==0.8.13
+COPY kernel-contract/ kernel-contract/
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     sed -i 's#https://files.pythonhosted.org/packages/#https://mirrors.aliyun.com/pypi/packages/#g' uv.lock \
