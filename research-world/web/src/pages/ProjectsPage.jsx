@@ -12,12 +12,14 @@ export function ProjectsPage() {
   const { data, loading, projectId, selectProject } = useWorld();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const filtered=data.projects.filter(p=>`${p.name} ${p.question}`.toLowerCase().includes(query.toLowerCase()));
   const enter = async (id) => {
     try { await selectProject(id); navigate("/map"); }
     catch {}
   };
-  return <section className="projects-page"><ProjectBar onNew={() => setOpen(true)} /><ErrorToast /><main>
-    {loading ? <div className="projects-loading">正在载入项目...</div> : <ProjectList projects={data.projects} activeId={projectId} onOpen={enter} onNew={() => setOpen(true)} />}</main>
+  return <section className="projects-page"><ProjectBar onNew={() => setOpen(true)} /><ErrorToast /><main><label className="project-search">搜索研究项目<input type="search" aria-label="搜索研究项目" value={query} onChange={event=>setQuery(event.target.value)} placeholder="输入 q049、问题关键词…" /></label>
+    {loading ? <div className="projects-loading">正在载入项目...</div> : <ProjectList projects={filtered} activeId={projectId} onOpen={enter} onNew={() => setOpen(true)} />}</main>
     <NewProjectDialog open={open} onClose={() => setOpen(false)} /></section>;
 }
 
