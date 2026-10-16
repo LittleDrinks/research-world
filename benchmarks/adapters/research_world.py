@@ -105,7 +105,7 @@ class ResearchWorld:
 
     def _cleanup(self, result, folder):
         try:
-            if not result.get('session_id'):
+            if not result.get('turn_id'):
                 self._reconcile(result, folder)
             if not result.get('turn_id'):
                 result['cleanup_pending'] = (folder/'request.json').exists()

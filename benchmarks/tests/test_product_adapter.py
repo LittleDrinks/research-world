@@ -99,3 +99,22 @@ def test_cancel_during_project_creation_prevents_model_submission(tmp_path):
     result=product.execute('question','prompt','agent',folder)
     assert result['status']=='runtime_failed' and result['cleanup_pending'] is False
     assert submitted==[]
+
+
+def test_recovery_retries_detail_when_only_session_identity_was_saved(tmp_path):
+    server=AcceptedTimeout()
+    detail_calls=0
+    def respond(request):
+        nonlocal detail_calls
+        if request.url.path.endswith('/sessions/session'):
+            detail_calls+=1
+            if detail_calls==1:
+                raise httpx.ReadTimeout('detail response lost',request=request)
+        return server(request)
+    product=adapter(respond)
+    folder=tmp_path/'case'
+    failed=product.execute('question','prompt','agent',folder)
+    assert failed['session_id']=='session' and 'turn_id' not in failed
+    recovered=product.recover(folder)
+    assert recovered['cleanup_pending'] is False and server.cancelled
+    assert recovered['turn_id']=='turn' and server.submissions==1
