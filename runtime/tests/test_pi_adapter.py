@@ -672,3 +672,47 @@ def test_pi_detection_reports_incompatible_version(tmp_path, monkeypatch):
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     with pytest.raises(PiAdapterError, match="pi_configuration: unsupported pi version: 0.85.0"):
         PiAdapter.detect()
+
+
+def test_custom_session_entry_is_recorded_without_ending_turn():
+    from runtime.adapter.pi import PiEventParser
+    parser=PiEventParser()
+    value={'type':'entry_appended','entry':{'type':'custom','id':'entry1','parentId':None,'timestamp':'2026-10-16T00:00:00Z','customType':'state','data':{'phase':'ready'}}}
+    assert parser.consume(json.dumps(value).encode())==[{'type':'session_entry','data':{'entry':value['entry']}}]
+    assert parser.finished is False
+
+
+def test_malformed_custom_session_entry_is_rejected():
+    from runtime.adapter.pi import PiEventParser
+    with pytest.raises(PiAdapterError,match='session entry'):
+        PiEventParser().consume(b'{"type":"entry_appended","entry":null}')
+
+
+@pytest.mark.parametrize('entry',[
+    {'type':''}, {'type':'unknown'},
+    {'type':'custom','id':'x','parentId':None,'timestamp':'2026-10-16T00:00:00Z','customType':42},
+    {'type':'context_edit','id':'x','parentId':None,'timestamp':'2026-10-16T00:00:00Z','targetId':'m','replacement':{}},
+])
+def test_invalid_persisted_entry_shapes_are_rejected(entry):
+    from runtime.adapter.pi import PiEventParser
+    with pytest.raises(PiAdapterError,match='session entry'):
+        PiEventParser().consume(json.dumps({'type':'entry_appended','entry':entry}).encode())
+
+
+def test_retry_context_edit_is_preserved():
+    from runtime.adapter.pi import PiEventParser
+    entry={'type':'context_edit','id':'x','parentId':'m','timestamp':'2026-10-16T00:00:00Z','targetId':'m','replacement':None}
+    assert PiEventParser().consume(json.dumps({'type':'entry_appended','entry':entry}).encode())[0]['data']['entry']==entry
+
+
+@pytest.mark.parametrize('patch',[
+    {'type':'context_edit','targetId':'m','replacement':{'content':[42]}},
+    {'type':'message','message':{'role':'user'}},
+    {'type':'message','message':{'role':'unknown','content':'text'}},
+    {'timestamp':'2026-99-99T99:99:99garbage'},
+])
+def test_invalid_entry_content_and_dates_are_rejected(patch):
+    from runtime.adapter.pi import PiEventParser
+    entry={'type':'custom','customType':'state','id':'x','parentId':None,'timestamp':'2026-10-16T00:00:00Z',**patch}
+    with pytest.raises(PiAdapterError,match='session entry'):
+        PiEventParser().consume(json.dumps({'type':'entry_appended','entry':entry}).encode())

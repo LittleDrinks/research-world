@@ -147,6 +147,8 @@ class PiEventParser:
             return _text_delta(event)
         elif kind in TOOL_PHASES:
             return [_tool_event(kind, event)]
+        elif kind == "entry_appended":
+            return [_session_entry(event)]
         elif kind == "agent_end":
             self._agent_end(event)
         elif kind == "agent_settled":
@@ -556,3 +558,12 @@ def _agent_options(command, snapshot):
         command.extend([option, instructions])
     if 'thinking' in snapshot:
         command.extend(['--thinking', _setting(snapshot, 'thinking', '')])
+
+
+def _session_entry(event):
+    from .session_entry import validate_entry
+    try:
+        entry=validate_entry(event.get('entry'))
+    except ValueError:
+        raise PiAdapterError('pi_protocol','pi session entry is invalid') from None
+    return {'type':'session_entry','data':{'entry':entry}}

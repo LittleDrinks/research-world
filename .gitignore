@@ -66,3 +66,6 @@ benchmarks/**/*.safetensors
 /benchmarks/.venv/
 /benchmarks/**/__pycache__/
 /benchmarks/__pycache__/
+
+# Local evaluation tools and outputs.
+/private-evaluation/
