@@ -89,3 +89,13 @@ def test_delete_validates_all_volume_owners_before_any_deletion(tmp_path,monkeyp
     manager._client.volumes.get.side_effect=[first,second]
     with pytest.raises(RuntimeConflictError):manager.remove(PID)
     container.remove.assert_not_called();first.remove.assert_not_called()
+
+
+def test_running_workspace_is_reused_across_agent_models(tmp_path,monkeypatch):
+    monkeypatch.setenv('RUNTIME_DATA',str(tmp_path));manager=Workspaces();manager._client=MagicMock()
+    container=manager._client.containers.get.return_value
+    container.labels={'rw.owner':manager.prefix,'rw.project':PID,'rw.model':'old/model'};container.status='running'
+    manager._ready=MagicMock()
+    manager._start(PID,'another/model')
+    container.remove.assert_not_called();manager._client.containers.create.assert_not_called()
+    manager._ready.assert_called_once_with(container)

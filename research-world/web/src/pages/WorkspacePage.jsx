@@ -22,7 +22,7 @@ function useWorkspace(id){
 function Workspace({project}){
   const {state,busy,error,action}=useWorkspace(project.id);
   return <section className="workspace-page"><header><FlaskConical/><div><h1>实验工作区</h1><p>{project.name} · 对话中的 Agent 与你共享文件和 Python 环境</p></div></header>
-    <div className="workspace-card"><div className="workspace-status"><strong>{busy?'正在处理…':LABELS[state?.status]||'正在读取状态…'}</strong>{state?.model&&<span>工作区模型：{state.model}</span>}</div>
+    <div className="workspace-card"><div className="workspace-status"><strong>{busy?'正在处理…':LABELS[state?.status]||'正在读取状态…'}</strong></div>
       {error&&<p role="alert" className="workspace-error">{error}</p>}
       <div className="form-actions"><WorkspaceActions state={state} busy={busy} action={action}/></div>
       <p className="muted">停止工作区会结束其中的程序，文件会保留。删除项目会同时删除工作区资料。</p></div>
@@ -44,5 +44,5 @@ function WorkspaceGuide(){
     <li>回到「对话」，让研究助手读取、编辑或运行这些文件；首次使用时会自动启动工作区。</li>
     <li>你也可以直接编辑文件，在 JupyterLab 的 Terminal 执行 <code>python hello.py</code>，或选择 Notebook 的 Python (Research World) 内核。</li>
     </ol><p>工作目录：<code>/workspace</code>。文件、终端和 Notebook 使用同一套 Python；对话中的 Agent 使用同一工作目录。</p>
-    <p className="muted">Agent 需启用「工作区」工具。工作文件可修改，重要结果请另存为研究产物。</p></div>;
+    <p className="muted">所有项目 Agent 默认可访问工作区，无需额外配置。工作文件可修改，重要结果请另存为研究产物。</p></div>;
 }

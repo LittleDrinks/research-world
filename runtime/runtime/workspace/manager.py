@@ -66,11 +66,9 @@ class Workspaces:
             return await asyncio.to_thread(self.status,project_id)
 
     def _start(self,project_id,model):
-        files=pi_configuration(Path(os.environ['PI_CODING_AGENT_DIR']),model)
         container=self.container(project_id)
-        if container and container.status=='running':
-            if container.labels.get('rw.model')!=model:raise RuntimeConflictError('先停止工作区，再切换模型')
-        else:
+        if not container or container.status!='running':
+            files=pi_configuration(Path(os.environ['PI_CODING_AGENT_DIR']),model)
             if container:container.remove()
             container=self._launch(project_id,model,files)
         self._ready(container)

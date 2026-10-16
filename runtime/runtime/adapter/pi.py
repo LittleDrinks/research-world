@@ -549,9 +549,10 @@ def _prompt(request):
 
 
 def _tool_environment(request, token):
+    from ..agent_catalog import selected_tools
     environment = _environment()
     if token:
-        environment.update(RW_TOOL_TOKEN=token, RW_SELECTED_TOOLS=json.dumps(request.agent_snapshot.get('tools', [])))
+        environment.update(RW_TOOL_TOKEN=token, RW_SELECTED_TOOLS=json.dumps(selected_tools(request.agent_snapshot)))
     return environment
 
 

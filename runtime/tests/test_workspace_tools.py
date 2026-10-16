@@ -15,10 +15,10 @@ def binding(bridge, project='one', tools=('workspace',)):
 
 
 @pytest.mark.asyncio
-async def test_workspace_rejects_foreign_project_and_unselected_or_expired_tokens():
+async def test_workspace_rejects_foreign_project_and_unbound_or_expired_tokens():
     bridge=ToolBridge();app=FastAPI();app.include_router(workspace_tools_router(bridge))
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as client:
-        token=binding(bridge,tools=('graph',))
+        token=binding(bridge,project=None,tools=('graph',))
         assert (await client.post('/internal/workspace',headers={'x-tool-token':token},json={'operation':'read','path':'file'})).status_code==403
         token=binding(bridge)
         assert (await client.post('/internal/workspace',headers={'x-tool-token':token},json={'operation':'read','project_id':'other'})).status_code==422
@@ -69,3 +69,17 @@ class TimelineAdapter:
         return AdapterResult(result_text='after')
     async def close(self): pass
     async def cancel(self,*args): pass
+
+
+def test_workspace_is_mandatory_for_project_agents_but_not_title_generation():
+    from runtime.agent_catalog import selected_tools
+    bridge=ToolBridge()
+    token=binding(bridge,tools=())
+    spec=bridge.authorize(token,'workspace').agent_snapshot
+    assert selected_tools(spec)==['workspace']
+    spec['params']={'mode':'title'}
+    assert selected_tools(spec)==[]
+    with pytest.raises(PermissionError): bridge.authorize(token,'workspace')
+    spec.pop('params');spec['project_id']=None;spec['tools']=['workspace']
+    assert selected_tools(spec)==[]
+    with pytest.raises(PermissionError): bridge.authorize(token,'workspace')

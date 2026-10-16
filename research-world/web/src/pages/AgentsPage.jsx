@@ -30,7 +30,8 @@ function AgentForm({draft,patch,options,save}) {
     <label className="field">模型<select value={draft.model} onChange={e=>patch('model',e.target.value)}>{options.models.map(m=><option key={m}>{m}</option>)}</select></label>
     <label className="field">思考级别<select value={draft.thinking} onChange={e=>patch('thinking',e.target.value)}>{['off','minimal','low','medium','high','xhigh','max'].map(v=><option key={v}>{v}</option>)}</select></label>
     <label className="field">指令<textarea rows={8} required value={draft.instructions} onChange={e=>patch('instructions',e.target.value)}/></label>
-    <Choices title="Tools" values={Object.entries(options.tools)} selected={draft.tools} onChange={v=>patch('tools',v)}/>
+    <p>工作区已内置：Agent 可直接读写、编辑和运行项目文件，与 JupyterLab 共享。</p>
+    <Choices title="Tools" values={Object.entries(options.tools).filter(([id])=>id!=='workspace')} selected={draft.tools} onChange={v=>patch('tools',v)}/>
     <Choices title="Skills" values={options.skills.map(v=>[v,v])} selected={draft.skills} onChange={v=>patch('skills',v)}/>
     <p>保存后新建对话生效；已有对话保留启动时的配置。</p><button className="button primary">保存 Agent</button>
   </form>;
