@@ -18,10 +18,10 @@
 .graph-canvas { position: relative; background: var(--app-canvas); }
 
 /* —— 节点卡片（PlanWeave CanvasNodeCard 风格）—— */
-.research-node { width: 280px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-raised); box-shadow: 0 1px 2px rgb(16 24 40 / .04); overflow: hidden; transition: border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard); }
+.research-node { width: 280px; height:128px; box-sizing:border-box; display:flex; flex-direction:column; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-raised); box-shadow: 0 1px 2px rgb(16 24 40 / .04); overflow: hidden; transition: border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard); }
 .research-node:hover { border-color: var(--line-strong); box-shadow: 0 4px 14px rgb(16 24 40 / .08); }
 .research-node.selected { border-color: var(--state-selected); box-shadow: 0 0 0 3px color-mix(in oklab, var(--state-selected) 22%, transparent); }
-.research-node > header { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: start; gap: 10px; padding: 13px 12px 10px; }
+.research-node > header { flex:1; min-height:0; display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: start; gap: 10px; padding: 13px 12px 10px; }
 .research-node .node-kind-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; color: #fff; }
 .kind-question .node-kind-icon { background: var(--kind-question); }
 .kind-source .node-kind-icon { background: var(--kind-source); }
@@ -42,11 +42,7 @@
 .signal-edge.polarity-supports .react-flow__edge-path { stroke: var(--state-success); }
 .signal-edge.polarity-refutes .react-flow__edge-path { stroke: var(--state-failed); }
 .signal-edge.incident.polarity-depends_on .react-flow__edge-path { stroke: var(--state-selected); }
-.signal-edge.muted { opacity: .16; }
-.signal-flow-path { pointer-events: none; stroke: var(--text-faint); stroke-width: 8; opacity: .82; }
-.signal-edge.polarity-supports .signal-flow-path { stroke: var(--state-success); }
-.signal-edge.polarity-refutes .signal-flow-path { stroke: var(--state-failed); }
-.signal-edge.incident .signal-flow-path { stroke: var(--state-selected); stroke-width: 10; opacity: 1; }
+.signal-edge.muted { opacity: .28; }
 
 /* —— 检查器 —— */
 .inspector { display: block; min-width: 0; min-height: 0; overflow-y: auto; border-left: 1px solid var(--line); background: var(--app-panel); }
@@ -93,9 +89,6 @@
   .map-workspace { grid-template-columns: 1fr; grid-template-rows: minmax(420px, 58vh) auto; overflow-y: auto; }
   .inspector { min-height: 420px; border-top: 1px solid var(--line); border-left: 0; }
   .journal li { flex-wrap: wrap; gap: 6px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .signal-flow-path { display: none; }
 }
 
 .map-workspace{grid-template-columns:minmax(0,1fr) minmax(380px,32%)}.inspector-scroll{padding:24px}.inspector-header h1{font-size:23px;line-height:1.4}.node-body{font-size:16px;line-height:1.8;overflow-wrap:anywhere}.node-body p{margin:12px 0}.node-body ul,.node-body ol{padding-left:22px}.inspector-section{margin-bottom:22px}.inspector-section h2{font-size:16px;margin-bottom:10px}.node-details{color:var(--text-muted);font-size:14px}.node-details summary{cursor:pointer}.node-record>div{display:block}.node-record dt{font-size:14px;margin-bottom:6px}.node-record dd{font-size:15px}.relation-list{font-size:15px}@media(max-width:900px){.map-workspace{grid-template-columns:1fr;grid-template-rows:minmax(360px,52vh) auto}}

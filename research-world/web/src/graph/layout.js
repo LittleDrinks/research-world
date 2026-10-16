@@ -17,18 +17,27 @@ const OPTIONS = { "elk.algorithm": "layered", "elk.direction": "RIGHT", "elk.edg
 let elkEngine;
 
 
-function validEdges(edges, ids) {
-  return edges.map((edge, index) => ({ id: `edge-${index}`, sources: [edge.source], targets: [edge.target] }))
-    .filter((edge) => ids.has(edge.sources[0]) && ids.has(edge.targets[0]));
+function validEdges(edges, nodeMap) {
+  return edges.flatMap((edge,index)=>{
+    if(!nodeMap.has(edge.source)||!nodeMap.has(edge.target))return [];
+    const handles=edgeHandles(edge,nodeMap);
+    return [{id:`edge-${index}`,sources:[`${edge.source}:${handles.sourceHandle.split('-')[1]}`],
+      targets:[`${edge.target}:${handles.targetHandle.split('-')[1]}`]}];
+  });
 }
 
+function ports(node){
+  const sides={top:'NORTH',right:'EAST',bottom:'SOUTH',left:'WEST'};
+  return HANDLE_POINTS.map(([side,x,y])=>({id:`${node.id}:${side}`,x,y,width:0,height:0,
+    layoutOptions:{'elk.port.side':sides[side]}}));
+}
 
 function inputGraph(nodes, edges) {
-  const ids = new Set(nodes.map((node) => node.id));
-  return { id: "research-graph", layoutOptions: OPTIONS,
-    children: nodes.map((node) => ({ id: node.id, width: NODE_WIDTH, height: NODE_HEIGHT,
-      layoutOptions: { "elk.partitioning.partition": String(KIND_ORDER.indexOf(node.kind)) } })),
-    edges: validEdges(edges, ids) };
+  const nodeMap=new Map(nodes.map(node=>[node.id,node]));
+  return {id:'research-graph',layoutOptions:OPTIONS,
+    children:nodes.map(node=>({id:node.id,width:NODE_WIDTH,height:NODE_HEIGHT,ports:ports(node),
+      layoutOptions:{'elk.partitioning.partition':String(KIND_ORDER.indexOf(node.kind)),'elk.portConstraints':'FIXED_POS'}})),
+    edges:validEdges(edges,nodeMap)};
 }
 
 
@@ -62,16 +71,11 @@ function flowNode(layout) {
 }
 
 
-function direction(dx, dy) {
-  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? "right" : "left";
-  return dy >= 0 ? "bottom" : "top";
-}
-
-
 export function edgeHandles(edge, nodeMap) {
-  const source = nodeMap.get(edge.source);
-  const target = nodeMap.get(edge.target);
-  if (!source || !target) return {};
-  const side = direction(target.position.x - source.position.x, target.position.y - source.position.y);
-  return { sourceHandle: `source-${side}`, targetHandle: `target-${OPPOSITE[side]}` };
+  const source=nodeMap.get(edge.source),target=nodeMap.get(edge.target);
+  if(!source||!target)return {};
+  const sourceRank=KIND_ORDER.indexOf(source.kind||source.data?.kind);
+  const targetRank=KIND_ORDER.indexOf(target.kind||target.data?.kind);
+  const side=sourceRank===targetRank?'bottom':sourceRank<targetRank?'right':'left';
+  return {sourceHandle:`source-${side}`,targetHandle:`target-${OPPOSITE[side]}`};
 }
