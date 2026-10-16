@@ -1,8 +1,8 @@
 import json
 import re
 
-_SECRET = re.compile(r'(?i)(api[_-]?key|authorization|password|secret|access[_-]?token|credential|cookie)')
-_INLINE = re.compile(r'''(?ix)(["']?(?:api[_-]?key|password|secret|access[_-]?token|authorization|credential)["']?\s*[:=]\s*["']?)([^\s,"';}]+)''')
+_SECRET = re.compile(r'(?i)(api[_-]?key|authorization|password|secret|access[_-]?token|refresh[_-]?token|^tokens?$|credential|cookie)')
+_INLINE = re.compile(r'''(?ix)(["']?(?:api[_-]?key|password|secret|access[_-]?token|refresh[_-]?token|token|authorization|credential)["']?\s*[:=]\s*["']?)([^\s,"';}]+)''')
 _BEARER = re.compile(r'(?i)\b(Bearer|Basic)\s+[^\s,"\'}]+')
 
 

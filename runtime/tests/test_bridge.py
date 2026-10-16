@@ -1,3 +1,4 @@
+from runtime.adapter import AdapterResult
 import pytest
 
 from runtime.adapter import TurnRequest
@@ -56,17 +57,23 @@ async def test_delegate_child_cannot_write_or_delegate():
 async def test_runtime_tool_results_are_redacted_before_trace(tmp_path):
     from runtime.adapter import AdapterResult
     from runtime.runtime import Runtime
-    class Adapter:
-        adapter_id='fake'
-        supports_multiple_writers=True
-        async def start(self,request): return None
-        async def submit(self,handle,request,emit):
-            await emit({'type':'tool','data':{'result':{'api_key':'synthetic-value'}}})
-            return AdapterResult(result_text='done')
-        async def cancel(self,*args): pass
-        async def close(self): pass
-    runtime=Runtime(tmp_path,{'fake':Adapter()})
+    runtime=Runtime(tmp_path,{'fake':SecretToolAdapter()})
     await runtime.launch({'adapter':'fake'},session_id='session')
     turn=await runtime.submit('session',{'id':'message','content':'inspect'})
     events=[e async for e in runtime.subscribe(turn['id'])]
-    assert 'synthetic-value' not in str(events)
+    assert any(event['type']=='tool' for event in events)
+    assert events[-1]['data']['status']=='completed'
+    assert all(secret not in str(events) for secret in ['synthetic-value','synthetic-token','synthetic-final'])
+    assert 'synthetic-final' not in str(runtime.inspect_session('session'))
+    assert 'synthetic-token' not in str(runtime.export_session('session'))
+
+
+class SecretToolAdapter:
+    adapter_id='fake'
+    supports_multiple_writers=True
+    async def start(self,request): return object()
+    async def submit(self,handle,request,emit):
+        await emit({'type':'tool','data':{'result':{'api_key':'synthetic-value','token':'synthetic-token'}}})
+        return AdapterResult(result_text='token=synthetic-final')
+    async def cancel(self,*args): pass
+    async def close(self): pass
