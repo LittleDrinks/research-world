@@ -77,6 +77,11 @@ def _agents(tmp_path):
         "model: test\ninstructions: test\n",
         encoding="utf-8",
     )
+    (root / "pi-chat.yaml").write_text(
+        "id: pi-chat\nname: Pi\nruntime:\n  id: pi\n  realm: container:runtime\n"
+        "endpoint: pi\nmodel: default\ninstructions: chat\nskills: []\ntools: []\n",
+        encoding="utf-8",
+    )
     return AgentRegistry(root)
 
 
@@ -113,8 +118,10 @@ def test_thread_points_to_runtime_session_and_pins_nodes(world, project, tmp_pat
     thread = response.json()
     assert response.status_code == 201
     assert thread["session_id"] == "session-1"
+    assert thread["agent_id"] == "pi-chat"
     assert [node["id"] for node in thread["nodes"]] == [question["id"]]
     assert thread["runtime"]["messages"] == []
+    assert runtime.launches[0][2]["session_name"] == "轨道稳定性"
 
 
 def test_thread_detail_projects_persisted_publications_without_storage_fields(world, project, tmp_path):
@@ -164,6 +171,13 @@ def test_research_assistant_exposes_the_report_publication_tool():
     agent = AgentRegistry(Path(__file__).parents[1] / "agents").get("research-assistant")
     assert "research-report" in agent["skills"]
     assert "publish_report" in agent["tools"]
+
+
+def test_pi_chat_uses_native_runtime_without_runtime_tools():
+    agent = AgentRegistry(Path(__file__).parents[1] / "agents").get("pi-chat")
+    assert agent["runtime"] == {"id": "pi", "realm": "container:runtime"}
+    assert (agent["endpoint"], agent["model"]) == ("pi", "default")
+    assert agent["skills"] == agent["tools"] == []
 
 
 def test_prompt_stream_passes_pinned_node_ids(world, project, tmp_path):
@@ -236,6 +250,7 @@ def test_restart_replaces_pointer_and_keeps_old_trace(world, project, tmp_path):
     restarted = client.post(f"/api/v1/threads/{thread['id']}/restart").json()
     assert restarted["session_id"] == "session-2"
     assert "session-1" in runtime.sessions
+    assert runtime.launches[1][2]["session_name"] == thread["title"]
 
 
 def test_cross_project_node_cannot_be_pinned(world, project, tmp_path):

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import secrets
 import sqlite3
 from dataclasses import dataclass, field
@@ -295,7 +296,7 @@ class ResearchKernel:
         return await self._require_threads().create(
             _project_id(command),
             value.get("title", "新对话"),
-            value.get("agent_id", "research-assistant"),
+            value.get("agent_id", "pi-chat"),
             value.get("node_ids", []),
         )
 

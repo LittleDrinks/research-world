@@ -18,7 +18,7 @@ class ThreadManager:
         self,
         project_id: str,
         title: str = "新对话",
-        agent_id: str = "research-assistant",
+        agent_id: str = "pi-chat",
         node_ids: list[str] | None = None,
     ) -> dict:
         self.world.project(project_id)
@@ -28,6 +28,7 @@ class ThreadManager:
             str(self.workspace(project_id)),
             invoker={"kind": "human", "id": project_id},
             mode="resume",
+            session_name=title,
         )
         thread = self.world.create_thread(project_id, title, session_id, agent_id)
         for node in nodes:
@@ -60,6 +61,7 @@ class ThreadManager:
             str(self.workspace(thread["project_id"])),
             invoker={"kind": "human", "id": thread_id},
             mode="resume",
+            session_name=thread["title"],
         )
         self.world.update_thread_session(thread_id, session_id)
         return await self.detail(thread_id)

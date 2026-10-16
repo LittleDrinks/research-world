@@ -4,6 +4,7 @@ import yaml
 
 COMPOSE = Path(__file__).parents[1] / "compose.yaml"
 RELEASE_COMPOSE = Path(__file__).parents[1] / "compose.release.yaml"
+RUNTIME_DOCKERFILE = Path(__file__).parents[2] / "runtime" / "Dockerfile"
 
 
 def compose():
@@ -63,3 +64,18 @@ def test_release_compose_preserves_credential_boundary():
     assert services["runtime"]["env_file"] == ["../.env"]
     for name in ("control", "worker", "runner-controller"):
         assert "env_file" not in services[name]
+
+
+def test_runtime_image_pins_pi_and_runs_as_uid_1000():
+    content = RUNTIME_DOCKERFILE.read_text(encoding="utf-8")
+    assert "@earendil-works/pi-coding-agent@0.84.3" in content
+    assert "USER 1000:1000" in content
+
+
+def test_runtime_mounts_host_pi_agent_directory_read_write():
+    for value in (compose(), release_compose()):
+        runtime = value["services"]["runtime"]
+        assert runtime["user"] == "1000:1000"
+        assert runtime["environment"]["HOME"] == "/home/runtime"
+        assert runtime["environment"]["PI_CODING_AGENT_DIR"] == "/home/runtime/.pi/agent"
+        assert "${HOME}/.pi/agent:/home/runtime/.pi/agent" in runtime["volumes"]

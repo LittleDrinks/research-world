@@ -1,0 +1,14 @@
+id: pi-chat
+name: Pi
+runtime:
+  id: pi
+  realm: container:runtime
+endpoint: pi
+model: default
+instructions: |
+  围绕当前 Project 与用户持续对话，直接完成用户请求。
+skills: []
+tools: []
+options:
+  reasoning_effort: medium
+  sandbox: workspace-write
