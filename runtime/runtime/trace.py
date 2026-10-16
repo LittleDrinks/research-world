@@ -77,10 +77,17 @@ class TraceLedger:
         return queue
 
     def unwatch(self, turn_id, queue):
-        self._watchers[turn_id].discard(queue)
+        watchers=self._watchers.get(turn_id,set())
+        watchers.discard(queue)
+        if not watchers:self._watchers.pop(turn_id,None)
+
+    def forget(self, turn_id):
+        for queue in self._watchers.pop(turn_id,()):
+            while not queue.empty():queue.get_nowait()
+            queue.put_nowait(None)
 
     def _publish(self, turn_id, event):
-        for queue in tuple(self._watchers[turn_id]):
+        for queue in tuple(self._watchers.get(turn_id,())):
             queue.put_nowait(deepcopy(event))
 
 

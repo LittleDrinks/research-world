@@ -17,7 +17,8 @@ def fixture(tmp_path):
     (all_dir/'audit.md').write_text('Audit: partial')
     (all_dir/'run.md').write_text('Ledger: partial')
     item={'qid':'q001','question':'Why?','candidate':candidate,'files':[candidate,all_dir/'audit.md',all_dir/'run.md'],
-          'author':'session-id','raw_sha256':'unused','model':'historical-model','corpus_status':'partial','audit':'audit.md','evidence':evidence,'deep':{}}
+          'author':'session-id','raw_sha256':'unused','model':'historical-model','corpus_status':'partial','audit':'audit.md','evidence':evidence,'deep':{},'directions':{'path':'all/q001.md','sha256':hashlib.sha256(candidate.read_bytes()).hexdigest(),
+          'directions':[{'title':f'Direction {i}','text':'Candidate, not a proven result.','source_spans':[]} for i in range(1,4)]}}
     kernel=create_kernel(tmp_path/'database',tmp_path/'artifacts')
     return source,item,kernel
 

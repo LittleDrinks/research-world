@@ -14,6 +14,7 @@ const json = (method, body) => ({ method, headers: { "Content-Type": "applicatio
 const enc = encodeURIComponent;
 
 export const getBootstrap = (projectId) => fetch(`/api/v1/bootstrap${projectId ? `?project_id=${enc(projectId)}` : ""}`).then(decode);
+export const deleteProject = (id) => fetch(`/api/v1/projects/${enc(id)}`, {method:"DELETE"}).then(decode);
 export const createProject = (body) => fetch("/api/v1/projects", json("POST", body)).then(decode);
 export const projectExportUrl = (projectId) => `/api/v1/projects/${enc(projectId)}/export`;
 export const getLocalMap = (projectId, query) => fetch(`/api/v1/projects/${enc(projectId)}/local-map`, json("POST", query)).then(decode);

@@ -235,6 +235,17 @@ class _RunStore:
         self.connection.commit()
         return value
 
+    def delete_runs(self, ids):
+        if not ids:return
+        placeholders=','.join('?' for _ in ids)
+        with _transaction(self.connection):
+            self.connection.execute('PRAGMA defer_foreign_keys=ON')
+            self.connection.execute(f'DELETE FROM delegations WHERE child_run_id IN ({placeholders})',tuple(ids))
+            for table in ['message_index','message_owners','events','turns']:
+                self.connection.execute(f'DELETE FROM {table} WHERE run_id IN ({placeholders})',tuple(ids))
+            self.connection.execute(f'DELETE FROM runs WHERE id IN ({placeholders})',tuple(ids))
+            _compact_event_positions(self.connection)
+
     def _begin(self):
         try:
             self.connection.execute("BEGIN IMMEDIATE")
@@ -801,3 +812,14 @@ def _message_conflict(owner_session_id, owner_parent_run_id):
     if owner_session_id is not None:
         return "message belongs to another session"
     return "message belongs to a child run" if owner_parent_run_id is not None else "message belongs to another run"
+
+
+def _compact_event_positions(connection):
+    # Positions are internal allocations; public per-Turn replay cursors stay unchanged.
+    mapping='WITH positions AS MATERIALIZED (SELECT pos, -ROW_NUMBER() OVER (ORDER BY pos) AS next FROM events) '
+    connection.execute(mapping+'UPDATE turns SET start_pos=(SELECT next FROM positions WHERE pos=start_pos)')
+    connection.execute(mapping+'UPDATE events SET pos=(SELECT next FROM positions WHERE positions.pos=events.pos)')
+    connection.execute('UPDATE events SET pos=-pos')
+    connection.execute('UPDATE turns SET start_pos=-start_pos')
+    connection.execute("UPDATE sqlite_sequence SET seq=(SELECT MAX(pos) FROM events) WHERE name='events'")
+    connection.execute("DELETE FROM sqlite_sequence WHERE name='events' AND seq IS NULL")

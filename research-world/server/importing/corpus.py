@@ -46,6 +46,7 @@ def corpus(source):
 
 
 def _project(source,evidence,qid,row):
+    from .directions import load_directions
     candidate=evidence/'all'/f'{qid}.md'
     if checksum(candidate.read_bytes())!=row[7]:
         raise ValueError(f'{qid}: candidate hash differs from ledger')
@@ -56,7 +57,7 @@ def _project(source,evidence,qid,row):
     if deep.is_dir():paths.extend(sorted(deep.glob('*.md')))
     return {'qid':qid,'question':canonical['question'],'corpus_status':row[9],
             'author':row[1],'raw_sha256':row[8],'model':row[2],'audit':row[10],
-            'deep':meta,'files':paths,'candidate':candidate,'evidence':evidence}
+            'directions':load_directions(evidence,qid),'deep':meta,'files':paths,'candidate':candidate,'evidence':evidence}
 
 
 def raw_sessions(inventory,source=None):

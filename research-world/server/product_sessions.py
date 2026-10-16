@@ -33,7 +33,8 @@ def _session_routes(router, control):
 
     @router.post('', status_code=201)
     async def create(project_id: str, body: SessionRequest):
-        return await control.start(project_id, body.agent_id, body.content, body.message_id)
+        async with control.project_locks[project_id]:
+            return await control.start(project_id, body.agent_id, body.content, body.message_id)
 
     @router.get('/{session_id}')
     async def detail(project_id: str, session_id: str):
@@ -41,7 +42,8 @@ def _session_routes(router, control):
 
     @router.post('/{session_id}/messages', status_code=202)
     async def submit(project_id: str, session_id: str, body: MessageRequest):
-        return await control.submit(project_id, session_id, body.content, body.message_id)
+        async with control.project_locks[project_id]:
+            return await control.submit(project_id, session_id, body.content, body.message_id)
 
 
 def _turn_routes(router, control):

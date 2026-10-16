@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import secrets
+import asyncio
+from collections import defaultdict
 import hashlib
 from pathlib import Path
 from .session_title import schedule_title
@@ -10,6 +12,7 @@ class SessionControl:
     def __init__(self, kernel, runtime, profiles, workspace):
         self.kernel, self.runtime, self.profiles = kernel, runtime, profiles
         self.workspace = Path(workspace)
+        self.project_locks=defaultdict(asyncio.Lock)
 
     async def create(self, project_id, title, agent_id, session_id=None):
         project = self.kernel.get_project(project_id)
@@ -49,7 +52,7 @@ class SessionControl:
         result = await self.submit(project_id, session.id, content, message_id)
         if created:
             view = await self.runtime.inspect(session.id)
-            schedule_title(self.kernel, self.runtime, project_id, session.id, view['agent_snapshot'], content)
+            schedule_title(self.kernel, self.runtime, project_id, session.id, view['agent_snapshot'], content, self.project_locks[project_id])
         return {'session':self.kernel.get_session(project_id, session.id), **result}
 
     async def archive(self, project_id, session_id):
