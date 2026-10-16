@@ -1,8 +1,9 @@
-import { ArrowRight, FolderOpen, Plus } from "lucide-react";
+import { ArrowRight, FolderOpen, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { NewProjectDialog } from "../components/NewProjectDialog";
 import { ErrorToast } from "../components/AppShell";
+import { DeleteProjectDialog } from "../components/DeleteProjectDialog";
 import { ThemeButton } from "../components/ThemeButton";
 import { useWorld } from "../context/WorldContext";
 import "../projects.css";
@@ -12,6 +13,7 @@ export function ProjectsPage() {
   const { data, loading, projectId, selectProject } = useWorld();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [deleting,setDeleting]=useState(null);
   const [query, setQuery] = useState("");
   const filtered=data.projects.filter(p=>`${p.name} ${p.question}`.toLowerCase().includes(query.toLowerCase()));
   const enter = async (id) => {
@@ -19,7 +21,8 @@ export function ProjectsPage() {
     catch {}
   };
   return <section className="projects-page"><ProjectBar onNew={() => setOpen(true)} /><ErrorToast /><main><label className="project-search">搜索研究项目<input type="search" aria-label="搜索研究项目" value={query} onChange={event=>setQuery(event.target.value)} placeholder="输入 q049、问题关键词…" /></label>
-    {loading ? <div className="projects-loading">正在载入项目...</div> : <ProjectList projects={filtered} activeId={projectId} onOpen={enter} onNew={() => setOpen(true)} />}</main>
+    {loading ? <div className="projects-loading">正在载入项目...</div> : <ProjectList projects={filtered} activeId={projectId} onOpen={enter} onDelete={setDeleting} onNew={() => setOpen(true)} />}</main>
+    <DeleteProjectDialog project={deleting} onClose={()=>setDeleting(null)} />
     <NewProjectDialog open={open} onClose={() => setOpen(false)} /></section>;
 }
 
@@ -30,12 +33,15 @@ function ProjectBar({ onNew }) {
 }
 
 
-function ProjectList({ projects, activeId, onOpen, onNew }) {
+function ProjectList({ projects, activeId, onOpen, onNew, onDelete }) {
   if (!projects.length) return <section className="projects-empty"><FolderOpen size={28} /><h2>暂无研究项目</h2><button className="button primary" onClick={onNew}><Plus size={16} />新建项目</button></section>;
-  return <div className="project-list">{projects.map((project) => <button className={project.id === activeId ? "active" : ""} onClick={() => onOpen(project.id)} key={project.id}>
-    <span className="project-name"><b>{project.title || project.name}</b><small>{project.question}</small></span>
-    <span className="project-counts"><b>{project.node_count}</b> 节点{project.active_run_count > 0 && <> · <b>{project.active_run_count}</b> 运行中</>}</span>
-    <time>{formatDate(project.created_at)}</time><ArrowRight size={18} /></button>)}</div>;
+  return <div className="project-list">{projects.map(project=><div className={`project-row ${project.id===activeId?"active":""}`} key={project.id}>
+    <button className="project-open" onClick={()=>onOpen(project.id)}>
+      <span className="project-name"><b>{project.title || project.name}</b><small>{project.question}</small></span>
+      <span className="project-counts"><b>{project.node_count}</b> 节点</span>
+      <time>{formatDate(project.created_at)}</time><ArrowRight size={18} />
+    </button><button className="icon-button project-delete" aria-label={`删除项目 ${project.name}`} title="删除项目" onClick={()=>onDelete(project)}><Trash2 size={18}/></button>
+  </div>)}</div>;
 }
 
 

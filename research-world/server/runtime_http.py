@@ -92,6 +92,9 @@ class RuntimeHttpClient:
     async def export(self, session_id):
         return _response_json(await self._client.get(f'/api/v1/runtime/sessions/{session_id}/export'))
 
+    async def delete_project(self, project_id):
+        return _response_json(await self._client.delete(f'/api/v1/runtime/projects/{project_id}'))
+
     async def cancel(self, turn_id):
         return _response_json(await self._client.post(f'/api/v1/runtime/turns/{turn_id}/cancel'))
 
