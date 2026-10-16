@@ -769,6 +769,7 @@ def _turn_view(turn):
         "id": turn.request.turn_id,
         "turn_id": turn.request.turn_id,
         "run_id": turn.request.run_id,
+        "session_id": turn.session_id,
         "message_id": turn.request.message_id,
         "status": turn.status,
         "result_text": turn.result_text,
