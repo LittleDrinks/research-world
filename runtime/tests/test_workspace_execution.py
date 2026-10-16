@@ -87,15 +87,17 @@ async def test_detached_job_control_descendants_do_not_escape(container,mode):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("after_output", [False,True])
-async def test_broken_output_transport_still_stops_command(container,monkeypatch,after_output):
+@pytest.mark.parametrize("failure", ["before","reset","eof"])
+async def test_broken_output_transport_still_stops_command(container,monkeypatch,failure):
     import runtime.workspace.execution as module
     original=module.frames_iter
     def disconnect(*args,**kwargs):
-        if not after_output: raise ConnectionResetError('disconnect before first output')
+        if failure=="before": raise ConnectionResetError('disconnect before first output')
         for frame in original(*args,**kwargs):
             yield frame
-            raise ConnectionResetError('simulated output disconnect')
+            if failure=='reset': raise ConnectionResetError('simulated output disconnect')
+            import socket
+            args[0]._sock.shutdown(socket.SHUT_RD)
     monkeypatch.setattr(module,'frames_iter',disconnect)
     events,_=await execute(container,operation='bash',command='echo ready; sleep 2; touch /workspace/disconnect')
     assert events[-1].get('error')

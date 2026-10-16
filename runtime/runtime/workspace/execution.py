@@ -61,8 +61,10 @@ class Execution:
             stream._sock.sendall((json.dumps({**self.values, 'code':WORKER})+'\n').encode())
             for _, data in frames_iter(stream, tty=False):
                 self.loop.call_soon_threadsafe(self.queue.put_nowait, {'data':base64.b64encode(data).decode()})
-        code = api.exec_inspect(execution['Id'])['ExitCode']
-        self.loop.call_soon_threadsafe(self.queue.put_nowait, {'exitCode':code})
+        state = api.exec_inspect(execution['Id'])
+        if state['Running'] or state['ExitCode'] is None:
+            raise ConnectionError('Workspace output ended before process exit')
+        self.loop.call_soon_threadsafe(self.queue.put_nowait, {'exitCode':state['ExitCode']})
 
     def _control(self, code):
         result = self.container.exec_run(['python','-c',code,self.id], user='1000:1000')
