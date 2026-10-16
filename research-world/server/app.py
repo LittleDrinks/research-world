@@ -15,6 +15,8 @@ from .product_sessions import session_router
 from .runtime_http import RuntimeHttpClient, RuntimeHttpError
 from .session_control import SessionControl
 from .project_export import export_project
+from .project_control import project_deletion_router
+from .project_workspace import workspace_router
 
 
 def create_product(kernel, runtime, profiles, workspace):
@@ -30,8 +32,8 @@ def create_product(kernel, runtime, profiles, workspace):
     _artifact_routes(app, kernel)
     control=SessionControl(kernel, runtime, profiles, workspace)
     app.include_router(session_router(control))
-    from .project_control import project_deletion_router
     app.include_router(project_deletion_router(control))
+    app.include_router(workspace_router(control))
     app.include_router(kernel_graph_router(kernel))
     _frontend(app)
     return app

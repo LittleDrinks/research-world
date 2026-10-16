@@ -23,3 +23,7 @@ export const deleteRecord = (projectId, recordId) => fetch(`/api/v1/projects/${e
 export const deleteRelation = (projectId, relationId) => fetch(`/api/v1/projects/${enc(projectId)}/relations/${enc(relationId)}`, { method: "DELETE" }).then(decode);
 export const listAgents = () => fetch("/api/v1/agents").then(decode);
 export const recordImpact = (projectId, recordId) => fetch(`/api/v1/projects/${enc(projectId)}/records/${enc(recordId)}/impact`).then(decode);
+
+export const getWorkspace = id => fetch(`/api/v1/projects/${enc(id)}/workspace`).then(decode);
+export const startWorkspace = id => fetch(`/api/v1/projects/${enc(id)}/workspace`,{method:'POST'}).then(decode);
+export const stopWorkspace = id => fetch(`/api/v1/projects/${enc(id)}/workspace/stop`,{method:'POST'}).then(decode);

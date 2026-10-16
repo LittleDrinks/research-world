@@ -8,14 +8,17 @@ from .http import install_error_handlers, runtime_router
 from .runtime import Runtime
 from .product_http import product_router
 from .bridge import bridge_router
+from .workspace.manager import Workspaces
+from .workspace.http import workspace_router
 
 
-def create_app(runtime: Runtime, bridge=None) -> FastAPI:
+def create_app(runtime: Runtime, bridge=None, workspaces=None) -> FastAPI:
     app = FastAPI(title="Research Agent Runtime")
     install_error_handlers(app)
     _input_errors(app)
     app.include_router(runtime_router(runtime))
     app.include_router(product_router(runtime))
+    app.include_router(workspace_router(runtime,workspaces or Workspaces()))
     if bridge is not None:
         app.include_router(bridge_router(bridge))
 

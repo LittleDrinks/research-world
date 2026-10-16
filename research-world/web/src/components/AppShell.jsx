@@ -1,4 +1,4 @@
-import { Activity, Bot, LogOut, Map, Menu, MessagesSquare, Settings, X } from "lucide-react";
+import { Activity, Bot, FlaskConical, LogOut, Map, Menu, MessagesSquare, Settings, X } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useWorld } from "../context/WorldContext";
@@ -8,6 +8,7 @@ import { RecordList } from "./RecordList";
 export const MODULES = [
   ["/map", "地图", Map],
   ["/chat", "对话", MessagesSquare],
+  ["/workspace", "实验工作区", FlaskConical],
   ["/traces", "轨迹", Activity],
   ["/agents", "Agent", Bot],
   ["/settings", "设置", Settings],
