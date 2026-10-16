@@ -438,6 +438,7 @@ dependencies = [
     { name = "markdown" },
     { name = "pillow" },
     { name = "pybtex" },
+    { name = "pyyaml" },
     { name = "research-kernel-contract" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -458,6 +459,7 @@ requires-dist = [
     { name = "markdown", specifier = "==3.10.3" },
     { name = "pillow", specifier = "==12.3.0" },
     { name = "pybtex", specifier = ">=0.26.1" },
+    { name = "pyyaml", specifier = "==6.0.3" },
     { name = "research-kernel-contract", directory = "kernel-contract" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.35.0" },
 ]
