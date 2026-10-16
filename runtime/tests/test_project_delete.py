@@ -62,3 +62,14 @@ async def test_delete_terminates_paused_subscriptions_and_forgets_queues(tmp_pat
     with pytest.raises(StopAsyncIteration):await asyncio.wait_for(anext(stream),1)
     assert not runtime._trace._watchers
     await runtime.close()
+
+
+@pytest.mark.asyncio
+async def test_failed_workspace_cleanup_preserves_runtime_records(tmp_path):
+    runtime=Runtime(tmp_path,{'fake':FakeAdapter()})
+    await runtime.launch({'adapter':'fake','project_id':'one'},session_id='one')
+    async def failing_cleanup():raise OSError('volume busy')
+    with pytest.raises(OSError):await runtime.delete_project('one',failing_cleanup)
+    assert runtime.inspect_session('one')['session_id']=='one'
+    assert runtime._store.snapshot()['runs']
+    await runtime.close()

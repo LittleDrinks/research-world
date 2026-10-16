@@ -35,11 +35,17 @@ services:
     - --port
     - '8095'
   runtime:
+    depends_on:
+      workspace-image:
+        condition: service_completed_successfully
     build:
       context: ..
       dockerfile: runtime/Dockerfile
+      target: runtime
     environment:
       RUNTIME_DATA: /runtime-data
+      RW_WORKSPACE_IMAGE: ${COMPOSE_PROJECT_NAME:-research-world}-workspace:local
+      RW_WORKSPACE_PREFIX: ${COMPOSE_PROJECT_NAME:-research-world}
       CONTROL_URL: http://control:8095
       PI_CODING_AGENT_DIR: /home/runtime/.pi/agent
       RUNTIME_SKILLS_PATHS: /app/skills:/user-agent-skills
@@ -47,6 +53,7 @@ services:
     - 127.0.0.1:8098:8098
     volumes:
     - rw-runtime-data:/runtime-data
+    - /var/run/docker.sock:/var/run/docker.sock
     - rw-project-workspaces:/projects
     - ${HOME}/.pi/agent:/pi-source:ro
     - ${HOME}/.agents/skills:/user-agent-skills:ro
@@ -62,6 +69,17 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+  workspace-image:
+    network_mode: none
+    image: ${COMPOSE_PROJECT_NAME:-research-world}-workspace:local
+    build:
+      context: ..
+      dockerfile: runtime/Dockerfile
+      target: workspace
+    entrypoint: ["python", "-c", "print('Workspace image ready')"]
+    healthcheck:
+      disable: true
+
 volumes:
   rw-kernel-data: null
   rw-projects: null
