@@ -18,12 +18,12 @@ for(const explicit of [false,true])test(`workspace file opens using ${explicit?'
   expect(calls.every(url=>url.includes(explicit?project:other))).toBeTruthy();
 });
 
-test('stopped workspace starts before opening an encoded file',async({page})=>{
+for(const filename of ['中文 a+#.py','literal%2Fname.py','literal%252Fname.py'])test(`stopped workspace opens ${filename}`,async({page})=>{
   await fixture(page);const methods=[];
   await page.route('**/api/v1/projects/*/workspace',r=>{methods.push(r.request().method());return r.fulfill({json:r.request().method()==='POST'?ready(page):{status:'exited'}});});
-  await page.goto('/workspace/'+encodeURIComponent('中文 a+#.py'));
+  await page.goto('/workspace/'+encodeURIComponent(filename));
   await expect(page.getByRole('heading',{name:'文件编辑器'})).toBeVisible();
-  expect(decodeURIComponent(new URL(page.url()).pathname)).toBe('/lab/tree/中文 a+#.py');
+  expect(decodeURIComponent(new URL(page.url()).pathname)).toBe('/lab/tree/'+filename);
   expect(methods).toContain('POST');
 });
 

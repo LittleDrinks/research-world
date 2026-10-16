@@ -1,12 +1,13 @@
 import {useEffect,useState} from 'react';
-import {useParams,useSearchParams} from 'react-router-dom';
+import {useLocation,useSearchParams} from 'react-router-dom';
 import {getWorkspace,startWorkspace} from '../api';
 import {useWorld} from '../context/WorldContext';
 import {editorUrl,filePath} from '../chat/workspaceLinks';
 import '../workspace.css';
 
 export function WorkspaceFilePage(){
-  const {projectId:active,loading}=useWorld(),{'*':path}=useParams(),[query]=useSearchParams();
+  const {projectId:active,loading}=useWorld(),{pathname}=useLocation(),[query]=useSearchParams();
+  const path=pathname.slice('/workspace/'.length);
   const projectId=query.get('project')||active;
   const [error,setError]=useState(''),[attempt,setAttempt]=useState(0);
   useEffect(()=>{
@@ -20,7 +21,8 @@ export function WorkspaceFilePage(){
   </section>;
 }
 
-async function openFile(projectId,path){
+async function openFile(projectId,encodedPath){
+  const path=decodeURIComponent(encodedPath);
   filePath(path);
   if(!projectId)throw Error('请先选择文件所属的项目');
   let state=await getWorkspace(projectId);
