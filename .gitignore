@@ -56,13 +56,13 @@ benchmarks/**/*.safetensors
 !docs/agents/**
 !.agents/**
 !.github/**
-!benchmarks/**
 !datasets/**
 !research-world/evidence/**
 
 **/README.md
 **/readme.md
-/benchmarks/scifact_product/.venv/
-/benchmarks/scifact_product/__pycache__/
 
-/benchmarks/literature_bench/__pycache__/
+
+/benchmarks/.venv/
+/benchmarks/**/__pycache__/
+/benchmarks/__pycache__/
