@@ -21,6 +21,11 @@ COPY --from=web /build/web/dist web/dist
 EXPOSE 8095
 CMD ["rw", "serve", "--host", "0.0.0.0", "--port", "8095"]
 
+FROM runtime AS e2e-model
+COPY e2e/ e2e/
+EXPOSE 8099
+CMD ["uvicorn", "e2e.model:app", "--host", "0.0.0.0", "--port", "8099"]
+
 FROM docker:29-cli AS docker_cli
 FROM runtime AS runner
 COPY --from=docker_cli /usr/local/bin/docker /usr/local/bin/docker

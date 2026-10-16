@@ -433,17 +433,25 @@ def _model_pairs(recognized, require_ready):
 
 
 def _validate_dependencies(spec, recognized) -> None:
-    skills = {item["id"] for item in recognized["skills"]}
+    skills = {item["id"]: {**item, "status": "ready"} for item in recognized["skills"]}
     for value in spec.skills:
-        _require(value, skills, "skill")
-    ready = {item["id"] for item in recognized["tools"] if item["status"] == "ready"}
+        _require_capability(value, skills, "skill")
+    tools = {item["id"]: item for item in recognized["tools"]}
     for value in spec.tools:
-        _require(value, ready, "tool")
+        _require_capability(value, tools, "tool")
 
 
 def _require(value, available, kind):
     if value not in available:
         raise CapabilityNotFound(f"{kind} is not available: {value}")
+
+
+def _require_capability(value, available, kind) -> None:
+    capability = available.get(value, {"status": "missing", "reason": "not_recognized"})
+    if capability.get("status") == "ready":
+        return
+    state = " / ".join(filter(None, [capability["status"], capability.get("reason")]))
+    raise CapabilityNotFound(f"{kind} is not available: {value} ({state})")
 
 
 def _session_meta(spec, value, skills, tool_plan, capabilities, endpoint):

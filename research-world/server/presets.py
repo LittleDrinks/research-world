@@ -11,45 +11,60 @@ DEFAULT_OPTIONS = {
 def agent_draft(preset_id: str, catalog: dict) -> dict:
     preset = _preset(preset_id, catalog)
     spec = {**preset["spec"], **_defaults(catalog), "options": dict(DEFAULT_OPTIONS)}
-    issues = [
-        _tool_issue(tool)
-        for tool in preset["tools"]
-        if tool["status"] != "ready"
-    ]
+    issues = _preset_issues(preset)
     return {
         "preset_id": preset["id"],
         "reason": preset["description"],
         "spec": spec,
         "tools": preset["tools"],
+        "skills": preset.get("skills", []),
         "confirmable": not issues,
         "issues": issues,
     }
 
 
-def require_tools_ready(catalog: dict, value: dict) -> None:
-    states = _tool_states(catalog)
-    blocked = [
-        _tool_issue(states.get(tool, {"id": tool, "status": "missing"}))
+def require_capabilities_ready(catalog: dict, value: dict) -> None:
+    tool_states = _capability_states(catalog, "tools")
+    issues = [
+        _tool_issue(tool_states.get(tool, {"id": tool, "status": "missing"}))
         for tool in value.get("tools", [])
-        if states.get(tool, {}).get("status") != "ready"
+        if tool_states.get(tool, {}).get("status") != "ready"
     ]
-    if blocked:
-        raise ValueError(", ".join(blocked))
+    skill_states = _capability_states(catalog, "skills")
+    issues.extend(
+        _skill_issue(skill_states.get(skill, {"id": skill, "status": "missing"}))
+        for skill in value.get("skills", [])
+        if skill_states.get(skill, {}).get("status") != "ready"
+    )
+    if issues:
+        raise ValueError(", ".join(issues))
 
 
-def _tool_states(catalog: dict) -> dict[str, dict]:
+def _preset_issues(preset: dict) -> list[str]:
+    tools = [_tool_issue(item) for item in preset["tools"] if item["status"] != "ready"]
+    skills = [_skill_issue(item) for item in preset.get("skills", []) if item["status"] != "ready"]
+    return [*tools, *skills]
+
+
+def _capability_states(catalog: dict, key: str) -> dict[str, dict]:
     states = {}
     for preset in catalog.get("presets", []):
-        for tool in preset.get("tools", []):
-            states[tool["id"]] = {**states.get(tool["id"], {}), **tool}
-    for tool in catalog.get("tools", []):
-        states[tool["id"]] = {**states.get(tool["id"], {}), **tool}
+        for item in preset.get(key, []):
+            states[item["id"]] = {**states.get(item["id"], {}), **item}
+    for item in catalog.get(key, []):
+        status = item.get("status", "ready")
+        states[item["id"]] = {**states.get(item["id"], {}), **item, "status": status}
     return states
 
 
 def _tool_issue(tool: dict) -> str:
     state = " / ".join(filter(None, [tool["status"], tool.get("reason")]))
     return f"tool unavailable: {tool['id']} ({state})"
+
+
+def _skill_issue(skill: dict) -> str:
+    state = " / ".join(filter(None, [skill["status"], skill.get("reason")]))
+    return f"skill unavailable: {skill['id']} ({state})"
 
 
 def _preset(preset_id: str, catalog: dict) -> dict:

@@ -8,6 +8,8 @@
     "build": "vite build",
     "test": "playwright test --config playwright.config.js",
     "test:t2": "playwright test --config playwright.t2.config.js",
+    "test:unit": "node --test tests/unit/*.test.js",
+    "test:source": "playwright test tests/source-research.spec.js",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {

@@ -19,6 +19,7 @@ RESERVED_PAYLOAD_KEYS = {
     "life_state",
     "direction_status",
     "working",
+    "pipeline",
 }
 ARTIFACT_ID = re.compile(r"artifact:[0-9a-f]{64}\Z")
 

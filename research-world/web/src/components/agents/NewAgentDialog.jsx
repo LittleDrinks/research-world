@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { createAgent, getCatalog } from "../../api";
 import { useWorld } from "../../context/WorldContext";
-import { blockedTools, newAgentPayload, toolStatus } from "../../utils/agents";
+import { blockedCapabilities, newAgentPayload } from "../../utils/agents";
 import { FormActions } from "../Field";
 import { Modal } from "../Modal";
 import { AgentDraftEditor } from "./AgentDraftEditor";
+import { CapabilityAlert, PresetCapabilities } from "./PresetCapabilities";
 
 const EMPTY = { id: "", name: "", instructions: "" };
 
@@ -28,7 +29,7 @@ export function NewAgentDialog({ open, onClose, done, preset }) {
   useEffect(() => {
     if (open && catalog) setSpec(initialSpec(preset, catalog));
   }, [open, preset, catalog]);
-  const blocked = spec ? blockedTools(spec.tools, preset?.tools || [], catalog.tools) : [];
+  const blocked = spec ? blockedCapabilities(spec, preset, catalog) : { tools: [], skills: [] };
   return <Modal wide title={preset ? `应用 Preset：${preset.name}` : "新建 Agent"} open={open} onClose={onClose}>
     <AgentDialogForm preset={preset} spec={spec} catalog={catalog} blocked={blocked}
       busy={busy} submit={submit} setSpec={setSpec} onClose={onClose} /></Modal>;
@@ -36,11 +37,12 @@ export function NewAgentDialog({ open, onClose, done, preset }) {
 
 
 function AgentDialogForm({ preset, spec, catalog, blocked, busy, submit, setSpec, onClose }) {
+  const blockedCount = blocked.tools.length + blocked.skills.length;
   return <form onSubmit={submit} className="form-stack">
-    {preset && <p className="preset-reason">{preset.description}</p>}
-    {blocked.length > 0 && <p className="preset-blocked" role="alert">Tool 不可用：{blocked.map(toolStatus).join("、")}。请移除该 Tool，或配置 Runtime 后重试。</p>}
+    {preset && <><p className="preset-reason">{preset.description}</p><PresetCapabilities preset={preset} /></>}
+    <CapabilityAlert {...blocked} />
     {spec && <AgentDraftEditor spec={spec} catalog={catalog} onChange={setSpec} />}
-    <FormActions onCancel={onClose} submitting={busy || !spec} disabled={blocked.length > 0}
+    <FormActions onCancel={onClose} submitting={busy || !spec} disabled={blockedCount > 0}
       submitLabel="创建 Agent" /></form>;
 }
 

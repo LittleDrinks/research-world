@@ -42,6 +42,7 @@ def test_experiment_observation_preserves_parent_for_kernel():
         ({"artifact_ids": [{}]}, "SHA-256 ids"),
         ({"life_state": "admitted"}, "rejects fields: life_state"),
         ({"lineage_id": "lineage:external"}, "rejects fields: lineage_id"),
+        ({"payload": {"pipeline": {"run_id": "run:x"}}}, "rejects fields: pipeline"),
     ],
 )
 def test_observation_rejects_invalid_or_internal_state(change, message):

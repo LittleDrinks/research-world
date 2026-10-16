@@ -73,7 +73,7 @@ export function agentDraft(state = {}) {
   return { preset_id: value.id, reason: value.description,
     spec: { ...value.spec, endpoint: "openai-compatible", model: "qwen3.7-flash",
       options: { reasoning_effort: "medium", sandbox: "read-only", max_rounds: 12, token_budget: 200000 } },
-    tools: value.tools, confirmable: true, issues: [], ...state };
+    tools: value.tools, skills: value.skills || [], confirmable: true, issues: [], ...state };
 }
 
 
