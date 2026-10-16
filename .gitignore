@@ -30,6 +30,7 @@ benchmarks/**/*.parquet
 benchmarks/**/*.pt
 benchmarks/**/*.safetensors
 .agents/
+/.scratch/tdd/
 /a.md
 /datasets/research-kernel-papers/raw/
 /scripts/sub2api-account-4-quota.sh
@@ -43,3 +44,21 @@ benchmarks/**/*.safetensors
 # Runtime Project directories; the q001-q125 corpus remains tracked.
 /research-world/projects/[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]/
 /.scratch/
+
+# Local documentation; workflow contracts and research evidence stay tracked.
+*.md
+*.pdf
+*.docx
+!AGENTS.md
+!CONTEXT.md
+!**/SKILL.md
+!docs/adr/**
+!docs/agents/**
+!.agents/**
+!.github/**
+!benchmarks/**
+!datasets/**
+!research-world/evidence/**
+
+**/README.md
+**/readme.md

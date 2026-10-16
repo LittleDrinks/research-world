@@ -9,7 +9,7 @@ _Avoid_: Benchmark
 _Avoid_: Fact Graph、事实图谱、Research Kernel
 **研究地图**：Research Graph 的可视化投影。
 _Avoid_: Research Graph（页面名称）
-**Question**：Research Graph 中定义研究对象、范围与约束的节点。
+**Question**：Research Graph 中定义研究对象、范围与约束的节点；不能作为 supports/refutes 的起点或终点。Direction 对 Question 的关系使用 Direction→Question 的 depends_on。
 **Source**：Research Graph 中描述一份外部资料及其可用范围的节点。
 **Direction**：Research Graph 中记录待探索解释、路线或反例的节点；赛题中的候选假设、机制解释、数学结构和研究路线均投影为 Direction，不是已证实结论。
 **Experiment**：Research Graph 中记录一次可复查研究操作及其结果的节点。
@@ -17,7 +17,7 @@ _Avoid_: Research Graph（页面名称）
 _Avoid_: 裸路径、覆盖写
 **Claim**：由 Source、Experiment 或 Artifact 支持、削弱或反驳的可审核陈述；报告只使用具有证据闭包的 Claim。
 _Avoid_: Claim 节点、Direction 等于结论
-**证据关系**：Research Graph 中连接研究对象的 `supports`、`refutes`、`depends_on` 等关系；关系不把 Direction 自动变成结论。
+**证据关系**：Research Graph 中连接研究对象的 `supports`、`refutes`、`depends_on` 等关系；关系不把 Direction 自动变成结论。`supports/refutes` 从证据指向研究对象；`depends_on` 从依赖者指向其前提。
 **撤销**：主 Agent 或人类因来源失效、模型复核等原因，使一个 Research Graph 节点及其依赖后继不再可用的级联操作；执行前展示影响范围并显式确认。
 _Avoid_: 静默删除、改写历史
 **Graph CLI**：主 Agent 与人类读写或撤销 Research Graph 的命令接口；不理解审核策略。
@@ -25,6 +25,8 @@ _Avoid_: 静默删除、改写历史
 _Avoid_: 图谱状态机、强制数据库 Gate
 **Agent Runtime**：一个 Agent 从启动到结束的全流程生命周期，包含 model、API、harness、Tools 与执行环境。
 _Avoid_: Endpoint、模型服务、传输协议
+**Runtime Adapter**：Agent Runtime 内部连接既有 Agent CLI 的声明与协议实现；CLI 拥有模型循环、原生 Tool、认证、上下文与恢复，Adapter 只负责识别、启动、消息传输、取消和 Trajectory 投影。
+_Avoid_: 模型代理、凭据转换层、第二套 Agent loop
 **Session**：一次 Agent 对话的上下文。
 _Avoid_: Thread、研究事实
 **Trajectory**：一个 Agent 的工作日志，包含模型输出、Tool Call、Tool I/O、父子 Session 关系与结束原因。
@@ -35,8 +37,11 @@ _Avoid_: Handoff 实体、Outcome 实体
 _Avoid_: Pipeline run、Research Round
 **主 Agent**：对一个 Workflow 作全局方向与写图决定的 Agent。
 **Child Agent**：由主 Agent 为一个方向、审查或操作启动的 Agent；没有固定角色或生命周期模板。
-**AgentSpec**：启动一个 Agent Runtime 所需的 Runtime、Endpoint、模型、Instructions、Skills、Tool id 与执行参数声明；启动时快照。
+**AgentSpec**：Pi Agent 的模型、Instructions、thinking、Skills、Tool id 声明；启动 Session 时冻结，后续编辑只影响新 Session。
 **Tool**：科研人员为 Agent 选择的稳定能力；一个 Tool 可向模型展开多个 operation，AgentSpec 只保存 Tool id。
 **Tool Adapter**：Agent Runtime 内部把本地函数、MCP、CLI、浏览器、数据库或计算设施投影为 Tool 的可插拔实现；位置、协议、生命周期、配置与凭证不越过 Agent Runtime。
 **Preset**：可复用的 AgentSpec 草稿；保存后不随 Preset 漂移。
-**识别**：Runtime 枚举当前可选择的 Endpoint、Skill 与 Tool；AgentSpec 只能引用识别结果，缺失或未就绪能力阻止 Launch。
+**识别**：Runtime 枚举 Pi 配置的模型、可读取的 Skill 与受支持的 Tool；AgentSpec 只能引用识别结果。
+
+**Run**：Runtime 内某个 Agent 的执行上下文；主 Run 绑定 Session，Child Run 绑定父 Run 和委派它的 Turn。
+**Turn**：一次消息触发的工作，具有持久事件、结束原因和可重放游标。

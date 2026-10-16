@@ -1,0 +1,828 @@
+from __future__ import annotations
+
+import asyncio
+import json
+import uuid
+from collections.abc import Mapping
+from contextvars import ContextVar
+from copy import deepcopy
+from dataclasses import dataclass, field
+from inspect import iscoroutinefunction
+from pathlib import Path
+from typing import Any
+
+from .adapter import (
+    AdapterResult as _AdapterResult,
+    RuntimeAdapter as _RuntimeAdapter,
+    TurnRequest as _TurnRequest,
+)
+from .errors import RuntimeConflictError
+from .runtime_tools import KernelInterface, RuntimeTools
+from .run_store import _AGENT_PARAMS_FIELDS, _AGENT_SPEC_FIELDS, _AGENT_TEXT_FIELDS, _RunStore
+from .trace import TraceLedger
+from .redaction import sanitize
+
+
+_RUNTIME_EVENT_TYPES = {"turn_start", "turn_end", "child_result"}
+_CLOSE_RUNTIME = ContextVar("runtime_close", default=None)
+
+
+@dataclass
+class _Run:
+    id: str
+    agent_snapshot: dict[str, Any]
+    adapter: _RuntimeAdapter
+    parent_run_id: str | None
+    session_id: str | None
+    tools: RuntimeTools
+    context: list[dict[str, Any]] = field(default_factory=list)
+    turns: dict[str, _Turn] = field(default_factory=dict)
+
+
+@dataclass
+class _Turn:
+    request: _TurnRequest
+    adapter: _RuntimeAdapter
+    submit_seq: int = 0
+    status: str = "running"
+    result_text: str | None = None
+    handle: Any = None
+    cancel_requested: bool = False
+    task_cancel_requested: bool = False
+    cancel_sent: bool = False
+    task: asyncio.Task | None = None
+    adapter_finished: bool = False
+    accepting_children: bool = True
+    waiting_for_children: bool = False
+    child_turn_ids: set[str] = field(default_factory=set)
+    terminal_event: asyncio.Event = field(default_factory=asyncio.Event)
+    cancel_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+
+
+class Runtime:
+    def __init__(
+        self, data_root: Path, adapters: dict[str, _RuntimeAdapter], *,
+        kernel: KernelInterface | None = None,
+    ):
+        _require_data_root(data_root)
+        self._adapters = _adapter_map(adapters)
+        self._kernel = kernel
+        self._store = _RunStore(data_root)
+        self._trace = TraceLedger(self._store)
+        self._runs: dict[str, _Run] = {}
+        self._session_runs: dict[str, _Run] = {}
+        self._turns: dict[str, _Turn] = {}
+        self._delegations: dict[str, tuple[str, str]] = {}
+        self._adapter_reservations: dict[int, _Turn] = {}
+        self._registry_lock = asyncio.Lock()
+        self._close_task: asyncio.Task | None = None
+        self._restore()
+
+    def _restore(self):
+        stored = self._store.snapshot()
+        for row in stored["runs"].values():
+            self._restore_run(row)
+        self._restore_delegations(stored["delegations"])
+        for row in sorted(stored["turns"].values(), key=lambda item: item["submit_seq"]):
+            self._restore_turn(row)
+        self._restore_children()
+        self._recover()
+
+    def _restore_run(self, row):
+        adapter = self._adapters.get(row["adapter_id"])
+        if adapter is None:
+            raise ValueError(f"runtime adapter is unavailable: {row['adapter_id']}")
+        run = _Run(row["id"], row["agent_snapshot"], adapter, row["parent_run_id"], row["session_id"], RuntimeTools(self._kernel, row["agent_snapshot"].get("tools", ())), row["context"])
+        self._remember_run(run)
+
+    def _restore_delegations(self, delegations):
+        for row in delegations.values():
+            self._delegations[row["child_run_id"]] = (row["parent_run_id"], row["parent_turn_id"])
+
+    def _restore_turn(self, row):
+        run = self._require_run(row["run_id"])
+        request = _TurnRequest(row["run_id"], row["id"], row["message_id"], row["input"], tuple(row["context"]), deepcopy(run.agent_snapshot), run.tools)
+        turn = _Turn(request, run.adapter, submit_seq=row["submit_seq"], status=row["status"], result_text=row["result_text"])
+        if turn.status != "running":
+            turn.adapter_finished = True
+            turn.accepting_children = False
+            turn.terminal_event.set()
+        run.turns[turn.request.message_id] = turn
+        self._turns[turn.request.turn_id] = turn
+
+    def _restore_children(self):
+        for turn in self._turns.values():
+            self._track_child_turn(self._runs[turn.request.run_id], turn)
+
+    def _recover(self):
+        pending = [turn for turn in self._turns.values() if turn.status == "running"]
+        for turn in sorted(pending, key=self._recovery_key):
+            if turn.status == "running":
+                self._recover_turn(turn)
+
+    def _recovery_key(self, turn):
+        depth = self._run_depth(turn.request.run_id)
+        return -depth, turn.request.run_id, turn.submit_seq, turn.request.turn_id
+
+    def _run_depth(self, run_id):
+        depth = 0
+        while run_id in self._delegations:
+            depth += 1
+            run_id = self._delegations[run_id][0]
+        return depth
+
+    def _recover_turn(self, turn):
+        turn.accepting_children = False
+        self._complete_turn(turn, "error", None, "runtime restarted before turn completion", True)
+
+    async def launch(
+        self,
+        agent_spec: Mapping[str, Any],
+        *,
+        session_id: str | None = None,
+    ) -> dict[str, Any]:
+        snapshot = _snapshot(agent_spec)
+        async with self._registry_lock:
+            self._require_open()
+            run = self._register_run(snapshot, session_id, None, None)
+        return _run_view(run)
+
+    def _register_run(self, snapshot, session_id, parent_run_id, parent_turn_id):
+        if parent_run_id:
+            self._require_run(parent_run_id)
+            if session_id is not None:
+                raise ValueError("child run cannot have a session")
+        if existing := self._existing_session(session_id, snapshot):
+            return existing
+        adapter = _select_adapter(self._adapters, snapshot)
+        run = _Run(
+            f"r-{uuid.uuid4().hex}",
+            snapshot,
+            adapter,
+            parent_run_id,
+            session_id,
+            RuntimeTools(self._kernel, snapshot.get("tools", ())),
+        )
+        self._store.create_run(run.id, snapshot, adapter.adapter_id, parent_run_id, parent_turn_id, session_id)
+        self._remember_run(run)
+        return run
+
+    def _existing_session(self, session_id, snapshot):
+        if session_id is None:
+            return None
+        run = self._session_runs.get(session_id)
+        if run is not None and run.agent_snapshot != snapshot:
+            raise RuntimeConflictError("session launch conflicts with existing agent snapshot")
+        return run
+
+    def _remember_session(self, run):
+        if run.session_id is not None:
+            self._session_runs[run.session_id] = run
+
+    def _remember_run(self, run):
+        self._runs[run.id] = run
+        self._remember_session(run)
+
+    async def submit(
+        self,
+        session_id: str,
+        message: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        message_id, payload = _message(message)
+        async with self._registry_lock:
+            self._require_open()
+            turn = self._register_turn(session_id, message_id, payload)
+        return _turn_view(turn)
+
+    async def submit_child(self, run_id, message):
+        message_id, payload = _message(message)
+        async with self._registry_lock:
+            self._require_open()
+            run = self._require_run(run_id)
+            parent_run, parent_turn = self._delegations[run_id]
+            self._require_parent_turn(parent_run, parent_turn)
+            turn = self._register_run_turn(run, message_id, payload)
+        return _turn_view(turn)
+
+    def inspect_session(self, session_id):
+        run = self._session_runs.get(session_id)
+        if run is None:
+            raise KeyError(session_id)
+        turns = [{**_turn_view(t), 'events': _work_events(self, t)} for t in run.turns.values()]
+        return {**_run_view(run), 'turns': turns}
+
+    def export_session(self, session_id):
+        root = self._require_session(session_id)
+        included = {root.id}
+        while True:
+            expanded = included | {r.id for r in self._runs.values() if r.parent_run_id in included}
+            if expanded == included:
+                break
+            included = expanded
+        return [_export_run(self, self._runs[run_id]) for run_id in sorted(included)]
+
+    def inspect_turn(self, turn_id):
+        return _turn_view(self._turn(turn_id))
+
+    async def close(self) -> None:
+        self._require_close_caller()
+        async with self._registry_lock:
+            if self._close_task is None:
+                self._close_task = asyncio.create_task(self._shutdown())
+            task = self._close_task
+        await _wait_for_close(task)
+
+    async def _close_adapters(self) -> None:
+        results = await asyncio.gather(
+            *(self._close_adapter(adapter) for adapter in self._adapters.values())
+        )
+        _raise_close_error(results)
+
+    async def _close_adapter(self, adapter) -> BaseException | None:
+        try:
+            await adapter.close()
+        except BaseException as error:
+            return error
+        return None
+
+    async def _shutdown(self) -> None:
+        token = _CLOSE_RUNTIME.set(self)
+        try:
+            async with self._registry_lock:
+                turns = tuple(turn for turn in self._turns.values() if turn.status == "running")
+            results = await asyncio.gather(
+                *(self.cancel(turn.request.turn_id) for turn in turns),
+                return_exceptions=True,
+            )
+            waits = await asyncio.gather(
+                *(self._wait_execution(turn) for turn in turns),
+                return_exceptions=True,
+            )
+            await self._close_adapters()
+            _raise_close_error((*results, *waits))
+        finally:
+            _CLOSE_RUNTIME.reset(token)
+
+    def _require_close_caller(self) -> None:
+        current = asyncio.current_task()
+        running_turn = any(
+            turn.task is current and turn.status == "running"
+            for turn in self._turns.values()
+        )
+        if _CLOSE_RUNTIME.get() is self or current is self._close_task or running_turn:
+            raise RuntimeError("runtime close cannot run from an active turn")
+
+    def _require_open(self) -> None:
+        if self._close_task is not None:
+            raise RuntimeError("runtime is closed")
+
+    def _register_turn(self, session_id, message_id, payload):
+        return self._register_run_turn(self._require_session(session_id), message_id, payload)
+
+    def _register_run_turn(self, run, message_id, payload):
+        if existing := run.turns.get(message_id):
+            return existing
+        turn_id = f"t-{uuid.uuid4().hex}"
+        request = _request(run, turn_id, message_id, payload)
+        turn = _Turn(request, run.adapter)
+        stored = self._trace.create_turn(run.id, turn_id, message_id, payload, request.context, run.session_id)
+        if "existing" in stored:
+            self._restore_turn(stored["existing"])
+            return run.turns[message_id]
+        turn.submit_seq = stored["submit_seq"]
+        run.turns[message_id] = turn
+        self._turns[turn_id] = turn
+        self._track_child_turn(run, turn)
+        self._start_turn(turn)
+        return turn
+
+    def _start_turn(self, turn):
+        if self._reserve_adapter(turn):
+            turn.task = asyncio.create_task(self._execute(turn))
+        else:
+            self._reject_turn(turn)
+
+    def subscribe(self, turn_id: str, after_seq: int = -1):
+        return self._subscribe(turn_id, _after_seq(after_seq))
+
+    async def _subscribe(self, turn_id: str, after_seq: int):
+        self._require_trace(turn_id)
+        queue = self._trace.watch(turn_id)
+        cursor = after_seq
+        try:
+            while True:
+                values = self._trace.read(turn_id, cursor)
+                for event in values:
+                    cursor = event["seq"]
+                    yield event
+                    if event["type"] == "turn_end":
+                        return
+                if values:
+                    continue
+                if self._trace.terminal(turn_id):
+                    return
+                await queue.get()
+        finally:
+            self._trace.unwatch(turn_id, queue)
+
+    async def cancel(self, turn_id: str) -> dict[str, Any]:
+        turn = self._turn(turn_id)
+        async with turn.cancel_lock:
+            async with self._registry_lock:
+                if turn.status != "running":
+                    return _turn_view(turn)
+                turn.cancel_requested = True
+                turn.accepting_children = False
+            try:
+                await self._cancel_children(turn)
+                await self._stop_execution(turn)
+            except Exception as error:
+                await self._finish(turn, "error", None, str(error), force=True)
+            else:
+                await self._finish(turn, "cancelled", None, force=True)
+        return _turn_view(turn)
+
+    async def _cancel_children(self, turn):
+        for child_id in tuple(turn.child_turn_ids):
+            if self._turn(child_id).status == 'running':
+                await self.cancel(child_id)
+
+    async def delegate(
+        self,
+        parent_run_id: str,
+        agent_spec: Mapping[str, Any],
+        *,
+        parent_turn_id: str,
+    ) -> dict[str, Any]:
+        snapshot = _snapshot(agent_spec)
+        async with self._registry_lock:
+            self._require_open()
+            self._require_parent_turn(parent_run_id, parent_turn_id)
+            run = self._register_run(snapshot, None, parent_run_id, parent_turn_id)
+            self._delegations[run.id] = (parent_run_id, parent_turn_id)
+        return _run_view(run)
+
+    async def _execute(self, turn: _Turn) -> None:
+        token = _CLOSE_RUNTIME.set(self)
+        try:
+            try:
+                await self._run_adapter(turn)
+            except asyncio.CancelledError as error:
+                await self._mark_adapter_finished(turn)
+                await self._handle_cancelled(turn, error)
+            except Exception as error:
+                await self._mark_adapter_finished(turn)
+                await self._finish(
+                    turn, "error", None, str(error), force=turn.cancel_requested
+                )
+        finally:
+            _CLOSE_RUNTIME.reset(token)
+
+    async def _run_adapter(self, turn: _Turn) -> None:
+        if turn.cancel_requested:
+            return
+        turn.handle = await turn.adapter.start(turn.request)
+        if turn.handle is None:
+            raise RuntimeError("adapter start must return an execution handle")
+        if turn.cancel_requested:
+            return
+        result = await turn.adapter.submit(
+            turn.handle, turn.request, lambda value: self._emit(turn, value)
+        )
+        await self._mark_adapter_finished(turn)
+        status, result_text = _result(result)
+        await self._finish(turn, status, result_text)
+
+    async def _mark_adapter_finished(self, turn: _Turn) -> None:
+        async with self._registry_lock:
+            turn.adapter_finished = True
+
+    async def _handle_cancelled(
+        self, turn: _Turn, error: asyncio.CancelledError
+    ) -> None:
+        if not turn.task_cancel_requested:
+            await self._finish(
+                turn,
+                "error",
+                None,
+                _cancel_detail(error),
+                force=turn.cancel_requested,
+            )
+
+    async def _emit(self, turn: _Turn, value: Any) -> None:
+        event_type, data = _adapter_event(value)
+        if event_type in _RUNTIME_EVENT_TYPES:
+            if event_type == "turn_end":
+                raise RuntimeError("adapter cannot emit a terminal event")
+            raise RuntimeError(f"adapter cannot emit runtime-owned event: {event_type}")
+        async with self._registry_lock:
+            if turn.status == "running":
+                self._trace.append(
+                    turn.request.turn_id, event_type, data, turn.request.run_id
+                )
+
+    async def _finish(
+        self, turn, status, result_text, error=None, *, force=False
+    ) -> None:
+        async with self._registry_lock:
+            status = self._prepare_finish(turn, status, force)
+            if status is None:
+                return
+            children = self._children_to_wait(turn, force)
+            if not children:
+                self._finish_locked(turn, status, result_text, error, force)
+                return
+        await self._wait_for_children(children)
+        await self._finish_after_children(turn, status, result_text, error, force)
+
+    def _prepare_finish(self, turn, status, force):
+        if turn.status != "running":
+            return None
+        status = _status(status)
+        if turn.cancel_requested and not force and status != "error":
+            return None
+        return status
+
+    async def _finish_after_children(
+        self, turn, status, result_text, error, force
+    ) -> None:
+        async with self._registry_lock:
+            if turn.status == "running":
+                self._finish_locked(turn, status, result_text, error, force)
+
+    def _finish_locked(self, turn, status, result_text, error, force) -> None:
+        self._complete_turn(turn, status, result_text, error, force)
+
+    def _complete_turn(self, turn, status, result_text, error, force):
+        if turn.status != "running":
+            return
+        status = _status(status)
+        if turn.cancel_requested and not force and status != "error":
+            return
+        result_text, error = sanitize(result_text), sanitize(error)
+        context = self._context_after(turn, status, result_text)
+        self._trace.finish(
+            turn.request.run_id,
+            turn.request.turn_id,
+            _end_data(status, result_text, error),
+            context,
+            self._parent_result(turn, status, result_text, error),
+        )
+        self._apply_finish(turn, status, result_text, context)
+
+    def _apply_finish(self, turn, status, result_text, context):
+        turn.status, turn.result_text = status, result_text
+        turn.waiting_for_children = False
+        turn.adapter_finished = True
+        self._release_adapter(turn)
+        self._runs[turn.request.run_id].context = context
+        turn.terminal_event.set()
+
+    def _parent_result(self, turn, status, result_text, error):
+        link = self._delegations.get(turn.request.run_id)
+        if link is None or self._turn(link[1]).status != "running":
+            return None
+        return link[0], link[1], _child_result_data(turn, status, result_text, error)
+
+    def _context_after(self, turn, status, result_text):
+        run = self._runs[turn.request.run_id]
+        context = []
+        for candidate in sorted(run.turns.values(), key=lambda item: item.submit_seq):
+            outcome = status if candidate is turn else candidate.status
+            result = result_text if candidate is turn else candidate.result_text
+            if outcome in {"completed", "limit"}:
+                context.extend(_context_entry(candidate, result))
+        return context
+
+    async def _cancel_handle(self, turn: _Turn) -> None:
+        if turn.handle is None or turn.cancel_sent:
+            return
+        turn.cancel_sent = True
+        try:
+            await turn.adapter.cancel(turn.handle, turn.request)
+        except asyncio.CancelledError as error:
+            raise RuntimeError(_cancel_detail(error)) from error
+
+    async def _stop_execution(self, turn: _Turn) -> None:
+        if turn.waiting_for_children:
+            await self._cancel_execution_task(turn)
+            return
+        if turn.adapter_finished:
+            return
+        if turn.task is None:
+            return
+        if turn.handle is None:
+            await self._cancel_execution_task(turn)
+        if turn.handle is None:
+            return
+        try:
+            await self._cancel_handle(turn)
+        except Exception:
+            await self._cancel_execution_task(turn)
+            raise
+        await self._wait_execution(turn)
+
+    async def _cancel_execution_task(self, turn: _Turn) -> None:
+        turn.task_cancel_requested = True
+        turn.task.cancel()
+        await self._wait_execution(turn)
+
+    def _reserve_adapter(self, turn: _Turn) -> bool:
+        if turn.adapter.supports_multiple_writers:
+            return True
+        adapter_key = id(turn.adapter)
+        if adapter_key in self._adapter_reservations:
+            return False
+        self._adapter_reservations[adapter_key] = turn
+        return True
+
+    def _release_adapter(self, turn: _Turn) -> None:
+        adapter_key = id(turn.adapter)
+        if self._adapter_reservations.get(adapter_key) is turn:
+            del self._adapter_reservations[adapter_key]
+
+    def _reject_turn(self, turn: _Turn) -> None:
+        turn.adapter_finished = True
+        turn.accepting_children = False
+        self._finish_locked(
+            turn,
+            "error",
+            None,
+            "adapter does not support overlapping active turns",
+            True,
+        )
+
+    async def _wait_execution(self, turn: _Turn) -> None:
+        if turn.task is None:
+            return
+        try:
+            await turn.task
+        except asyncio.CancelledError:
+            return
+
+    def _require_trace(self, turn_id: str) -> None:
+        if not self._trace.exists(turn_id):
+            raise KeyError(f"turn not found: {turn_id}")
+
+    def _require_run(self, run_id: str) -> _Run:
+        try:
+            return self._runs[run_id]
+        except KeyError:
+            raise KeyError(f"run not found: {run_id}") from None
+
+    def _require_session(self, session_id: str) -> _Run:
+        if not isinstance(session_id, str) or not session_id:
+            raise ValueError("session_id must be a nonempty string")
+        try:
+            return self._session_runs[session_id]
+        except KeyError:
+            raise KeyError(f"session not found: {session_id}") from None
+
+    def _require_parent_turn(self, parent_run_id: str, parent_turn_id: str) -> None:
+        if not isinstance(parent_turn_id, str) or not parent_turn_id:
+            raise ValueError("parent_turn_id must be a nonempty string")
+        turn = self._turn(parent_turn_id)
+        if turn.request.run_id != parent_run_id:
+            raise ValueError("parent turn belongs to another run")
+        if turn.status != "running":
+            raise ValueError("parent turn must be running")
+        if turn.adapter_finished or not turn.accepting_children:
+            raise ValueError("parent turn is no longer accepting child turns")
+
+    def _track_child_turn(self, run: _Run, turn: _Turn) -> None:
+        link = self._delegations.get(run.id)
+        if link is not None:
+            self._turn(link[1]).child_turn_ids.add(turn.request.turn_id)
+
+    def _children_to_wait(self, turn: _Turn, force: bool) -> tuple[_Turn, ...]:
+        turn.accepting_children = False
+        if force:
+            return ()
+        children = tuple(self._turns[child_id] for child_id in turn.child_turn_ids)
+        turn.waiting_for_children = bool(children)
+        return children
+
+    async def _wait_for_children(self, children: tuple[_Turn, ...]) -> None:
+        await asyncio.gather(*(child.terminal_event.wait() for child in children))
+
+    def _turn(self, turn_id: str) -> _Turn:
+        try:
+            return self._turns[turn_id]
+        except KeyError:
+            raise KeyError(f"turn not found: {turn_id}") from None
+
+
+async def _wait_for_close(task: asyncio.Task) -> Any:
+    cancelled = False
+    while not task.done():
+        try:
+            await asyncio.shield(task)
+        except asyncio.CancelledError:
+            cancelled = True
+        except BaseException:
+            break
+    try:
+        result = task.result()
+    except BaseException as error:
+        if cancelled:
+            raise asyncio.CancelledError from error
+        raise
+    if cancelled:
+        raise asyncio.CancelledError
+    return result
+
+
+def _raise_close_error(values) -> None:
+    error = next((value for value in values if isinstance(value, BaseException)), None)
+    if error is not None:
+        raise RuntimeError("runtime close failed") from error
+
+
+def _adapter_map(adapters) -> dict[str, _RuntimeAdapter]:
+    if not isinstance(adapters, dict):
+        raise TypeError("adapters must be a dict")
+    if any(not isinstance(key, str) or not key for key in adapters):
+        raise TypeError("adapter ids must be nonempty strings")
+    if any(not _is_adapter(adapter) for adapter in adapters.values()):
+        raise TypeError("adapters must implement RuntimeAdapter")
+    if any(adapter.adapter_id != key for key, adapter in adapters.items()):
+        raise ValueError("adapter registry key must match adapter_id")
+    return dict(adapters)
+
+
+def _is_adapter(adapter):
+    methods = ("start", "submit", "cancel", "close")
+    return (
+        all(iscoroutinefunction(getattr(adapter, name, None)) for name in methods)
+        and isinstance(getattr(adapter, "adapter_id", None), str)
+        and bool(getattr(adapter, "adapter_id", None))
+        and isinstance(getattr(adapter, "supports_multiple_writers", None), bool)
+    )
+
+
+def _require_data_root(data_root):
+    if not isinstance(data_root, Path):
+        raise TypeError("data_root must be a Path")
+
+
+def _select_adapter(adapters, snapshot):
+    adapter_id = snapshot["adapter"]
+    try:
+        return adapters[adapter_id]
+    except KeyError:
+        raise ValueError(f"runtime adapter is unavailable: {adapter_id}") from None
+
+
+def _snapshot(agent_spec: Mapping[str, Any]) -> dict[str, Any]:
+    if not isinstance(agent_spec, Mapping):
+        raise TypeError("agent spec must be a mapping")
+    snapshot = deepcopy(dict(agent_spec))
+    if "runtime" in snapshot:
+        raise ValueError("agent spec must use adapter")
+    _validate_snapshot_fields(snapshot)
+    adapter_id = snapshot.get("adapter")
+    if not isinstance(adapter_id, str) or not adapter_id:
+        raise ValueError("agent spec must select an adapter")
+    try:
+        return json.loads(json.dumps(snapshot, ensure_ascii=False, allow_nan=False))
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"agent spec must be JSON-serializable: {error}") from error
+
+
+def _validate_snapshot_fields(value):
+    unknown = tuple(key for key in value) if not isinstance(value, Mapping) else tuple(key for key in value if key not in _AGENT_SPEC_FIELDS)
+    if unknown:
+        raise ValueError(f"agent spec contains unsupported fields: {unknown}")
+    if not isinstance(value, Mapping):
+        raise ValueError("agent spec is invalid")
+    if any(key in value and not isinstance(value[key], str) for key in _AGENT_TEXT_FIELDS):
+        raise ValueError("agent spec contains invalid fields")
+    tools = value.get("tools", ())
+    if not isinstance(tools, (list, tuple)) or any(not isinstance(tool, str) for tool in tools):
+        raise ValueError("agent spec tools must be strings")
+    params = value.get("params", {})
+    if not isinstance(params, Mapping) or any(key not in _AGENT_PARAMS_FIELDS for key in params):
+        raise ValueError("agent spec params are invalid")
+    if "mode" in params and not isinstance(params["mode"], str):
+        raise ValueError("agent spec params are invalid")
+
+
+def _message(message: Mapping[str, Any]):
+    if not isinstance(message, Mapping) or set(message) != {"id", "content"}:
+        raise TypeError("submit requires an id/content message mapping")
+    message_id = message["id"]
+    if not isinstance(message_id, str) or not message_id:
+        raise ValueError("message must have an id")
+    return message_id, sanitize(message["content"])
+
+
+def _request(run, turn_id, message_id, payload):
+    return _TurnRequest(
+        run.id,
+        turn_id,
+        message_id,
+        payload,
+        tuple(deepcopy(run.context)),
+        deepcopy(run.agent_snapshot),
+        run.tools,
+    )
+
+
+def _adapter_event(value):
+    if not isinstance(value, dict) or set(value) != {"type", "data"}:
+        raise TypeError("adapter events must be type/data mappings")
+    event_type, data = value["type"], value["data"]
+    if not isinstance(event_type, str) or not event_type:
+        raise ValueError("adapter event type must be nonempty")
+    if not isinstance(data, dict):
+        raise TypeError("adapter event data must be a dict")
+    return event_type, sanitize(data)
+
+
+def _result(value: _AdapterResult):
+    if not isinstance(value, _AdapterResult):
+        raise TypeError("adapter submit must return AdapterResult")
+    if value.result_text is not None and not isinstance(value.result_text, str):
+        raise TypeError("adapter result_text must be a string or None")
+    if value.status == "cancelled":
+        return value.status, None
+    return value.status, sanitize(value.result_text)
+
+
+def _cancel_detail(error: asyncio.CancelledError) -> str:
+    return str(error) or "adapter operation was cancelled"
+
+
+def _status(status):
+    if status not in {"completed", "limit", "error", "cancelled"}:
+        raise ValueError(f"invalid turn status: {status}")
+    return status
+
+
+def _end_data(status, result_text, error):
+    data = {
+        "status": status,
+        "result_text": None if status == "cancelled" else result_text,
+    }
+    if error:
+        data["error"] = error
+    return data
+
+
+def _child_result_data(turn, status, result_text, error):
+    data = {
+        "child_run_id": turn.request.run_id,
+        "child_turn_id": turn.request.turn_id,
+        "status": status,
+        "result_text": result_text,
+    }
+    if error:
+        data["error"] = error
+    return data
+
+
+def _context_entry(turn, result_text):
+    return [
+        {"role": "user", "message_id": turn.request.message_id, "content": deepcopy(turn.request.input)},
+        {"role": "assistant", "content": result_text or ""},
+    ]
+
+
+def _after_seq(value):
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise TypeError("after_seq must be an integer")
+    return value
+
+
+def _run_view(run):
+    return {
+        "id": run.id,
+        "run_id": run.id,
+        "parent_run_id": run.parent_run_id,
+        "session_id": run.session_id,
+        "agent_snapshot": deepcopy(run.agent_snapshot),
+    }
+
+
+def _turn_view(turn):
+    return {
+        "id": turn.request.turn_id,
+        "turn_id": turn.request.turn_id,
+        "run_id": turn.request.run_id,
+        "message_id": turn.request.message_id,
+        "status": turn.status,
+        "result_text": turn.result_text,
+    }
+
+
+def _export_run(runtime, run):
+    value = _run_view(run)
+    value['agent_snapshot'].pop('workspace', None)
+    value['turns'] = [{**_turn_view(turn), 'events':runtime._trace.read(turn.request.turn_id)}
+                      for turn in run.turns.values()]
+    return sanitize(value)
+
+
+def _work_events(runtime, turn):
+    return [event for event in runtime._trace.read(turn.request.turn_id)
+            if event['type'] in {'tool', 'child_result', 'turn_end'}]

@@ -17,18 +17,6 @@ sources:
     url: https://www.w3.org/TR/prov-dm/
     version: W3C Recommendation 2013-04-30
 status: accepted
-supersedes:
-  - 0017 fixed Pipeline and node-state scope
-  - 0019 graph-only persistence and admission scope
-  - 0020 graph evidence and Session retention scope
-  - 0021 review and write-gate scope
-  - 0022 Research Kernel AgentSpec validation scope
-  - 0024 Research event and Runtime Trace metric-input scope
-  - 0026 Research Kernel and Pipeline ownership scope
-  - 0027 Research Kernel ownership scope
-  - 0029 Pipeline and Stage Trace UI scope
-  - 0032 fixed Pipeline and Auto scope
-  - 0036 report-input scope
 ---
 # 研究图谱与动态 Workflow
 ## 决策
@@ -41,6 +29,3 @@ Herdr/Pi 可在平台外执行同一 Workflow 并保存 Session、Trajectory、S
 正常结束的 Child Agent 在 Trajectory 末尾输出 Summary；Tool 失败时可能没有 Summary。Runtime 以结束原因和 Trajectory 尾窗暴露该失败；不建立复制摘要文本的 Handoff 实体，代价是主 Agent 必须在需要时展开日志。
 一篇 Source 被撤回时，硬删除会抹去依赖关系与原有判断；级联撤销保留历史并使后继不再可用，代价是恢复必须新建 Research Graph 对象。
 禁止 Child Agent 直接写图，放弃它们的直接写图速度，换取主 Agent Skill 在一次写入前集中执行双审；固定 Pipeline 不能表达“审查后继续原 Agent”与“审查后另开方向”的不同决定。
-## 取代范围
-ADR 0017 中固定 Pipeline、节点状态机和 Worker 解释器的范围由动态 Workflow 替代。ADR 0019 中图谱唯一持久状态、默认删除原始对话与预准入审核的范围由 Research Graph、Trajectory 与主 Agent Skill/prompt 替代。ADR 0020 中图谱只含已准入事实、删除原始 Session 的范围由 Research Graph 与 Trajectory 边界替代。ADR 0021 中强制准入 Gate 与固定双审写入门由主 Agent Skill/prompt 替代。ADR 0022 中 Research Kernel 重检 AgentSpec 的范围由 Agent Runtime 启动前检查替代。ADR 0024 中 Research event 与 Runtime Trace 的指标输入范围由 Trajectory、Artifact 和 Research Graph 投影替代。ADR 0026 中 Research Kernel 拥有项目、图谱、Thread 与 Pipeline 的范围由 Research Graph、Agent Runtime 与动态 Workflow 替代；Runtime 对 Session 与 Trace 的归属保持有效。ADR 0027 中 Research Kernel 统一写入与编排的范围由 Graph CLI 和动态 Workflow 替代。ADR 0029 中 Pipeline/Stage 驱动 Trace UI 的范围由 Trajectory 驱动的会话与事件视图替代。ADR 0032 中固定 Pipeline、Stage、Auto 的范围由动态 Workflow 替代。ADR 0036 中以 admitted 状态选择报告输入的范围由证据闭包替代。
-上述 ADR 与现有代码保留为遗留实现和历史设计记录，不描述目标架构。

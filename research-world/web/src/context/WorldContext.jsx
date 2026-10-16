@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { getBootstrap, listAgents } from "../api";
 
-const EMPTY = { projects: [], nodes: [], edges: [], runs: [], pipelines: [], threads: [], slots: [], agents: [] };
+const EMPTY = { sessions: [], projects: [], nodes: [], edges: [], runs: [], pipelines: [], threads: [], slots: [], agents: [] };
 const LAST_PROJECT_KEY = "rw.active_project";
 const WorldContext = createContext(null);
 
@@ -23,7 +23,7 @@ function useRefresh(state, desiredProject) {
       }
       desiredProject.current = result.active_project_id || "";
       if (result.active_project_id) localStorage.setItem(LAST_PROJECT_KEY, result.active_project_id);
-      state.setData({ ...result, agents });
+      state.setData({ ...EMPTY, ...result, agents });
       state.setProjectId(result.active_project_id || "");
       state.setError("");
       return result;
