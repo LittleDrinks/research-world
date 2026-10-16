@@ -22,6 +22,7 @@ test('project creation, graph roundtrip, export and Agent settings use the real 
   await page.getByRole('link',{name:'Agent',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Agent · Pi'})).toBeVisible();
   await expect(page.getByLabel('指令')).toContainText('科学问题');
+  await saveCopiedAgent(page);
   expect((await request.get(root+'/export')).status()).toBe(200);
   expect(errors).toEqual([]);
 });
@@ -40,3 +41,14 @@ test('real Pi reply writes a research direction and survives refresh',async({pag
   await page.getByRole('link',{name:'地图',exact:true}).click();
   await expect(page.getByText('浏览器闭环方向').first()).toBeVisible();
 });
+
+async function saveCopiedAgent(page) {
+  await page.getByRole('button',{name:'复制为新 Agent'}).click();
+  const name=`浏览器配置验收 ${Date.now()}`;
+  await page.getByLabel('名称',{exact:true}).fill(name);
+  await page.getByRole('button',{name:'保存 Agent',exact:true}).click();
+  await expect(page.getByRole('option',{name,exact:true})).toHaveCount(1);
+  await page.reload();
+  await page.getByLabel('选择 Agent').selectOption({label:name});
+  await expect(page.getByLabel('名称',{exact:true})).toHaveValue(name);
+}

@@ -65,3 +65,5 @@
   .capability-alert { grid-template-columns: auto minmax(0, 1fr); }
   .capability-alert .button { grid-column: 1 / -1; justify-self: start; }
 }
+
+.pi-capabilities{border:1px solid var(--line);border-radius:8px;padding:12px}.pi-capabilities>div{max-height:220px;overflow-y:auto;display:grid;gap:8px}.pi-capabilities input{margin-right:8px}.settings-page>.button{margin-left:12px}.settings-page>.form-stack{margin-top:20px}

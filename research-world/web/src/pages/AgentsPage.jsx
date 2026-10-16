@@ -1,3 +1,4 @@
+import '../settings.css';
 import {useEffect, useState} from 'react';
 import {useParams} from 'react-router-dom';
 import {agents, catalog, saveAgent} from '../sessionApi';
@@ -36,7 +37,7 @@ function AgentForm({draft,patch,options,save}) {
 }
 
 function Choices({title,values,selected,onChange}) {
-  return <fieldset><legend>{title}</legend>{values.map(([id,label])=><label style={{display:'block'}} key={id}>
+  return <fieldset className="pi-capabilities"><legend>{title}</legend><div>{values.map(([id,label])=><label style={{display:'block'}} key={id}>
     <input type="checkbox" checked={selected.includes(id)} onChange={e=>onChange(e.target.checked?[...selected,id]:selected.filter(v=>v!==id))}/>{label}
-  </label>)}</fieldset>;
+  </label>)}</div></fieldset>;
 }
