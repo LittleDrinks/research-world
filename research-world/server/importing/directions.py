@@ -18,7 +18,7 @@ def _extract(text,value):
         if not 0<=start<end<=len(text):raise ValueError('Invalid direction span')
         excerpts.append(text[start:end].strip())
         locations.append({'start':start,'end':end,'start_line':text.count('\n',0,start)+1,'end_line':text.count('\n',0,end)+1})
-    if not value['title'] or not all(excerpts):raise ValueError('Empty direction')
+    if not value['title'] or not excerpts or not all(excerpts):raise ValueError('Empty direction')
     return {'title':value['title'],'text':'\n\n'.join(excerpts),'source_spans':locations}
 
 

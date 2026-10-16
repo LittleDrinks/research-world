@@ -50,3 +50,9 @@ def test_full_corpus_builds_distinct_directions_without_duplication(tmp_path):
         assert all(r.content['verified'] is False and len(r.content['text'])>60 for r in directions)
         edges=kernel.list_relations(project.id)
         assert len(edges)==6 and all(e.target_id in {question.id,report.id} and e.type=='depends_on' for e in edges)
+
+
+def test_missing_source_spans_are_rejected():
+    from server.importing.directions import _extract
+    with pytest.raises(ValueError,match='Empty direction'):
+        _extract('original',{'title':'Missing excerpt','spans':[]})
