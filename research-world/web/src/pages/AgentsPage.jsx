@@ -8,6 +8,8 @@ import { NewAgentDialog } from "../components/agents/NewAgentDialog";
 import { PresetCapabilities } from "../components/agents/PresetCapabilities";
 import { useWorld } from "../context/WorldContext";
 import { AGENT_OPTION_DEFAULTS, blockedSkills, blockedTools, toolStatus } from "../utils/agents";
+import { RuntimeSelect } from "../components/agents/RuntimeSelect";
+import { agentCatalogIssue } from "../utils/agents";
 import { REASONING_EFFORTS } from "../utils/labels";
 import "../agents.css";
 
@@ -107,26 +109,7 @@ function CatalogFailure({ message, retry }) {
 function catalogIssue(form, catalog) {
   if (!catalog) return "";
   const invalid = formIssue(form);
-  if (invalid) return invalid;
-  const endpoint = catalog.endpoints.find((item) => item.id === form.endpoint);
-  if (!endpoint?.available) return "Endpoint 当前不可用";
-  const model = catalog.models.some((item) => item.endpoint === form.endpoint && item.id === form.model);
-  if (!model) return "模型与 Endpoint 不匹配";
-  return capabilityIssue(form, catalog);
-}
-
-
-function capabilityIssue(form, catalog) {
-  const presetTools = catalog.presets.flatMap((preset) => preset.tools);
-  const presetSkills = catalog.presets.flatMap((preset) => preset.skills || []);
-  const tools = blockedTools(form.tools, presetTools, catalog.tools);
-  const skills = blockedSkills(form.skills, presetSkills, catalog.skills);
-  const blocked = [...skills, ...tools];
-  const unknown = blocked.filter((item) => item.status === "missing").map((item) => item.id);
-  const unavailable = blocked.filter((item) => item.status !== "missing");
-  const issues = unknown.length ? [`能力未被 Runtime 识别：${unknown.join("、")}`] : [];
-  if (unavailable.length) issues.push(`能力不可用：${unavailable.map(toolStatus).join("、")}`);
-  return issues.join("；");
+  return invalid || agentCatalogIssue(form, catalog);
 }
 
 
@@ -150,6 +133,7 @@ function availableCapability(item) {
 function CatalogFields({ form, patch, patchOption, catalog }) {
   return <>
     <IdentityFields form={form} patch={patch} />
+    <RuntimeSelect value={form.runtime} runtimes={catalog.runtimes || []} onChange={(value) => patch("runtime", value)} />
     <EndpointFields form={form} patch={patch} patchOption={patchOption} catalog={catalog} />
     <CapabilityPicker label="Skills" options={catalog.skills} selected={form.skills} onChange={(value) => patch("skills", value)} />
     <CapabilityPicker id="tool-catalog" label="工具" options={catalog.tools.map(toolOption)} selected={form.tools} onChange={(value) => patch("tools", value)} />
@@ -197,7 +181,7 @@ function toolOption(tool) {
 
 function agentPayload(form) {
   return { id: form.id, name: form.name.trim(), endpoint: form.endpoint, model: form.model,
-    instructions: form.instructions.trim(), skills: [...form.skills], tools: [...form.tools],
+    instructions: form.instructions.trim(), runtime: form.runtime, skills: [...form.skills], tools: [...form.tools],
     options: optionPayload(form.options) };
 }
 

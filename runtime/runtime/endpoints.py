@@ -42,7 +42,6 @@ class Endpoint:
         return {
             "id": self.id,
             "name": self.name,
-            "adapter": self.adapter,
             "models": list(self.models),
             "embedding_models": list(self.embedding_models),
             "priority": self.priority,

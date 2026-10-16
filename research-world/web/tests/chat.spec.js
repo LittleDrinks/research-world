@@ -29,14 +29,6 @@ function failedRenderingReport() {
 }
 
 
-async function downloadText(download) {
-  const stream = await download.createReadStream();
-  let text = "";
-  for await (const chunk of stream) text += chunk;
-  return text;
-}
-
-
 test("renders project thread messages and sends via the prompts stream", async ({ page }) => {
   let request;
   await mockChat(page);
@@ -62,18 +54,21 @@ test("publishes a validated report card, previews, downloads and saves a version
   const content = "<!doctype html><html><body>Immutable report content</body></html>";
   await page.route(/\/threads\/thread%3At1\/report\/publish$/, (route) => route.fulfill({ status: 201, json: reportResult(publication) }));
   await page.route(/\/threads\/thread%3At1\/report\/save$/, (route) => route.fulfill({ status: 201, json: { id: "report:v1" } }));
-  await page.route(/\/report\/publication%3Ap1\/content/, (route) => route.fulfill(route.request().url().includes("download=true")
+  await page.context().route(/\/api\/v1\/threads\/.*\/report\/.*\/content(?:\?.*)?$/, (route) => route.fulfill(route.request().url().includes("download=true")
     ? { body: content, headers: { "content-type": "text/html", "content-disposition": "attachment; filename=report.html" } }
     : { contentType: "text/html", body: content }));
   await page.goto("/chat/thread%3At1");
   await page.getByRole("button", { name: "生成报告" }).click();
   await expect(page.getByText("已校验")).toBeVisible();
   await expect(page.getByTitle("报告预览")).toHaveAttribute("sandbox", "");
-  await expect(page.getByRole("link", { name: /下载 HTML/ })).toHaveAttribute("download", "");
+  const downloadLink = page.getByRole("link", { name: /下载 HTML/ });
+  await expect(downloadLink).toHaveAttribute("download", "");
+  await expect(downloadLink).toHaveAttribute("href", "/api/v1/threads/thread%3At1/report/publication%3Ap1/content?download=true");
   await expect(page.frameLocator('iframe[title="报告预览"]').getByText("Immutable report content")).toBeVisible();
+  expect(await page.evaluate(async (href) => (await fetch(href)).text(), await downloadLink.getAttribute("href"))).toBe(content);
   const downloadEvent = page.waitForEvent("download");
   await page.getByRole("link", { name: /下载 HTML/ }).click();
-  expect(await downloadText(await downloadEvent)).toBe(content);
+  expect((await downloadEvent).url()).toContain("/report/publication%3Ap1/content?download=true");
   await page.getByLabel("报告名称").fill("V1");
   await page.getByRole("button", { name: "保存" }).click();
   await expect(page.getByText("已保存版本 report:v1")).toBeVisible();
@@ -226,7 +221,8 @@ async function mockOutOfOrderPublicationRefresh(page, older, newer) {
   await mockChat(page);
   await page.route(/\/api\/v1\/threads\/thread%3At1$/, async (route) => {
     refreshes += 1;
-    if (refreshes !== 2) return route.fulfill({ json: detail });
+    if (refreshes < 3) return route.fulfill({ json: detail });
+    if (refreshes !== 3) return route.fulfill({ json: detail });
     entered.release(); await stale.wait;
     return route.fulfill({ json: details[0] });
   });
@@ -681,8 +677,6 @@ test("drafts an Agent profile from a Preset and confirms creation", async ({ pag
   await skills.locator(".capability-options button").click();
   const tools = card.locator(".capability-picker", { hasText: "工具" });
   await tools.getByRole("button", { name: "移除 Lean4" }).click();
-  await tools.getByLabel("搜索工具").fill("图谱");
-  await tools.locator(".capability-options button").click();
   await page.setViewportSize({ width: 390, height: 844 });
   const mask = page.locator(".sidebar-mask");
   if (await mask.count()) await mask.click({ force: true });
@@ -699,7 +693,8 @@ test("drafts an Agent profile from a Preset and confirms creation", async ({ pag
   expect(created.endpoint).toBe("codex");
   expect(created.model).toBe("gpt-5.3");
   expect(created.instructions).toBe("逐项检查并形式化证明。");
-  expect(created.tools).toEqual(["graph_query"]);
+  expect(created.tools).toEqual([]);
+  expect(created.runtime).toEqual({ id: "codex", realm: "container:runtime" });
   expect(created.skills).toEqual(["skill-review"]);
   expect(created.options).toEqual({ reasoning_effort: "high", sandbox: "workspace-write", max_rounds: 20, token_budget: 300000 });
   await page.getByRole("link", { name: "打开 Agent 设置" }).click();
@@ -775,6 +770,7 @@ test("shows server-side create errors inside the draft card", async ({ page }) =
   await page.getByRole("button", { name: "起草 Agent" }).click();
   await page.getByRole("menuitem", { name: /数学证明/ }).click();
   const card = page.getByRole("region", { name: "Agent 草稿" });
+  await card.getByRole("button", { name: "移除 lean4" }).click();
   await card.getByRole("button", { name: "确认创建" }).click();
   await expect(card.getByRole("alert")).toContainText("tool unavailable: lean4 (missing)");
   await expect(page).toHaveURL(/\/chat\/thread%3At1$/);

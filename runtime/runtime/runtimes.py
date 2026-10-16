@@ -30,7 +30,6 @@ class RuntimeDescriptor:
             "id": self.id,
             "realm": self.realm,
             "display_name": self.display_name,
-            "executable": self.executable,
             "version": self.version,
             "source": self.source,
             "last_checked_at": self.last_checked_at,
@@ -223,9 +222,7 @@ class RuntimePool:
 
 
 def load_runtimes() -> list[RuntimeAdapter]:
-    values = [RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM), ("openai-compatible",))]
-    values.append(CodexRuntimeAdapter(CodexProvider.detected()))
-    return values
+    return [CodexRuntimeAdapter(CodexProvider.detected())]
 
 
 def _codex_descriptor(provider: CodexProvider) -> RuntimeDescriptor:

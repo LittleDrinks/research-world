@@ -1,5 +1,8 @@
 id: independent-reviewer
 name: 独立复核
+runtime:
+  id: codex
+  realm: container:runtime
 endpoint: openai-compatible
 model: qwen3.7-flash
 instructions: |

@@ -21,7 +21,8 @@ def spec(endpoint_id="primary", model="shared-model"):
 
 
 def runtime_with(tmp_path, *endpoints):
-    return Runtime(tmp_path / "data", list(endpoints))
+    adapter = RuntimeAdapter(RuntimeDescriptor("openai-compatible", REALM), ("openai-compatible",))
+    return Runtime(tmp_path / "data", list(endpoints), [adapter])
 
 
 def failover_runtime(tmp_path, primary, backup, model="shared-model"):

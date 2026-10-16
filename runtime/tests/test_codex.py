@@ -189,7 +189,7 @@ def _unexpected_probe(*_args, **_kwargs):
 def test_readiness_keeps_invalid_version_candidate(monkeypatch):
     monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: sys.executable)
     monkeypatch.setattr("runtime.providers.codex.subprocess.Popen", _popen([], [_probe_result("unknown")]))
-    descriptor = load_runtimes()[1].descriptor.public()
+    descriptor = load_runtimes()[0].descriptor.public()
     assert descriptor["status"] == "error"
     assert descriptor["reason"] == {"code": "probe_invalid_output", "probe": "version"}
 
@@ -336,7 +336,7 @@ async def test_codex_launch_isolated_across_sessions_and_restart(monkeypatch, tm
 async def test_codex_rejects_selected_runtime_tools(tmp_path):
     runtime = codex_runtime(tmp_path, ready_provider())
     with pytest.raises(RuntimeError, match="cannot expose selected Tool"):
-        await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec(tools=["tool"])})
+        await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec(tools=["publish_report"])})
 
 
 def test_provider_context_reads_agent_options_and_session_id():
@@ -683,12 +683,16 @@ async def test_runtime_preserves_capability_snapshot_and_recovers_resume(
     await runtime.prompt(launched["session_id"], [{"type": "text", "text": "two"}])
     session = runtime.inspect(launched["session_id"])["session"]
     assert session["agent_spec"]["endpoint"] == "primary"
+    assert {"runtime", "endpoint", "model", "instructions", "skills", "tools"} <= set(session["agent_spec"])
+    assert session["agent_spec"]["runtime"] == {"id": "codex", "realm": "container:runtime"}
     snapshot = session["capability_snapshot"]["runtime"]
     assert set(snapshot) == _DESCRIPTOR_FIELDS
     assert "runtime_binding" not in session
     assert snapshot["id"] == "codex"
     assert snapshot["realm"] == "container:runtime"
     assert "streaming" not in snapshot["capabilities"]
+    assert "adapter" not in session["endpoint_snapshot"]
+    assert "executable" not in json.dumps(session)
     assert contexts[1]["provider_session_id"] == "thread-1"
 
 
@@ -732,13 +736,13 @@ async def test_unprobed_provider_is_not_advertised_ready(tmp_path):
     assert all(item["id"] != "codex" for item in catalog["endpoints"])
 
 
-async def test_loaded_catalog_codex_launch_needs_only_codex_auth(tmp_path, monkeypatch):
+async def test_loaded_catalog_codex_rejects_unavailable_endpoint(tmp_path, monkeypatch):
     _catalog_endpoint(monkeypatch)
     runtime = Runtime(tmp_path / "data", load_endpoints(), runtimes=[CodexRuntimeAdapter(ready_provider())])
     catalog = await runtime.recognize(str(tmp_path))
     assert not catalog["endpoints"][0]["available"]
-    session = (await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()}))["session_id"]
-    assert session.startswith("s-")
+    with pytest.raises(CapabilityNotFound, match="endpoint is not available"):
+        await runtime.launch({"workspace": str(tmp_path), "agent_spec": _spec()})
 
 
 @pytest.mark.parametrize("endpoint, model, error", [("missing", "gpt-5.6-sol", "endpoint"), ("primary", "missing", "model")])
@@ -757,10 +761,10 @@ def test_discovery_keeps_unready_codex_descriptor(monkeypatch, path, result, sta
     monkeypatch.setattr("runtime.providers.codex.shutil.which", lambda _: path)
     if result:
         monkeypatch.setattr("runtime.providers.codex.subprocess.Popen", _popen([], [_Probe(error=result)]))
-    descriptor = load_runtimes()[1].descriptor.public()
+    descriptor = load_runtimes()[0].descriptor.public()
     assert descriptor["status"] == status
     assert descriptor["reason"]["code"] == code
-    assert descriptor["executable"] == "codex"
+    assert "executable" not in descriptor
     assert {"display_name", "source", "last_checked_at"} <= set(descriptor)
     assert not {"path", "resolved_path"} & set(descriptor)
 
@@ -1384,7 +1388,7 @@ def _turn_end(turn_id, status):
     return {"type": "turn_end", "turn_id": turn_id, "data": {"status": status}}
 
 
-_DESCRIPTOR_FIELDS = {"id", "realm", "display_name", "executable", "version", "source", "last_checked_at", "status", "capabilities", "reason"}
+_DESCRIPTOR_FIELDS = {"id", "realm", "display_name", "version", "source", "last_checked_at", "status", "capabilities", "reason"}
 
 
 def _completed_process():

@@ -318,9 +318,7 @@ class ResearchKernel:
         _validate_fields(command.values, {"value"}, {"value"})
         value = command.values["value"]
         self._require_agents().validate_new(value)
-        await self._require_runtime().validate_agent(value)
-        catalog = await self._runtime_catalog(_project_id(command))
-        require_capabilities_ready(catalog, value)
+        await self._validate_agent(_project_id(command), value)
         return self._require_agents().create(value)
 
     async def _command_draft_agent(self, command: KernelCommand) -> dict:
@@ -334,12 +332,14 @@ class ResearchKernel:
     async def _command_save_agent(self, command: KernelCommand) -> dict:
         _validate_fields(command.values, {"agent_id", "value"}, {"agent_id", "value"})
         value = command.values["value"]
-        await self._require_runtime().validate_agent(value)
-        catalog = await self._runtime_catalog(_project_id(command))
-        require_capabilities_ready(catalog, value)
+        await self._validate_agent(_project_id(command), value)
         return self._require_agents().save(
             command.values["agent_id"], value
         )
+
+    async def _validate_agent(self, project_id: str, value: dict) -> None:
+        workspace = self._world.project(project_id)["root"]
+        await self._require_runtime().validate_agent(value, workspace)
 
     def _command_save_pipeline(self, command: KernelCommand) -> dict:
         value = command.values

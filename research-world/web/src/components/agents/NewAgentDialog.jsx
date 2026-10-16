@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createAgent, getCatalog } from "../../api";
 import { useWorld } from "../../context/WorldContext";
 import { blockedCapabilities, newAgentPayload } from "../../utils/agents";
+import { agentCatalogIssue } from "../../utils/agents";
 import { FormActions } from "../Field";
 import { Modal } from "../Modal";
 import { AgentDraftEditor } from "./AgentDraftEditor";
@@ -30,19 +31,21 @@ export function NewAgentDialog({ open, onClose, done, preset }) {
     if (open && catalog) setSpec(initialSpec(preset, catalog));
   }, [open, preset, catalog]);
   const blocked = spec ? blockedCapabilities(spec, preset, catalog) : { tools: [], skills: [] };
+  const issue = spec && catalog ? agentCatalogIssue(spec, catalog) : "";
   return <Modal wide title={preset ? `应用 Preset：${preset.name}` : "新建 Agent"} open={open} onClose={onClose}>
-    <AgentDialogForm preset={preset} spec={spec} catalog={catalog} blocked={blocked}
+    <AgentDialogForm preset={preset} spec={spec} catalog={catalog} blocked={blocked} issue={issue}
       busy={busy} submit={submit} setSpec={setSpec} onClose={onClose} /></Modal>;
 }
 
 
-function AgentDialogForm({ preset, spec, catalog, blocked, busy, submit, setSpec, onClose }) {
+function AgentDialogForm({ preset, spec, catalog, blocked, issue, busy, submit, setSpec, onClose }) {
   const blockedCount = blocked.tools.length + blocked.skills.length;
   return <form onSubmit={submit} className="form-stack">
     {preset && <><p className="preset-reason">{preset.description}</p><PresetCapabilities preset={preset} /></>}
+    {issue && <p role="alert">{issue}</p>}
     <CapabilityAlert {...blocked} />
     {spec && <AgentDraftEditor spec={spec} catalog={catalog} onChange={setSpec} />}
-    <FormActions onCancel={onClose} submitting={busy || !spec} disabled={blockedCount > 0}
+    <FormActions onCancel={onClose} submitting={busy || !spec} disabled={blockedCount > 0 || Boolean(issue)}
       submitLabel="创建 Agent" /></form>;
 }
 

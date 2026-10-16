@@ -10,7 +10,7 @@ test("offers recognizable endpoint, model and effort choices from the catalog", 
   await expect(page.getByLabel("模型")).toHaveValue("qwen3.7-flash");
   await expect(page.getByLabel("推理强度")).toHaveValue("high");
   await expect(page.getByLabel("推理强度").locator("option")).toHaveCount(4);
-  await expect(page.locator(".capability-picker", { hasText: "工具" }).locator(".capability-chip")).not.toContainText("未识别");
+  await expect(page.locator(".capability-picker", { hasText: "工具" }).locator(".capability-chip")).toHaveCount(0);
   await page.screenshot({ path: "test-results/agents-desktop.png", fullPage: true });
 });
 
@@ -42,6 +42,7 @@ test("creates a new Agent from the sidebar and opens its editor", async ({ page 
   await expect.poll(() => created).toBeTruthy();
   expect(createUrl).toContain("project_id=project%3Atest");
   expect(created).toEqual({ id: "proof-reviewer", name: "形式化复核", instructions: "检查证明并报告反例。",
+    runtime: { id: "codex", realm: "container:runtime" },
     endpoint: "openai-compatible", model: "qwen3.7-flash", skills: [], tools: [],
     options: { reasoning_effort: "medium", sandbox: "read-only", max_rounds: 12, token_budget: 200000 } });
   await expect(page).toHaveURL(/\/agents\/proof-reviewer$/);
@@ -132,21 +133,32 @@ test("enforces the AgentSpec numeric option ranges", async ({ page }) => {
 });
 
 
-test("rebuilds the saved AgentSpec without legacy or unknown fields", async ({ page }) => {
+test("keeps an unknown Runtime reference visible and blocks saving", async ({ page }) => {
   const current = agents()[0];
-  const loaded = { ...current, runtime: "legacy", mcp_servers: ["legacy-mcp"], unknown: true,
+  const loaded = { ...current, runtime: { id: "codex", realm: "legacy:runtime" }, mcp_servers: ["legacy-mcp"], unknown: true,
     options: { ...current.options, legacy_option: "drop-me" } };
-  let saved;
   await mockBase(page);
   await page.route(/\/api\/v1\/agents$/, (route) => route.fulfill({ json: [loaded] }));
-  await page.route(/\/api\/v1\/agents\/research-assistant\?/, (route) => {
-    saved = route.request().postDataJSON();
-    return route.fulfill({ json: saved });
-  });
+  await page.setViewportSize({ width: 390, height: 700 });
   await page.goto("/agents/research-assistant");
-  await page.getByRole("button", { name: "保存" }).click();
-  await expect.poll(() => saved).toBeTruthy();
-  expect(saved).toEqual(current);
+  await expect(page.getByLabel("Runtime")).toHaveValue(JSON.stringify(["codex", "legacy:runtime"]));
+  await expect(page.getByLabel("Runtime").locator("option:checked")).toContainText("不在 catalog");
+  await expect(page.getByRole("button", { name: "保存" })).toBeDisabled();
+  await expect(page.getByRole("alert")).toContainText("Runtime 不在 catalog");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
+
+
+test("blocks saving when the Runtime is unavailable", async ({ page }) => {
+  const value = catalog();
+  value.runtimes[0] = { ...value.runtimes[0], status: "unavailable", reason: { code: "not_installed" } };
+  await mockBase(page);
+  await page.route(/\/api\/v1\/runtime\/catalog/, (route) => route.fulfill({ json: value }));
+  await page.goto("/agents/research-assistant");
+  await expect(page.getByLabel("Runtime").locator("option:checked")).toContainText("not_installed");
+  await expect(page.getByLabel("Runtime").locator("option:checked")).toHaveAttribute("disabled", "");
+  await expect(page.getByRole("button", { name: "保存" })).toBeDisabled();
+  await expect(page.getByRole("alert")).toContainText("Runtime 当前不可用");
 });
 
 
@@ -165,6 +177,17 @@ test("syncs the model to the chosen endpoint and keeps the pair saveable", async
   await expect.poll(() => saved).toBeTruthy();
   expect(saved.endpoint).toBe("codex");
   expect(saved.model).toBe("gpt-5.2");
+});
+
+
+test("blocks saving when the Endpoint is incompatible with the Runtime", async ({ page }) => {
+  const value = catalog();
+  value.endpoints[0] = { ...value.endpoints[0], runtime_refs: [] };
+  await mockBase(page);
+  await page.route(/\/api\/v1\/runtime\/catalog/, (route) => route.fulfill({ json: value }));
+  await page.goto("/agents/research-assistant");
+  await expect(page.getByRole("button", { name: "保存" })).toBeDisabled();
+  await expect(page.getByRole("alert")).toContainText("Endpoint 与 Runtime 不兼容");
 });
 
 
@@ -206,7 +229,7 @@ test("retries runtime catalog recognition after a transient failure", async ({ p
   await mockBase(page);
   await page.route(/\/api\/v1\/runtime\/catalog/, (route) => {
     attempts += 1;
-    return attempts === 1 ? route.fulfill({ status: 503, json: { detail: "Runtime 暂不可用" } })
+    return attempts < 3 ? route.fulfill({ status: 503, json: { detail: "Runtime 暂不可用" } })
       : route.fulfill({ json: catalog() });
   });
   await page.goto("/agents/research-assistant");
@@ -217,23 +240,17 @@ test("retries runtime catalog recognition after a transient failure", async ({ p
 });
 
 
-test("selects a recognized Lean4 Tool and saves it", async ({ page }) => {
+test("blocks a ready Tool selected for the Codex Runtime", async ({ page }) => {
   const value = catalog();
-  let saved;
   await mockBase(page);
   await page.route(/\/api\/v1\/runtime\/catalog/, (route) => route.fulfill({ json: value }));
-  await page.route(/\/api\/v1\/agents\/research-assistant\?/, (route) => {
-    saved = route.request().postDataJSON();
-    return route.fulfill({ json: saved });
-  });
   await page.goto("/agents/research-assistant");
   const picker = page.locator(".capability-picker", { hasText: "工具" });
   await picker.getByLabel("搜索工具").fill("Lean4");
   await picker.locator(".capability-options button").click();
   await expect(page.locator(".capability-chip", { hasText: "Lean4" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "保存" })).toBeEnabled();
-  await page.getByRole("button", { name: "保存" }).click();
-  await expect.poll(() => saved?.tools).toEqual(["read_resource", "lean4"]);
+  await expect(page.getByRole("button", { name: "保存" })).toBeDisabled();
+  await expect(page.getByRole("alert")).toContainText("Codex Runtime 不支持 Tools");
 });
 
 
@@ -296,14 +313,16 @@ test("browses a Profile Preset and applies it as an editable creation draft", as
   const skills = dialog.locator(".capability-picker", { hasText: "Skills" });
   await skills.getByLabel("搜索Skills").fill("文献综述");
   await skills.locator(".capability-options button").click();
+  await dialog.getByRole("button", { name: "移除 lean4" }).click();
   await dialog.getByRole("button", { name: "创建 Agent" }).click();
   await expect.poll(() => created).toBeTruthy();
   expect(created.id).toBe("math-proof");
   expect(created.name).toBe("证明助手 v2");
-  expect(created.tools).toEqual(["lean4"]);
+  expect(created.tools).toEqual([]);
   expect(created.skills).toEqual(["skill-review"]);
   expect(created.options).toMatchObject({ reasoning_effort: "high", sandbox: "workspace-write" });
   expect(created.endpoint).toBe("openai-compatible");
+  expect(created.runtime).toEqual({ id: "codex", realm: "container:runtime" });
   await expect(page).toHaveURL(/\/agents\/math-proof$/);
   await expect(page.getByRole("heading", { name: "证明助手 v2" })).toBeVisible();
 });

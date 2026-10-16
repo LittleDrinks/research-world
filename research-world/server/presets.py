@@ -75,11 +75,19 @@ def _preset(preset_id: str, catalog: dict) -> dict:
 
 
 def _defaults(catalog: dict) -> dict:
-    endpoints = [item for item in catalog.get("endpoints", []) if item.get("available")]
-    if not endpoints:
-        raise ValueError("no available endpoint in runtime catalog")
-    endpoint = endpoints[0]
-    models = [
-        item for item in catalog.get("models", []) if item["endpoint"] == endpoint["id"]
-    ]
-    return {"endpoint": endpoint["id"], "model": models[0]["id"] if models else ""}
+    runtime = next(
+        (item for item in catalog.get("runtimes", [])
+         if item.get("id") == "codex" and item.get("status") == "ready"), None
+    )
+    if runtime is None:
+        raise ValueError("no ready Codex runtime in runtime catalog")
+    runtime_ref = {"id": runtime["id"], "realm": runtime["realm"]}
+    for endpoint in catalog.get("endpoints", []):
+        if not endpoint.get("available") or runtime_ref not in endpoint.get("runtime_refs", []):
+            continue
+        model = next((item for item in catalog.get("models", [])
+                      if item["endpoint"] == endpoint["id"]), None)
+        if model:
+            return {"runtime": runtime_ref,
+                    "endpoint": endpoint["id"], "model": model["id"]}
+    raise ValueError("no available Endpoint/Model pair in runtime catalog")

@@ -99,7 +99,7 @@ class RuntimeAgent:
             "runtime/discover": lambda: self.runtime.recognize(params["workspace"]),
             "runtime/launch": lambda: self.runtime.launch(params),
             "runtime/inspect": lambda: _async_value(self._inspect(params)),
-            "runtime/agents/validate": lambda: _async_value(self._validate(params)),
+            "runtime/agents/validate": lambda: self._validate(params),
             "runtime/embed": lambda: self.runtime.embed(
                 params["endpoint"],
                 params["model"],
@@ -114,8 +114,10 @@ class RuntimeAgent:
     def _inspect(self, params):
         return self.runtime.inspect(params["session_id"])
 
-    def _validate(self, params):
-        return self.runtime.validate_agent(params["agent_spec"])
+    async def _validate(self, params):
+        return await self.runtime.validate_agent(
+            params["agent_spec"], params["workspace"]
+        )
 
     async def ext_notification(self, method: str, params: dict[str, Any]) -> None:
         return None

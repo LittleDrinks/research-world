@@ -1,5 +1,8 @@
 id: research-assistant
 name: 研究助手
+runtime:
+  id: codex
+  realm: container:runtime
 endpoint: openai-compatible
 model: qwen3.7-flash
 instructions: |
