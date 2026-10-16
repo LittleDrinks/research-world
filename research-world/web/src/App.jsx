@@ -4,6 +4,7 @@ import { AppShell } from "./components/AppShell";
 import { useWorld } from "./context/WorldContext";
 
 
+const WorkspaceFilePage = lazy(() => import("./pages/WorkspaceFilePage").then(value=>({default:value.WorkspaceFilePage})));
 const WorkspacePage = lazy(() => import("./pages/WorkspacePage").then(value=>({default:value.WorkspacePage})));
 const MapPage = lazy(() => import("./pages/MapPage").then((value) => ({ default: value.MapPage })));
 const ChatPage = lazy(() => import("./pages/ChatPage").then((value) => ({ default: value.ChatPage })));
@@ -29,6 +30,7 @@ export function App() {
   return <Routes>
     <Route index element={<Navigate to="/projects" replace />} />
     <Route path="projects" element={<View component={ProjectsPage} />} />
+    <Route path="workspace/*" element={<View component={WorkspaceFilePage} />} />
     <Route element={<ProjectRequired />}>
       <Route path="workspace" element={<View component={WorkspacePage} />} />
       <Route path="map" element={<View component={MapPage} />} />

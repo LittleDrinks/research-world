@@ -1,4 +1,4 @@
-import ReactMarkdown from 'react-markdown';
+import {ChatMarkdown} from './ChatMarkdown';
 import {mergeEvents,timeline} from './timeline';
 
 const TOOL_NAMES={graph:'查询研究地图',record:'保存研究方向',connect:'连接证据',artifact:'保存研究产物',literature:'检索文献',delegate:'委派独立 Agent',read:'读取文件',write:'写入文件',edit:'编辑文件',bash:'执行命令'};
@@ -9,19 +9,19 @@ export function Conversation({detail,events,active,connection,sending}){
       const turn=detail.run.turns.find(t=>t.message_id===message.id);
       const live=turn?.id===active?.id;
       const ordered=mergeEvents(turn?.events||[],live?events.filter(e=>e.turn_id===turn.id):[]);
-      return <Message key={message.id} message={message} turn={turn} events={ordered} active={live} connection={connection}/>;
+      return <Message projectId={detail.session.project_id} key={message.id} message={message} turn={turn} events={ordered} active={live} connection={connection}/>;
     })}
     {sending&&!active&&<p className="pi-status" role="status">正在发送…</p>}
   </div></div>;
 }
 
-function Message({message,turn,events,active,connection}){
+function Message({message,turn,events,active,connection,projectId}){
   const parts=timeline(events);
   const answer=parts.some(part=>part.type==='text')?'':message.assistant_response;
-  return <article data-turn-id={turn?.id}><div className="pi-user"><span className="pi-role">你</span><ReactMarkdown>{message.content}</ReactMarkdown></div>
+  return <article data-turn-id={turn?.id}><div className="pi-user"><span className="pi-role">你</span><ChatMarkdown projectId={projectId}>{message.content}</ChatMarkdown></div>
     {(parts.length>0||answer)&&<div className="pi-assistant"><span className="pi-role">研究助手</span>
-      {parts.map(part=><Part key={`${part.type}:${part.id}`} part={part} status={turn?.status}/>)}
-      {answer&&<ReactMarkdown>{answer}</ReactMarkdown>}
+      {parts.map(part=><Part projectId={projectId} key={`${part.type}:${part.id}`} part={part} status={turn?.status}/>)}
+      {answer&&<ChatMarkdown projectId={projectId}>{answer}</ChatMarkdown>}
     </div>}
     {active&&<p className="pi-status" role="status"><span className="pi-spinner"/>{statusText(events,connection)}</p>}
     {turn?.status==='error'&&<p className="pi-failure" role="alert">本轮执行失败，请查看轨迹中的错误后重试。</p>}
@@ -29,10 +29,10 @@ function Message({message,turn,events,active,connection}){
   </article>;
 }
 
-function Part({part,status}){
+function Part({part,status,projectId}){
   if(part.type==='tool')return <ToolCall tool={part.tool} status={status}/>;
-  if(part.type==='child')return <div className="pi-child"><b>独立 Agent 的结果</b><ReactMarkdown>{part.result_text||part.status}</ReactMarkdown></div>;
-  return <div className="pi-text"><ReactMarkdown>{part.text}</ReactMarkdown></div>;
+  if(part.type==='child')return <div className="pi-child"><b>独立 Agent 的结果</b><ChatMarkdown projectId={projectId}>{part.result_text||part.status}</ChatMarkdown></div>;
+  return <div className="pi-text"><ChatMarkdown projectId={projectId}>{part.text}</ChatMarkdown></div>;
 }
 
 function ToolCall({tool,status}){
