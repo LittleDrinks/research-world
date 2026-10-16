@@ -24,6 +24,15 @@ __all__ = [
 ]
 
 _SCHEMA = """
+CREATE TABLE IF NOT EXISTS kernel_session_archives(
+  session_id TEXT PRIMARY KEY, project_id TEXT NOT NULL, created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS kernel_revocations(
+  object_id TEXT PRIMARY KEY, project_id TEXT NOT NULL,
+  reason TEXT NOT NULL, created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS kernel_projects(
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
@@ -167,6 +176,10 @@ class KernelInterface(Protocol):
 
     def read_artifact(self, project_id: str, artifact_id: str) -> bytes: ...
 
+    def list_artifacts(self, project_id):
+        self.get_project(project_id)
+        return [_artifact_from_record(r) for r in ArtifactStore(self._artifacts, project_id).records()]
+
     def record(
         self,
         project_id: str,
@@ -270,15 +283,28 @@ class _SQLiteKernel(KernelInterface):
                 raise PermissionError("session belongs to another project")
             return _session_from_row(connection, row)
 
-    def list_sessions(self, project_id: str) -> list[Session]:
+    def list_sessions(self, project_id: str, include_archived=False) -> list[Session]:
         self.get_project(project_id)
         with self._connect() as connection:
             rows = connection.execute(
                 "SELECT id,project_id,title,created_at FROM kernel_sessions "
-                "WHERE project_id=? ORDER BY created_at,id",
-                (project_id,),
+                "WHERE project_id=? AND (? OR id NOT IN (SELECT session_id FROM kernel_session_archives)) ORDER BY created_at,id",
+                (project_id, include_archived),
             ).fetchall()
             return [_session_from_row(connection, row) for row in rows]
+
+    def rename_session(self, project_id, session_id, title):
+        self.get_session(project_id, session_id)
+        _require_text(title, 'session title')
+        with self._connect() as connection:
+            connection.execute('UPDATE kernel_sessions SET title=? WHERE id=?', (title, session_id))
+        return self.get_session(project_id, session_id)
+
+    def archive_session(self, project_id, session_id):
+        self.get_session(project_id, session_id)
+        with self._connect() as connection:
+            connection.execute('INSERT OR IGNORE INTO kernel_session_archives VALUES(?,?,?)',
+                               (session_id, project_id, now()))
 
     def append_user_message(
         self,
@@ -366,7 +392,7 @@ class _SQLiteKernel(KernelInterface):
         self.get_project(project_id)
         with self._connect() as connection:
             row = connection.execute(
-                "SELECT * FROM kernel_records WHERE id=?", (record_id,)
+                "SELECT * FROM kernel_records WHERE id=? AND id NOT IN (SELECT object_id FROM kernel_revocations)", (record_id,)
             ).fetchone()
         if row is None:
             raise KeyError(record_id)
@@ -378,23 +404,38 @@ class _SQLiteKernel(KernelInterface):
         self.get_project(project_id)
         with self._connect() as connection:
             rows = connection.execute(
-                "SELECT * FROM kernel_records WHERE project_id=? "
+                "SELECT * FROM kernel_records WHERE project_id=? AND id NOT IN (SELECT object_id FROM kernel_revocations) "
                 "ORDER BY created_at,id",
                 (project_id,),
             ).fetchall()
         return list(map(_record_from_row, rows))
 
+    def revocation_impact(self, project_id, record_id):
+        self.get_record(project_id, record_id)
+        relations = self.list_relations(project_id)
+        affected = {record_id}
+        while True:
+            expanded = affected | _dependent_ids(relations, affected)
+            if expanded == affected:
+                return [r for r in self.list_records(project_id) if r.id in affected]
+            affected = expanded
+
     def remove_record(self, project_id: str, record_id: str) -> None:
+        affected = {r.id for r in self.revocation_impact(project_id, record_id)}
+        relations = self.list_relations(project_id)
+        affected.update(r.id for r in relations if r.source_id in affected or r.target_id in affected)
+        self._revoke(project_id, affected, f'revoked dependency: {record_id}')
+
+    def _revoke(self, project_id, identifiers, reason):
+        with self._connect() as connection:
+            connection.executemany('INSERT OR IGNORE INTO kernel_revocations VALUES(?,?,?,?)',
+                                  [(value, project_id, reason, now()) for value in identifiers])
+
+    def history(self, project_id):
         self.get_project(project_id)
         with self._connect() as connection:
-            row = connection.execute(
-                "SELECT project_id FROM kernel_records WHERE id=?", (record_id,)
-            ).fetchone()
-            _require_owned(row, record_id, project_id, "record")
-            connection.execute(
-                "DELETE FROM kernel_records WHERE project_id=? AND id=?",
-                (project_id, record_id),
-            )
+            rows = connection.execute('SELECT * FROM kernel_revocations WHERE project_id=?', (project_id,)).fetchall()
+            return [_history_row(connection, row) for row in rows]
 
     def connect(
         self,
@@ -427,7 +468,7 @@ class _SQLiteKernel(KernelInterface):
         self.get_project(project_id)
         with self._connect() as connection:
             row = connection.execute(
-                "SELECT * FROM kernel_relations WHERE id=?", (relation_id,)
+                "SELECT * FROM kernel_relations WHERE id=? AND id NOT IN (SELECT object_id FROM kernel_revocations)", (relation_id,)
             ).fetchone()
         if row is None:
             raise KeyError(relation_id)
@@ -439,7 +480,7 @@ class _SQLiteKernel(KernelInterface):
         self.get_project(project_id)
         with self._connect() as connection:
             rows = connection.execute(
-                "SELECT * FROM kernel_relations WHERE project_id=? "
+                "SELECT * FROM kernel_relations WHERE project_id=? AND id NOT IN (SELECT object_id FROM kernel_revocations) "
                 "ORDER BY created_at,id",
                 (project_id,),
             ).fetchall()
@@ -447,11 +488,7 @@ class _SQLiteKernel(KernelInterface):
 
     def remove_relation(self, project_id: str, relation_id: str) -> None:
         self.get_relation(project_id, relation_id)
-        with self._connect() as connection:
-            connection.execute(
-                "DELETE FROM kernel_relations WHERE project_id=? AND id=?",
-                (project_id, relation_id),
-            )
+        self._revoke(project_id, [relation_id], 'relation withdrawn')
 
     def local_map(self, project_id: str, query: LocalMapQuery) -> LocalMap:
         self.get_project(project_id)
@@ -703,3 +740,18 @@ def _artifact_from_record(record: dict) -> Artifact:
         record["size"],
         record["created_at"],
     )
+
+
+def _dependent_ids(relations, affected):
+    evidence = {r.target_id for r in relations if r.type != 'depends_on' and r.source_id in affected}
+    dependencies = {r.source_id for r in relations if r.type == 'depends_on' and r.target_id in affected}
+    return evidence | dependencies
+
+
+def _history_row(connection, row):
+    table = 'kernel_records' if row['object_id'].startswith('record:') else 'kernel_relations'
+    original = connection.execute(f'SELECT * FROM {table} WHERE id=?', (row['object_id'],)).fetchone()
+    value = dict(original) if original else None
+    if value and 'content' in value:
+        value['content'] = json.loads(value['content'])
+    return {**dict(row), 'object':value}

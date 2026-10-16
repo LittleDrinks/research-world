@@ -1,6 +1,3 @@
-# Domain docs
-[CONTEXT.md](../../CONTEXT.md) is the single glossary for Research Kernel, Runtime, Message, Session, Run, Turn, Trace, Adapter, Subagent, Child Run, Child Turn and Research Graph terms.
-[ADR-0033](../adr/0033-runtime-adapters-and-event-delivery.md), [ADR-0034](../adr/0034-direct-kernel-fact-recording.md) and [ADR-0038](../adr/0038-web-model-conversation-closure.md) are the accepted Runtime/Kernel decisions for ownership, execution, event delivery, direct fact recording and the web model conversation closure.
-Their `supersedes` entries mark historical scopes that no longer provide current implementation instructions; other ADR details remain historical unless they conflict with those scopes.
-Read the glossary and applicable ADR before changing a domain concept. Use defined terms and their exclusions in issue titles, code, tests and docs; surface conflicts before implementation.
-Run `bash docs/agents/governance-check.sh` to verify the tracked governance files and current-contract assertions.
+# 领域文档
+术语在根 CONTEXT.md；当前决策在 docs/adr/0037-research-graph-and-dynamic-workflow.md 与 docs/adr/0040-pi-product-runtime.md。
+命名或变更领域概念前读取术语与相关 ADR；代码、测试与 issue 使用同一术语。冲突先明确并更新决策，再实现。

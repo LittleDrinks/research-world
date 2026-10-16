@@ -420,3 +420,32 @@ def test_local_map_updates_after_relation_and_record_removal(tmp_path):
     assert kernel.local_map(project.id, query).relations == ()
     kernel.remove_record(project.id, direction.id)
     assert kernel.local_map(project.id, query).records == (source,)
+
+
+def test_revocation_cascades_and_preserves_original_records(tmp_path):
+    import sqlite3
+    kernel=_kernel(tmp_path)
+    project=_project(kernel)
+    source=kernel.record(project.id,'source',{'title':'Retracted study'})
+    direction=kernel.record(project.id,'direction',{'title':'Dependent idea'})
+    unrelated=kernel.record(project.id,'direction',{'title':'Independent'})
+    kernel.connect(project.id,source.id,direction.id,'supports')
+    assert {r.id for r in kernel.revocation_impact(project.id,source.id)}=={source.id,direction.id}
+    kernel.remove_record(project.id,source.id)
+    assert kernel.list_records(project.id)==[unrelated]
+    assert {r['object_id'] for r in kernel.history(project.id)} >= {source.id,direction.id}
+    with kernel._connect() as connection:
+        assert connection.execute('SELECT count(*) FROM kernel_records').fetchone()[0]==3
+
+
+def test_revoking_prerequisite_invalidates_dependents_and_keeps_history_content(tmp_path):
+    kernel=_kernel(tmp_path)
+    project=_project(kernel)
+    base=kernel.record(project.id,'direction',{'title':'Prerequisite'})
+    dependent=kernel.record(project.id,'experiment',{'title':'Dependent experiment'})
+    kernel.connect(project.id,dependent.id,base.id,'depends_on')
+    kernel.remove_record(project.id,base.id)
+    assert kernel.list_records(project.id)==[]
+    history={entry['object_id']:entry for entry in kernel.history(project.id)}
+    assert history[base.id]['object']['content']=={'title':'Prerequisite'}
+    assert dependent.id in history

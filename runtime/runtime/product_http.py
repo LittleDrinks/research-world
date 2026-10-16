@@ -11,6 +11,7 @@ def product_router(runtime):
     router.add_api_route('/catalog', catalog)
     _session_routes(router, runtime)
     _turn_routes(router, runtime)
+    _export_route(router, runtime)
     return router
 
 
@@ -47,3 +48,9 @@ def _turn_routes(router, runtime):
 async def _events(runtime, turn_id, after_seq):
     async for event in runtime.subscribe(turn_id, after_seq):
         yield f'id: {event["seq"]}\nevent: {event["type"]}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n'
+
+
+def _export_route(router, runtime):
+    @router.get('/sessions/{session_id}/export')
+    async def export(session_id: str):
+        return runtime.export_session(session_id)

@@ -17,7 +17,7 @@ _Avoid_: Research Graph（页面名称）
 _Avoid_: 裸路径、覆盖写
 **Claim**：由 Source、Experiment 或 Artifact 支持、削弱或反驳的可审核陈述；报告只使用具有证据闭包的 Claim。
 _Avoid_: Claim 节点、Direction 等于结论
-**证据关系**：Research Graph 中连接研究对象的 `supports`、`refutes`、`depends_on` 等关系；关系不把 Direction 自动变成结论。
+**证据关系**：Research Graph 中连接研究对象的 `supports`、`refutes`、`depends_on` 等关系；关系不把 Direction 自动变成结论。`supports/refutes` 从证据指向研究对象；`depends_on` 从依赖者指向其前提。
 **撤销**：主 Agent 或人类因来源失效、模型复核等原因，使一个 Research Graph 节点及其依赖后继不再可用的级联操作；执行前展示影响范围并显式确认。
 _Avoid_: 静默删除、改写历史
 **Graph CLI**：主 Agent 与人类读写或撤销 Research Graph 的命令接口；不理解审核策略。

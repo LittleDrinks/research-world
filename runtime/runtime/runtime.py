@@ -20,6 +20,7 @@ from .errors import RuntimeConflictError
 from .runtime_tools import KernelInterface, RuntimeTools
 from .run_store import _AGENT_PARAMS_FIELDS, _AGENT_SPEC_FIELDS, _AGENT_TEXT_FIELDS, _RunStore
 from .trace import TraceLedger
+from .redaction import sanitize
 
 
 _RUNTIME_EVENT_TYPES = {"turn_start", "turn_end", "child_result"}
@@ -207,8 +208,18 @@ class Runtime:
         run = self._session_runs.get(session_id)
         if run is None:
             raise KeyError(session_id)
-        turns = [_turn_view(t) for t in run.turns.values()]
+        turns = [{**_turn_view(t), 'events': _work_events(self, t)} for t in run.turns.values()]
         return {**_run_view(run), 'turns': turns}
+
+    def export_session(self, session_id):
+        root = self._require_session(session_id)
+        included = {root.id}
+        while True:
+            expanded = included | {r.id for r in self._runs.values() if r.parent_run_id in included}
+            if expanded == included:
+                break
+            included = expanded
+        return [_export_run(self, self._runs[run_id]) for run_id in sorted(included)]
 
     def inspect_turn(self, turn_id):
         return _turn_view(self._turn(turn_id))
@@ -442,6 +453,7 @@ class Runtime:
         status = _status(status)
         if turn.cancel_requested and not force and status != "error":
             return
+        result_text, error = sanitize(result_text), sanitize(error)
         context = self._context_after(turn, status, result_text)
         self._trace.finish(
             turn.request.run_id,
@@ -695,7 +707,7 @@ def _message(message: Mapping[str, Any]):
     message_id = message["id"]
     if not isinstance(message_id, str) or not message_id:
         raise ValueError("message must have an id")
-    return message_id, deepcopy(message["content"])
+    return message_id, sanitize(message["content"])
 
 
 def _request(run, turn_id, message_id, payload):
@@ -718,7 +730,7 @@ def _adapter_event(value):
         raise ValueError("adapter event type must be nonempty")
     if not isinstance(data, dict):
         raise TypeError("adapter event data must be a dict")
-    return event_type, deepcopy(data)
+    return event_type, sanitize(data)
 
 
 def _result(value: _AdapterResult):
@@ -728,7 +740,7 @@ def _result(value: _AdapterResult):
         raise TypeError("adapter result_text must be a string or None")
     if value.status == "cancelled":
         return value.status, None
-    return value.status, value.result_text
+    return value.status, sanitize(value.result_text)
 
 
 def _cancel_detail(error: asyncio.CancelledError) -> str:
@@ -795,3 +807,16 @@ def _turn_view(turn):
         "status": turn.status,
         "result_text": turn.result_text,
     }
+
+
+def _export_run(runtime, run):
+    value = _run_view(run)
+    value['agent_snapshot'].pop('workspace', None)
+    value['turns'] = [{**_turn_view(turn), 'events':runtime._trace.read(turn.request.turn_id)}
+                      for turn in run.turns.values()]
+    return sanitize(value)
+
+
+def _work_events(runtime, turn):
+    return [event for event in runtime._trace.read(turn.request.turn_id)
+            if event['type'] in {'tool', 'child_result', 'turn_end'}]

@@ -89,6 +89,9 @@ class RuntimeHttpClient:
     async def inspect(self, session_id):
         return _response_json(await self._client.get(f'/api/v1/runtime/sessions/{session_id}'))
 
+    async def export(self, session_id):
+        return _response_json(await self._client.get(f'/api/v1/runtime/sessions/{session_id}/export'))
+
     async def cancel(self, turn_id):
         return _response_json(await self._client.post(f'/api/v1/runtime/turns/{turn_id}/cancel'))
 

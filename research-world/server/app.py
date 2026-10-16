@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import io
 import json
-import zipfile
 from contextlib import asynccontextmanager
 from dataclasses import asdict
 
@@ -16,6 +14,7 @@ from .kernel_interface import create_kernel
 from .product_sessions import session_router
 from .runtime_http import RuntimeHttpClient, RuntimeHttpError
 from .session_control import SessionControl
+from .project_export import export_project
 
 
 def create_product(kernel, runtime, profiles, workspace):
@@ -27,7 +26,7 @@ def create_product(kernel, runtime, profiles, workspace):
     app = FastAPI(title='Research World', lifespan=lifespan)
     _errors(app)
     _agent_routes(app, runtime, profiles)
-    _project_routes(app, kernel)
+    _project_routes(app, kernel, runtime)
     _artifact_routes(app, kernel)
     app.include_router(session_router(SessionControl(kernel, runtime, profiles, workspace)))
     app.include_router(kernel_graph_router(kernel))
@@ -70,7 +69,7 @@ def _agent_routes(app, runtime, profiles):
         return profiles.save(value)
 
 
-def _project_routes(app, kernel):
+def _project_routes(app, kernel, runtime):
     @app.get('/api/v1/health')
     async def health():
         return {'ok':True}
@@ -85,7 +84,7 @@ def _project_routes(app, kernel):
 
     @app.get('/api/v1/projects/{project_id}/export')
     async def export(project_id: str):
-        return Response(_export(kernel, project_id), media_type='application/zip',
+        return Response(await export_project(kernel, runtime, project_id), media_type='application/zip',
                         headers={'Content-Disposition':f'attachment; filename="{project_id}.zip"'})
 
 
@@ -102,20 +101,6 @@ def _artifact_routes(app, kernel):
 
 def _project_view(kernel, project):
     return {**asdict(project), 'node_count':len(kernel.list_records(project.id))}
-
-
-def _export(kernel, project_id):
-    result = io.BytesIO()
-    records = kernel.list_records(project_id)
-    values = {'project':asdict(kernel.get_project(project_id)),
-              'records':[asdict(v) for v in records],
-              'relations':[asdict(v) for v in kernel.list_relations(project_id)],
-              'sessions':[asdict(v) for v in kernel.list_sessions(project_id)]}
-    with zipfile.ZipFile(result, 'w', zipfile.ZIP_DEFLATED) as archive:
-        archive.writestr('project.json', json.dumps(values, ensure_ascii=False, indent=2))
-        for artifact in {a for r in records for a in r.artifact_ids}:
-            archive.writestr(f'artifacts/{artifact}', kernel.read_artifact(project_id, artifact))
-    return result.getvalue()
 
 
 def _frontend(app):

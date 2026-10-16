@@ -43,6 +43,7 @@ def kernel_graph_router(kernel: KernelInterface) -> APIRouter:
     _add_record_routes(router, kernel)
     _add_relation_routes(router, kernel)
     _add_local_map_route(router, kernel)
+    _add_history_routes(router, kernel)
     return router
 
 
@@ -50,7 +51,6 @@ def _add_project_routes(router: APIRouter, kernel: KernelInterface) -> None:
     path = "/api/v1/projects"
     router.add_api_route(path, _projects(kernel), methods=["GET"])
     router.add_api_route(path, _create_project(kernel), methods=["POST"], status_code=201)
-    router.add_api_route("/api/v1/bootstrap", _bootstrap(kernel), methods=["GET"])
 
 
 def _projects(kernel: KernelInterface):
@@ -67,24 +67,10 @@ def _create_project(kernel: KernelInterface):
     return endpoint
 
 
-def _bootstrap(kernel: KernelInterface):
-    def endpoint(project_id: str | None = None):
-        projects = kernel.list_projects()
-        selected = _kernel_call(_select_project, kernel, projects, project_id)
-        return _bootstrap_value(projects, selected)
-
-    return endpoint
 
 
-def _select_project(kernel, projects, project_id):
-    return kernel.get_project(project_id) if project_id else (projects[0] if projects else None)
 
 
-def _bootstrap_value(projects, selected):
-    return {
-        "projects": projects,
-        "active_project_id": selected.id if selected else None,
-    }
 
 
 def _add_record_routes(router: APIRouter, kernel: KernelInterface) -> None:
@@ -200,3 +186,13 @@ def _kernel_call(operation, *args):
 
 def _attachment(artifact) -> str:
     return f'attachment; filename="artifact-{artifact.sha256}.bin"'
+
+
+def _add_history_routes(router, kernel):
+    @router.get('/api/v1/projects/{project_id}/records/{record_id}/impact')
+    def impact(project_id: str, record_id: str):
+        return _kernel_call(kernel.revocation_impact, project_id, record_id)
+
+    @router.get('/api/v1/projects/{project_id}/revocations')
+    def history(project_id: str):
+        return _kernel_call(kernel.history, project_id)

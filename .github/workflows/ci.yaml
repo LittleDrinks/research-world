@@ -44,8 +44,8 @@ jobs:
       - name: Browser smoke against Compose
         run: |
           mkdir -p "$HOME/.pi/agent" "$HOME/.agents/skills"
-          echo '{}' > "$HOME/.pi/agent/settings.json"
-          echo '{"providers":{}}' > "$HOME/.pi/agent/models.json"
+          echo '{"defaultProvider":"ci","defaultModel":"model"}' > "$HOME/.pi/agent/settings.json"
+          echo '{"providers":{"ci":{"baseUrl":"http://127.0.0.1:1/v1","api":"openai-completions","apiKey":"unused-ci","models":[{"id":"model","name":"CI","contextWindow":4096,"maxTokens":1024}]}}}' > "$HOME/.pi/agent/models.json"
           cd research-world
           docker compose up --build -d --wait
           cd web

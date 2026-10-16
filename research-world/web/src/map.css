@@ -97,3 +97,5 @@
 @media (prefers-reduced-motion: reduce) {
   .signal-flow-path { display: none; }
 }
+
+.map-workspace{grid-template-columns:minmax(0,1fr) minmax(380px,32%)}.inspector-scroll{padding:24px}.inspector-header h1{font-size:23px;line-height:1.4}.node-body{font-size:16px;line-height:1.8;overflow-wrap:anywhere}.node-body p{margin:12px 0}.node-body ul,.node-body ol{padding-left:22px}.inspector-section{margin-bottom:22px}.inspector-section h2{font-size:16px;margin-bottom:10px}.node-details{color:var(--text-muted);font-size:14px}.node-details summary{cursor:pointer}.node-record>div{display:block}.node-record dt{font-size:14px;margin-bottom:6px}.node-record dd{font-size:15px}.relation-list{font-size:15px}@media(max-width:900px){.map-workspace{grid-template-columns:1fr;grid-template-rows:minmax(360px,52vh) auto}}

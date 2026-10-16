@@ -4,6 +4,11 @@ from pathlib import Path
 import httpx
 import pytest
 
+@pytest.fixture(autouse=True)
+def no_background_title(monkeypatch):
+    monkeypatch.setattr("server.session_control.schedule_title", lambda *args: None)
+
+
 from server.agent_profiles import AgentProfiles, default_profile
 from server.kernel_interface import create_kernel
 from server.app import create_product
@@ -59,7 +64,7 @@ async def test_product_message_refresh_idempotency_and_isolation(tmp_path):
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app),base_url='http://test') as client:
         project=(await client.post('/api/v1/projects',json={'name':'Orbit','question':'Why stable?'})).json()
         root=f'/api/v1/projects/{project["id"]}/sessions'
-        session=(await client.post(root,json={})).json()
+        session=(await client.post(root,json={'content':'first message','message_id':'initial'})).json()['session']
         path=f'{root}/{session["id"]}'
         body={'message_id':'message-1','content':'Calculate a baseline'}
         first=await client.post(path+'/messages',json=body)
@@ -68,7 +73,7 @@ async def test_product_message_refresh_idempotency_and_isolation(tmp_path):
         other=kernel.create_project('Other','Question')
         foreign=await client.get(f'/api/v1/projects/{other.id}/sessions/{session["id"]}')
     assert first.status_code==second.status_code==202
-    assert runtime.calls==1
+    assert runtime.calls==2
     assert detail['session']['messages'][0]['assistant_response']=='answer'
     assert 'workspace' not in detail['run']['agent_snapshot']
     assert foreign.status_code==404
@@ -80,10 +85,10 @@ async def test_agent_edits_only_affect_new_session(tmp_path):
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app),base_url='http://test') as client:
         project=kernel.create_project('Orbit','Question')
         root=f'/api/v1/projects/{project.id}/sessions'
-        old=(await client.post(root,json={})).json()
+        old=(await client.post(root,json={'content':'first message','message_id':'initial'})).json()['session']
         profile=default_profile('test/model')|{'instructions':'Updated scientific instructions'}
         assert (await client.put('/api/v1/agents/research-assistant',json=profile)).status_code==200
-        new=(await client.post(root,json={})).json()
+        new=(await client.post(root,json={'content':'new first message','message_id':'initial-new'})).json()['session']
     assert runtime.runs[old['id']]['agent_snapshot']['instructions']!=runtime.runs[new['id']]['agent_snapshot']['instructions']
 
 
@@ -105,3 +110,49 @@ def test_custom_profile_keeps_default_available(tmp_path):
     profiles=AgentProfiles(tmp_path/'profiles')
     profiles.save(default_profile('test/model')|{'id':'reviewer','name':'Reviewer'})
     assert {p['id'] for p in profiles.list('test/model')}=={'research-assistant','reviewer'}
+
+
+@pytest.mark.asyncio
+async def test_export_includes_unlinked_report_and_checksums(tmp_path):
+    import io, json, zipfile, hashlib
+    app,kernel,runtime=setup(tmp_path)
+    project=kernel.create_project('Report','Question')
+    artifact=kernel.capture_artifact(project.id,b'report body','text/markdown')
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app),base_url='http://test') as client:
+        response=await client.get(f'/api/v1/projects/{project.id}/export')
+    with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
+        name=f'artifacts/{artifact.sha256}'
+        assert archive.read(name)==b'report body'
+        manifest=json.loads(archive.read('manifest.json'))
+        assert manifest['files'][name]['sha256']==hashlib.sha256(b'report body').hexdigest()
+        assert name.encode() in archive.read('checksums.sha256')
+
+
+@pytest.mark.asyncio
+async def test_sessions_require_first_message_and_can_be_archived(tmp_path):
+    app,kernel,runtime=setup(tmp_path)
+    project=kernel.create_project('Drafts','Question')
+    root=f'/api/v1/projects/{project.id}/sessions'
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app),base_url='http://test') as client:
+        assert (await client.post(root,json={})).status_code==422
+        assert (await client.get(root)).json()==[]
+        created=(await client.post(root,json={'content':'A scientific question','message_id':'first'})).json()
+        session=created['session']
+        assert session['title']=='A scientific question'
+        assert (await client.delete(root+'/'+session['id'])).status_code==204
+        assert (await client.get(root)).json()==[]
+        assert len(kernel.list_sessions(project.id,include_archived=True))==1
+
+
+@pytest.mark.asyncio
+async def test_first_message_retry_reuses_session_and_turn(tmp_path):
+    app,kernel,runtime=setup(tmp_path)
+    project=kernel.create_project('Retry','Question')
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app),base_url='http://test') as client:
+        path=f'/api/v1/projects/{project.id}/sessions'
+        body={'content':'Initial scientific question','message_id':'first'}
+        first=(await client.post(path,json=body)).json()
+        repeated=(await client.post(path,json=body)).json()
+    assert first['session']['id']==repeated['session']['id']
+    assert first['turn']==repeated['turn']
+    assert runtime.calls==1

@@ -21,3 +21,4 @@ export const artifactUrl = (projectId, artifactId, download = false) => `/api/v1
 export const deleteRecord = (projectId, recordId) => fetch(`/api/v1/projects/${enc(projectId)}/records/${enc(recordId)}`, { method: "DELETE" }).then(decode);
 export const deleteRelation = (projectId, relationId) => fetch(`/api/v1/projects/${enc(projectId)}/relations/${enc(relationId)}`, { method: "DELETE" }).then(decode);
 export const listAgents = () => fetch("/api/v1/agents").then(decode);
+export const recordImpact = (projectId, recordId) => fetch(`/api/v1/projects/${enc(projectId)}/records/${enc(recordId)}/impact`).then(decode);

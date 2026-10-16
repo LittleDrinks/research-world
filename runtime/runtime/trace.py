@@ -10,6 +10,7 @@ from copy import deepcopy
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from .redaction import sanitize
 
 
 CREDENTIAL_LABEL = r"(?:x[\W_]*)?api[\W_]*key|client[\W_]*secret|secret|token|password|credential|authorization"
@@ -265,7 +266,7 @@ def _runtime_event(run_id, turn_id, seq, event_type, data):
         "seq": seq,
         "type": event_type,
         "time": datetime.now(UTC).isoformat(),
-        "data": deepcopy(data),
+        "data": sanitize(data),
     }
 
 

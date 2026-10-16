@@ -251,3 +251,6 @@ select { min-height: 38px; padding: 0 10px; }
 /* —— Preset 草稿（Agent 设置与对话共用） —— */
 .preset-reason { margin: 2px 0 0; color: var(--text-muted); font-size: 12px; overflow-wrap: anywhere; }
 .preset-blocked { margin: 0; padding: 8px 10px; border: 1px solid color-mix(in oklab, var(--state-failed) 40%, var(--line)); border-radius: 7px; color: var(--state-failed); background: var(--state-failed-surface); font-size: 12px; overflow-wrap: anywhere; }
+
+body{font-size:16px}.record-item>span{font-size:15px}.module-nav a{font-size:15px}.button{font-size:14px}.form-stack input,.form-stack select,.form-stack textarea{font-size:16px}.pi-messages{font-size:17px;line-height:1.85}.pi-role{font-size:14px}.pi-work{font-size:15px}.pi-status{font-size:15px}.pi-composer textarea{font-size:16px}
+.session-row{display:flex;align-items:center;min-width:0}.session-row .record-item{flex:1;min-width:0}.session-row .record-item>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.session-delete{opacity:.35;flex-shrink:0}.session-row:hover .session-delete,.session-delete:focus-visible{opacity:1}

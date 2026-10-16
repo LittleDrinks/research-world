@@ -7,7 +7,8 @@ from pydantic import BaseModel, ConfigDict
 
 class SessionRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    title: str = ''
+    content: str
+    message_id: str
     agent_id: str = 'research-assistant'
 
 
@@ -21,6 +22,7 @@ def session_router(control):
     router = APIRouter(prefix='/api/v1/projects/{project_id}/sessions')
     _session_routes(router, control)
     _turn_routes(router, control)
+    _archive_route(router, control)
     return router
 
 
@@ -31,7 +33,7 @@ def _session_routes(router, control):
 
     @router.post('', status_code=201)
     async def create(project_id: str, body: SessionRequest):
-        return await control.create(project_id, body.title, body.agent_id)
+        return await control.start(project_id, body.agent_id, body.content, body.message_id)
 
     @router.get('/{session_id}')
     async def detail(project_id: str, session_id: str):
@@ -59,3 +61,9 @@ def _turn_routes(router, control):
 async def _frames(events):
     async for event in events:
         yield f'id: {event["seq"]}\nevent: {event["type"]}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n'
+
+
+def _archive_route(router, control):
+    @router.delete('/{session_id}', status_code=204)
+    async def archive(project_id: str, session_id: str):
+        await control.archive(project_id, session_id)

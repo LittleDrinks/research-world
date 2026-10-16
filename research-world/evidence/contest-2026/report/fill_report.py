@@ -103,6 +103,11 @@ def embed_form_screenshots(doc, png_dir):
     anchor.alignment = WD_ALIGN_PARAGRAPH.CENTER
     fmt(anchor.add_run("报名表第 1 页（盖章版）"), 10.5, bold=True)
     _keep_next(anchor)
+    _embed_form_pages(anchor, pngs)
+
+
+def _embed_form_pages(anchor, pngs):
+    from docx.shared import Cm
     el = anchor._element
     for i, png in enumerate(pngs, 1):
         img = _append_centered(el, anchor._parent)
