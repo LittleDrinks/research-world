@@ -48,3 +48,17 @@ async def test_running_child_prevents_delete_then_entire_family_is_removed(tmp_p
     snapshot=runtime._store.snapshot()
     assert not any(snapshot[key] for key in ['runs','turns','events','delegations'])
     await runtime.close()
+
+
+@pytest.mark.asyncio
+async def test_delete_terminates_paused_subscriptions_and_forgets_queues(tmp_path):
+    adapter=FakeAdapter();runtime=Runtime(tmp_path,{'fake':adapter})
+    await runtime.launch({'adapter':'fake','project_id':'one'},session_id='one')
+    turn=await runtime.submit('one',{'id':'m','content':'work'})
+    stream=runtime.subscribe(turn['id']);assert (await anext(stream))['type']=='turn_start'
+    await adapter.wait_for_handles(1);adapter.complete(turn['id'],'private output')
+    await runtime._turns[turn['id']].task
+    await runtime.delete_project('one')
+    with pytest.raises(StopAsyncIteration):await asyncio.wait_for(anext(stream),1)
+    assert not runtime._trace._watchers
+    await runtime.close()

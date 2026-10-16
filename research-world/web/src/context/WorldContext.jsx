@@ -24,12 +24,10 @@ function useRefresh(state, desiredProject, requests) {
         throw new Error("项目切换响应不匹配");
       }
       desiredProject.current = result.active_project_id || "";
-      if (result.active_project_id) localStorage.setItem(LAST_PROJECT_KEY, result.active_project_id);
-      else localStorage.removeItem(LAST_PROJECT_KEY);
+      saveSelection(result.active_project_id);
       state.setData({ ...EMPTY, ...result, agents });
       state.setProjectId(result.active_project_id || "");
-      state.setError("");
-      return result;
+      state.setError(""); return result;
     } catch (error) { if(request===requests.current)state.setError(error.message); throw error; }
     finally { state.setLoading(false); }
   }, [state.projectId]);
@@ -76,4 +74,9 @@ function useProjectDeletion(state,desiredProject,refresh){
     state.setData(data=>({...data,projects:data.projects.filter(p=>p.id!==id)}));
     await refresh(desiredProject.current);
   },[refresh]);
+}
+
+function saveSelection(id){
+  if(id)localStorage.setItem(LAST_PROJECT_KEY,id);
+  else localStorage.removeItem(LAST_PROJECT_KEY);
 }

@@ -230,7 +230,9 @@ class Runtime:
             if any(t.status=='running' or t.task is not None and not t.task.done() for t in turns):
                 raise RuntimeConflictError('项目仍有运行中的任务，请先停止后再删除')
             self._store.delete_runs(ids)
-            for turn in turns:self._turns.pop(turn.request.turn_id)
+            for turn in turns:
+                self._trace.forget(turn.request.turn_id)
+                self._turns.pop(turn.request.turn_id)
             for run_id in ids:
                 run=self._runs.pop(run_id)
                 self._session_runs.pop(run.session_id,None)
@@ -326,13 +328,13 @@ class Runtime:
         queue = self._trace.watch(turn_id)
         cursor = after_seq
         try:
-            while True:
+            while self._trace.exists(turn_id):
                 values = self._trace.read(turn_id, cursor)
                 for event in values:
+                    if not self._trace.exists(turn_id):return
                     cursor = event["seq"]
                     yield event
-                    if event["type"] == "turn_end":
-                        return
+                    if event["type"] == "turn_end":return
                 if values:
                     continue
                 if self._trace.terminal(turn_id):
