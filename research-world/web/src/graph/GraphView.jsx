@@ -1,4 +1,4 @@
-import { Background, Controls, MiniMap, ReactFlow, useReactFlow } from "@xyflow/react";
+import { Background, Controls, MiniMap, MarkerType, ReactFlow, useReactFlow } from "@xyflow/react";
 import { useEffect, useMemo, useState } from "react";
 import { edgeHandles, layoutGraph } from "./layout";
 import { ResearchNode } from "./ResearchNode";
@@ -51,7 +51,9 @@ function decorateEdges(edges, nodes, selectedId, routes) {
   return edges.map((edge, index) => ({ id: `edge-${index}`, source: edge.source, target: edge.target,
     ...edgeHandles(edge, nodeMap), type: "signal", data: { ...edge, route: routes.get(`edge-${index}`),
       incident: [edge.source, edge.target].includes(selectedId), muted: Boolean(selectedId) && ![edge.source, edge.target].includes(selectedId) },
-    style: { strokeWidth: edge.polarity === "depends_on" ? 2 : 3.5,
+    markerEnd:{type:MarkerType.ArrowClosed,width:16,height:16,color:edge.polarity==='supports'?'var(--state-success)':edge.polarity==='refutes'?'var(--state-failed)':
+      [edge.source,edge.target].includes(selectedId)?'var(--state-selected)':'var(--text-faint)'},
+    style: { strokeWidth: [edge.source,edge.target].includes(selectedId)?2:1.5,
       strokeDasharray: edge.polarity === "refutes" ? "7 5" : undefined } }));
 }
 
