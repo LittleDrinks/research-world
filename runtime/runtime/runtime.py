@@ -334,12 +334,18 @@ class Runtime:
                 turn.cancel_requested = True
                 turn.accepting_children = False
             try:
+                await self._cancel_children(turn)
                 await self._stop_execution(turn)
             except Exception as error:
                 await self._finish(turn, "error", None, str(error), force=True)
             else:
                 await self._finish(turn, "cancelled", None, force=True)
         return _turn_view(turn)
+
+    async def _cancel_children(self, turn):
+        for child_id in tuple(turn.child_turn_ids):
+            if self._turn(child_id).status == 'running':
+                await self.cancel(child_id)
 
     async def delegate(
         self,

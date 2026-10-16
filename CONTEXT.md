@@ -9,7 +9,7 @@ _Avoid_: Benchmark
 _Avoid_: Fact Graph、事实图谱、Research Kernel
 **研究地图**：Research Graph 的可视化投影。
 _Avoid_: Research Graph（页面名称）
-**Question**：Research Graph 中定义研究对象、范围与约束的节点。
+**Question**：Research Graph 中定义研究对象、范围与约束的节点；不能作为 supports/refutes 的起点或终点。Direction 对 Question 的关系使用 Direction→Question 的 depends_on。
 **Source**：Research Graph 中描述一份外部资料及其可用范围的节点。
 **Direction**：Research Graph 中记录待探索解释、路线或反例的节点；赛题中的候选假设、机制解释、数学结构和研究路线均投影为 Direction，不是已证实结论。
 **Experiment**：Research Graph 中记录一次可复查研究操作及其结果的节点。

@@ -444,10 +444,7 @@ class _SQLiteKernel(KernelInterface):
         target_id: str,
         relation_type: str,
     ) -> Relation:
-        if relation_type not in {"supports", "refutes", "depends_on"}:
-            raise ValueError("invalid relation type")
-        self.get_record(project_id, source_id)
-        self.get_record(project_id, target_id)
+        self._validate_relation(project_id, source_id, target_id, relation_type)
         relation = _new_relation(project_id, source_id, target_id, relation_type)
         try:
             self._insert_relation(relation)
@@ -456,6 +453,14 @@ class _SQLiteKernel(KernelInterface):
                 raise
             raise ValueError("relation already exists") from None
         return relation
+
+    def _validate_relation(self, project_id, source_id, target_id, relation_type):
+        if relation_type not in {"supports", "refutes", "depends_on"}:
+            raise ValueError("invalid relation type")
+        source = self.get_record(project_id, source_id)
+        target = self.get_record(project_id, target_id)
+        if relation_type in {'supports', 'refutes'} and 'question' in {source.type, target.type}:
+            raise ValueError('Question defines scope, not evidence; use Direction -> Question depends_on')
 
     def _insert_relation(self, relation: Relation) -> None:
         with self._connect() as connection:

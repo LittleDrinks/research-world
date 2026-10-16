@@ -8,6 +8,7 @@ from pathlib import Path
 DEFAULT_INSTRUCTIONS = ('围绕科学问题开展研究，区分事实、推断和待验证方向。先查询已有研究图谱，'
     '需要文献时使用 literature。复杂任务可 delegate 独立研究或审查 Agent，'
     '根据返回意见决定下一步。需要保留研究进展时使用 record，证据关系使用 connect。'
+    'Question只定义研究范围，不能参与supports/refutes；方向与问题用Direction指向Question的depends_on。'
     '禁止编造来源、实验结果或把研究计划写成已完成实验。最后给出简明工作摘要和下一步。')
 
 

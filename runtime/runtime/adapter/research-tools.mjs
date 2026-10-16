@@ -9,7 +9,7 @@ const definitions = {
     artifact_ids: Type.Optional(Type.Array(text)),
   })],
   artifact: ['保存不可变文本产物，返回可下载的 Artifact', Type.Object({content:text,media_type:Type.Optional(text)})],
-  connect: ['连接研究对象的证据关系', Type.Object({source_id: text, target_id: text,
+  connect: ['连接关系：supports/refutes必须由证据支持，Question不能作为supports/refutes的任一端点；方向依赖问题时用 source=Direction、target=Question、type=depends_on', Type.Object({source_id: text, target_id: text,
     type: Type.Union(['supports','refutes','depends_on'].map(Type.Literal))})],
   literature: ['检索一手文献元数据，保留来源与不确定性', Type.Object({
     source: Type.Union(['crossref','openalex','arxiv','pubmed'].map(Type.Literal)), query: text})],

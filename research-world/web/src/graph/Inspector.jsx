@@ -46,7 +46,7 @@ function RecordActions({ node, onRequest }) {
 function Relations({ node, nodes, edges, onSelect, onDelete }) {
   const related = relatedRecords(node, nodes, edges);
   return <section className="inspector-section"><h2><GitBranch size={15} />直接关系</h2>{related.length ? <ul className="relation-list">
-    {related.map(({ edge, adjacentId, record }) => <li key={edge.id}><div className="relation-row"><button className="relation-link" onClick={() => onSelect(adjacentId)}><span className={`polarity ${edge.polarity}`}>{relationLabel(edge.polarity)}</span><b>{record ? recordText(record) : adjacentId}</b></button><button className="icon-button" aria-label={`删除 Relation ${edge.id}`} title={`删除 Relation ${edge.id}`} onClick={(event) => { event.stopPropagation(); onDelete(edge); }}><Trash2 size={15} /></button></div></li>)}
+    {related.map(({ edge, adjacentId, record }) => <li key={edge.id}><div className="relation-row"><button className="relation-link" onClick={() => onSelect(adjacentId)}><span className={`polarity ${edge.polarity}`}>{relationLabel(edge,node,record)}</span><b>{record ? recordText(record) : adjacentId}</b></button><button className="icon-button" aria-label={`删除 Relation ${edge.id}`} title={`删除 Relation ${edge.id}`} onClick={(event) => { event.stopPropagation(); onDelete(edge); }}><Trash2 size={15} /></button></div></li>)}
   </ul> : <p className="muted">暂无关系</p>}</section>;
 }
 
@@ -72,8 +72,11 @@ function relatedRecords(node, nodes, edges) {
 }
 
 
-function relationLabel(polarity) {
-  return { supports: "支持", refutes: "反驳", depends_on: "依赖" }[polarity] || polarity;
+function relationLabel(edge,node,record) {
+  const outgoing=edge.source===node.id;
+  if(['supports','refutes'].includes(edge.polarity)&&[node.kind,record?.kind].includes('question'))return '关系无效：问题不是证据';
+  const labels={supports:['支持该节点','被该节点支持'],refutes:['反驳该节点','被该节点反驳'],depends_on:['依赖该节点','被该节点依赖']};
+  return labels[edge.polarity]?.[outgoing?0:1]||edge.polarity;
 }
 
 

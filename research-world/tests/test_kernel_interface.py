@@ -449,3 +449,17 @@ def test_revoking_prerequisite_invalidates_dependents_and_keeps_history_content(
     history={entry['object_id']:entry for entry in kernel.history(project.id)}
     assert history[base.id]['object']['content']=={'title':'Prerequisite'}
     assert dependent.id in history
+
+
+@pytest.mark.parametrize('relation_type',['supports','refutes'])
+def test_question_cannot_supply_evidence_for_direction(tmp_path,relation_type):
+    kernel=_kernel(tmp_path)
+    project=_project(kernel)
+    question=kernel.record(project.id,'question',{'title':'Why?'})
+    direction=kernel.record(project.id,'direction',{'title':'Candidate'})
+    with pytest.raises(ValueError,match='Question defines scope'):
+        kernel.connect(project.id,question.id,direction.id,relation_type)
+    with pytest.raises(ValueError,match='Question defines scope'):
+        kernel.connect(project.id,direction.id,question.id,relation_type)
+    relation=kernel.connect(project.id,direction.id,question.id,'depends_on')
+    assert relation.type=='depends_on'

@@ -552,6 +552,7 @@ def _agent_options(command, snapshot):
     if model != 'default':
         command.extend(['--model', model])
     if instructions := _setting(snapshot, 'instructions', ''):
-        command.extend(['--append-system-prompt', instructions])
+        option = '--system-prompt' if snapshot.get('params', {}).get('mode') == 'title' else '--append-system-prompt'
+        command.extend([option, instructions])
     if 'thinking' in snapshot:
         command.extend(['--thinking', _setting(snapshot, 'thinking', '')])

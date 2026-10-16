@@ -77,3 +77,46 @@ class SecretToolAdapter:
         return AdapterResult(result_text='token=synthetic-final')
     async def cancel(self,*args): pass
     async def close(self): pass
+
+
+class DelegatingAdapter:
+    adapter_id='pi'
+    supports_multiple_writers=True
+    def __init__(self):
+        import asyncio
+        self.bridge=ToolBridge()
+        self.child_started=asyncio.Event()
+        self.release=asyncio.Event()
+    async def start(self,request):
+        return self.bridge.bind(request)
+    async def submit(self,handle,request,emit):
+        try:
+            if 'delegate' in request.agent_snapshot['tools']:
+                await self.bridge.invoke(handle,'delegate',{'instructions':'review','task':'wait'})
+            else:
+                self.child_started.set()
+                await self.release.wait()
+            return AdapterResult(result_text='finished')
+        finally:
+            self.bridge.release(handle)
+    async def cancel(self,handle,request):
+        self.release.set()
+    async def close(self):
+        pass
+
+
+@pytest.mark.asyncio
+async def test_parent_cancellation_stops_delegated_tools_and_turns(tmp_path):
+    import asyncio
+    from runtime.runtime import Runtime
+    adapter=DelegatingAdapter()
+    runtime=Runtime(tmp_path,{'pi':adapter})
+    adapter.bridge.runtime=runtime
+    await runtime.launch({'adapter':'pi','tools':['delegate','graph']},session_id='session')
+    turn=await runtime.submit('session',{'id':'message','content':'research'})
+    await asyncio.wait_for(adapter.child_started.wait(),1)
+    await asyncio.wait_for(runtime.cancel(turn['id']),1)
+    runs=runtime.export_session('session')
+    assert len(runs)==2
+    assert all(t['status']=='cancelled' for run in runs for t in run['turns'])
+    assert adapter.bridge.bindings=={}
