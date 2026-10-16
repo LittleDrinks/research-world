@@ -703,3 +703,16 @@ def test_retry_context_edit_is_preserved():
     from runtime.adapter.pi import PiEventParser
     entry={'type':'context_edit','id':'x','parentId':'m','timestamp':'2026-10-16T00:00:00Z','targetId':'m','replacement':None}
     assert PiEventParser().consume(json.dumps({'type':'entry_appended','entry':entry}).encode())[0]['data']['entry']==entry
+
+
+@pytest.mark.parametrize('patch',[
+    {'type':'context_edit','targetId':'m','replacement':{'content':[42]}},
+    {'type':'message','message':{'role':'user'}},
+    {'type':'message','message':{'role':'unknown','content':'text'}},
+    {'timestamp':'2026-99-99T99:99:99garbage'},
+])
+def test_invalid_entry_content_and_dates_are_rejected(patch):
+    from runtime.adapter.pi import PiEventParser
+    entry={'type':'custom','customType':'state','id':'x','parentId':None,'timestamp':'2026-10-16T00:00:00Z',**patch}
+    with pytest.raises(PiAdapterError,match='session entry'):
+        PiEventParser().consume(json.dumps({'type':'entry_appended','entry':entry}).encode())
