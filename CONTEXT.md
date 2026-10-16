@@ -38,7 +38,7 @@ _Avoid_: Pipeline run、Research Round
 **主 Agent**：对一个 Workflow 作全局方向与写图决定的 Agent。
 **Child Agent**：由主 Agent 为一个方向、审查或操作启动的 Agent；没有固定角色或生命周期模板。
 **AgentSpec**：Pi Agent 的模型、Instructions、thinking、Skills、Tool id 声明；启动 Session 时冻结，后续编辑只影响新 Session。
-**Tool**：科研人员为 Agent 选择的稳定能力；一个 Tool 可向模型展开多个 operation，AgentSpec 只保存 Tool id。
+**Tool**：科研人员为 Agent 选择的稳定能力；一个 Tool 可向模型展开多个 operation，AgentSpec 只保存 Tool id。Project 工作区的原生文件与执行工具是 Runtime 固定能力，不由科研工具勾选控制。
 **Tool Adapter**：Agent Runtime 内部把本地函数、MCP、CLI、浏览器、数据库或计算设施投影为 Tool 的可插拔实现；位置、协议、生命周期、配置与凭证不越过 Agent Runtime。
 **Preset**：可复用的 AgentSpec 草稿；保存后不随 Preset 漂移。
 **识别**：Runtime 枚举 Pi 配置的模型、可读取的 Skill 与受支持的 Tool；AgentSpec 只能引用识别结果。

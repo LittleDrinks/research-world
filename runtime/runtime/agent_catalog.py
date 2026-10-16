@@ -47,3 +47,12 @@ def validate_spec(spec):
         raise ValueError('Agent 包含未知工具')
     if set(spec.get('skills', [])) - set(value['skills']):
         raise ValueError('Agent 包含未知 Skill')
+
+
+def has_workspace(spec):
+    return bool(spec.get('project_id')) and spec.get('params', {}).get('mode') != 'title'
+
+
+def selected_tools(spec):
+    selected = [name for name in spec.get('tools', []) if name != 'workspace']
+    return [*selected, 'workspace'] if has_workspace(spec) else selected

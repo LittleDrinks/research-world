@@ -9,6 +9,7 @@ import httpx
 from fastapi import APIRouter, HTTPException, Request
 
 from . import literature
+from .agent_catalog import has_workspace
 
 
 class ToolBridge:
@@ -27,7 +28,10 @@ class ToolBridge:
 
     def authorize(self, token, tool):
         request = self.bindings.get(token)
-        if request is None or tool not in request.agent_snapshot.get('tools', []):
+        if request is None:
+            raise PermissionError('Tool binding has expired')
+        allowed = has_workspace(request.agent_snapshot) if tool == 'workspace' else tool in request.agent_snapshot.get('tools', [])
+        if not allowed:
             raise PermissionError('Tool is not selected for this Agent')
         return request
 
