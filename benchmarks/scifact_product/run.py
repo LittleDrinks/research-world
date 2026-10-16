@@ -6,6 +6,7 @@ import uuid
 from pathlib import Path
 
 from .client import Product
+from .report import report
 from .protocol import prepare, save, score, write_jsonl
 
 
@@ -38,16 +39,22 @@ def main():
     results={arm:_arm(args,product,arm,run_id,gold,tasks) for arm in ('baseline','research')}
     save(args.output/'summary.json',{'split':args.split,'n':len(tasks),'arms':results,
          'claim':'smoke only; no equal-token-budget causal comparison','cost':None})
+    report(args.output)
     print(json.dumps(results,ensure_ascii=False),flush=True)
 
 
 def _manifest(args,verified,model):
     revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
-    return {'product_source_revision':revision,'protocol':verified,'model':model,
+    return {'runner_revision':revision,'product_source_trees':_source_trees(),'protocol':verified,'model':model,
             'thinking':args.thinking,'timeout_seconds':args.timeout,'split':args.split,
             'retrieval':'official TF-IDF top-3 (unigram+bigram); no gold fields',
             'dependencies':{name:importlib.metadata.version(name) for name in ['numpy','scikit-learn','jsonlines','httpx']},
             'token_budget_enforced':False,'token_usage_available':False}
+
+
+def _source_trees():
+    return {name:subprocess.check_output(['git','rev-parse','HEAD:'+name],text=True).strip()
+            for name in ['runtime','research-world']}
 
 
 def _arm(args,product,arm,run_id,gold,tasks):

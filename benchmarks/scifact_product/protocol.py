@@ -2,7 +2,6 @@ import json
 import subprocess
 import sys
 import tarfile
-import hashlib
 from pathlib import Path
 
 from benchmarks.literature_bench.scifact_integrity import read_jsonl, verify
@@ -10,7 +9,7 @@ from benchmarks.literature_bench.scifact_integrity import read_jsonl, verify
 BASE_INSTRUCTIONS = ('Verify the scientific claim against ONLY the supplied retrieved abstracts. '
     'Return one JSON object, no markdown: {"id": CLAIM_ID, "evidence": {"DOC_ID": '
     '{"label": "SUPPORT" or "CONTRADICT", "sentences": [zero-based indices]}}}. '
-    'Use evidence={} for insufficient evidence. Use at most 3 sentences per document. '
+    'Use evidence={} for insufficient evidence. Select only necessary sentences, but include a complete rationale even if it needs more than three. '
     'A valid evidence set must cover the complete claim, not just shared terms. '
     'Never invent documents or sentence indices. Do not access external information.')
 RESEARCH_INSTRUCTIONS = (' First use record to save candidate source evidence and a provisional direction. '
@@ -22,6 +21,7 @@ RESEARCH_INSTRUCTIONS = (' First use record to save candidate source evidence an
 def prepare(args, output):
     verified = verify(args.data, args.archive, args.source, args.evaluator)
     _verify_files(args)
+    _verify_scorer(args.evaluator, output)
     rows = read_jsonl(args.data / f'claims_{args.split}.jsonl')
     selected = [r for r in rows if r['id'] in args.ids] if args.ids else rows[:args.limit]
     if not selected or (args.ids and {r['id'] for r in selected} != set(args.ids)):
@@ -48,12 +48,12 @@ def _retrieve(args, output):
 def _task(claim, ids, corpus):
     documents = [{'doc_id':doc_id,'title':corpus[doc_id]['title'],
                   'sentences':dict(enumerate(corpus[doc_id]['abstract']))} for doc_id in ids]
-    return {**claim, 'documents':documents}
+    return {'id':claim['id'],'claim':claim['claim'],'documents':documents}
 
 
 def prediction(text, task):
     value = json.loads(text)
-    if not isinstance(value, dict) or set(value) != {'id','evidence'} or value['id'] != task['id']:
+    if not isinstance(value, dict) or set(value) != {'id','evidence'} or type(value['id']) is not int or value['id'] != task['id']:
         raise ValueError('Invalid prediction identity or fields')
     if not isinstance(value['evidence'], dict):
         raise ValueError('Evidence must be an object')
@@ -69,8 +69,8 @@ def _validate_evidence(doc_id, value, documents):
     sentences = value['sentences']
     if value['label'] not in {'SUPPORT','CONTRADICT'} or not isinstance(sentences,list):
         raise ValueError('Evidence label or sentences invalid')
-    if not 1 <= len(sentences) <= 3 or len(set(sentences)) != len(sentences):
-        raise ValueError('Need one to three distinct rationale sentences')
+    if not sentences or len(set(sentences)) != len(sentences):
+        raise ValueError('Need distinct rationale sentences')
     if any(type(i) is not int or not 0 <= i < len(documents[doc_id]['sentences']) for i in sentences):
         raise ValueError('Sentence index outside candidate abstract')
 
@@ -99,3 +99,11 @@ def _verify_files(args):
     for root in [args.source,args.evaluator]:
         if subprocess.check_output(['git','-C',str(root),'status','--porcelain'],text=True).strip():
             raise ValueError('Official source must be clean')
+
+
+def _verify_scorer(evaluator, output):
+    fixture=evaluator/'fixture'
+    actual=score(evaluator,fixture/'gold_small.jsonl',fixture/'predictions_small.jsonl',output/'scorer-check.json')
+    expected=json.loads((fixture/'expected_metrics_small.json').read_text())
+    if actual!=expected:
+        raise ValueError('Official scorer fixture mismatch')

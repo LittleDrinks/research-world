@@ -64,3 +64,5 @@ benchmarks/**/*.safetensors
 **/readme.md
 /benchmarks/scifact_product/.venv/
 /benchmarks/scifact_product/__pycache__/
+
+/benchmarks/literature_bench/__pycache__/

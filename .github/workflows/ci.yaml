@@ -32,6 +32,10 @@ jobs:
         run: |
           uv sync --frozen --dev
           uv run pytest -q
+      - name: Test SciFact product adapter
+        run: |
+          uv sync --project benchmarks/scifact_product --frozen
+          uv run --project benchmarks/scifact_product python -m pytest -q benchmarks/scifact_product benchmarks/literature_bench/test_scifact_integrity.py
       - name: Build web
         working-directory: research-world/web
         run: |
