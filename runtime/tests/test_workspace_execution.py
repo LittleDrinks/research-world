@@ -70,3 +70,34 @@ async def test_immediate_cancellation_and_stopped_container_terminate_stream(con
     container.stop(timeout=1)
     events,_=await asyncio.wait_for(execute(container,operation='read',path='hello.py'),3)
     assert events[-1].get('error')
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('mode',['cancel','timeout','complete'])
+async def test_detached_job_control_descendants_do_not_escape(container,mode):
+    command='set -m; (sleep 2; touch /workspace/escaped) >/dev/null 2>&1 & echo READY'
+    if mode!='complete': command+='; wait'
+    job=Execution(container,{'operation':'bash','command':command,'timeout':.4 if mode=='timeout' else 30})
+    if mode=='cancel':
+        await asyncio.wait_for(job.queue.get(),5)
+        await job.stop()
+    else: _=[event async for event in job.events()]
+    await asyncio.sleep(2.1)
+    assert container.exec_run(['test','-e','/workspace/escaped']).exit_code==1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("after_output", [False,True])
+async def test_broken_output_transport_still_stops_command(container,monkeypatch,after_output):
+    import runtime.workspace.execution as module
+    original=module.frames_iter
+    def disconnect(*args,**kwargs):
+        if not after_output: raise ConnectionResetError('disconnect before first output')
+        for frame in original(*args,**kwargs):
+            yield frame
+            raise ConnectionResetError('simulated output disconnect')
+    monkeypatch.setattr(module,'frames_iter',disconnect)
+    events,_=await execute(container,operation='bash',command='echo ready; sleep 2; touch /workspace/disconnect')
+    assert events[-1].get('error')
+    await asyncio.sleep(2.1)
+    assert container.exec_run(['test','-e','/workspace/disconnect']).exit_code==1

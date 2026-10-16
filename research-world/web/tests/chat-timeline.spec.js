@@ -42,9 +42,13 @@ test('tool starts inline, updates live, and survives replay without duplicate an
     await expect(page.locator('.pi-tool')).toHaveCount(1);
     await expect(page.locator('.pi-text')).toHaveText(['先运行脚本。','执行成功。']);
     expect(await order(page)).toEqual(['pi-text','pi-tool','pi-text']);
-    detail.run.turns[0].status='completed';detail.session.messages[0].assistant_response='执行成功。';
-    await page.reload();
-    await expect(page.locator('.pi-text')).toHaveText(['先运行脚本。','执行成功。']);
-    expect(await order(page)).toEqual(['pi-text','pi-tool','pi-text']);
+    await assertRestored(page,detail);
   }finally{await request.delete(`/api/v1/projects/${project.id}`);}
 });
+
+async function assertRestored(page,detail){
+  detail.run.turns[0].status='completed';detail.session.messages[0].assistant_response='执行成功。';
+  await page.reload();
+  await expect(page.locator('.pi-text')).toHaveText(['先运行脚本。','执行成功。']);
+  expect(await order(page)).toEqual(['pi-text','pi-tool','pi-text']);
+}

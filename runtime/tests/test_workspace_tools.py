@@ -6,6 +6,7 @@ import httpx
 import pytest
 from fastapi import FastAPI
 from runtime.bridge import ToolBridge
+from runtime.adapter import AdapterResult
 from runtime.workspace.tools import WorkspaceTools, workspace_tools_router
 
 
@@ -45,25 +46,26 @@ async def test_containers_are_project_bound_and_started_only_once_per_turn():
 @pytest.mark.asyncio
 async def test_persisted_chat_replays_text_and_tools_in_execution_order(tmp_path):
     from runtime.runtime import Runtime
-    from runtime.adapter import AdapterResult
-    class Adapter:
-        adapter_id='fake'
-        supports_multiple_writers=True
-        async def start(self,request): return object()
-        async def submit(self,handle,request,emit):
-            for kind,data in [('delta',{'text':'before'}),('tool',{'id':'call','phase':'started','name':'bash'}),
-                              ('tool',{'id':'call','phase':'completed','name':'bash'}),('delta',{'text':'after'})]:
-                await emit({'type':kind,'data':data})
-            return AdapterResult(result_text='after')
-        async def close(self): pass
-        async def cancel(self,*args): pass
-    runtime=Runtime(tmp_path,{'fake':Adapter()})
+    runtime=Runtime(tmp_path,{'fake':TimelineAdapter()})
     await runtime.launch({'adapter':'fake'},session_id='s')
     turn=await runtime.submit('s',{'id':'m','content':'run'})
     _=[event async for event in runtime.subscribe(turn['id'])]
     original=runtime.inspect_session('s')['turns'][0]['events']
     await runtime.close()
-    restarted=Runtime(tmp_path,{'fake':Adapter()})
+    restarted=Runtime(tmp_path,{'fake':TimelineAdapter()})
     assert restarted.inspect_session('s')['turns'][0]['events']==original
     assert [e['type'] for e in original]==['delta','tool','tool','delta','turn_end']
     await restarted.close()
+
+
+class TimelineAdapter:
+    adapter_id='fake'
+    supports_multiple_writers=True
+    async def start(self,request): return object()
+    async def submit(self,handle,request,emit):
+        for kind,data in [('delta',{'text':'before'}),('tool',{'id':'call','phase':'started','name':'bash'}),
+                          ('tool',{'id':'call','phase':'completed','name':'bash'}),('delta',{'text':'after'})]:
+            await emit({'type':kind,'data':data})
+        return AdapterResult(result_text='after')
+    async def close(self): pass
+    async def cancel(self,*args): pass
