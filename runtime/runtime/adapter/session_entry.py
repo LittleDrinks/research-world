@@ -1,4 +1,6 @@
 """Persisted entry shapes emitted by Pi 1.2.0's entry_appended event."""
+from datetime import datetime
+
 from jsonschema import Draft202012Validator, ValidationError, FormatChecker
 
 _TEXT={'type':'string','minLength':1}
@@ -38,6 +40,9 @@ _VALIDATOR=Draft202012Validator(_SCHEMA,format_checker=FormatChecker())
 def validate_entry(entry):
     try:
         _VALIDATOR.validate(entry)
-    except ValidationError:
+        timestamp=datetime.fromisoformat(entry['timestamp'])
+        if timestamp.tzinfo is None or 'T' not in entry['timestamp']:
+            raise ValueError('timezone required')
+    except (ValidationError,ValueError):
         raise ValueError('pi session entry is invalid') from None
     return entry
