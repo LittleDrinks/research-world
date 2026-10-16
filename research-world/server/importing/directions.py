@@ -32,4 +32,4 @@ def import_directions(writer,project,question,item,sources):
         node=writer.record(project,f'direction/{index}','direction',content,(f'artifact:{spec["sha256"]}',))
         writer.link(project,node,question)
         for citation,source in sources.items():
-            if re.search(r'(?<![\w-])'+re.escape(citation)+r'(?![\w-])',value['text']):writer.link(project,node,source)
+            if re.search(r'(?<![A-Za-z0-9_-])'+re.escape(citation)+r'(?![A-Za-z0-9_-])',value['text']):writer.link(project,node,source)

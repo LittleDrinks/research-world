@@ -77,5 +77,7 @@ def test_only_explicit_source_ids_create_direction_dependencies(tmp_path):
     sources=[r for r in records if r.type=='source']
     assert sources and all('/v8.md/source/' in r.content['origin']['key'] for r in sources)
     assert all(e.type=='depends_on' for e in edges)
+    source_ids={r.id for r in sources}
+    assert len([e for e in edges if e.target_id in source_ids])==7
     assert not any(r.content['origin']['key']=='archive' for r in records)
     assert all(r.type=='question' or len(r.artifact_ids)<=1 for r in records)
