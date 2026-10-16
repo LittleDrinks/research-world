@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { getBootstrap, listAgents } from "../api";
 
-const EMPTY = { projects: [], nodes: [], edges: [], runs: [], pipelines: [], threads: [], slots: [], agents: [] };
+const EMPTY = { sessions: [], projects: [], nodes: [], edges: [], runs: [], pipelines: [], threads: [], slots: [], agents: [] };
 const LAST_PROJECT_KEY = "rw.active_project";
 const WorldContext = createContext(null);
 

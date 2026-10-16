@@ -19,22 +19,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     UV_SYSTEM_CERTS=1 \
     UV_HTTP_TIMEOUT=600 uv sync --frozen --no-dev
 COPY server/ server/
-COPY worker/ worker/
-COPY library/ library/
-COPY agents/ agents/
-COPY pipelines/ pipelines/
-COPY schemas/ schemas/
 COPY --from=web /build/web/dist web/dist
 EXPOSE 8095
-CMD ["rw", "serve", "--host", "0.0.0.0", "--port", "8095"]
-
-FROM runtime AS e2e-model
-COPY e2e/ e2e/
-EXPOSE 8099
-CMD ["uvicorn", "e2e.model:app", "--host", "0.0.0.0", "--port", "8099"]
-
-FROM docker:29-cli AS docker_cli
-FROM runtime AS runner
-COPY --from=docker_cli /usr/local/bin/docker /usr/local/bin/docker
-EXPOSE 8096
-CMD ["uvicorn", "server.runner_controller:app", "--host", "0.0.0.0", "--port", "8096"]
+CMD ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "8095"]

@@ -23,7 +23,7 @@ def record(value):
         stream.write(json.dumps(value) + "\n")
 
 if "--version" in sys.argv:
-    print("0.84.3")
+    print("1.2.0")
     raise SystemExit
 
 record({
@@ -210,9 +210,9 @@ LOCALE_ENVIRONMENT = {
 }
 
 
-def _fake_pi(tmp_path, version="0.84.3"):
+def _fake_pi(tmp_path, version="1.2.0"):
     path = tmp_path / "pi"
-    path.write_text(FAKE_PI.replace("0.84.3", version), encoding="utf-8")
+    path.write_text(FAKE_PI.replace("1.2.0", version), encoding="utf-8")
     path.chmod(0o755)
     return path
 
@@ -292,7 +292,7 @@ def _assert_completed_events(observed):
 
 
 def _assert_launch(launch, command):
-    assert launch["argv"] == ["--mode", "rpc", "--no-session", "--append-system-prompt", "system", "--thinking", "high"]
+    assert launch["argv"] == ["--mode", "rpc", "--no-session", "--offline", "--no-extensions", "--no-mcp", "--no-skills", "--no-prompt-templates", "--no-context-files", "--no-approve", "--no-builtin-tools", "--append-system-prompt", "system", "--thinking", "high"]
     assert launch["api_key"] is None and launch["home"] == "/host-home" and launch["pi_dir"] == "/host-pi"
     assert launch["forbidden"] == {"RUNTIME_API_BASE": None, "OPENAI_API_KEY": None, "PI_OFFLINE": None}
     assert command["command"]["message"] == "hello"

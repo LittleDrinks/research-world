@@ -59,3 +59,6 @@ benchmarks/**/*.safetensors
 !benchmarks/**
 !datasets/**
 !research-world/evidence/**
+
+**/README.md
+**/readme.md

@@ -516,14 +516,14 @@ def _validate_local_map_query(query: LocalMapQuery) -> None:
         not isinstance(query.record_id, str) or not query.record_id.strip()
     ):
         raise ValueError("local map query record id must be None or non-empty text")
-    if (query.text is None) == (query.record_id is None):
+    if query.text is not None and query.record_id is not None:
         raise ValueError("local map query requires text or record id")
     if isinstance(query.limit, bool) or not isinstance(query.limit, int) or query.limit < 1:
         raise ValueError("local map limit must be a positive integer")
 
 
 def _record_matches(record: Record, text: str | None) -> bool:
-    return text.strip().casefold() in _content_text(record.content).casefold()
+    return text is None or text.strip().casefold() in _content_text(record.content).casefold()
 
 
 def _content_text(value) -> str:

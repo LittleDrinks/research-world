@@ -43,14 +43,14 @@ function MapContent({ data, setError }) {
 
 
 function mapQuery(params, project) {
-  return { text: params.get("text") || project?.question || "", recordId: params.get("node") || "" };
+  return { text: params.get("text") || "", recordId: params.get("node") || "" };
 }
 
 
 function useLocalMap(projectId, text, recordId, setMap, setError, setParams) {
   return useCallback(async (requested = { text, recordId }) => {
     if (!projectId) return;
-    const query = requested.recordId ? { record_id: requested.recordId, limit: LOCAL_MAP_LIMIT } : { text: requested.text, limit: LOCAL_MAP_LIMIT };
+    const query = requested.recordId ? { record_id: requested.recordId, limit: LOCAL_MAP_LIMIT } : { text: requested.text || null, limit: LOCAL_MAP_LIMIT };
     try { setMap(normalizeLocalMap(await getLocalMap(projectId, query))); setError(""); }
     catch (error) { if (requested.recordId) setParams(text ? { text } : {}); else setError(error.message); throw error; }
   }, [projectId, text, recordId, setMap, setError, setParams]);

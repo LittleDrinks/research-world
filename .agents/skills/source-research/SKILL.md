@@ -1,14 +1,8 @@
 ---
 name: source-research
-description: Retrieve primary scientific sources, verify bibliographic metadata, preserve available full text as Project Artifacts, and disclose evidence limits.
-version: 1
-updated: 2026-08-24T00:00:00Z
+description: Search primary scientific literature and return verified metadata, relevance, conflicting evidence, and access limits.
 ---
-# Source Research
-1. Search at least two applicable scholarly databases and preserve every query, database, and verification time in the SourceCandidate.
-2. Verify title, authors, year, venue, DOI or stable URL, source type, license, and access status against Crossref, OpenAlex, arXiv, PubMed, or the primary publisher record.
-3. Retrieve the complete text from an official archive when available. Store it with `project_files`; copy its Artifact id, media type, and SHA-256 into the SourceCandidate.
-4. Record relevance to the current Direction as supports, refutes, or background, with exact quotations and section, page, paragraph, table, or figure locations.
-5. Never use an abstract as a full-text location or as support for a claim.
-6. When complete text cannot be retrieved, set access status to `full_text_unavailable`, state the reason and unresolved questions, use the source only as background, return no Artifact, and return no claims.
-7. Return candidates only. Never submit nodes, decide Admission, invent metadata, or treat a successful Tool call as admitted evidence.
+1. Query `literature` using applicable Crossref, OpenAlex, arXiv or PubMed sources; retain the database and query alongside results.
+2. Compare title, authors, year and DOI or stable identifier across available results. Flag disagreement and unavailable metadata.
+3. Treat abstracts and search metadata as background. Do not invent full-text quotations, page locations, licenses, experimental results or claims unavailable in returned records.
+4. Return relevant sources, their support or challenge to the research direction, and unresolved questions. A Child Agent returns candidates to the main Agent; it does not write the research graph.

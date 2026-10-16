@@ -1,14 +1,8 @@
-import { defineConfig } from "@playwright/test";
-
-const baseURL = "http://127.0.0.1:18136";
-const apiURL = "http://127.0.0.1:8095";
+import {defineConfig} from '@playwright/test';
 
 export default defineConfig({
-  testDir: "tests",
-  testIgnore: "tests/t2/**",
-  use: { baseURL, browserName: "chromium" },
-  webServer: [
-    { command: "PYTHONPATH=.. uv run --project .. python tests/localmap_backend.py --port 8095", url: `${apiURL}/api/v1/health`, reuseExistingServer: false },
-    { command: "npm run dev -- --port 18136 --strictPort", url: baseURL, reuseExistingServer: false },
-  ],
+  testDir:'tests',
+  timeout:180000,
+  expect:{timeout:15000},
+  use:{baseURL:process.env.RW_TEST_URL||'http://127.0.0.1:8095',browserName:'chromium',trace:'retain-on-failure'},
 });

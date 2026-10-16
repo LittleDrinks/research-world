@@ -37,8 +37,11 @@ _Avoid_: Handoff 实体、Outcome 实体
 _Avoid_: Pipeline run、Research Round
 **主 Agent**：对一个 Workflow 作全局方向与写图决定的 Agent。
 **Child Agent**：由主 Agent 为一个方向、审查或操作启动的 Agent；没有固定角色或生命周期模板。
-**AgentSpec**：启动一个 Agent Runtime 所需的 Runtime、Endpoint、模型、Instructions、Skills、Tool id 与执行参数声明；启动时快照。
+**AgentSpec**：Pi Agent 的模型、Instructions、thinking、Skills、Tool id 声明；启动 Session 时冻结，后续编辑只影响新 Session。
 **Tool**：科研人员为 Agent 选择的稳定能力；一个 Tool 可向模型展开多个 operation，AgentSpec 只保存 Tool id。
 **Tool Adapter**：Agent Runtime 内部把本地函数、MCP、CLI、浏览器、数据库或计算设施投影为 Tool 的可插拔实现；位置、协议、生命周期、配置与凭证不越过 Agent Runtime。
 **Preset**：可复用的 AgentSpec 草稿；保存后不随 Preset 漂移。
-**识别**：Runtime 枚举当前可选择的 Endpoint、Skill 与 Tool；AgentSpec 只能引用识别结果，缺失或未就绪能力阻止 Launch。
+**识别**：Runtime 枚举 Pi 配置的模型、可读取的 Skill 与受支持的 Tool；AgentSpec 只能引用识别结果。
+
+**Run**：Runtime 内某个 Agent 的执行上下文；主 Run 绑定 Session，Child Run 绑定父 Run 和委派它的 Turn。
+**Turn**：一次消息触发的工作，具有持久事件、结束原因和可重放游标。

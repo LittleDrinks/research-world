@@ -118,3 +118,4 @@
 .draft-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .draft-actions .button { min-height: 32px; }
 .draft-created p { margin: 0; }
+.pi-chat{display:flex;flex-direction:column;height:100%;padding:24px;gap:16px}.pi-chat header{display:flex;align-items:center;gap:12px}.pi-chat h1{flex:1;margin:0}.pi-messages{flex:1;overflow:auto;line-height:1.7}.pi-messages article{max-width:900px;margin:0 auto 24px}.pi-user{border-left:3px solid var(--accent);padding:4px 16px;background:var(--surface)}.pi-messages pre{white-space:pre-wrap;overflow-wrap:anywhere}.pi-composer{display:flex;gap:12px}.pi-composer textarea{flex:1;min-height:90px;padding:12px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px}

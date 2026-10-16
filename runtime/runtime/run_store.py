@@ -17,8 +17,8 @@ class RunStoreConflictError(RunStoreError):
 
 _FORMAT = {"format": "runtime-run-store", "version": "4"}
 _STATUSES = {"running", "completed", "limit", "cancelled", "error"}
-_AGENT_SPEC_FIELDS = ("id", "adapter", "model", "instructions", "thinking", "workspace", "tools", "params")
-_AGENT_TEXT_FIELDS = frozenset(_AGENT_SPEC_FIELDS) - {"tools", "params"}
+_AGENT_SPEC_FIELDS = ("id", "adapter", "model", "instructions", "thinking", "workspace", "project_id", "skills", "tools", "params")
+_AGENT_TEXT_FIELDS = frozenset(_AGENT_SPEC_FIELDS) - {"tools", "skills", "params"}
 _AGENT_PARAMS_FIELDS = frozenset({"mode"})
 _TABLE_COLUMNS = {
     "metadata": ("key", "value"),

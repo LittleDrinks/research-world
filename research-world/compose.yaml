@@ -6,113 +6,68 @@ services:
     environment:
       RW_PROJECTS_ROOT: /projects
       RW_DATA_ROOT: /app/data
-      RW_AGENTS_ROOT: /app/agents
-      RW_PIPELINES_ROOT: /app/pipelines
       RUNTIME_URL: http://runtime:8098
-      RW_EMBEDDING_ENDPOINT: ${RW_EMBEDDING_ENDPOINT:-openai-compatible}
-      RW_EMBEDDING_MODEL: ${RW_EMBEDDING_MODEL:-qwen3.7-text-embedding}
-      RUNNER_CONTROLLER_URL: http://runner-controller:8096
     ports:
-      - "8095:8095"
+    - 127.0.0.1:8095:8095
     volumes:
-      - rw-kernel-data:/app/data
-      - ${RW_PROJECTS_ROOT:-rw-projects}:/projects
-      - ./agents:/app/agents
-      - ./pipelines:/app/pipelines
-    networks: [control, worker-egress]
+    - rw-kernel-data:/app/data
+    - rw-project-workspaces:/projects
+    networks:
+    - control
+    - worker-egress
     depends_on:
       runtime:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8095/api/v1/health')"]
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8095/api/v1/health')
       interval: 5s
       timeout: 3s
       retries: 20
-
-  worker:
-    build:
-      context: .
-      target: runtime
-    command: ["python", "-m", "worker"]
-    environment:
-      RW_PROJECTS_ROOT: /projects
-      RW_DATA_ROOT: /app/data
-      RW_AGENTS_ROOT: /app/agents
-      RW_PIPELINES_ROOT: /app/pipelines
-      RUNTIME_URL: http://runtime:8098
-      RW_EMBEDDING_ENDPOINT: ${RW_EMBEDDING_ENDPOINT:-openai-compatible}
-      RW_EMBEDDING_MODEL: ${RW_EMBEDDING_MODEL:-qwen3.7-text-embedding}
-      RUNNER_CONTROLLER_URL: http://runner-controller:8096
-    volumes:
-      - rw-kernel-data:/app/data
-      - ${RW_PROJECTS_ROOT:-rw-projects}:/projects:ro
-      - ./agents:/app/agents:ro
-      - ./pipelines:/app/pipelines:ro
-    networks: [control, worker-egress]
-    depends_on:
-      control:
-        condition: service_healthy
-      runtime:
-        condition: service_healthy
-
+    command:
+    - uvicorn
+    - server.app:app
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8095'
   runtime:
     build:
       context: ..
       dockerfile: runtime/Dockerfile
-    user: "1000:1000"
-    env_file:
-      - ../.env
     environment:
-      HOME: /home/runtime
-      PI_CODING_AGENT_DIR: /home/runtime/.pi/agent
-      RUNTIME_API_BASE: ${baseurl:-}
-      RUNTIME_API_KEY: ${apikey:-}
-      RUNTIME_ENDPOINTS: ${RUNTIME_ENDPOINTS:-}
-      RUNTIME_MODEL: ${RW_MODEL_NAME:-qwen3.7-flash}
-      RUNTIME_EMBEDDING_MODEL: ${RW_EMBEDDING_MODEL:-qwen3.7-text-embedding}
-      RUNNER_CONTROLLER_URL: http://runner-controller:8096
       RUNTIME_DATA: /runtime-data
-      RUNTIME_SKILLS_PATHS: /user-agent-skills:/codex-source/skills:/app/skills
-      CODEX_SOURCE: /codex-source
-      CODEX_HOME: /runtime-data/codex
+      CONTROL_URL: http://control:8095
+      PI_CODING_AGENT_DIR: /home/runtime/.pi/agent
+      RUNTIME_SKILLS_PATHS: /app/skills:/user-agent-skills
     ports:
-      - "8098:8098"
+    - 127.0.0.1:8098:8098
     volumes:
-      - rw-runtime-data:/runtime-data
-      - ${RW_PROJECTS_ROOT:-rw-projects}:/projects
-      - ${HOME}/.codex:/codex-source:ro
-      - ${HOME}/.agents/skills:/user-agent-skills:ro
-      - ${HOME}/.pi/agent:/home/runtime/.pi/agent
-    networks: [control, worker-egress]
-    depends_on:
-      runner-controller:
-        condition: service_healthy
+    - rw-runtime-data:/runtime-data
+    - rw-project-workspaces:/projects
+    - ${HOME}/.pi/agent:/pi-source:ro
+    - ${HOME}/.agents/skills:/user-agent-skills:ro
+    networks:
+    - control
+    - worker-egress
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8098/health')"]
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8098/health')
       interval: 5s
       timeout: 3s
       retries: 20
-
-  runner-controller:
-    build:
-      context: .
-      target: runner
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - rw-kernel-data:/app/data
-    networks: [control]
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8096/health')"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-
 volumes:
-  rw-kernel-data:
-  rw-projects:
-  rw-runtime-data:
-
+  rw-kernel-data: null
+  rw-projects: null
+  rw-runtime-data: null
+  rw-project-workspaces: null
 networks:
   control:
     internal: true
-  worker-egress:
+  worker-egress: null

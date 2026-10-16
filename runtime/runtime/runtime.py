@@ -193,6 +193,26 @@ class Runtime:
             turn = self._register_turn(session_id, message_id, payload)
         return _turn_view(turn)
 
+    async def submit_child(self, run_id, message):
+        message_id, payload = _message(message)
+        async with self._registry_lock:
+            self._require_open()
+            run = self._require_run(run_id)
+            parent_run, parent_turn = self._delegations[run_id]
+            self._require_parent_turn(parent_run, parent_turn)
+            turn = self._register_run_turn(run, message_id, payload)
+        return _turn_view(turn)
+
+    def inspect_session(self, session_id):
+        run = self._session_runs.get(session_id)
+        if run is None:
+            raise KeyError(session_id)
+        turns = [_turn_view(t) for t in run.turns.values()]
+        return {**_run_view(run), 'turns': turns}
+
+    def inspect_turn(self, turn_id):
+        return _turn_view(self._turn(turn_id))
+
     async def close(self) -> None:
         self._require_close_caller()
         async with self._registry_lock:
@@ -246,7 +266,9 @@ class Runtime:
             raise RuntimeError("runtime is closed")
 
     def _register_turn(self, session_id, message_id, payload):
-        run = self._require_session(session_id)
+        return self._register_run_turn(self._require_session(session_id), message_id, payload)
+
+    def _register_run_turn(self, run, message_id, payload):
         if existing := run.turns.get(message_id):
             return existing
         turn_id = f"t-{uuid.uuid4().hex}"
@@ -769,7 +791,6 @@ def _turn_view(turn):
         "id": turn.request.turn_id,
         "turn_id": turn.request.turn_id,
         "run_id": turn.request.run_id,
-        "session_id": turn.session_id,
         "message_id": turn.request.message_id,
         "status": turn.status,
         "result_text": turn.result_text,

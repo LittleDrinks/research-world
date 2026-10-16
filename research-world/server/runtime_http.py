@@ -46,7 +46,7 @@ class RuntimeHttpClient:
         transport: httpx.AsyncBaseTransport | None = None,
     ):
         self._client = httpx.AsyncClient(
-            base_url=url.rstrip("/"), transport=transport
+            base_url=url.rstrip("/"), transport=transport, timeout=60
         )
 
     @property
@@ -79,6 +79,29 @@ class RuntimeHttpClient:
             json={"session_id": session_id, "message": dict(message)},
         )
         return TurnView.model_validate(_response_json(response))
+
+    async def catalog(self):
+        return _response_json(await self._client.get('/api/v1/runtime/catalog'))
+
+    async def validate(self, spec):
+        return _response_json(await self._client.post('/api/v1/runtime/validate', json=spec))
+
+    async def inspect(self, session_id):
+        return _response_json(await self._client.get(f'/api/v1/runtime/sessions/{session_id}'))
+
+    async def cancel(self, turn_id):
+        return _response_json(await self._client.post(f'/api/v1/runtime/turns/{turn_id}/cancel'))
+
+    async def subscribe(self, turn_id, after_seq=-1):
+        import json
+        path = f'/api/v1/runtime/turns/{turn_id}/events'
+        async with self._client.stream('GET', path, params={'after_seq': after_seq}, timeout=None) as response:
+            if response.is_error:
+                await response.aread()
+                _response_json(response)
+            async for line in response.aiter_lines():
+                if line.startswith('data: '):
+                    yield json.loads(line[6:])
 
 
 def _response_json(response: httpx.Response) -> Any:

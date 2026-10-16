@@ -40,6 +40,18 @@ jobs:
       - name: Validate Compose
         working-directory: research-world
         run: |
-          touch ../.env
           docker compose config -q
-          docker compose -f compose.release.yaml config -q
+      - name: Browser smoke against Compose
+        run: |
+          mkdir -p "$HOME/.pi/agent" "$HOME/.agents/skills"
+          echo '{}' > "$HOME/.pi/agent/settings.json"
+          echo '{"providers":{}}' > "$HOME/.pi/agent/models.json"
+          cd research-world
+          docker compose up --build -d --wait
+          cd web
+          npx playwright install --with-deps chromium
+          npm test
+      - name: Stop Compose
+        if: always()
+        working-directory: research-world
+        run: docker compose down

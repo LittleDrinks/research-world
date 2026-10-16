@@ -1,400 +1,136 @@
 from __future__ import annotations
 
+import io
 import json
-from base64 import b64decode
-from binascii import Error as Base64Error
+import zipfile
+from contextlib import asynccontextmanager
+from dataclasses import asdict
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import (
-    FileResponse,
-    HTMLResponse,
-    JSONResponse,
-    Response,
-    StreamingResponse,
-)
+from fastapi.responses import FileResponse, JSONResponse, Response
 
+from .agent_profiles import AgentProfiles
 from .config import ROOT, load_settings
-from .kernel import KernelCommand, KernelQuery, ResearchKernel, default_kernel
 from .kernel_http import kernel_graph_router
-from .kernel_interface import KernelInterface, create_kernel
-from .library import list_packages
-from .transport import runtime_router, session_router
-from .world import ReportNameTaken
+from .kernel_interface import create_kernel
+from .product_sessions import session_router
+from .runtime_http import RuntimeHttpClient, RuntimeHttpError
+from .session_control import SessionControl
 
 
-def create_app(
-    kernel: ResearchKernel,
-    *,
-    graph_kernel: KernelInterface,
-    transport_runtime=None,
-) -> FastAPI:
-    app = FastAPI(title="Research World", version="2")
-    register_routes(
-        app, kernel, graph_kernel, transport_runtime=transport_runtime
-    )
+def create_product(kernel, runtime, profiles, workspace):
+    @asynccontextmanager
+    async def lifespan(_app):
+        yield
+        await runtime.close()
+
+    app = FastAPI(title='Research World', lifespan=lifespan)
+    _errors(app)
+    _agent_routes(app, runtime, profiles)
+    _project_routes(app, kernel)
+    _artifact_routes(app, kernel)
+    app.include_router(session_router(SessionControl(kernel, runtime, profiles, workspace)))
+    app.include_router(kernel_graph_router(kernel))
+    _frontend(app)
     return app
 
 
-def register_routes(
-    app, kernel, graph_kernel: KernelInterface, *, transport_runtime=None
-) -> None:
-    _register_world_routes(app, kernel)
-    app.include_router(kernel_graph_router(graph_kernel))
-    if transport_runtime is not None:
-        app.include_router(session_router(graph_kernel, transport_runtime))
-        app.include_router(runtime_router(transport_runtime))
-    frontend_routes(app)
+def _errors(app):
+    async def invalid(_, error):
+        return JSONResponse({'detail': str(error)}, status_code=400)
+
+    async def missing(_, error):
+        return JSONResponse({'detail':'not found'}, status_code=404)
+
+    async def runtime_error(_, error):
+        return JSONResponse({'detail':str(error)}, status_code=error.status_code)
+
+    for kind in (ValueError, TypeError):
+        app.add_exception_handler(kind, invalid)
+    for kind in (KeyError, PermissionError, StopIteration):
+        app.add_exception_handler(kind, missing)
+    app.add_exception_handler(RuntimeHttpError, runtime_error)
 
 
-def _register_world_routes(app, kernel) -> None:
-    error_handlers(app)
-    health_routes(app)
-    project_state_routes(app, kernel)
-    project_export_routes(app, kernel)
-    graph_node_routes(app, kernel)
-    graph_evidence_routes(app, kernel)
-    thread_routes(app, kernel)
-    thread_prompt_routes(app, kernel)
-    thread_pin_routes(app, kernel)
-    thread_report_routes(app, kernel)
-    runtime_routes(app, kernel)
-    agent_routes(app, kernel)
-    pipeline_definition_routes(app, kernel)
-    pipeline_run_routes(app, kernel)
-    pipeline_control_routes(app, kernel)
-    library_routes(app)
-    graph_tool_routes(app, kernel)
+def _agent_routes(app, runtime, profiles):
+    @app.get('/api/v1/runtime/catalog')
+    async def catalog():
+        return await runtime.catalog()
 
+    @app.get('/api/v1/agents')
+    async def agents():
+        return profiles.list((await runtime.catalog())['default_model'])
 
-def error_handlers(app: FastAPI) -> None:
-    @app.exception_handler(ReportNameTaken)
-    async def report_name_taken(_request, error):
-        return JSONResponse({"code": error.code, "detail": str(error)}, status_code=409)
-
-    @app.exception_handler(KeyError)
-    async def missing(_request, _error):
-        return JSONResponse({"detail": "not found"}, status_code=404)
-
-    app.add_exception_handler(PermissionError, missing)
-
-    @app.exception_handler(ValueError)
-    async def invalid(_request, error):
-        return JSONResponse({"detail": str(error)}, status_code=400)
-
-    app.add_exception_handler(TypeError, invalid)
-
-
-def health_routes(app) -> None:
-    @app.get("/api/v1/health")
-    async def health():
-        return {"ok": True}
-
-
-def project_state_routes(app, kernel) -> None:
-    @app.patch("/api/v1/projects/{project_id}")
-    async def update_project(project_id: str, request: Request):
+    @app.put('/api/v1/agents/{agent_id}')
+    async def save(agent_id: str, request: Request):
         value = await request.json()
-        return await kernel.command(
-            KernelCommand("set_auto", project_id, {"enabled": value["auto"]})
-        )
-
-
-def project_export_routes(app, kernel) -> None:
-    @app.get("/api/v1/projects/{project_id}/export")
-    async def project_export(project_id: str, request: Request):
-        await _require_empty_body(request)
-        content = await kernel.query(KernelQuery("project_export", project_id))
-        return export_response(content)
-
-
-def graph_node_routes(app, kernel) -> None:
-    @app.get("/api/v1/nodes/{node_id}")
-    async def node(node_id: str, project_id: str | None = None):
-        return await kernel.query(KernelQuery("node", project_id, {"node_id": node_id}))
-
-    @app.post("/api/v1/projects/{project_id}/nodes", status_code=201)
-    async def create_node(project_id: str, request: Request):
-        return await kernel.command(
-            KernelCommand("submit_node", project_id, await request.json())
-        )
-
-    @app.post("/api/v1/projects/{project_id}/nodes/{node_id}/admission")
-    async def resolve_admission(project_id: str, node_id: str, request: Request):
-        values = {**(await request.json()), "node_id": node_id}
-        return await kernel.command(
-            KernelCommand("resolve_admission", project_id, values)
-        )
-
-
-def graph_evidence_routes(app, kernel) -> None:
-    @app.post("/api/v1/projects/{project_id}/edges", status_code=201)
-    async def create_edge(project_id: str, request: Request):
-        return await kernel.command(
-            KernelCommand("add_edge", project_id, await request.json())
-        )
-
-    @app.post("/api/v1/projects/{project_id}/observations", status_code=201)
-    async def observation(project_id: str, request: Request):
-        return await kernel.command(
-            KernelCommand("observation", project_id, await request.json())
-        )
-
-    @app.post("/api/v1/projects/{project_id}/artifacts", status_code=201)
-    async def artifact(project_id: str, request: Request):
-        values = _artifact_values(await request.json())
-        return await kernel.command(
-            KernelCommand("capture_artifact", project_id, values)
-        )
-
-
-def thread_routes(app, kernel) -> None:
-    @app.get("/api/v1/projects/{project_id}/threads")
-    async def threads(project_id: str):
-        return await kernel.query(KernelQuery("threads", project_id))
-
-    @app.post("/api/v1/projects/{project_id}/threads", status_code=201)
-    async def create_thread(project_id: str, request: Request):
-        return await kernel.command(
-            KernelCommand("create_thread", project_id, await request.json())
-        )
-
-    @app.get("/api/v1/threads/{thread_id}")
-    async def thread(thread_id: str):
-        return await kernel.query(
-            KernelQuery("thread", values={"thread_id": thread_id})
-        )
-
-
-def thread_prompt_routes(app, kernel) -> None:
-    @app.post("/api/v1/threads/{thread_id}/prompts")
-    async def prompt(thread_id: str, request: Request):
-        values = {"thread_id": thread_id, "message": (await request.json())["message"]}
-        events = await kernel.command(KernelCommand("thread_prompt", values=values))
-        return StreamingResponse(relay(events), media_type="text/event-stream")
-
-    @app.post("/api/v1/threads/{thread_id}/restart")
-    async def restart(thread_id: str):
-        return await kernel.command(
-            KernelCommand("restart_thread", values={"thread_id": thread_id})
-        )
-
-
-def thread_pin_routes(app, kernel) -> None:
-    @app.post("/api/v1/threads/{thread_id}/nodes")
-    async def pin_node(thread_id: str, request: Request):
-        values = {"thread_id": thread_id, "node_id": (await request.json())["node_id"]}
-        return await kernel.command(KernelCommand("pin_thread", values=values))
-
-    @app.delete("/api/v1/threads/{thread_id}/nodes/{node_id}")
-    async def unpin_node(thread_id: str, node_id: str):
-        return await kernel.command(
-            KernelCommand(
-                "unpin_thread", values={"thread_id": thread_id, "node_id": node_id}
-            )
-        )
-
-
-def thread_report_routes(app, kernel) -> None:
-    @app.post("/api/v1/threads/{thread_id}/report/publish")
-    async def publish_thread_report(thread_id: str, request: Request):
-        values = {"thread_id": thread_id, **_report_fields(await request.json(), {"title"})}
-        result = await kernel.command(KernelCommand("thread_publish_report", values=values))
-        return JSONResponse(result, status_code=201 if result["status"] == "published" else 422)
-
-    @app.post("/api/v1/threads/{thread_id}/report/save", status_code=201)
-    async def save_thread_report(thread_id: str, request: Request):
-        values = {"thread_id": thread_id, **_report_fields(await request.json(), {"title", "publication_id"})}
-        return await kernel.command(KernelCommand("save_report", values=values))
-
-    @app.get("/api/v1/threads/{thread_id}/report/{publication_id}/content")
-    async def report_content(thread_id: str, publication_id: str, request: Request, download: bool = False):
-        await _require_empty_body(request)
-        values = {"thread_id": thread_id, "publication_id": publication_id}
-        content = await kernel.query(KernelQuery("report_content", values=values))
-        return report_response(content, download)
-
-
-def runtime_routes(app, kernel) -> None:
-    @app.get("/api/v1/runtime/catalog")
-    async def catalog(project_id: str):
-        return await kernel.query(KernelQuery("catalog", project_id))
-
-    @app.get("/api/v1/runtime/sessions/{session_id}")
-    async def session(session_id: str):
-        return await kernel.query(
-            KernelQuery("session", values={"session_id": session_id})
-        )
-
-
-def agent_routes(app, kernel) -> None:
-    @app.get("/api/v1/agents")
-    async def all_agents():
-        return await kernel.query(KernelQuery("agents"))
-
-    @app.get("/api/v1/agents/{agent_id}")
-    async def agent(agent_id: str):
-        return await kernel.query(KernelQuery("agent", values={"agent_id": agent_id}))
-
-    agent_command_routes(app, kernel)
-
-
-def agent_command_routes(app, kernel) -> None:
-    @app.post("/api/v1/agents", status_code=201)
-    async def create_agent(request: Request, project_id: str):
-        values = {"value": await request.json()}
-        command = KernelCommand("create_agent", project_id=project_id, values=values)
-        return await kernel.command(command)
-
-    @app.post("/api/v1/projects/{project_id}/agent-drafts", status_code=201)
-    async def draft_agent(project_id: str, request: Request):
-        return await kernel.command(
-            KernelCommand("draft_agent", project_id, await request.json())
-        )
-
-    @app.put("/api/v1/agents/{agent_id}")
-    async def save_agent(agent_id: str, request: Request, project_id: str):
-        values = {"agent_id": agent_id, "value": await request.json()}
-        return await kernel.command(
-            KernelCommand("save_agent", project_id=project_id, values=values)
-        )
-
-
-def pipeline_definition_routes(app, kernel) -> None:
-    @app.get("/api/v1/pipelines")
-    async def pipelines():
-        return await kernel.query(KernelQuery("pipelines"))
-
-    @app.put("/api/v1/pipelines/{pipeline_id}")
-    async def save_pipeline(pipeline_id: str, request: Request):
-        values = {"pipeline_id": pipeline_id, "value": await request.json()}
-        return await kernel.command(KernelCommand("save_pipeline", values=values))
-
-
-def pipeline_run_routes(app, kernel) -> None:
-    @app.get("/api/v1/projects/{project_id}/runs")
-    async def runs(project_id: str):
-        return await kernel.query(KernelQuery("runs", project_id))
-
-    @app.post("/api/v1/projects/{project_id}/runs", status_code=201)
-    async def start_run(project_id: str, request: Request):
-        return await kernel.command(
-            KernelCommand("start_run", project_id, await request.json())
-        )
-
-
-def pipeline_control_routes(app, kernel) -> None:
-    @app.post("/api/v1/runs/{run_id}/confirm", status_code=202)
-    async def confirm(run_id: str):
-        return await kernel.command(
-            KernelCommand("confirm_run", values={"run_id": run_id})
-        )
-
-    @app.post("/api/v1/runs/{run_id}/resolve", status_code=202)
-    async def resolve(run_id: str, request: Request):
-        decision = await request.json()
-        values = {"run_id": run_id, **decision}
-        return await kernel.command(KernelCommand("resolve_run", values=values))
-
-
-def library_routes(app) -> None:
-    @app.get("/api/v1/library")
-    async def library():
-        return list_packages()
-
-
-def graph_tool_routes(app, kernel) -> None:
-    @app.post("/api/v1/tools/graph-query")
-    async def graph_query(request: Request):
-        args = (await request.json())["arguments"]
-        if args["action"] == "get":
-            node = await kernel.query(
-                KernelQuery(
-                    "admitted_node",
-                    args["project_id"],
-                    {"node_id": args["node_id"]},
-                )
-            )
-            return node["payload"]
-        if args["action"] == "search":
-            return await kernel.query(
-                KernelQuery("graph_search", args["project_id"], {"text": args["query"]})
-            )
-        raise HTTPException(400, "unknown action")
-
-
-def report_response(content: bytes, download: bool):
-    headers = {"Content-Security-Policy": "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'"}
-    if download:
-        headers["Content-Disposition"] = 'attachment; filename="report.html"'
-        return Response(content, media_type="text/html", headers=headers)
-    return HTMLResponse(content, headers=headers)
-
-
-def export_response(content: bytes):
-    headers = {"Content-Disposition": 'attachment; filename="project-export.zip"'}
-    return Response(content, media_type="application/zip", headers=headers)
-
-
-def _report_fields(value: object, fields: set[str]) -> dict:
-    if not isinstance(value, dict) or set(value) != fields:
-        names = ", ".join(sorted(fields))
-        raise ValueError(f"report request requires only: {names}")
-    return value
-
-
-async def _require_empty_body(request: Request) -> None:
-    if await request.body():
-        raise ValueError("report content request accepts no body")
-
-
-def _artifact_values(value: dict) -> dict:
-    if not isinstance(value, dict) or set(value) != {"content_base64", "media_type"}:
-        raise ValueError("artifact requires only content_base64 and media_type")
-    try:
-        content = b64decode(value["content_base64"], validate=True)
-    except (Base64Error, TypeError) as error:
-        raise ValueError("artifact content_base64 must be valid base64") from error
-    return {"content": content, "media_type": value["media_type"]}
-
-
-_ERROR_TEXT = {"session_spec_invalid": "此对话的 Agent 配置已变更，需要重启会话"}
-
-
-async def relay(events):
-    try:
-        async for event in events:
-            event_type = event.pop("type")
-            yield sse_frame(event_type, event)
-    except Exception as error:  # noqa: BLE001
-        yield sse_frame("error", _error_payload(error))
-
-
-def _error_payload(error: Exception) -> dict:
-    code = getattr(error, "code", None)
-    detail = _ERROR_TEXT.get(code) if code else None
-    payload = {"detail": detail or str(error)}
-    return {**payload, "code": code} if code else payload
-
-
-def sse_frame(event: str, data) -> str:
-    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
-
-
-def frontend_routes(app: FastAPI) -> None:
-    @app.get("/{path:path}", include_in_schema=False)
+        if value.get('id') != agent_id:
+            raise ValueError('Agent id 不匹配')
+        await runtime.validate(value)
+        return profiles.save(value)
+
+
+def _project_routes(app, kernel):
+    @app.get('/api/v1/health')
+    async def health():
+        return {'ok':True}
+
+    @app.get('/api/v1/bootstrap')
+    async def bootstrap(project_id: str | None = None):
+        projects = kernel.list_projects()
+        selected = kernel.get_project(project_id) if project_id else next(iter(projects), None)
+        return {'projects':[_project_view(kernel,p) for p in projects],
+                'active_project_id': selected.id if selected else None,
+                'sessions':kernel.list_sessions(selected.id) if selected else []}
+
+    @app.get('/api/v1/projects/{project_id}/export')
+    async def export(project_id: str):
+        return Response(_export(kernel, project_id), media_type='application/zip',
+                        headers={'Content-Disposition':f'attachment; filename="{project_id}.zip"'})
+
+
+def _artifact_routes(app, kernel):
+    @app.post('/api/v1/projects/{project_id}/artifacts', status_code=201)
+    async def capture(project_id: str, request: Request):
+        body = await request.json()
+        content = body['content'].encode('utf-8')
+        if len(content) > 4 * 1024 * 1024:
+            raise ValueError('Artifact 超过 4 MiB')
+        artifact = kernel.capture_artifact(project_id, content, body.get('media_type', 'text/markdown'))
+        return {**asdict(artifact), 'download_url':f'/api/v1/projects/{project_id}/artifacts/{artifact.id}?download=true'}
+
+
+def _project_view(kernel, project):
+    return {**asdict(project), 'node_count':len(kernel.list_records(project.id))}
+
+
+def _export(kernel, project_id):
+    result = io.BytesIO()
+    records = kernel.list_records(project_id)
+    values = {'project':asdict(kernel.get_project(project_id)),
+              'records':[asdict(v) for v in records],
+              'relations':[asdict(v) for v in kernel.list_relations(project_id)],
+              'sessions':[asdict(v) for v in kernel.list_sessions(project_id)]}
+    with zipfile.ZipFile(result, 'w', zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr('project.json', json.dumps(values, ensure_ascii=False, indent=2))
+        for artifact in {a for r in records for a in r.artifact_ids}:
+            archive.writestr(f'artifacts/{artifact}', kernel.read_artifact(project_id, artifact))
+    return result.getvalue()
+
+
+def _frontend(app):
+    @app.get('/{path:path}', include_in_schema=False)
     async def frontend(path: str):
-        if path.startswith("api/"):
-            raise HTTPException(404, "not found")
-        dist = ROOT / "web" / "dist"
-        asset = dist / path
-        if path and asset.is_file():
-            return FileResponse(asset)
-        if (dist / "index.html").is_file():
-            return FileResponse(dist / "index.html")
-        raise HTTPException(404, "frontend not built")
+        if path.startswith('api/'):
+            raise HTTPException(404)
+        dist = (ROOT / 'web/dist').resolve()
+        asset = (dist / path).resolve()
+        if not asset.is_relative_to(dist):
+            raise HTTPException(404)
+        return FileResponse(asset if asset.is_file() else dist / 'index.html')
 
 
-kernel = default_kernel()
 settings = load_settings()
-graph_kernel = create_kernel(settings.database, settings.artifacts)
-app = create_app(kernel, graph_kernel=graph_kernel)
+app = create_product(create_kernel(settings.database, settings.artifacts),
+                     RuntimeHttpClient(settings.runtime_url),
+                     AgentProfiles(settings.database.parent / 'agent-profiles'), settings.projects_root)
