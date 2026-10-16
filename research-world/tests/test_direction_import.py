@@ -5,7 +5,7 @@ import pytest
 
 from server.importing.corpus import corpus
 from server.importing.directions import import_directions,load_directions
-from server.importing.writer import Writer
+from server.importing.writer import Writer,import_project
 from server.kernel_interface import create_kernel
 
 ROOT=Path(__file__).resolve().parents[2]
@@ -37,19 +37,19 @@ def test_source_drift_is_rejected(tmp_path):
 def test_full_corpus_builds_distinct_directions_without_duplication(tmp_path):
     kernel=create_kernel(tmp_path/'database',tmp_path/'artifacts');writer=Writer(kernel,ROOT)
     for item in corpus(ROOT):
-        project=writer.project(item['qid'],item['question']);spec=item['directions']
-        question=writer.record(project,'question','question',{'text':item['question']})
-        artifact=writer.file(project,EVIDENCE/spec['path'])
-        key='all/'+item['qid'] if spec['path'].startswith('all/') else spec['path']
-        report=writer.record(project,key,'source',{'text':'Original report'},(artifact.id,))
-        import_directions(writer,project,question,item);count=writer.created
-        import_directions(writer,project,question,item)
+        result=import_project(writer,item,{})
+        count=writer.created;import_project(writer,item,{})
         assert writer.created==count
-        directions=[r for r in kernel.list_records(project.id) if r.type=='direction']
+        records=kernel.list_records(result['project_id'])
+        directions=[r for r in records if r.type=='direction']
         assert len(directions)==3 and len({r.content['title'] for r in directions})==3
         assert all(r.content['verified'] is False and len(r.content['text'])>60 for r in directions)
-        edges=kernel.list_relations(project.id)
-        assert len(edges)==6 and all(e.target_id in {question.id,report.id} and e.type=='depends_on' for e in edges)
+        assert not any(r.content.get('title','').startswith(('历史候选报告','深度案例','历史资料')) for r in records)
+        question=next(r for r in records if r.type=='question')
+        assert len(question.artifact_ids)>=4
+        for direction in directions:
+            assert any(e.source_id==direction.id and e.target_id==question.id for e in kernel.list_relations(result['project_id']))
+            assert kernel.read_artifact(result['project_id'],direction.artifact_ids[0])==(EVIDENCE/item['directions']['path']).read_bytes()
 
 
 def test_missing_source_spans_are_rejected():
@@ -67,3 +67,17 @@ def test_q112_routes_retain_dispersed_conditions_and_evidence():
     assert all('No LCA calculations' in route['text'] for route in routes)
     assert all('Economic failure' not in route['text'] for route in routes[:2])
     assert 'Compostable container screening' not in routes[2]['text']
+
+
+def test_only_explicit_source_ids_create_direction_dependencies(tmp_path):
+    kernel=create_kernel(tmp_path/'database',tmp_path/'artifacts');writer=Writer(kernel,ROOT)
+    item=next(item for item in corpus(ROOT) if item['qid']=='q049')
+    result=import_project(writer,item,{})
+    records=kernel.list_records(result['project_id']);edges=kernel.list_relations(result['project_id'])
+    sources=[r for r in records if r.type=='source']
+    assert sources and all('/v8.md/source/' in r.content['origin']['key'] for r in sources)
+    assert all(e.type=='depends_on' for e in edges)
+    source_ids={r.id for r in sources}
+    assert len([e for e in edges if e.target_id in source_ids])==7
+    assert not any(r.content['origin']['key']=='archive' for r in records)
+    assert all(r.type=='question' or len(r.artifact_ids)<=1 for r in records)

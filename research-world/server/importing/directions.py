@@ -1,4 +1,5 @@
 import json
+import re
 
 from .corpus import checksum
 
@@ -22,12 +23,13 @@ def _extract(text,value):
     return {'title':value['title'],'text':'\n\n'.join(excerpts),'source_spans':locations}
 
 
-def import_directions(writer,project,question,item):
-    spec=item['directions'];key='all/'+item['qid'] if spec['path'].startswith('all/') else spec['path']
-    report=next(r for r in writer.kernel.list_records(project.id) if r.content.get('origin',{}).get('key')==key)
+def import_directions(writer,project,question,item,sources):
+    spec=item['directions']
     for index,value in enumerate(spec['directions'],1):
         content={**value,'verified':False,'source_path':spec['path'],'source_sha256':spec['sha256'],
+                 'attachments':[{'id':f'artifact:{spec["sha256"]}','name':'研究报告 · '+spec['path']}],
                  'note':'历史报告中的研究方向；证据与结论尚未重新核验。'}
         node=writer.record(project,f'direction/{index}','direction',content,(f'artifact:{spec["sha256"]}',))
         writer.link(project,node,question)
-        writer.link(project,node,report)
+        for citation,source in sources.items():
+            if re.search(r'(?<![A-Za-z0-9_-])'+re.escape(citation)+r'(?![A-Za-z0-9_-])',value['text']):writer.link(project,node,source)

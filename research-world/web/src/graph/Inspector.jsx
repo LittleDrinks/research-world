@@ -26,10 +26,11 @@ function NodeHeader({ node }) {
 
 
 function NodeRecord({ node }) {
-  const extra = Object.entries(node.content).filter(([key]) => !['title','text','attachments','origin'].includes(key));
+  const extra = Object.entries(node.content).filter(([key]) => !['title','text','attachments','origin','note'].includes(key));
   return <section className="inspector-section node-body">
     <ReactMarkdown>{String(node.content.text || '')}</ReactMarkdown>
-    {extra.length>0&&<dl className="node-record">{extra.map(([key,value])=><div key={key}><dt>{key}</dt><dd>{formatContent(value)}</dd></div>)}</dl>}
+    {node.content.note&&<p className="muted">{String(node.content.note)}</p>}
+    {extra.length>0&&<details className="node-details"><summary>来源与记录信息</summary><dl className="node-record">{extra.map(([key,value])=><div key={key}><dt>{key}</dt><dd>{formatContent(value)}</dd></div>)}</dl></details>}
   </section>;
 }
 
@@ -85,9 +86,9 @@ function Artifacts({ node, artifacts }) {
   const names = new Map((Array.isArray(node.content.attachments) ? node.content.attachments : []).filter(value=>value && typeof value === "object").map(value => [value.id,value.name]));
   const linked = node.artifact_ids.map((id) => ({ id, name:names.get(id), artifact: byId.get(id) }));
   if (!linked.length) return null;
-  return <section className="inspector-section"><h2>关联 Artifact</h2><ul className="audit-evidence">
+  return <details className="inspector-section node-details"><summary>研究资料（{linked.length}）</summary><ul className="audit-evidence">
     {linked.map(({ id, name, artifact }) => <li key={id}><span className="mono">{name || (artifact ? `${artifact.media_type} · ${id}` : id)}</span>{artifact && <ArtifactDownload artifact={artifact} />}</li>)}
-  </ul></section>;
+  </ul></details>;
 }
 
 

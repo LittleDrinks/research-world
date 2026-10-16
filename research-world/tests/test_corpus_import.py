@@ -31,8 +31,8 @@ def test_import_is_idempotent_and_preserves_status_and_attachments(tmp_path):
     import_project(writer,item,{})
     records=kernel.list_records(result['project_id'])
     assert writer.created==count and len(kernel.list_projects())==1
-    candidate=next(r for r in records if r.content['origin']['key']=='all/q001')
-    assert candidate.content['historical_status']=='partial' and candidate.content['verified'] is False
+    candidate=next(r for r in records if r.content['origin']['key']=='question')
+    assert candidate.content['historical_status']=='partial'
     assert len(candidate.artifact_ids)==4 and result['raw_missing']==['session-id']
     assert all(r.type=='depends_on' for r in kernel.list_relations(result['project_id']))
 
@@ -104,7 +104,7 @@ def test_manifest_preserves_original_location_separately_from_read_path(tmp_path
     item['raw_sha256']=hashlib.sha256(raw.read_bytes()).hexdigest()
     info={'session_id':'session-id','path':str(raw),'sha256':item['raw_sha256'],'source_path':'.pi/agent/sessions/original.jsonl','ledger_references':[]}
     result=import_project(writer,item,{'session-id':info})
-    archive=next(r for r in kernel.list_records(result['project_id']) if r.content['origin']['key']=='archive')
+    archive=next(r for r in kernel.list_records(result['project_id']) if r.content['origin']['key']=='question')
     manifest=next(a['id'] for a in archive.content['attachments'] if a['name']=='导入清单.json')
     entry=json.loads(kernel.read_artifact(result['project_id'],manifest))['trajectories'][0]
     assert entry['source_path']==info['source_path'] and 'path' not in entry
