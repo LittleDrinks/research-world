@@ -4,6 +4,7 @@ import { AppShell } from "./components/AppShell";
 import { useWorld } from "./context/WorldContext";
 
 
+const WorkspacePage = lazy(() => import("./pages/WorkspacePage").then(value=>({default:value.WorkspacePage})));
 const MapPage = lazy(() => import("./pages/MapPage").then((value) => ({ default: value.MapPage })));
 const ChatPage = lazy(() => import("./pages/ChatPage").then((value) => ({ default: value.ChatPage })));
 const TracesPage = lazy(() => import("./pages/TracesPage").then((value) => ({ default: value.TracesPage })));
@@ -29,6 +30,7 @@ export function App() {
     <Route index element={<Navigate to="/projects" replace />} />
     <Route path="projects" element={<View component={ProjectsPage} />} />
     <Route element={<ProjectRequired />}>
+      <Route path="workspace" element={<View component={WorkspacePage} />} />
       <Route path="map" element={<View component={MapPage} />} />
       <Route path="chat" element={<View component={ChatPage} />} />
       <Route path="chat/:threadId" element={<View component={ChatPage} />} />
