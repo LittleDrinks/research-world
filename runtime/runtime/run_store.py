@@ -211,8 +211,8 @@ class _RunStore:
         row = self.connection.execute("SELECT status FROM turns WHERE id = ?", (turn_id,)).fetchone()
         return row is not None and row["status"] != "running"
 
-    def read_events(self, turn_id):
-        rows = self.connection.execute("SELECT * FROM events WHERE turn_id = ? ORDER BY seq", (turn_id,))
+    def read_events(self, turn_id, after_seq=-1):
+        rows = self.connection.execute("SELECT * FROM events WHERE turn_id = ? AND seq > ? ORDER BY seq", (turn_id, after_seq))
         return [{key: value for key, value in _event_row(row).items() if key != "pos"} for row in rows]
 
     def snapshot(self):

@@ -889,3 +889,24 @@ async def test_delegate_rejects_terminal_parent_turn(tmp_path):
             {"id": "child", "adapter": "fake"},
             parent_turn_id=parent_turn["id"],
         )
+
+
+@pytest.mark.asyncio
+async def test_trace_cursor_never_decodes_previously_delivered_events(tmp_path, monkeypatch):
+    import runtime.run_store as module
+    runtime = Runtime(tmp_path, {'fake': FakeAdapter()})
+    run = await runtime.launch({'adapter': 'fake'}, session_id='cursor-session')
+    turn = await runtime.submit('cursor-session', {'id': 'cursor-message', 'content': 'review'})
+    for index in range(100):
+        runtime._trace.append(turn['id'], 'delta', {'text': str(index)}, run['id'])
+    original = module._event_row
+    def only_new(row):
+        assert row['seq'] > 99, 'cursor replay decoded old history'
+        return original(row)
+    try:
+        with monkeypatch.context() as patch:
+            patch.setattr(module, '_event_row', only_new)
+            events = runtime._trace.read(turn['id'], 99)
+            assert [event['seq'] for event in events] == [100]
+    finally:
+        await runtime.close()
