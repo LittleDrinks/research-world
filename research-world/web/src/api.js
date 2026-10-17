@@ -26,4 +26,3 @@ export const recordImpact = (projectId, recordId) => fetch(`/api/v1/projects/${e
 
 export const getWorkspace = id => fetch(`/api/v1/projects/${enc(id)}/workspace`).then(decode);
 export const startWorkspace = id => fetch(`/api/v1/projects/${enc(id)}/workspace`,{method:'POST'}).then(decode);
-export const stopWorkspace = id => fetch(`/api/v1/projects/${enc(id)}/workspace/stop`,{method:'POST'}).then(decode);

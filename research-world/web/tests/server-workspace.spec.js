@@ -61,6 +61,7 @@ for(const existing of [false,true])test(`browser without secure-context UUID sen
     await page.route('**/sessions**',r=>{if(r.request().method()!=='POST')return r.fallback();message=r.request().postDataJSON();return r.fulfill({status:400,json:{detail:'测试请求已接收'}});});
     await page.addInitScript(()=>Object.defineProperty(crypto,'randomUUID',{value:undefined}));
     await page.goto(existing?'/chat/s-http':'/chat');
+    await expect(page.getByLabel('研究消息')).toBeVisible({timeout:90000});
     await page.getByLabel('研究消息').fill('验证普通HTTP发送');await page.getByLabel('研究消息').press('Control+Enter');
     await expect.poll(()=>message?.message_id).toMatch(/^\S+$/);
   }finally{await request.delete('/api/v1/projects/'+project.id);}

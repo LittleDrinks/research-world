@@ -4,3 +4,8 @@
 .workspace-status{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:18px}.workspace-status strong{font-size:19px}.workspace-status span{color:var(--text-muted)}.workspace-error{color:var(--state-failed)}
 .workspace-card code{background:var(--surface-overlay);padding:2px 6px;border-radius:4px}.workspace-card .form-actions{flex-wrap:wrap;gap:10px}.workspace-page .muted{font-size:14px}
 @media(max-width:700px){.workspace-page{padding:16px}.workspace-card{padding:18px}}
+.workspace-loading{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px;padding:32px}
+.workspace-loading h1{margin:0;font-size:22px}.workspace-loading p{margin:0;color:var(--text-muted)}.workspace-loading .muted{font-size:14px}
+.workspace-spinner{color:var(--accent);animation:workspace-spin 1.2s linear infinite}
+@keyframes workspace-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.workspace-spinner{animation:none}}

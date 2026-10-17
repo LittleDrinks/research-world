@@ -54,7 +54,7 @@ jobs:
           docker compose up --build -d --wait
           cd web
           npx playwright install --with-deps chromium
-          npm test
+          RW_WORKSPACE_LIVE=1 npm test
       - name: Workspace operation integration
         working-directory: runtime
         run: RW_DOCKER_TEST=1 uv run pytest -q tests/test_workspace_execution.py

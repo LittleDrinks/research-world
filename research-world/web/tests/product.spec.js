@@ -7,6 +7,7 @@ async function createProject(page,name){
   await page.getByLabel('研究问题').fill('如何验证轨道长期稳定性？');
   await page.getByRole('button',{name:'创建项目',exact:true}).click();
   await expect(page).toHaveURL(/\/map/);
+  await expect(page.locator('.map-toolbar')).toBeVisible({timeout:90000});
 }
 
 test('project creation, graph roundtrip, export and Agent settings use the real API',async({page,request})=>{
@@ -18,6 +19,7 @@ test('project creation, graph roundtrip, export and Agent settings use the real 
   expect(response.status()).toBe(201);
   await expect(page.getByText('时间步长收敛').first()).toBeVisible();
   await page.reload();
+  await expect(page.locator('.map-toolbar')).toBeVisible({timeout:90000});
   await expect(page.getByText('时间步长收敛').first()).toBeVisible();
   await page.getByRole('link',{name:'Agent',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Agent · Pi'})).toBeVisible();
@@ -43,7 +45,7 @@ test('real Pi reply writes a research direction and survives refresh',async({pag
   await page.evaluate(()=>window.__rwStream.dispatchEvent(new Event('error')));
   await expect(page.locator('.pi-messages article').last().getByText('浏览器闭环已完成',{exact:true})).toBeVisible({timeout:150000});
   await page.reload();
-  await expect(page.locator('.pi-messages article').last().getByText('浏览器闭环已完成',{exact:true})).toBeVisible();
+  await expect(page.locator('.pi-messages article').last().getByText('浏览器闭环已完成',{exact:true})).toBeVisible({timeout:90000});
   await page.getByRole('link',{name:'地图',exact:true}).click();
   await expect(page.getByText('浏览器闭环方向').first()).toBeVisible();
 });
@@ -55,6 +57,7 @@ async function saveCopiedAgent(page) {
   await page.getByRole('button',{name:'保存 Agent',exact:true}).click();
   await expect(page.getByRole('option',{name,exact:true})).toHaveCount(1);
   await page.reload();
+  await expect(page.getByLabel('选择 Agent')).toBeVisible({timeout:90000});
   await page.getByLabel('选择 Agent').selectOption({label:name});
   await expect(page.getByLabel('名称',{exact:true})).toHaveValue(name);
 }
