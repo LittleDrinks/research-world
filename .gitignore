@@ -52,7 +52,6 @@ benchmarks/**/*.safetensors
 !AGENTS.md
 !CONTEXT.md
 !**/SKILL.md
-!docs/adr/**
 !docs/agents/**
 !.agents/**
 !.github/**
@@ -69,3 +68,6 @@ benchmarks/**/*.safetensors
 
 # Local evaluation tools and outputs.
 /private-evaluation/
+
+# Decisions live in GitHub issues.
+/docs/adr/
