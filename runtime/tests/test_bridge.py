@@ -232,11 +232,12 @@ async def test_failed_file_reads_never_capture_artifacts(monkeypatch, content, e
 
 
 @pytest.mark.asyncio
-async def test_file_artifact_rejects_ambiguous_content_and_child_access():
+@pytest.mark.parametrize('values', [{}, {'path': 'paper.json', 'content': 'replacement'}])
+async def test_file_artifact_rejects_ambiguous_content_and_child_access(values):
     bridge = ToolBridge()
     token = bridge.bind(request(['artifact']))
     with pytest.raises(ValueError):
-        await bridge.invoke(token, 'artifact', {'path': 'paper.json', 'content': 'replacement'})
+        await bridge.invoke(token, 'artifact', values)
     child = bridge.bind(request(['graph', 'literature']))
     with pytest.raises(PermissionError):
         await bridge.invoke(child, 'artifact', {'path': 'paper.json'})

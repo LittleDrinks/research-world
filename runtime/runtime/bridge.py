@@ -46,8 +46,11 @@ class ToolBridge:
             return await self.delegate(request, values)
         if tool == 'literature':
             return await _literature(values)
-        if tool == 'artifact' and 'path' in values:
-            values = await self._file_artifact(token, values)
+        if tool == 'artifact':
+            if ('path' in values) == ('content' in values):
+                raise ValueError('artifact requires exactly one of content or path')
+            if 'path' in values:
+                values = await self._file_artifact(token, values)
         return await _graph(request.agent_snapshot['project_id'], tool, values)
 
     async def _file_artifact(self, token, values):
