@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import os
 import secrets
@@ -45,7 +46,30 @@ class ToolBridge:
             return await self.delegate(request, values)
         if tool == 'literature':
             return await _literature(values)
+        if tool == 'artifact' and 'path' in values:
+            values = await self._file_artifact(token, values)
         return await _graph(request.agent_snapshot['project_id'], tool, values)
+
+    async def _file_artifact(self, token, values):
+        path = values['path']
+        if 'content' in values or not isinstance(path, str) or not path.strip():
+            raise ValueError('artifact requires either content or a non-empty path')
+        content = await self._workspace_text(token, path)
+        return {'content': content, 'media_type': values.get('media_type', 'text/plain')}
+
+    async def _workspace_text(self, token, path):
+        chunks, exit_code = [], None
+        async for line in self.workspace_tools.execute(token, {'operation': 'read', 'path': path}):
+            event = json.loads(line)
+            if event.get('error'):
+                raise ValueError('Artifact file could not be read')
+            if 'data' in event:
+                chunks.append(base64.b64decode(event['data'], validate=True))
+            if 'exitCode' in event:
+                exit_code = event['exitCode']
+        if exit_code != 0:
+            raise ValueError('Artifact file read did not complete successfully')
+        return b''.join(chunks).decode('utf-8')
 
     async def delegate(self, request, values):
         tasks = values.get('tasks')

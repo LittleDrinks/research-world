@@ -186,3 +186,57 @@ async def test_one_failed_child_does_not_discard_other_results():
     assert result['results'][0]['status'] == 'error'
     assert result['results'][1]['result_text'] == 'evidence'
     assert 'private provider details' not in str(result)
+
+
+class FileWorkspace:
+    def __init__(self, content, exit_code=0):
+        self.content, self.exit_code = content, exit_code
+
+    async def execute(self, token, values):
+        import base64
+        import json
+        assert values == {'operation': 'read', 'path': 'paper.json'}
+        for chunk in (self.content[:1], self.content[1:]):
+            yield json.dumps({'data': base64.b64encode(chunk).decode()}) + '\n'
+        yield json.dumps({'exitCode': self.exit_code}) + '\n'
+
+
+@pytest.mark.asyncio
+async def test_artifact_captures_file_bytes_without_model_transcription(monkeypatch):
+    import runtime.bridge as module
+    captured = []
+    async def graph(project, tool, values):
+        captured.append((project, tool, values))
+        return {'id': 'artifact:stored'}
+    monkeypatch.setattr(module, '_graph', graph)
+    bridge = ToolBridge()
+    bridge.workspace_tools = FileWorkspace('证据\n  unchanged'.encode())
+    token = bridge.bind(request(['artifact']))
+    result = await bridge.invoke(token, 'artifact', {'path': 'paper.json', 'media_type': 'application/json'})
+    assert result == {'id': 'artifact:stored'}
+    assert captured == [('project-a', 'artifact', {'content': '证据\n  unchanged', 'media_type': 'application/json'})]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('content,exit_code', [(b'partial', 1), (b'\xff', 0)])
+async def test_failed_file_reads_never_capture_artifacts(monkeypatch, content, exit_code):
+    import runtime.bridge as module
+    async def graph(*args):
+        raise AssertionError('Failed reads must not reach the artifact API')
+    monkeypatch.setattr(module, '_graph', graph)
+    bridge = ToolBridge()
+    bridge.workspace_tools = FileWorkspace(content, exit_code)
+    token = bridge.bind(request(['artifact']))
+    with pytest.raises(ValueError):
+        await bridge.invoke(token, 'artifact', {'path': 'paper.json'})
+
+
+@pytest.mark.asyncio
+async def test_file_artifact_rejects_ambiguous_content_and_child_access():
+    bridge = ToolBridge()
+    token = bridge.bind(request(['artifact']))
+    with pytest.raises(ValueError):
+        await bridge.invoke(token, 'artifact', {'path': 'paper.json', 'content': 'replacement'})
+    child = bridge.bind(request(['graph', 'literature']))
+    with pytest.raises(PermissionError):
+        await bridge.invoke(child, 'artifact', {'path': 'paper.json'})

@@ -16,5 +16,5 @@ description: Read a full scientific paper for a Project, extract page-grounded e
 ## 综合与引用入图
 9. 将候选引用组成 JSON 数组，每项至少含 source_sha256、page、quote。运行 `python /opt/paper-research/paper.py verify paper.json --citations citations.json > checked.json`；任何不匹配引用都先纠正或剔除。精确匹配仅证明转录中存在该片段，不能证明 OCR 正确或陈述成立。
 10. 主 Agent 回查原页与上下文，确认引用足以支持陈述，区分作者报告、外部复现与自己的推断。核对跨段前提、去重、保留冲突；需要外部依据时使用 literature 检索一手来源，取得实际内容再核验，未取得则保留不确定性。复用已有 Source，避免把同一论文重复计算为独立支持。
-11. 使用 artifact 分别保存转换全文和综合证据 JSON（包含来源元数据、哈希、定位、预算理由、覆盖缺口和核验结果），取得不可变 Artifact id；使用 record 将这些 artifact_ids 绑定到 Source，content.text 写清可支持的陈述及局限。需要新研究方向时记录 Direction，通过 Source→Direction 的 supports/refutes 关系关联；Direction→Question 用 depends_on。Quote 不匹配或语义尚未确认的内容不建立支持/反驳边。
+11. 使用 artifact 的 `path` 参数原样捕获工作区中的转换全文 JSON 和综合证据 JSON（来源元数据、哈希、定位、预算理由、覆盖缺口、核验结果），取得不可变 Artifact id；小段新文本可用互斥的 `content` 参数。使用 record 将这些 artifact_ids 绑定到 Source，content.text 写清可支持的陈述及局限。需要新研究方向时记录 Direction，通过 Source→Direction 的 supports/refutes 关系关联；Direction→Question 用 depends_on。Quote 不匹配或语义尚未确认的内容不建立支持/反驳边。
 12. 返回入图对象/Artifact id、支持与反驳的方向、尚存冲突、未读或不可核验部分。只有全部覆盖检查、子任务和引用核验完成时，才能报告本次审查完成；否则明确报告部分完成。
