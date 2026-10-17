@@ -32,7 +32,7 @@ CMD ["python", "-m", "runtime.bootstrap"]
 
 
 FROM base AS workspace
-RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources \
+RUN sed -i 's|http://deb.debian.org|https://mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources \
     && apt-get update && apt-get install -y --no-install-recommends poppler-utils tesseract-ocr tesseract-ocr-chi-sim \
     && rm -rf /var/lib/apt/lists/*
 COPY .agents/skills/paper-research/scripts/ /opt/paper-research/
