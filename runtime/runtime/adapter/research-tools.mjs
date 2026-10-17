@@ -14,8 +14,9 @@ const definitions = {
     type: Type.Union(['supports','refutes','depends_on'].map(Type.Literal))})],
   literature: ['检索一手文献元数据，保留来源与不确定性', Type.Object({
     source: Type.Union(['crossref','openalex','arxiv','pubmed'].map(Type.Literal)), query: text})],
-  delegate: ['委派独立上下文的研究或审查 Agent，等待并返回结果；子 Agent 不能写图',
-    Type.Object({instructions: text, task: text})],
+  delegate: ['并行委派独立上下文的研究或审查 Agent，按输入顺序返回结果；逐任务指定推理深度，子 Agent 不能写图',
+    Type.Object({tasks: Type.Array(Type.Object({instructions: text, task: text,
+      thinking: Type.Union(['low','medium','high'].map(Type.Literal))}), {minItems: 1, maxItems: 8})})],
 };
 
 export default function(pi) {
