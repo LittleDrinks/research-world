@@ -9,8 +9,13 @@ services:
     image: caddy:2.11.7-alpine
     network_mode: host
     restart: unless-stopped
+    environment:
+      RW_PUBLIC_ADDRESS: ${RW_PUBLIC_ADDRESS:-:80}
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - rw-caddy-data:/data
     depends_on:
       control:
         condition: service_healthy
+volumes:
+  rw-caddy-data:

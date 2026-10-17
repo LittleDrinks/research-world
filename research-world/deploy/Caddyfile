@@ -1,6 +1,6 @@
 {
 	admin off
-	auto_https off
+	auto_https disable_redirects
 	log {
 		format filter {
 			wrap json
@@ -13,7 +13,7 @@
 		}
 	}
 }
-:80 {
+{$RW_PUBLIC_ADDRESS::80} {
 	@lab path_regexp lab ^/labs/([a-f0-9]{24})/
 	handle @lab {
 		route {
