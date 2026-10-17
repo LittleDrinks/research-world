@@ -1,5 +1,6 @@
-# Issue tracker
-Issues and specs live in `LittleDrinks/research-world` GitHub Issues; use `gh` inside this clone.
-Read a ticket with `gh issue view <number> --comments` and keep its acceptance criteria as the implementation boundary.
-An issue owns one `feat/<issue>-<slug>` branch. A PR references the issue and is reviewed from the committed branch; a PR is not a requirements source.
-Issue creation, comments, labels and closure use the repository's `gh issue` commands.
+# Issue tracker: GitHub
+Issues live in `LittleDrinks/research-world`; use `gh` inside this clone.
+Each issue body records the problem, accepted decisions and tradeoffs, and acceptance criteria. Discussion stays in comments; accepted conclusions update the body before implementation.
+Read the body and discussion with `gh issue view <number> --comments`. Create or update multiline bodies with `--body-file`.
+PRs as a request surface: no.
+Branch, review, merge and closure follow the workflow in AGENTS.md.
