@@ -75,13 +75,13 @@ class PiAdapter:
     adapter_id = "pi"
     supports_multiple_writers = True
 
-    def __init__(self, executable: str, timeout: float = 300.0):
+    def __init__(self, executable: str, timeout: float | None = None):
         self.executable = executable
         self.timeout = timeout
         self.bridge = None
 
     @classmethod
-    def detect(cls, executable: str = "pi", timeout: float = 300.0) -> PiAdapter:
+    def detect(cls, executable: str = "pi", timeout: float | None = None) -> PiAdapter:
         resolved = shutil.which(executable)
         if resolved is None:
             raise PiAdapterError("pi_not_found", "pi executable not found on PATH")
@@ -231,7 +231,7 @@ def _handle_auto_retry_end(event: dict[str, Any]) -> None:
     raise PiAdapterError("pi_protocol", "unsupported pi event: auto_retry_end")
 
 
-async def _submit(handle, request, emit, timeout: float) -> AdapterResult:
+async def _submit(handle, request, emit, timeout: float | None) -> AdapterResult:
     if not isinstance(request.input, str):
         raise PiAdapterError("pi_input", "pi prompt must be a string")
     parser = PiEventParser()
