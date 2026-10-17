@@ -1,0 +1,181 @@
+{
+  "implementation_head": "06ebe9ca0bc545aa1a489db1609d3205bc5b778d",
+  "issue": 351,
+  "pr": 352,
+  "offline_tests": {
+    "runtime_pi_trajectory": 159,
+    "graph_product": 8,
+    "node_transport": 2
+  },
+  "compose": {
+    "command": "docker compose up --build -d",
+    "cwd": "research-world/",
+    "result": "success",
+    "services": {
+      "control": "healthy",
+      "runtime": "healthy"
+    }
+  },
+  "container_pdf": {
+    "source": "https://arxiv.org/abs/2408.09869",
+    "sha256": "82dd470712ce8389f19f20eb9330475e2166a281f8c7990a9f1d0763d73b4d22",
+    "pages": 9,
+    "statuses": [
+      "extracted",
+      "extracted",
+      "extracted",
+      "extracted",
+      "extracted",
+      "extracted",
+      "extracted",
+      "extracted",
+      "extracted"
+    ]
+  },
+  "ocr_languages": [
+    "eng",
+    "chi_sim",
+    "osd"
+  ],
+  "live": {
+    "project_id": "project:b3c24e8fc3acfc7ffe6a1199",
+    "session_id": "s-a6f7019af151543021533b337affa1e2",
+    "turn_id": "t-bfde7aa6c0bb4a2f86e3057f089fa2c5",
+    "status": "completed",
+    "records": [
+      {
+        "id": "record:7452a69377e2ff92905056bd",
+        "type": "direction",
+        "artifact_ids": []
+      },
+      {
+        "id": "record:904cdb521a611ef45c4a3a4c",
+        "type": "question",
+        "artifact_ids": []
+      },
+      {
+        "id": "record:655d34620ad28bc0ba06f147",
+        "type": "source",
+        "artifact_ids": [
+          "artifact:df593b963d75669cb92207d85c584ad70f4125d4e249e98ad9123278d3b6e7c0",
+          "artifact:d5821e01bf71f2a032d51160d1a4b418fdf674945e57f9004ba2154beff463ff"
+        ]
+      }
+    ],
+    "relations": [
+      {
+        "id": "relation:ae07a083b342faf7271837a8",
+        "project_id": "project:b3c24e8fc3acfc7ffe6a1199",
+        "source_id": "record:7452a69377e2ff92905056bd",
+        "target_id": "record:904cdb521a611ef45c4a3a4c",
+        "type": "depends_on",
+        "created_at": "2026-10-17T07:53:32.819418+00:00"
+      },
+      {
+        "id": "relation:a8559db3216d705d42ae8e06",
+        "project_id": "project:b3c24e8fc3acfc7ffe6a1199",
+        "source_id": "record:655d34620ad28bc0ba06f147",
+        "target_id": "record:7452a69377e2ff92905056bd",
+        "type": "supports",
+        "created_at": "2026-10-17T07:53:32.819521+00:00"
+      },
+      {
+        "id": "relation:bf34d881a0df675f3ef01ee5",
+        "project_id": "project:b3c24e8fc3acfc7ffe6a1199",
+        "source_id": "record:655d34620ad28bc0ba06f147",
+        "target_id": "record:7452a69377e2ff92905056bd",
+        "type": "refutes",
+        "created_at": "2026-10-17T07:53:32.840174+00:00"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "artifact:df593b963d75669cb92207d85c584ad70f4125d4e249e98ad9123278d3b6e7c0",
+        "sha256": "df593b963d75669cb92207d85c584ad70f4125d4e249e98ad9123278d3b6e7c0",
+        "size": 135108,
+        "path": "/workspace/fresh_paper.json"
+      },
+      {
+        "id": "artifact:d5821e01bf71f2a032d51160d1a4b418fdf674945e57f9004ba2154beff463ff",
+        "sha256": "d5821e01bf71f2a032d51160d1a4b418fdf674945e57f9004ba2154beff463ff",
+        "size": 12399,
+        "path": "/workspace/synthesized_evidence.json"
+      }
+    ],
+    "citations_verified": 4,
+    "fulltext_pages": 9,
+    "artifact_downloads_match_workspace": true
+  },
+  "previous_attempts": [
+    {
+      "turn_id": "t-7b53eca0116f4616b14277c00f552c39",
+      "status": "cancelled",
+      "reason": "test harness copied input to legacy directory instead of workspace volume"
+    },
+    {
+      "turn_id": "t-8bdc58d984e94c869b8ab18bea6f6d8a",
+      "status": "error",
+      "reason": "parent and both children exceeded implicit Pi 300-second timeout; removed in 6add6b4"
+    },
+    {
+      "turn_id": "t-9d6afeeeba3e4366942783f908825504",
+      "status": "cancelled",
+      "reason": "children completed but fetch headers deadline discarded delegate response; duplicate batch stopped; fixed by bridge-request.mjs"
+    },
+    {
+      "turn_id": "t-a0d56eb03929404d8649b0cce638432c",
+      "status": "cancelled",
+      "reason": "full-text inline capture was wasteful; added direct workspace file capture"
+    },
+    {
+      "turn_id": "t-b41036d79db24d4bb486995072a108a6",
+      "status": "completed_partial",
+      "reason": "top-level union schema yielded empty artifact arguments; graph lacked Artifact bindings and is not accepted"
+    },
+    {
+      "turn_id": "t-0e4694edc1064c02bee896f05924397c",
+      "status": "cancelled",
+      "reason": "incremental child subscriptions repeatedly decoded full history; cursor now applied in SQL"
+    }
+  ],
+  "residual_risks": [
+    "Exact quote matching verifies the extracted transcript, not OCR accuracy or scientific entailment.",
+    "The sample retains author-reported results and explicitly lacks external experimental replication.",
+    "Formula and figure details that cannot be checked remain gaps, not confirmed claims."
+  ],
+  "long_http": {
+    "elapsed_seconds": 305.025,
+    "result": {
+      "results": [
+        {
+          "status": "completed"
+        }
+      ]
+    }
+  },
+  "file_capture": {
+    "artifact_id": "artifact:df593b963d75669cb92207d85c584ad70f4125d4e249e98ad9123278d3b6e7c0",
+    "bytes": 135108,
+    "matches_workspace_sha256": true
+  },
+  "commands": {
+    "python": "uv run --project runtime --group dev pytest runtime/tests/test_run_turn_trace.py runtime/tests/test_run_recovery.py runtime/tests/test_bridge.py runtime/tests/test_pi_adapter.py runtime/tests/test_trace.py runtime/tests/test_paper_research.py runtime/tests/test_workspace_tools.py -q",
+    "graph": "uv run --project research-world --group dev pytest research-world/tests/test_paper_evidence.py research-world/tests/test_pi_product.py -q",
+    "node": "docker run --rm --network none -v \"$PWD/runtime:/app/rw-runtime:ro\" --entrypoint node research-world-workspace:local --test /app/rw-runtime/tests/research-tools.test.mjs",
+    "long_http": "docker run --rm --network none -v \"$PWD/runtime:/app/rw-runtime:ro\" -v \"$PWD/benchmarks/issue-351/long-http.mjs:/app/long-http.mjs:ro\" --entrypoint node research-world-workspace:local /app/long-http.mjs"
+  },
+  "subscription_profile": {
+    "samples": 186,
+    "history_decode_path_samples": 179,
+    "artifact": "subscription-profile.folded",
+    "fix": "Filter seq > after_seq in SQLite before decoding rows",
+    "regression": "test_trace_cursor_never_decodes_previously_delivered_events: failed before fix, passed after"
+  },
+  "health": {
+    "samples": 105,
+    "max_seconds": 0.2226,
+    "failures": [],
+    "turn_status": "completed"
+  },
+  "commands_cwd": "repository root; Compose runs from research-world/"
+}
