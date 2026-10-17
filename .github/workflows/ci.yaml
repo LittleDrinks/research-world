@@ -58,7 +58,15 @@ jobs:
       - name: Workspace operation integration
         working-directory: runtime
         run: RW_DOCKER_TEST=1 uv run pytest -q tests/test_workspace_execution.py
+      - name: Test server workspace gateway
+        working-directory: research-world
+        run: |
+          docker compose -f compose.yaml -f compose.server.yaml up -d --wait
+          cd web
+          RW_SERVER_TEST=1 RW_TEST_URL=http://127.0.0.1 npm test -- tests/server-workspace.spec.js
+          cd ../../runtime
+          RW_GATEWAY_TEST=1 uv run pytest -q tests/test_workspace_gateway.py
       - name: Stop Compose
         if: always()
         working-directory: research-world
-        run: docker compose down
+        run: docker compose -f compose.yaml -f compose.server.yaml down --remove-orphans

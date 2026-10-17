@@ -1,3 +1,4 @@
+import {nanoid} from 'nanoid';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {sessionDetail,sendMessage,turnUrl,cancelTurn} from '../sessionApi';
 
@@ -13,7 +14,7 @@ export function useSession(projectId,sessionId,onError) {
   useDetailPolling(sessionId,load,setDetail,setEvents,generation,onError);
   const active=detail?.run.turns.find(t=>t.status==='running');
   useTurnStream(projectId,sessionId,active?.id,setEvents,setConnection,load,onError);
-  const send=async(content)=>{setSending(true);try{await sendMessage(projectId,sessionId,content,crypto.randomUUID());await load();}finally{setSending(false);}};
+  const send=async(content)=>{setSending(true);try{await sendMessage(projectId,sessionId,content,nanoid());await load();}finally{setSending(false);}};
   const cancel=async()=>{try{await cancelTurn(projectId,sessionId,active.id);await load();}catch(e){onError(e.message);}};
   return {detail,events,sending,active,connection,send,cancel};
 }
