@@ -1,9 +1,11 @@
 from fastapi import APIRouter
+from .workspace_presence import presence_route, start_workspace
 
 
 def workspace_router(control):
     router=APIRouter(prefix='/api/v1/projects/{project_id}/workspace')
     _routes(router,control)
+    presence_route(router,control)
     return router
 
 
@@ -15,11 +17,7 @@ def _routes(router,control):
 
     @router.post('')
     async def start(project_id: str):
-        async with control.project_locks[project_id]:
-            control.kernel.get_project(project_id)
-            catalog=await control.runtime.catalog()
-            agent=control.profiles.get('research-assistant',catalog['default_model'])
-            return await control.runtime.workspace(project_id,'POST',agent['model'])
+        return await start_workspace(control,project_id)
 
     @router.post('/stop')
     async def stop(project_id: str):

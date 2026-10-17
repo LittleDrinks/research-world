@@ -2,6 +2,7 @@ import {test,expect} from '@playwright/test';
 
 const project='project:'+'a'.repeat(24),other='project:'+'b'.repeat(24);
 async function fixture(page){
+  await page.routeWebSocket('**/workspace/presence',socket=>socket.send(JSON.stringify({status:'ready',url:'/lab?token=synthetic-test'})));
   await page.route('**/api/v1/bootstrap**',r=>r.fulfill({json:{active_project_id:other,projects:[{id:other,name:'当前项目'},{id:project,name:'文件所属项目'}],sessions:[],nodes:[],edges:[]}}));
   await page.route('**/api/v1/agents',r=>r.fulfill({json:[]}));
   await page.route('**/lab/tree/**',r=>r.fulfill({contentType:'text/html; charset=utf-8',body:'<h1>文件编辑器</h1>'}));

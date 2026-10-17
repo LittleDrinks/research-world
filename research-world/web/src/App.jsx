@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { useWorld } from "./context/WorldContext";
+import { WorkspaceProvider } from "./context/WorkspaceContext";
 
 
 const WorkspaceFilePage = lazy(() => import("./pages/WorkspaceFilePage").then(value=>({default:value.WorkspaceFilePage})));
@@ -22,7 +23,7 @@ function View({ component: Component }) {
 function ProjectRequired() {
   const { loading, projectId } = useWorld();
   if (loading) return <div className="page-loading">正在载入项目...</div>;
-  return projectId ? <AppShell /> : <Navigate to="/projects" replace />;
+  return projectId ? <WorkspaceProvider key={projectId} projectId={projectId}><AppShell /></WorkspaceProvider> : <Navigate to="/projects" replace />;
 }
 
 

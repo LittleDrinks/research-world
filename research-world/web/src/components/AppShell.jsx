@@ -3,6 +3,7 @@ import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useWorld } from "../context/WorldContext";
 import { RecordList } from "./RecordList";
+import { WorkspaceReady } from "../context/WorkspaceContext";
 
 
 export const MODULES = [
@@ -70,5 +71,5 @@ export function AppShell() {
   return <div className="app-shell"><Sidebar open={navOpen} close={close} />
     {navOpen && <div className="sidebar-mask" onClick={close} />}
     <div className="app-main"><ErrorToast /><MobileBar openNav={() => setNavOpen(true)} />
-      <main className="page-host"><Outlet /></main></div></div>;
+      <main className="page-host"><WorkspaceReady><Outlet /></WorkspaceReady></main></div></div>;
 }
