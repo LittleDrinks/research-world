@@ -44,3 +44,12 @@ test('chat file links bind the message project and leave other links alone',asyn
   await expect(page.getByRole('link',{name:'来源',exact:true})).toHaveAttribute('href','https://example.org/workspace/paper');
   await expect(page.getByRole('link',{name:'产物',exact:true})).toHaveAttribute('href','/api/v1/projects/x/artifacts/y');
 });
+
+
+test('same-site server workspace URL opens its project editor',async({page})=>{
+  await fixture(page);
+  await page.route('**/api/v1/projects/*/workspace',r=>r.fulfill({json:{status:'ready',url:'/labs/'+project.slice(8)+'/lab?token=synthetic-test'}}));
+  await page.goto('/workspace/add.py?project='+project);
+  await expect(page.getByRole('heading',{name:'文件编辑器'})).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe('/labs/'+project.slice(8)+'/lab/tree/add.py');
+});

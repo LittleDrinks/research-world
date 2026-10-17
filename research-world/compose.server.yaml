@@ -1,0 +1,16 @@
+services:
+  control:
+    restart: unless-stopped
+  runtime:
+    restart: unless-stopped
+    environment:
+      RW_WORKSPACE_PROXY: '1'
+  gateway:
+    image: caddy:2.11.7-alpine
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      control:
+        condition: service_healthy

@@ -1,0 +1,42 @@
+{
+	admin off
+	auto_https off
+	log {
+		format filter {
+			wrap json
+			fields {
+				request>uri query {
+					delete token
+				}
+				request>headers>Referer delete
+			}
+		}
+	}
+}
+:80 {
+	@lab path_regexp lab ^/labs/([a-f0-9]{24})/
+	handle @lab {
+		route {
+			request_header -X-Workspace-Upstream
+			forward_auth 127.0.0.1:8098 {
+				uri /api/v1/runtime/projects/project:{re.lab.1}/workspace/upstream
+				copy_headers X-Workspace-Upstream
+				header_up -Connection
+				header_up -Upgrade
+				header_up -Referer
+				header_up -Authorization
+				header_up -Cookie
+			}
+			vars workspace_upstream {http.request.header.X-Workspace-Upstream}
+			request_header -X-Workspace-Upstream
+			reverse_proxy {vars.workspace_upstream} {
+				flush_interval -1
+			}
+		}
+	}
+	handle {
+		reverse_proxy 127.0.0.1:8095 {
+			flush_interval -1
+		}
+	}
+}

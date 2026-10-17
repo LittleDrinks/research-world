@@ -20,6 +20,7 @@ class Workspaces:
         self.image=os.environ.get('RW_WORKSPACE_IMAGE','research-world-workspace:local')
         self.root=Path(os.environ.get('RUNTIME_DATA','/runtime-data'))/'workspaces'
         self._client=None
+        self.proxy=os.environ.get('RW_WORKSPACE_PROXY')=='1'
 
     @property
     def client(self):
@@ -54,8 +55,22 @@ class Workspaces:
         if container.status=='running' and health=='unhealthy':status='unhealthy'
         value={'status':status,'model':container.labels.get('rw.model','')}
         ports=container.attrs['NetworkSettings']['Ports'].get('8888/tcp')
-        if status=='ready' and ports:value['url']=f'http://127.0.0.1:{ports[0]["HostPort"]}/lab?token={self.token(project_id)}'
+        if status=='ready' and ports:
+            origin='' if self.proxy else f'http://127.0.0.1:{ports[0]["HostPort"]}'
+            value['url']=f'{origin}{self.base_url(project_id)}lab?token={self.token(project_id)}'
         return value
+
+    def base_url(self,project_id):
+        self.name(project_id)
+        return f'/labs/{project_id.split(":")[1]}/' if self.proxy else '/'
+
+    def upstream(self,project_id):
+        container=self.container(project_id)
+        if container is None:raise KeyError('工作区不存在')
+        if container.status!='running' or container.attrs['State'].get('Health',{}).get('Status')!='healthy':
+            raise RuntimeConflictError('工作区尚未就绪')
+        port=container.attrs['NetworkSettings']['Ports']['8888/tcp'][0]['HostPort']
+        return f'127.0.0.1:{int(port)}'
 
     async def start(self,project_id,model):
         return await settle(self._start_locked(project_id,model))
@@ -89,7 +104,7 @@ class Workspaces:
         for suffix in ('files','home'):self._volume(name+'-'+suffix,labels)
         return self.client.containers.create(self.image,name=name,labels=labels,
             volumes={name+'-files':{'bind':'/workspace','mode':'rw'},name+'-home':{'bind':'/home/runtime','mode':'rw'}},
-            environment={'JUPYTER_TOKEN':self.token(project_id)},ports={'8888/tcp':('127.0.0.1',None)},
+            environment={'JUPYTER_TOKEN':self.token(project_id),'JUPYTER_BASE_URL':self.base_url(project_id)},ports={'8888/tcp':('127.0.0.1',None)},
             user='1000:1000',working_dir='/workspace',init=True,cap_drop=['ALL'],security_opt=['no-new-privileges:true'],
             mem_limit='2g',nano_cpus=2_000_000_000,pids_limit=256)
 

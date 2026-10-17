@@ -1,6 +1,6 @@
 import asyncio
 import docker
-from fastapi import APIRouter,HTTPException
+from fastapi import APIRouter,HTTPException,Response
 from pydantic import BaseModel,ConfigDict
 from ..errors import RuntimeConflictError
 from .operations import settle
@@ -15,6 +15,7 @@ def workspace_router(runtime,workspaces):
     router=APIRouter(prefix='/api/v1/runtime/projects/{project_id}')
     _workspace_routes(router,workspaces)
     _delete_route(router,runtime,workspaces)
+    _proxy_route(router,workspaces)
     return router
 
 
@@ -48,3 +49,10 @@ async def _call(operation):
     try:return await operation
     except RuntimeConflictError as error:raise HTTPException(409,str(error)) from error
     except docker.errors.DockerException:raise HTTPException(503,'工作区容器服务不可用') from None
+
+
+def _proxy_route(router,workspaces):
+    @router.get('/workspace/upstream')
+    async def upstream(project_id: str):
+        value=await _call(asyncio.to_thread(workspaces.upstream,project_id))
+        return Response(status_code=204,headers={'X-Workspace-Upstream':value})

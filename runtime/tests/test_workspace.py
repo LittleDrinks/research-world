@@ -35,7 +35,8 @@ def test_workspaces_mount_only_their_project_volumes(tmp_path,monkeypatch):
     assert {v['bind'] for v in kwargs['volumes'].values()}=={'/workspace','/home/runtime'}
     assert kwargs['user']=='1000:1000' and kwargs['ports']=={'8888/tcp':('127.0.0.1',None)}
     assert manager.name(PID)!=manager.name('project:'+'b'*24)
-    assert list(kwargs['environment'])==['JUPYTER_TOKEN']
+    assert set(kwargs['environment'])=={'JUPYTER_TOKEN','JUPYTER_BASE_URL'}
+    assert kwargs['environment']['JUPYTER_BASE_URL']=='/'
     with pytest.raises(ValueError):manager.name('../../other')
 
 
@@ -99,3 +100,19 @@ def test_running_workspace_is_reused_across_agent_models(tmp_path,monkeypatch):
     manager._start(PID,'another/model')
     container.remove.assert_not_called();manager._client.containers.create.assert_not_called()
     manager._ready.assert_called_once_with(container)
+
+
+def test_proxy_workspace_url_and_upstream_are_owned_and_loopback(tmp_path,monkeypatch):
+    monkeypatch.setenv('RUNTIME_DATA',str(tmp_path));monkeypatch.setenv('RW_WORKSPACE_PROXY','1')
+    manager=Workspaces();manager._client=MagicMock();manager.token=lambda _:'synthetic'
+    container=manager._client.containers.get.return_value
+    container.labels={'rw.owner':manager.prefix,'rw.project':PID};container.status='running'
+    container.attrs={'State':{'Health':{'Status':'healthy'}},'NetworkSettings':{'Ports':{'8888/tcp':[{'HostPort':'45678'}]}}}
+    assert manager.status(PID)['url']==f'/labs/{"a"*24}/lab?token=synthetic'
+    assert manager.upstream(PID)=='127.0.0.1:45678'
+    assert manager.base_url(PID)==f'/labs/{"a"*24}/'
+    container.status='exited'
+    with pytest.raises(RuntimeConflictError): manager.upstream(PID)
+    container.labels['rw.project']='project:'+'b'*24
+    with pytest.raises(RuntimeConflictError): manager.upstream(PID)
+    with pytest.raises(ValueError):manager.upstream('http://foreign:1234')
