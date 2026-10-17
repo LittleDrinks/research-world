@@ -60,3 +60,13 @@ def test_failed_page_preserves_coverage_gap(monkeypatch):
     monkeypatch.setattr(paper, 'run', fail)
     assert paper.page_text('input.pdf', 2, 'eng', False) == {
         'page': 2, 'text': '', 'method': 'failed', 'status': 'unreadable'}
+
+
+def test_forced_ocr_bypasses_broken_text_layer(monkeypatch):
+    def fail(*args):
+        raise AssertionError('Forced OCR must not invoke text extraction')
+    monkeypatch.setattr(paper, 'run', fail)
+    monkeypatch.setattr(paper, 'ocr', lambda *args: 'Readable scanned evidence')
+    result = paper.page_text('damaged-text.pdf', 1, 'eng', True)
+    assert result == {'page': 1, 'text': 'Readable scanned evidence',
+                      'method': 'tesseract', 'status': 'extracted'}

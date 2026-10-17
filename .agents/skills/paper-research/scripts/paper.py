@@ -24,7 +24,7 @@ def ocr(path, number, language):
 
 def page_text(path, number, language, force):
     try:
-        text = run('pdftotext', '-f', str(number), '-l', str(number), '-layout', str(path), '-')
+        text = '' if force else run('pdftotext', '-f', str(number), '-l', str(number), '-layout', str(path), '-')
         method = 'poppler'
         if force or not text.strip():
             text, method = ocr(path, number, language), 'tesseract'
