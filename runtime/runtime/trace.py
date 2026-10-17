@@ -63,7 +63,7 @@ class TraceLedger:
         return _runtime_event(run_id, turn_id, self.store.next_seq(turn_id), "child_result", data)
 
     def read(self, turn_id, after_seq=-1):
-        return [deepcopy(event) for event in self.store.read_events(turn_id) if event["seq"] > after_seq]
+        return [deepcopy(event) for event in self.store.read_events(turn_id, after_seq)]
 
     def exists(self, turn_id):
         return self.store.has_turn(turn_id)

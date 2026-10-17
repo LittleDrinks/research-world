@@ -1,0 +1,10 @@
+import {createServer} from 'node:http';
+import {once} from 'node:events';
+import {getGlobalDispatcher} from 'undici';
+import {requestTool} from '/app/rw-runtime/runtime/adapter/bridge-request.mjs';
+const server=createServer((_req,res)=>setTimeout(()=>res.end('{"results":[{"status":"completed"}]}'),305000)).listen(8098,'127.0.0.1');
+await once(server,'listening');
+const start=Date.now();
+const result=await requestTool('delegate',{tasks:[]},new AbortController().signal);
+console.log(JSON.stringify({elapsed_seconds:(Date.now()-start)/1000,result}));
+server.closeAllConnections(); server.close(); await getGlobalDispatcher().close();

@@ -1,4 +1,5 @@
 from runtime.adapter import AdapterResult
+import asyncio
 import pytest
 
 from runtime.adapter import TurnRequest
@@ -48,9 +49,10 @@ async def test_delegate_child_cannot_write_or_delegate():
             yield {'type':'turn_end','data':{'status':'completed','result_text':'review'}}
     bridge.runtime=Runtime()
     token=bridge.bind(request(['graph','record','artifact','delegate','literature','workspace']))
-    result=await bridge.invoke(token,'delegate',{'instructions':'review','task':'inspect'})
+    result=await bridge.invoke(token,'delegate',{'tasks':[{'instructions':'review','task':'inspect','thinking':'medium'}]})
     assert bridge.runtime.spec['tools']==['graph','literature']
-    assert result['result_text']=='review'
+    assert result['results'][0]['result_text']=='review'
+    assert bridge.runtime.spec['thinking']=='medium'
 
 
 @pytest.mark.asyncio
@@ -86,21 +88,24 @@ class DelegatingAdapter:
         import asyncio
         self.bridge=ToolBridge()
         self.child_started=asyncio.Event()
-        self.release=asyncio.Event()
+        self.children=0
+        self.release={}
     async def start(self,request):
         return self.bridge.bind(request)
     async def submit(self,handle,request,emit):
         try:
             if 'delegate' in request.agent_snapshot['tools']:
-                await self.bridge.invoke(handle,'delegate',{'instructions':'review','task':'wait'})
+                await self.bridge.invoke(handle,'delegate',{'tasks':[{'instructions':'review','task':'wait','thinking':'low'} for _ in range(2)]})
             else:
-                self.child_started.set()
-                await self.release.wait()
+                self.release[request.turn_id]=asyncio.Event()
+                self.children += 1
+                if self.children == 2: self.child_started.set()
+                await self.release[request.turn_id].wait()
             return AdapterResult(result_text='finished')
         finally:
             self.bridge.release(handle)
     async def cancel(self,handle,request):
-        self.release.set()
+        if request.turn_id in self.release: self.release[request.turn_id].set()
     async def close(self):
         pass
 
@@ -117,6 +122,122 @@ async def test_parent_cancellation_stops_delegated_tools_and_turns(tmp_path):
     await asyncio.wait_for(adapter.child_started.wait(),1)
     await asyncio.wait_for(runtime.cancel(turn['id']),1)
     runs=runtime.export_session('session')
-    assert len(runs)==2
+    assert len(runs)==3
     assert all(t['status']=='cancelled' for run in runs for t in run['turns'])
     assert adapter.bridge.bindings=={}
+
+
+class ParallelRuntime:
+    def __init__(self):
+        import asyncio
+        self.specs, self.started = [], asyncio.Event()
+
+    async def delegate(self, parent, spec, **kwargs):
+        self.specs.append(spec)
+        return {'id': str(len(self.specs))}
+
+    async def submit_child(self, child, message):
+        if len(self.specs) == 2:
+            self.started.set()
+        await self.started.wait()
+        return {'id': child}
+
+    async def subscribe(self, turn):
+        yield {'type': 'turn_end', 'data': {'status': 'completed', 'result_text': turn}}
+
+
+@pytest.mark.asyncio
+async def test_batch_delegation_starts_independent_children_concurrently():
+    import asyncio
+    bridge = ToolBridge()
+    bridge.runtime = ParallelRuntime()
+    token = bridge.bind(request(['delegate', 'graph', 'record', 'connect', 'artifact']))
+    tasks = [{'instructions': name, 'task': name, 'thinking': depth}
+             for name, depth in [('intro', 'low'), ('proof', 'high')]]
+    result = await asyncio.wait_for(bridge.invoke(token, 'delegate', {'tasks': tasks}), 1)
+    assert [r['run_id'] for r in result['results']] == ['1', '2']
+    assert [s['thinking'] for s in bridge.runtime.specs] == ['low', 'high']
+    assert [s['instructions'] for s in bridge.runtime.specs] == ['intro', 'proof']
+    assert all(s['tools'] == ['graph'] for s in bridge.runtime.specs)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('tasks', [[], [{}], [{'instructions':'x','task':'x','thinking':'max'}]])
+async def test_invalid_batch_never_starts_children(tasks):
+    bridge = ToolBridge()
+    bridge.runtime = ParallelRuntime()
+    token = bridge.bind(request(['delegate']))
+    with pytest.raises(ValueError):
+        await bridge.invoke(token, 'delegate', {'tasks': tasks})
+    assert bridge.runtime.specs == []
+
+
+@pytest.mark.asyncio
+async def test_one_failed_child_does_not_discard_other_results():
+    bridge = ToolBridge()
+    async def child(request, task):
+        if task['task'] == 'fail':
+            raise RuntimeError('private provider details')
+        return {'status': 'completed', 'result_text': 'evidence'}
+    bridge._delegate_one = child
+    token = bridge.bind(request(['delegate']))
+    tasks = [{'instructions': 'review', 'task': task, 'thinking': 'low'} for task in ['fail', 'ok']]
+    result = await bridge.invoke(token, 'delegate', {'tasks': tasks})
+    assert result['results'][0]['status'] == 'error'
+    assert result['results'][1]['result_text'] == 'evidence'
+    assert 'private provider details' not in str(result)
+
+
+class FileWorkspace:
+    def __init__(self, content, exit_code=0):
+        self.content, self.exit_code = content, exit_code
+
+    async def execute(self, token, values):
+        import base64
+        import json
+        assert values == {'operation': 'read', 'path': 'paper.json'}
+        for chunk in (self.content[:1], self.content[1:]):
+            yield json.dumps({'data': base64.b64encode(chunk).decode()}) + '\n'
+        yield json.dumps({'exitCode': self.exit_code}) + '\n'
+
+
+@pytest.mark.asyncio
+async def test_artifact_captures_file_bytes_without_model_transcription(monkeypatch):
+    import runtime.bridge as module
+    captured = []
+    async def graph(project, tool, values):
+        captured.append((project, tool, values))
+        return {'id': 'artifact:stored'}
+    monkeypatch.setattr(module, '_graph', graph)
+    bridge = ToolBridge()
+    bridge.workspace_tools = FileWorkspace('证据\n  unchanged'.encode())
+    token = bridge.bind(request(['artifact']))
+    result = await bridge.invoke(token, 'artifact', {'path': 'paper.json', 'media_type': 'application/json'})
+    assert result == {'id': 'artifact:stored'}
+    assert captured == [('project-a', 'artifact', {'content': '证据\n  unchanged', 'media_type': 'application/json'})]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('content,exit_code', [(b'partial', 1), (b'\xff', 0)])
+async def test_failed_file_reads_never_capture_artifacts(monkeypatch, content, exit_code):
+    import runtime.bridge as module
+    async def graph(*args):
+        raise AssertionError('Failed reads must not reach the artifact API')
+    monkeypatch.setattr(module, '_graph', graph)
+    bridge = ToolBridge()
+    bridge.workspace_tools = FileWorkspace(content, exit_code)
+    token = bridge.bind(request(['artifact']))
+    with pytest.raises(ValueError):
+        await bridge.invoke(token, 'artifact', {'path': 'paper.json'})
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('values', [{}, {'path': 'paper.json', 'content': 'replacement'}])
+async def test_file_artifact_rejects_ambiguous_content_and_child_access(values):
+    bridge = ToolBridge()
+    token = bridge.bind(request(['artifact']))
+    with pytest.raises(ValueError):
+        await bridge.invoke(token, 'artifact', values)
+    child = bridge.bind(request(['graph', 'literature']))
+    with pytest.raises(PermissionError):
+        await bridge.invoke(child, 'artifact', {'path': 'paper.json'})

@@ -32,6 +32,10 @@ CMD ["python", "-m", "runtime.bootstrap"]
 
 
 FROM base AS workspace
+RUN sed -i 's|http://deb.debian.org|https://mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources \
+    && apt-get update && apt-get install -y --no-install-recommends poppler-utils tesseract-ocr tesseract-ocr-chi-sim \
+    && rm -rf /var/lib/apt/lists/*
+COPY .agents/skills/paper-research/scripts/ /opt/paper-research/
 RUN UV_DEFAULT_INDEX=https://mirrors.aliyun.com/pypi/simple/ UV_SYSTEM_CERTS=1 UV_HTTP_TIMEOUT=600 uv sync --frozen --no-dev --group workspace
 RUN /app/.venv/bin/python -m ipykernel install --sys-prefix --name python3 --display-name "Python (Research World)"
 COPY runtime/workspace/jupyter_server_config.py /etc/jupyter/jupyter_server_config.py

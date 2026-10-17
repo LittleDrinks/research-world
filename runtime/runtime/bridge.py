@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import os
 import secrets
@@ -45,17 +46,58 @@ class ToolBridge:
             return await self.delegate(request, values)
         if tool == 'literature':
             return await _literature(values)
+        if tool == 'artifact':
+            if ('path' in values) == ('content' in values):
+                raise ValueError('artifact requires exactly one of content or path')
+            if 'path' in values:
+                values = await self._file_artifact(token, values)
         return await _graph(request.agent_snapshot['project_id'], tool, values)
 
+    async def _file_artifact(self, token, values):
+        path = values['path']
+        if 'content' in values or not isinstance(path, str) or not path.strip():
+            raise ValueError('artifact requires either content or a non-empty path')
+        content = await self._workspace_text(token, path)
+        return {'content': content, 'media_type': values.get('media_type', 'text/plain')}
+
+    async def _workspace_text(self, token, path):
+        chunks, exit_code = [], None
+        async for line in self.workspace_tools.execute(token, {'operation': 'read', 'path': path}):
+            event = json.loads(line)
+            if event.get('error'):
+                raise ValueError('Artifact file could not be read')
+            if 'data' in event:
+                chunks.append(base64.b64decode(event['data'], validate=True))
+            if 'exitCode' in event:
+                exit_code = event['exitCode']
+        if exit_code != 0:
+            raise ValueError('Artifact file read did not complete successfully')
+        return b''.join(chunks).decode('utf-8')
+
     async def delegate(self, request, values):
+        tasks = values.get('tasks')
+        if not isinstance(tasks, list) or not 1 <= len(tasks) <= 8:
+            raise ValueError('delegate requires 1 to 8 tasks')
+        for task in tasks:
+            if not isinstance(task, dict) or task.get('thinking') not in {'low', 'medium', 'high'}:
+                raise ValueError('Each task requires low, medium or high thinking')
+            if any(not isinstance(task.get(k), str) or not task[k].strip() for k in ('instructions', 'task')):
+                raise ValueError('Each task requires instructions and task')
+        results = await asyncio.gather(*(self._delegate_one(request, task) for task in tasks), return_exceptions=True)
+        return {'results': [{'status': 'error', 'error': 'Child execution failed'}
+                            if isinstance(result, Exception) else result for result in results]}
+
+    async def _delegate_one(self, request, values):
         spec = dict(request.agent_snapshot)
         spec['instructions'] = values['instructions']
+        spec['thinking'] = values['thinking']
         spec['tools'] = [t for t in spec.get('tools', []) if t in {'graph', 'literature'}]
         child = await self.runtime.delegate(request.run_id, spec, parent_turn_id=request.turn_id)
         turn = await self.runtime.submit_child(child['id'], {'id': secrets.token_hex(16), 'content': values['task']})
         async for event in self.runtime.subscribe(turn['id']):
             if event['type'] == 'turn_end':
                 return {'run_id': child['id'], **event['data']}
+        return {'run_id': child['id'], 'status': 'error', 'error': 'Child ended without a result'}
 
 
 def bridge_router(bridge):
