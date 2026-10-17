@@ -1,5 +1,6 @@
 import {registerWorkspaceTools} from './workspace-tools.mjs';
 import { Type } from '@sinclair/typebox';
+import {requestTool} from './bridge-request.mjs';
 
 const text = Type.String();
 const definitions = {
@@ -25,13 +26,7 @@ export default function(pi) {
     const [description, parameters] = definitions[name];
     pi.registerTool({name, label: name, description, parameters,
       async execute(_id, args, signal) {
-        const response = await fetch('http://127.0.0.1:8098/internal/tools', {
-          method: 'POST', signal,
-          headers: {'Content-Type': 'application/json', 'X-Tool-Token': process.env.RW_TOOL_TOKEN},
-          body: JSON.stringify({tool:name, arguments:args}),
-        });
-        if (!response.ok) throw new Error(`Tool failed (${response.status})`);
-        const data = await response.json();
+        const data = await requestTool(name, args, signal);
         return {content:[{type:'text',text:JSON.stringify(data)}],details:{}};
       },
     });
