@@ -15,7 +15,7 @@ export function workspaceFileLink(href,projectId){
 }
 
 export function editorUrl(workspaceUrl,path){
-  const url=new URL(workspaceUrl);
+  const url=new URL(workspaceUrl,window.location.origin);
   url.pathname=`${url.pathname.replace(/\/$/,'')}/tree/${filePath(path)}`;
   return url.href;
 }

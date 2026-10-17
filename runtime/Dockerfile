@@ -40,5 +40,5 @@ ENV VIRTUAL_ENV=/app/.venv
 USER runtime
 WORKDIR /workspace
 EXPOSE 8888
-HEALTHCHECK --interval=2s --timeout=3s --start-period=30s --retries=15 CMD python -c "import os,urllib.request; r=urllib.request.Request('http://127.0.0.1:8888/api',headers={'Authorization':'token '+os.environ['JUPYTER_TOKEN']}); urllib.request.urlopen(r,timeout=2)"
+HEALTHCHECK --interval=2s --timeout=3s --start-period=30s --retries=15 CMD python -c "import os,urllib.request; r=urllib.request.Request('http://127.0.0.1:8888'+os.environ.get('JUPYTER_BASE_URL','/')+'api',headers={'Authorization':'token '+os.environ['JUPYTER_TOKEN']}); urllib.request.urlopen(r,timeout=2)"
 CMD ["jupyter", "lab", "--config=/etc/jupyter/jupyter_server_config.py"]

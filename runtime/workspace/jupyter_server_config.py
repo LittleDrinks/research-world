@@ -12,3 +12,5 @@ c.IdentityProvider.token = os.environ['JUPYTER_TOKEN']
 c.ServerApp.terminals_enabled = True
 
 c.ServerApp.terminado_settings = {'shell_command': ['/bin/bash', '--noprofile', '--norc']}
+
+c.ServerApp.base_url = os.environ.get('JUPYTER_BASE_URL', '/')

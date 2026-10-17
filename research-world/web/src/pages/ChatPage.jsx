@@ -1,3 +1,4 @@
+import {nanoid} from 'nanoid';
 import {useState} from 'react';
 import {useNavigate,useParams} from 'react-router-dom';
 import {createSession} from '../sessionApi';
@@ -11,7 +12,7 @@ export function ChatPage(){
   const navigate=useNavigate(),[agent,setAgent]=useState('research-assistant');
   const state=useSession(projectId,sessionId,setError);
   const create=()=>navigate('/chat');
-  const start=async(content)=>{const result=await createSession(projectId,agent,content,crypto.randomUUID());await refresh();navigate(`/chat/${result.session.id}`);};
+  const start=async(content)=>{const result=await createSession(projectId,agent,content,nanoid());await refresh();navigate(`/chat/${result.session.id}`);};
   return <section className="pi-chat"><header><h1>{state.detail?.session.title||'研究对话'}</h1>
     <select aria-label="启动 Agent" value={agent} onChange={e=>setAgent(e.target.value)}>{data.agents.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select>
     <button className="button secondary" onClick={create}>新建对话</button></header>
