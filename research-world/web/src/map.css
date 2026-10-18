@@ -47,7 +47,8 @@
 .signal-flow-path { pointer-events: none; stroke: var(--text-faint); stroke-width: 8; opacity: .82; }
 .signal-edge.polarity-supports .signal-flow-path { stroke: var(--state-success); }
 .signal-edge.polarity-refutes .signal-flow-path { stroke: var(--state-failed); }
-.signal-edge.incident .signal-flow-path { stroke: var(--state-selected); stroke-width: 10; opacity: 1; }
+.signal-edge.incident .signal-flow-path { stroke-width: 10; opacity: 1; }
+.signal-edge.incident.polarity-depends_on .signal-flow-path { stroke: var(--state-selected); }
 
 /* —— 检查器 —— */
 .inspector { display: block; min-width: 0; min-height: 0; overflow-y: auto; border-left: 1px solid var(--line); background: var(--app-panel); }
@@ -102,3 +103,25 @@
 @media (prefers-reduced-motion: reduce) {
   .signal-flow-path { display: none; }
 }
+
+/* Joint-condition junctions are projections of relations. */
+.joint-node{box-sizing:border-box;width:112px;height:64px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;padding:8px;border:1px solid var(--line);border-radius:18px;background:var(--surface-raised);text-align:center}
+.joint-node strong{font:650 16px 'Geist Mono',monospace;color:var(--state-selected)}
+.joint-node small{font-size:11px;color:var(--text-muted)}
+.joint-node.selected{border-color:var(--state-selected);background:color-mix(in oklab,var(--state-selected) 8%,var(--surface-raised))}
+.signal-edge.polarity-joint .react-flow__edge-path{stroke:var(--state-selected)}
+.signal-edge.polarity-joint .signal-flow-path{stroke:var(--state-selected)}
+.joint-edge-label{position:absolute;padding:3px 7px;border:1px solid var(--line);border-radius:6px;background:var(--app-panel);color:var(--text-muted);font-size:11px;max-width:160px;overflow-wrap:anywhere}
+.map-view-switch{position:absolute;z-index:5;top:14px;left:14px;display:flex;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--app-panel);box-shadow:0 2px 6px rgb(16 24 40 / .05)}
+.map-view-switch button{border:0;border-radius:7px;padding:8px 12px;background:transparent;color:var(--text-muted);cursor:pointer}
+.map-view-switch button[aria-pressed=true]{background:var(--surface-overlay);color:var(--text-strong);font-weight:650}
+.joint-inspector{overflow-wrap:anywhere;line-height:1.65}.joint-rule{font-weight:650;color:var(--state-selected)}
+.joint-members{padding-left:22px;display:grid;gap:14px}.joint-members li>b{font-size:13px;color:var(--text-muted)}
+.joint-record-link{display:block;border:0;padding:6px 0;background:none;color:var(--state-selected);text-align:left;cursor:pointer;white-space:normal;overflow-wrap:anywhere;max-width:100%;font:inherit}
+.joint-warning{color:var(--state-failed);font-size:13px}.joint-evidence{border-left:3px solid var(--line);padding-left:12px;margin:12px 0}.joint-evidence a{color:var(--state-selected);font-size:13px}
+.joint-list{height:100%;overflow:auto;padding:76px 24px 24px;box-sizing:border-box}.joint-list-item{display:flex;align-items:center;gap:12px;width:100%;padding:14px;margin:8px 0;border:1px solid var(--line);border-radius:12px;background:var(--surface-raised);color:var(--text-strong);text-align:left;cursor:pointer}
+.joint-list-item>span:last-child{min-width:0;overflow-wrap:anywhere}.joint-list-item small{display:block;margin-top:4px;color:var(--text-muted)}.joint-badge{flex-shrink:0;min-width:46px;padding:6px;border-radius:8px;text-align:center;font:600 12px 'Geist Mono',monospace;background:var(--surface-overlay);color:var(--state-selected)}
+
+.graph-legend{position:absolute;z-index:5;right:14px;top:16px;display:flex;gap:12px;padding:8px 10px;background:var(--app-panel);border:1px solid var(--line);border-radius:9px;font-size:11px;color:var(--text-muted)}
+.graph-legend span{display:flex;align-items:center;gap:5px}.graph-legend span::before{content:'';width:14px;border-top:2px solid var(--text-faint)}.graph-legend .supports::before{border-color:var(--state-success)}.graph-legend .refutes::before{border-color:var(--state-failed);border-top-style:dashed}
+@media(max-width:600px){.graph-legend{top:66px;right:12px}}

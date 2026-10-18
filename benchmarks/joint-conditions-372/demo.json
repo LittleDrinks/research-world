@@ -1,0 +1,35 @@
+{
+  "project": "project:21ccb677e9dd256aa70d5186",
+  "case": "q049 v8 and historical v1-v3",
+  "rules": [
+    {
+      "id": "joint:cb5b3d300c5b75160f6cc320",
+      "rule": "AND",
+      "unavailable_ids": []
+    },
+    {
+      "id": "joint:d52b0a199e20f5eedef2fe66",
+      "rule": "OR",
+      "unavailable_ids": []
+    },
+    {
+      "id": "joint:1ee54c52a3051fb5db20f103",
+      "rule": "k-of-N",
+      "unavailable_ids": []
+    },
+    {
+      "id": "joint:b5f64a665036d3dc8d1417a8",
+      "rule": "AND",
+      "unavailable_ids": [
+        "record:5d1ddc2780d3588b4a878b66"
+      ]
+    },
+    {
+      "id": "joint:6dac684c394b9b4abb31c5c7",
+      "rule": "AND",
+      "unavailable_ids": []
+    }
+  ],
+  "newScientificExperiments": false,
+  "auditReportsAreArtifacts": true
+}

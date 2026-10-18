@@ -1,19 +1,25 @@
-import { Background, Controls, MiniMap, MarkerType, ReactFlow, useReactFlow } from "@xyflow/react";
+import { Background, Controls, MiniMap, MarkerType, ReactFlow, ReactFlowProvider, useReactFlow, useStore } from "@xyflow/react";
 import { useEffect, useMemo, useState } from "react";
 import { edgeHandles, layoutGraph } from "./layout";
 import { ResearchNode } from "./ResearchNode";
+import { JointNode } from "./JointCondition";
 import { SignalEdge } from "./SignalEdge";
 
 
-const NODE_TYPES = { research: ResearchNode };
+const NODE_TYPES = { research: ResearchNode, joint: JointNode };
 const EDGE_TYPES = { signal: SignalEdge };
 const EMPTY_LAYOUT = { signature: "", nodes: [], routes: new Map() };
 const NODE_COLORS = { question: "#1d4ed8", source: "#047857", direction: "#b45309", experiment: "#7c3aed" };
 
 
-export function GraphView({ nodes, edges, selectedId, onSelect }) {
-  const signature = graphSignature(nodes, edges);
-  const layout = useGraphLayout(nodes, edges, signature);
+export function GraphView(props) {
+  return <ReactFlowProvider><GraphCanvas {...props} /></ReactFlowProvider>;
+}
+
+function GraphCanvas({ nodes, edges, selectedId, onSelect }) {
+  const aspectRatio = useStore(state => state.height ? Math.max(.4, Math.round(10 * state.width / state.height) / 10) : 1);
+  const signature = `${graphSignature(nodes, edges)}:${aspectRatio}`;
+  const layout = useGraphLayout(nodes, edges, signature, aspectRatio);
   const flowNodes = useMemo(() => decorateNodes(layout.nodes, nodes, selectedId), [layout.nodes, nodes, selectedId]);
   const flowEdges = useMemo(() => decorateEdges(edges, flowNodes, selectedId, layout.routes), [edges, flowNodes, selectedId, layout.routes]);
   const fit = { padding: .14, maxZoom: 1 };
@@ -29,11 +35,11 @@ function graphSignature(nodes, edges) {
 }
 
 
-function useGraphLayout(nodes, edges, signature) {
+function useGraphLayout(nodes, edges, signature, aspectRatio) {
   const [layout, setLayout] = useState(EMPTY_LAYOUT);
   useEffect(() => {
     let current = true;
-    layoutGraph(nodes, edges).then((value) => { if (current) setLayout({ signature, ...value }); });
+    layoutGraph(nodes, edges, aspectRatio).then((value) => { if (current) setLayout({ signature, ...value }); });
     return () => { current = false; };
   }, [signature]);
   return layout.signature === signature ? layout : EMPTY_LAYOUT;
@@ -50,8 +56,8 @@ function decorateEdges(edges, nodes, selectedId, routes) {
   const nodeMap = new Map(nodes.map((node) => [node.id, node]));
   return edges.map((edge, index) => ({ id: `edge-${index}`, source: edge.source, target: edge.target,
     ...edgeHandles(edge, nodeMap), type: "signal", data: { ...edge, route: routes.get(`edge-${index}`),
-      incident: [edge.source, edge.target].includes(selectedId), muted: Boolean(selectedId) && ![edge.source, edge.target].includes(selectedId) },
-    markerEnd:{type:MarkerType.ArrowClosed,width:16,height:16,color:edge.polarity==='supports'?'var(--state-success)':edge.polarity==='refutes'?'var(--state-failed)':
+      incident: [edge.source, edge.target, edge.jointId].includes(selectedId), muted: Boolean(selectedId) && ![edge.source, edge.target, edge.jointId].includes(selectedId) },
+    markerEnd:{type:MarkerType.ArrowClosed,width:16,height:16,color:edge.polarity==='supports'?'var(--state-success)':edge.polarity==='refutes'?'var(--state-failed)':edge.polarity==='joint'?'var(--state-selected)':
       [edge.source,edge.target].includes(selectedId)?'var(--state-selected)':'var(--text-faint)'},
     style: { strokeWidth: [edge.source,edge.target].includes(selectedId)?2:1.5,
       strokeDasharray: edge.polarity === "refutes" ? "7 5" : undefined } }));
@@ -60,6 +66,7 @@ function decorateEdges(edges, nodes, selectedId, routes) {
 
 function FitOnChange({ signature, options }) {
   const { fitView } = useReactFlow();
-  useEffect(() => { if (signature) requestAnimationFrame(() => fitView(options)); }, [signature]);
+  const size = useStore(state => `${state.width}:${state.height}`);
+  useEffect(() => { if (signature) requestAnimationFrame(() => fitView(options)); }, [signature, size]);
   return null;
 }

@@ -115,6 +115,7 @@ def _assert_local_map(response, direction, relation, artifact):
         "records": [direction],
         "relations": [relation],
         "artifacts": [_artifact_view(artifact)],
+        "joint_conditions": [],
     }
 
 

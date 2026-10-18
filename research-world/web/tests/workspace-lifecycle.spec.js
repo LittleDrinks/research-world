@@ -9,7 +9,7 @@ async function fixture(page){
   const projects=[project,other].map((id,index)=>({id,name:index?'另一个项目':'自动工作区',question:'生命周期',created_at:'2026-01-01',node_count:0}));
   await page.route('**/api/v1/bootstrap**',r=>r.fulfill({json:{active_project_id:new URL(r.request().url()).searchParams.get('project_id')||project,projects,sessions:[]}}));
   await page.route('**/api/v1/agents',r=>r.fulfill({json:[]}));
-  await page.route('**/local-map',r=>r.fulfill({json:{records:[],relations:[],artifacts:[]}}));
+  await page.route('**/local-map',r=>r.fulfill({json:{records:[],relations:[],artifacts:[],joint_conditions:[]}}));
   await page.context().route('**/lab?*',r=>r.fulfill({contentType:'text/html',body:'<h1>JupyterLab</h1>'}));
   await workspaceRoutes(page,state);
   return state;

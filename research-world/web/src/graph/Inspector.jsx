@@ -1,3 +1,4 @@
+import { JointLinks } from './JointCondition';
 import ReactMarkdown from 'react-markdown';
 import { recordImpact } from '../api';
 import { useWorld } from '../context/WorldContext';
@@ -8,12 +9,13 @@ import { ArtifactDownload } from "../components/map/ArtifactDownload";
 import { KIND_LABELS, recordText } from "../utils/labels";
 
 
-export function Inspector({ node, nodes, edges, artifacts = [], onSelect, onDeleteRecord, onDeleteRelation }) {
+export function Inspector({ node, nodes, edges, artifacts = [], conditions = [], onSelect, onDeleteRecord, onDeleteRelation }) {
   const {pending,setPending,busy,requestRemoval,confirm} = useRemoval(node,onDeleteRecord,onDeleteRelation);
   if (!node) return <aside className="inspector inspector-empty">选择节点查看上下文。</aside>;
   return <aside className="inspector"><div className="inspector-scroll"><NodeHeader node={node} />
     <NodeRecord node={node} /><RecordActions node={node} onRequest={requestRemoval} />
     <Relations node={node} nodes={nodes} edges={edges} onSelect={onSelect} onDelete={(edge) => setPending({ kind: "Relation", id: edge.id })} />
+    <JointLinks conditions={conditions} recordId={node.id} onSelect={onSelect} />
     <Artifacts node={node} artifacts={artifacts} /><details className="node-details"><summary>详情</summary><NodeIdEntry node={node} /></details>
   </div><DeleteDialog pending={pending} busy={busy} onClose={() => setPending(null)} onConfirm={confirm} /></aside>;
 }

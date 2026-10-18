@@ -12,6 +12,7 @@ from typing import Protocol
 from kernel_contract import LocalMapQuery
 
 from .artifacts import ArtifactIntegrityError, ArtifactStore, now
+from .joint_conditions import SCHEMA as JOINT_SCHEMA, create_condition, list_conditions, remove_condition, local_conditions, condition_artifacts
 
 __all__ = [
     "Artifact",
@@ -132,6 +133,7 @@ class LocalMap:
     records: tuple[Record, ...]
     relations: tuple[Relation, ...]
     artifacts: tuple[Artifact, ...]
+    joint_conditions: tuple[dict, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -211,6 +213,12 @@ class KernelInterface(Protocol):
     def list_relations(self, project_id: str) -> list[Relation]: ...
 
     def remove_relation(self, project_id: str, relation_id: str) -> None: ...
+
+    def create_joint_condition(self, project_id, values) -> dict: ...
+
+    def list_joint_conditions(self, project_id) -> list[dict]: ...
+
+    def remove_joint_condition(self, project_id, condition_id) -> None: ...
 
     def local_map(self, project_id: str, query: LocalMapQuery) -> LocalMap: ...
 
@@ -509,17 +517,28 @@ class _SQLiteKernel(KernelInterface):
         self.get_relation(project_id, relation_id)
         self._revoke(project_id, [relation_id], 'relation withdrawn')
 
+    def create_joint_condition(self, project_id, values):
+        return create_condition(self, project_id, values)
+
+    def list_joint_conditions(self, project_id):
+        return list_conditions(self, project_id)
+
+    def remove_joint_condition(self, project_id, condition_id):
+        remove_condition(self, project_id, condition_id)
+
     def local_map(self, project_id: str, query: LocalMapQuery) -> LocalMap:
         self.get_project(project_id)
         _validate_local_map_query(query)
         records = _local_map_records(self, project_id, query)
+        records, conditions = local_conditions(self, project_id, records, query)
         relations = _local_map_relations(self, project_id, records)
         artifacts = _local_map_artifacts(self, project_id, records)
-        return LocalMap(records, relations, artifacts)
+        artifacts = condition_artifacts(self, project_id, conditions, artifacts)
+        return LocalMap(records, relations, artifacts, conditions)
 
     def _initialize(self) -> None:
         with self._connect() as connection:
-            connection.executescript(_SCHEMA)
+            connection.executescript(_SCHEMA + ";" + JOINT_SCHEMA)
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self._database, timeout=30)
@@ -768,7 +787,7 @@ def _dependent_ids(relations, affected):
 
 
 def _history_row(connection, row):
-    table = 'kernel_records' if row['object_id'].startswith('record:') else 'kernel_relations'
+    table = {'record':'kernel_records', 'relation':'kernel_relations', 'joint':'kernel_joint_conditions'}[row['object_id'].split(':')[0]]
     original = connection.execute(f'SELECT * FROM {table} WHERE id=?', (row['object_id'],)).fetchone()
     value = dict(original) if original else None
     if value and 'content' in value:
