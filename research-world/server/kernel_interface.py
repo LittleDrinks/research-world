@@ -12,7 +12,7 @@ from typing import Protocol
 from kernel_contract import LocalMapQuery
 
 from .artifacts import ArtifactIntegrityError, ArtifactStore, now
-from .joint_conditions import SCHEMA as JOINT_SCHEMA, create_condition, list_conditions, local_conditions, condition_artifacts
+from .joint_conditions import SCHEMA as JOINT_SCHEMA, create_condition, list_conditions, remove_condition, local_conditions, condition_artifacts
 
 __all__ = [
     "Artifact",
@@ -217,6 +217,8 @@ class KernelInterface(Protocol):
     def create_joint_condition(self, project_id, values) -> dict: ...
 
     def list_joint_conditions(self, project_id) -> list[dict]: ...
+
+    def remove_joint_condition(self, project_id, condition_id) -> None: ...
 
     def local_map(self, project_id: str, query: LocalMapQuery) -> LocalMap: ...
 
@@ -521,6 +523,9 @@ class _SQLiteKernel(KernelInterface):
     def list_joint_conditions(self, project_id):
         return list_conditions(self, project_id)
 
+    def remove_joint_condition(self, project_id, condition_id):
+        remove_condition(self, project_id, condition_id)
+
     def local_map(self, project_id: str, query: LocalMapQuery) -> LocalMap:
         self.get_project(project_id)
         _validate_local_map_query(query)
@@ -782,7 +787,7 @@ def _dependent_ids(relations, affected):
 
 
 def _history_row(connection, row):
-    table = 'kernel_records' if row['object_id'].startswith('record:') else 'kernel_relations'
+    table = {'record':'kernel_records', 'relation':'kernel_relations', 'joint':'kernel_joint_conditions'}[row['object_id'].split(':')[0]]
     original = connection.execute(f'SELECT * FROM {table} WHERE id=?', (row['object_id'],)).fetchone()
     value = dict(original) if original else None
     if value and 'content' in value:

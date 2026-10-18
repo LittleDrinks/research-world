@@ -210,3 +210,8 @@ def _add_joint_routes(router, kernel):
     @router.get(path)
     def list_all(project_id: str):
         return _kernel_call(kernel.list_joint_conditions, project_id)
+
+    @router.delete(path + '/{condition_id}', status_code=204)
+    def remove(project_id: str, condition_id: str):
+        _kernel_call(kernel.remove_joint_condition, project_id, condition_id)
+        return Response(status_code=204)

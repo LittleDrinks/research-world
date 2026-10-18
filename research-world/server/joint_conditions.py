@@ -63,12 +63,18 @@ def create_condition(kernel, project_id, values):
         kernel.get_record(project_id, record_id)
     for evidence in request.evidence:
         kernel.get_artifact(project_id, evidence.artifact_id)
+    return save_condition(kernel, project_id, request)
+
+
+def save_condition(kernel, project_id, request):
     content = json.dumps(request.model_dump(), ensure_ascii=False, sort_keys=True)
     with kernel._connect() as connection:
         connection.execute('INSERT OR IGNORE INTO kernel_joint_conditions VALUES(?,?,?,?)',
                            (f'joint:{secrets.token_hex(12)}', project_id, content, now()))
         row = connection.execute('SELECT * FROM kernel_joint_conditions WHERE project_id=? AND content=?',
                                  (project_id, content)).fetchone()
+        if connection.execute('SELECT 1 FROM kernel_revocations WHERE object_id=?', (row['id'],)).fetchone():
+            raise ValueError('joint condition has been withdrawn')
     return condition_view(row, {r.id for r in kernel.list_records(project_id)})
 
 
@@ -76,7 +82,8 @@ def list_conditions(kernel, project_id):
     kernel.get_project(project_id)
     active = {r.id for r in kernel.list_records(project_id)}
     with kernel._connect() as connection:
-        rows = connection.execute('SELECT * FROM kernel_joint_conditions WHERE project_id=? ORDER BY created_at,id',
+        rows = connection.execute('SELECT * FROM kernel_joint_conditions WHERE project_id=? '
+                                  'AND id NOT IN (SELECT object_id FROM kernel_revocations) ORDER BY created_at,id',
                                   (project_id,)).fetchall()
     return [condition_view(row, active) for row in rows]
 
@@ -111,3 +118,14 @@ def condition_artifacts(kernel, project_id, conditions, artifacts):
     existing = {a.id for a in artifacts}
     ids = {e['artifact_id'] for c in conditions for e in c['evidence']}
     return (*artifacts, *(kernel.get_artifact(project_id, i) for i in sorted(ids - existing)))
+
+
+def remove_condition(kernel, project_id, condition_id):
+    kernel.get_project(project_id)
+    with kernel._connect() as connection:
+        row = connection.execute('SELECT project_id FROM kernel_joint_conditions WHERE id=?', (condition_id,)).fetchone()
+    if row is None:
+        raise KeyError(condition_id)
+    if row['project_id'] != project_id:
+        raise PermissionError('joint condition belongs to another project')
+    kernel._revoke(project_id, [condition_id], 'joint condition withdrawn')

@@ -131,3 +131,19 @@ def test_all_conditions_remain_discoverable_after_all_members_are_revoked(setup)
     assert result['artifacts'][0]['id'] == request['evidence'][0]['artifact_id']
     searched = client.post(path, json={'text': 'condition 20', 'limit': 1}).json()
     assert len(searched['joint_conditions']) == 1
+
+
+def test_withdrawal_preserves_members_and_history(setup):
+    kernel, project, records, request, client = setup
+    condition = kernel.create_joint_condition(project.id, request)
+    path = f'/api/v1/projects/{project.id}/joint-conditions/{condition["id"]}'
+    assert client.delete(path).status_code == 204
+    assert client.delete(path).status_code == 204
+    assert kernel.list_joint_conditions(project.id) == []
+    assert {r.id for r in kernel.list_records(project.id)} == {r.id for r in records}
+    history = kernel.history(project.id)[0]
+    assert history['object_id'] == condition['id']
+    assert history['object']['content']['title'] == request['title']
+    assert client.post(path.rsplit('/', 1)[0], json=request).status_code == 422
+    other = kernel.create_project('foreign withdrawal', 'isolation')
+    assert client.delete(f'/api/v1/projects/{other.id}/joint-conditions/{condition["id"]}').status_code == 403

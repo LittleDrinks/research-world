@@ -4,6 +4,8 @@ from pathlib import Path
 
 import httpx
 
+from q049_semantic_loop import seed_semantic_loop
+
 ROOT = Path(__file__).resolve().parents[1]
 NAME = 'q049 · 联合条件演示'
 
@@ -80,7 +82,9 @@ def seed(client):
     projects = client.get('/api/v1/projects').json()
     existing = next((p for p in projects if p['name'] == NAME), None)
     if existing:
-        seed_references(client, f'/api/v1/projects/{existing["id"]}')
+        root = f'/api/v1/projects/{existing["id"]}'
+        seed_references(client, root)
+        seed_semantic_loop(client, root)
         return existing['id']
     project = post(client, '/api/v1/projects', {'name': NAME, 'question': '行星轨道为何不持续衰减？以历史 q049 报告展示联合条件；不新增科学实验结果。'})
     root = f'/api/v1/projects/{project["id"]}'
@@ -88,6 +92,7 @@ def seed(client):
     for create in (seed_and, seed_or, seed_threshold):
         create(client, root, artifact)
     seed_references(client, root)
+    seed_semantic_loop(client, root)
     return project['id']
 
 
