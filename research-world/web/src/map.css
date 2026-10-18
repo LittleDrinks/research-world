@@ -104,11 +104,10 @@
 }
 
 /* Joint-condition junctions are projections of relations. */
-.joint-node{box-sizing:border-box;width:180px;height:104px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;padding:10px 14px;border:1.5px solid var(--state-selected);border-radius:24px;background:var(--surface-raised);text-align:center;box-shadow:0 3px 12px rgb(16 24 40 / .08)}
-.joint-node strong{font:700 18px 'Geist Mono',monospace;color:var(--state-selected)}
-.joint-node>span{font-size:12px;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.joint-node small{font-size:10px;color:var(--text-muted)}
-.joint-node.selected{box-shadow:0 0 0 4px color-mix(in oklab,var(--state-selected) 22%,transparent)}
+.joint-node{box-sizing:border-box;width:112px;height:64px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;padding:8px;border:1px solid var(--line);border-radius:18px;background:var(--surface-raised);text-align:center}
+.joint-node strong{font:650 16px 'Geist Mono',monospace;color:var(--state-selected)}
+.joint-node small{font-size:11px;color:var(--text-muted)}
+.joint-node.selected{border-color:var(--state-selected);background:color-mix(in oklab,var(--state-selected) 8%,var(--surface-raised))}
 .signal-edge.polarity-joint .react-flow__edge-path{stroke:var(--state-selected)}
 .signal-edge.polarity-joint .signal-flow-path{stroke:var(--state-selected)}
 .joint-edge-label{position:absolute;padding:3px 7px;border:1px solid var(--line);border-radius:6px;background:var(--app-panel);color:var(--text-muted);font-size:11px;max-width:160px;overflow-wrap:anywhere}

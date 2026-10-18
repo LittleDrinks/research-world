@@ -15,10 +15,10 @@ export function ruleMeaning(condition) {
 
 export function JointNode({ data, selected }) {
   const condition = data.condition;
-  return <article className={`joint-node ${selected ? 'selected' : ''}`} aria-label={`${condition.rule} 联合条件：${condition.title}`}>
+  return <article className={`joint-node ${selected ? 'selected' : ''}`} aria-label={`${condition.rule} 联合条件：${condition.title}`} title={condition.title}>
     <Handle type="target" position={Position.Left} id="target-left" className="hidden-handle" />
-    <strong>{ruleLabel(condition)}</strong><span>{condition.title}</span>
-    <small>{condition.unavailable_ids.length ? '引用不再可用 · 待复核' : '联合条件 · 未经审计'}</small>
+    <strong>{ruleLabel(condition)}</strong>
+    <small>{condition.unavailable_ids.length ? '引用待复核' : `需满足 ${condition.rule === 'AND' ? condition.members.length : condition.rule === 'OR' ? 1 : condition.k} 项`}</small>
     <Handle type="source" position={Position.Right} id="source-right" className="hidden-handle" />
   </article>;
 }

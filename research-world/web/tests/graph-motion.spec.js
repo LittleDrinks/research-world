@@ -46,7 +46,7 @@ test('graph bubbles stay visible and moving on ordinary and joint edges',{tag:'@
     const selected=page.locator('.polarity-joint.incident .signal-flow-path');
     await expect(selected).toHaveCount(3);
     for(const path of await selected.all()) await expectMovingBubble(path);
-    await expectMovingBubble(page.locator('.polarity-joint.muted .signal-flow-path').first());
+    for(const type of ['supports','refutes','depends_on','joint']) await expectMovingBubble(page.locator(`.polarity-${type}.muted .signal-flow-path`).first());
   }
   await page.emulateMedia({reducedMotion:'reduce'});
   for(const path of await page.locator('.signal-flow-path').all()) await expect.poll(()=>path.evaluate(node=>getComputedStyle(node).display)).toBe('none');

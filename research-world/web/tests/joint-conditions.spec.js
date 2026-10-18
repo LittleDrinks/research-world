@@ -39,7 +39,7 @@ test('joint junctions, list, evidence, refresh, revocation and mobile use real A
 });
 
 async function checkJunctionAndRefresh(page,request) {
-    await page.locator('.joint-node').filter({hasText:'AND 关系示例'}).click();
+    await page.locator('.joint-node[aria-label="AND 联合条件：AND 关系示例"]').click();
     await expect(page.locator('.joint-inspector')).toContainText('全部 3 项共同满足');
     await expect(page.locator('.joint-inspector')).toContainText('不同条件分别承担解释的一部分。');
     const href=await page.getByRole('link',{name:'查看原文'}).getAttribute('href');

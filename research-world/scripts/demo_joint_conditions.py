@@ -56,16 +56,38 @@ def seed_threshold(client, root, artifact):
                      artifact, 'v8 §6 回退：若数值不稳定，降低时间步长或改用辛积分器；§8 数值误差风险。三项检查组合与 k=2 是演示新增方案，并非报告原结论。', 2)
 
 
+REFERENCE_TITLE = '两篇文献联合支持引力波耗散分析'
+
+
+def seed_references(client, root):
+    existing = client.get(root + '/joint-conditions').json()
+    if any(c['title'] == REFERENCE_TITLE for c in existing):
+        return
+    artifact = post(client, root + '/artifacts', {'content': (ROOT / 'evidence/contest-2026/q049/v8.md').read_text(), 'media_type': 'text/plain'})['id']
+    s4 = record(client, root, 'S4 · Peters & Mathews (1963)',
+                'Gravitational Radiation from Point Masses in a Keplerian Orbit\n\nDOI: [10.1103/PhysRev.131.435](https://doi.org/10.1103/PhysRev.131.435)\n\n提供引力波辐射功率公式的文献依据。来源信息沿用 q049 v8；原报告注明未提取全文，本次没有重新核验论文。', artifact, 'source')
+    s5 = record(client, root, 'S5 · Peters (1964)',
+                'Gravitational Radiation and the Motion of Two Point Masses\n\nDOI: [10.1103/PhysRev.136.B1224](https://doi.org/10.1103/PhysRev.136.B1224)\n\n提供轨道演化与衰减时间公式的文献依据。来源信息沿用 q049 v8；原报告注明未提取全文，本次没有重新核验论文。', artifact, 'source')
+    target = record(client, root, '地球—太阳引力波耗散尺度',
+                    '研究方向：以辐射功率和轨道衰减时间两部分分析引力波耗散。q049 v8 §7 已记录圆轨道计算约 196 W、1.069×10²³ 年。这里新增文献关系投影，没有新实验；不外推为潮汐可忽略或多体系统永远稳定。', artifact)
+    condition(client, root, REFERENCE_TITLE, 'AND', [(s4, '辐射功率依据'), (s5, '轨道演化依据')], target,
+              '在地球—太阳圆轨道近似下，同时给出引力波辐射功率及其对应的轨道衰减时间尺度。',
+              '两篇文献分别承担功率公式与轨道演化公式的依据，共同覆盖该方向的两个论证环节。文献数量不是独立复现次数；其他耗散机制与混沌稳定性不在这条关系的支撑范围。',
+              artifact, 'q049 v8 §3 S4/S5 来源记录；§4 Direction 2；§7 已执行引力波计算。原报告说明全文访问受限；本次只增加关系表达。')
+
+
 def seed(client):
     projects = client.get('/api/v1/projects').json()
     existing = next((p for p in projects if p['name'] == NAME), None)
     if existing:
+        seed_references(client, f'/api/v1/projects/{existing["id"]}')
         return existing['id']
     project = post(client, '/api/v1/projects', {'name': NAME, 'question': '行星轨道为何不持续衰减？以历史 q049 报告展示联合条件；不新增科学实验结果。'})
     root = f'/api/v1/projects/{project["id"]}'
     artifact = post(client, root + '/artifacts', {'content': (ROOT / 'evidence/contest-2026/q049/v8.md').read_text(), 'media_type': 'text/plain'})['id']
     for create in (seed_and, seed_or, seed_threshold):
         create(client, root, artifact)
+    seed_references(client, root)
     return project['id']
 
 

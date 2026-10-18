@@ -13,6 +13,10 @@
     {
       "id": "joint:1ee54c52a3051fb5db20f103",
       "rule": "k-of-N"
+    },
+    {
+      "id": "joint:b5f64a665036d3dc8d1417a8",
+      "rule": "AND"
     }
   ],
   "newScientificExperiments": false,

@@ -6,7 +6,7 @@ export const NODE_HEIGHT = 128;
 const KIND_ORDER = ["question", "source", "direction", "experiment"];
 const OPPOSITE = { top: "bottom", right: "left", bottom: "top", left: "right" };
 function dimensions(node) {
-  return node.kind === 'joint' ? {width:180,height:104} : {width:NODE_WIDTH,height:NODE_HEIGHT};
+  return node.kind === 'joint' ? {width:112,height:64} : {width:NODE_WIDTH,height:NODE_HEIGHT};
 }
 function handlePoints(node) {
   const {width,height} = dimensions(node);
