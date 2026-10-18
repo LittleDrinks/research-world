@@ -164,6 +164,8 @@ select { min-height: 38px; padding: 0 10px; }
 .module-nav a { height: 40px; display: flex; align-items: center; gap: 11px; margin: 2px 0; padding: 0 11px; border-radius: 8px; color: var(--text-muted); text-decoration: none; font-weight: 550; transition: background var(--motion-duration-fast) var(--motion-ease-standard), color var(--motion-duration-fast) var(--motion-ease-standard); }
 .module-nav a:hover { color: var(--text-strong); background: color-mix(in oklab, var(--surface-muted) 70%, transparent); }
 .module-nav a.active { color: var(--state-selected); background: var(--state-selected-surface); box-shadow: inset 3px 0 var(--state-selected); }
+.module-nav a[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
+.module-nav .workspace-external { margin-left: auto; flex-shrink: 0; }
 
 /* —— 模块记录列表 —— */
 .record-list { min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); border-top: 1px solid var(--line); }
