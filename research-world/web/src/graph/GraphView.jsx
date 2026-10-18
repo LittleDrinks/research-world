@@ -1,11 +1,12 @@
-import { Background, Controls, MiniMap, MarkerType, ReactFlow, useReactFlow } from "@xyflow/react";
+import { Background, Controls, MiniMap, MarkerType, ReactFlow, useReactFlow, useStore } from "@xyflow/react";
 import { useEffect, useMemo, useState } from "react";
 import { edgeHandles, layoutGraph } from "./layout";
 import { ResearchNode } from "./ResearchNode";
+import { JointNode } from "./JointCondition";
 import { SignalEdge } from "./SignalEdge";
 
 
-const NODE_TYPES = { research: ResearchNode };
+const NODE_TYPES = { research: ResearchNode, joint: JointNode };
 const EDGE_TYPES = { signal: SignalEdge };
 const EMPTY_LAYOUT = { signature: "", nodes: [], routes: new Map() };
 const NODE_COLORS = { question: "#1d4ed8", source: "#047857", direction: "#b45309", experiment: "#7c3aed" };
@@ -50,7 +51,7 @@ function decorateEdges(edges, nodes, selectedId, routes) {
   const nodeMap = new Map(nodes.map((node) => [node.id, node]));
   return edges.map((edge, index) => ({ id: `edge-${index}`, source: edge.source, target: edge.target,
     ...edgeHandles(edge, nodeMap), type: "signal", data: { ...edge, route: routes.get(`edge-${index}`),
-      incident: [edge.source, edge.target].includes(selectedId), muted: Boolean(selectedId) && ![edge.source, edge.target].includes(selectedId) },
+      incident: [edge.source, edge.target, edge.jointId].includes(selectedId), muted: Boolean(selectedId) && ![edge.source, edge.target, edge.jointId].includes(selectedId) },
     markerEnd:{type:MarkerType.ArrowClosed,width:16,height:16,color:edge.polarity==='supports'?'var(--state-success)':edge.polarity==='refutes'?'var(--state-failed)':
       [edge.source,edge.target].includes(selectedId)?'var(--state-selected)':'var(--text-faint)'},
     style: { strokeWidth: [edge.source,edge.target].includes(selectedId)?2:1.5,
@@ -60,6 +61,7 @@ function decorateEdges(edges, nodes, selectedId, routes) {
 
 function FitOnChange({ signature, options }) {
   const { fitView } = useReactFlow();
-  useEffect(() => { if (signature) requestAnimationFrame(() => fitView(options)); }, [signature]);
+  const size = useStore(state => `${state.width}:${state.height}`);
+  useEffect(() => { if (signature) requestAnimationFrame(() => fitView(options)); }, [signature, size]);
   return null;
 }

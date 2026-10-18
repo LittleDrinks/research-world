@@ -3,13 +3,12 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { deleteRecord, deleteRelation, getLocalMap } from "../api";
 import { useWorld } from "../context/WorldContext";
-import { GraphView } from "../graph/GraphView";
-import { Inspector } from "../graph/Inspector";
+import { MapView } from "../graph/MapView";
 import "../map.css";
 
 
 const LOCAL_MAP_LIMIT = 50;
-const EMPTY_MAP = { records: [], relations: [], artifacts: [] };
+const EMPTY_MAP = { records: [], relations: [], artifacts: [], joint_conditions: [] };
 
 
 export function MapPage() {
@@ -35,7 +34,7 @@ function MapContent({ data, setError }) {
   }, [load]);
 
   return <section className="map-page">
-    <MapToolbar count={localMap.records.length} relationCount={localMap.relations.length}
+    <MapToolbar count={localMap.records.length} relationCount={localMap.relations.length + localMap.joint_conditions.length}
       text={text} setParams={setParams} />
     <MapView localMap={localMap} selectedId={recordId} onSelect={(id) => selectRecord(setParams, id)} onDeleteRecord={removeRecord} onDeleteRelation={removeRelation} />
   </section>;
@@ -69,7 +68,7 @@ function selectRecord(setParams, id) {
 
 
 function normalizeLocalMap(value) {
-  return { records: value.records.map(mapRecord), relations: value.relations.map(mapRelation), artifacts: value.artifacts };
+  return { records: value.records.map(mapRecord), relations: value.relations.map(mapRelation), artifacts: value.artifacts, joint_conditions: value.joint_conditions };
 }
 
 
@@ -98,16 +97,4 @@ function MapToolbar({ count, relationCount, text, setParams }) {
       <button className="icon-button" type="submit" aria-label="检索" title="检索"><Search size={16} /></button>
     </form>
   </header>;
-}
-
-
-function MapView({ localMap, selectedId, onSelect, onDeleteRecord, onDeleteRelation }) {
-  const edges = localMap.relations;
-  const nodeIds = new Set(localMap.records.map((record) => record.id));
-  const visibleEdges = edges.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target));
-  const selected = localMap.records.find((record) => record.id === selectedId) || localMap.records[0];
-  return <div className="map-workspace"><div className="graph-canvas">
-    <GraphView nodes={localMap.records} edges={visibleEdges} selectedId={selected?.id} onSelect={onSelect} />
-  </div><Inspector node={selected} nodes={localMap.records} edges={edges} artifacts={localMap.artifacts} onSelect={onSelect} onDeleteRecord={onDeleteRecord} onDeleteRelation={onDeleteRelation} />
-  </div>;
 }
