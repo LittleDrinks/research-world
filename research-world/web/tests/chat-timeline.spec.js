@@ -5,7 +5,7 @@ const text=(seq,value)=>event(seq,'delta',{text:value});
 const tool=(seq,phase,extra={})=>event(seq,'tool',{id:'call-one',name:'bash',phase,...extra});
 
 async function setup(page,request){
-  await page.routeWebSocket('**/workspace/presence',socket=>socket.send(JSON.stringify({status:'ready',url:'/lab?token=synthetic-test'})));
+  await page.route('**/api/v1/projects/*/workspace',r=>r.fulfill({json:{status:'ready',url:'/lab?token=synthetic-test'}}));
   const project=await (await request.post('/api/v1/projects',{data:{name:'工具时间线验收',question:'验证工作区'}})).json();
   await page.addInitScript(id=>{
     localStorage.setItem('rw.active_project',id);

@@ -97,6 +97,9 @@ class RuntimeHttpClient:
         response=await self._client.request(method,path,json={'model':model} if model else None,timeout=70)
         return _response_json(response)
 
+    async def workspaces(self):
+        return _response_json(await self._client.get('/api/v1/runtime/workspaces'))
+
     async def delete_project(self, project_id):
         return _response_json(await self._client.delete(f'/api/v1/runtime/projects/{project_id}'))
 

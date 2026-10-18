@@ -50,15 +50,31 @@ class Workspaces:
     def status(self,project_id):
         container=self.container(project_id)
         if container is None:return {'status':'not_started'}
-        health=container.attrs['State'].get('Health',{}).get('Status')
-        status='ready' if container.status=='running' and health=='healthy' else container.status
-        if container.status=='running' and health=='unhealthy':status='unhealthy'
+        status=self._state(container)
         value={'status':status,'model':container.labels.get('rw.model','')}
         ports=container.attrs['NetworkSettings']['Ports'].get('8888/tcp')
         if status=='ready' and ports:
             origin='' if self.proxy else f'http://127.0.0.1:{ports[0]["HostPort"]}'
             value['url']=f'{origin}{self.base_url(project_id)}lab?token={self.token(project_id)}'
         return value
+
+    def statuses(self):
+        containers=self.client.containers.list(all=True,filters={'label':f'rw.owner={self.prefix}'})
+        states={}
+        for container in containers:
+            project_id=container.labels.get('rw.project','')
+            if container.labels.get('rw.owner')!=self.prefix:continue
+            if not re.fullmatch(r'project:[0-9a-f]{24}',project_id):continue
+            if container.name!=self.name(project_id):continue
+            states[project_id]=self._state(container)
+        return states
+
+    @staticmethod
+    def _state(container):
+        health=container.attrs['State'].get('Health',{}).get('Status')
+        if container.status=='running' and health=='healthy':return 'ready'
+        if container.status=='running' and health=='unhealthy':return 'unhealthy'
+        return container.status
 
     def base_url(self,project_id):
         self.name(project_id)

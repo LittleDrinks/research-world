@@ -1,12 +1,26 @@
 from fastapi import APIRouter
-from .workspace_presence import presence_route, start_workspace
 
 
 def workspace_router(control):
-    router=APIRouter(prefix='/api/v1/projects/{project_id}/workspace')
-    _routes(router,control)
-    presence_route(router,control)
+    router=APIRouter(prefix='/api/v1')
+    projects=APIRouter(prefix='/projects/{project_id}/workspace')
+    _routes(projects,control)
+    router.include_router(projects)
+
+    @router.get('/workspaces',response_model=dict[str,str])
+    async def statuses():
+        states=await control.runtime.workspaces()
+        return {p.id:states.get(p.id,'not_started') for p in control.kernel.list_projects()}
+
     return router
+
+
+async def start_workspace(control,project_id):
+    async with control.project_locks[project_id]:
+        control.kernel.get_project(project_id)
+        catalog=await control.runtime.catalog()
+        agent=control.profiles.get('research-assistant',catalog['default_model'])
+        return await control.runtime.workspace(project_id,'POST',agent['model'])
 
 
 def _routes(router,control):

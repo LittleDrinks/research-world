@@ -1,5 +1,12 @@
 import {test,expect} from '@playwright/test';
 
+const created=new WeakMap();
+test.afterEach(async({page,request})=>{
+  const id=created.get(page);if(!id)return;
+  await page.close();await request.post(`/api/v1/projects/${id}/workspace/stop`);
+  expect((await request.delete(`/api/v1/projects/${id}`)).status()).toBe(204);
+});
+
 async function createProject(page,name){
   await page.goto('/projects');
   await page.getByRole('button',{name:'新建项目',exact:true}).first().click();
@@ -7,6 +14,7 @@ async function createProject(page,name){
   await page.getByLabel('研究问题').fill('如何验证轨道长期稳定性？');
   await page.getByRole('button',{name:'创建项目',exact:true}).click();
   await expect(page).toHaveURL(/\/map/);
+  created.set(page,await page.evaluate(()=>localStorage.getItem('rw.active_project')));
   await expect(page.locator('.map-toolbar')).toBeVisible({timeout:90000});
 }
 
