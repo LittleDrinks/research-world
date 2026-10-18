@@ -54,7 +54,17 @@ jobs:
           docker compose up --build -d --wait
           cd web
           npx playwright install --with-deps chromium
-          RW_WORKSPACE_LIVE=1 npm test
+          RW_WORKSPACE_LIVE=1 npm test -- --grep-invert @graph-motion
+      - name: Graph bubble animation regression
+        working-directory: research-world/web
+        run: npm test -- --grep @graph-motion
+      - name: Upload browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-failure-evidence
+          path: research-world/web/test-results/
+          retention-days: 7
       - name: Workspace operation integration
         working-directory: runtime
         run: RW_DOCKER_TEST=1 uv run pytest -q tests/test_workspace_execution.py

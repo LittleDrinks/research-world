@@ -110,7 +110,7 @@
 .joint-node small{font-size:10px;color:var(--text-muted)}
 .joint-node.selected{box-shadow:0 0 0 4px color-mix(in oklab,var(--state-selected) 22%,transparent)}
 .signal-edge.polarity-joint .react-flow__edge-path{stroke:var(--state-selected)}
-.signal-edge.polarity-joint .signal-flow-path{display:none}
+.signal-edge.polarity-joint .signal-flow-path{stroke:var(--state-selected)}
 .joint-edge-label{position:absolute;padding:3px 7px;border:1px solid var(--line);border-radius:6px;background:var(--app-panel);color:var(--text-muted);font-size:11px;max-width:160px;overflow-wrap:anywhere}
 .map-view-switch{position:absolute;z-index:5;top:14px;left:14px;display:flex;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--app-panel);box-shadow:0 2px 6px rgb(16 24 40 / .05)}
 .map-view-switch button{border:0;border-radius:7px;padding:8px 12px;background:transparent;color:var(--text-muted);cursor:pointer}
