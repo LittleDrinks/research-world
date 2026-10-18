@@ -5,6 +5,7 @@ from kernel_contract import LocalMapQuery
 from pydantic import BaseModel, ConfigDict, StrictInt
 
 from .kernel_interface import KernelInterface
+from .joint_conditions import JointConditionRequest
 
 __all__ = ["kernel_graph_router"]
 
@@ -44,6 +45,7 @@ def kernel_graph_router(kernel: KernelInterface) -> APIRouter:
     _add_relation_routes(router, kernel)
     _add_local_map_route(router, kernel)
     _add_history_routes(router, kernel)
+    _add_joint_routes(router, kernel)
     return router
 
 
@@ -196,3 +198,15 @@ def _add_history_routes(router, kernel):
     @router.get('/api/v1/projects/{project_id}/revocations')
     def history(project_id: str):
         return _kernel_call(kernel.history, project_id)
+
+
+def _add_joint_routes(router, kernel):
+    path = '/api/v1/projects/{project_id}/joint-conditions'
+
+    @router.post(path, status_code=201)
+    def create(project_id: str, request: JointConditionRequest):
+        return _kernel_call(kernel.create_joint_condition, project_id, request.model_dump())
+
+    @router.get(path)
+    def list_all(project_id: str):
+        return _kernel_call(kernel.list_joint_conditions, project_id)
