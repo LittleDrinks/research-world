@@ -64,7 +64,7 @@ for(const existing of [false,true])test(`browser without secure-context UUID sen
     await expect(page.getByLabel('研究消息')).toBeVisible({timeout:90000});
     await page.getByLabel('研究消息').fill('验证普通HTTP发送');await page.getByLabel('研究消息').press('Control+Enter');
     await expect.poll(()=>message?.message_id).toMatch(/^\S+$/);
-  }finally{await request.delete('/api/v1/projects/'+project.id);}
+  }finally{await page.close();await request.post('/api/v1/projects/'+project.id+'/workspace/stop');await request.delete('/api/v1/projects/'+project.id);}
 });
 
 async function createProject(request,name){

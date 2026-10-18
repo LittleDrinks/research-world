@@ -12,10 +12,17 @@ class StartWorkspace(BaseModel):
 
 
 def workspace_router(runtime,workspaces):
-    router=APIRouter(prefix='/api/v1/runtime/projects/{project_id}')
-    _workspace_routes(router,workspaces)
-    _delete_route(router,runtime,workspaces)
-    _proxy_route(router,workspaces)
+    router=APIRouter(prefix='/api/v1/runtime')
+    projects=APIRouter(prefix='/projects/{project_id}')
+    _workspace_routes(projects,workspaces)
+    _delete_route(projects,runtime,workspaces)
+    _proxy_route(projects,workspaces)
+    router.include_router(projects)
+
+    @router.get('/workspaces',response_model=dict[str,str])
+    async def statuses():
+        return await _call(asyncio.to_thread(workspaces.statuses))
+
     return router
 
 

@@ -9,7 +9,7 @@
 .projects-page > main { width: min(1000px, calc(100% - 44px)); margin: 0 auto; padding: 30px 0 70px; }
 .projects-page > .error-toast { width: min(1000px, calc(100% - 44px)); max-width: none; margin: 16px auto 0; }
 .project-list { display: grid; gap: 10px; }
-.project-open { width: 100%; min-height: 92px; display: grid; grid-template-columns: minmax(240px, 1fr) 160px 112px 24px; align-items: center; gap: 18px; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--text); background: var(--surface-raised); text-align: left; cursor: pointer; transition: border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard); }
+.project-open { width: 100%; min-height: 92px; display: grid; grid-template-columns: minmax(0, 1fr) 70px 95px 20px; align-items: center; gap: 12px; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--text); background: var(--surface-raised); text-align: left; cursor: pointer; transition: border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard); }
 .project-row:hover { border-color: var(--line-strong); box-shadow: 0 4px 14px rgb(16 24 40 / .07); }
 .project-row.active { border-color: color-mix(in oklab, var(--state-selected) 55%, var(--line)); box-shadow: 0 0 0 3px color-mix(in oklab, var(--state-selected) 18%, transparent); }
 .project-name { min-width: 0; }
@@ -36,3 +36,11 @@
 .project-row{display:flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface-raised)}
 .project-row .project-open{flex:1;min-width:0;border:0;background:transparent;box-shadow:none}
 .project-delete{flex:none;margin-right:14px;color:var(--state-failed)}
+.project-workspace{flex:none;min-width:132px;display:flex;flex-direction:column;align-items:flex-start;gap:7px;padding:10px 12px}
+.workspace-state{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)}
+.workspace-state svg{fill:currentColor;color:inherit}.workspace-state[data-state="ready"]{color:var(--state-completed,#18864b)}
+.workspace-state[data-state="running"],.workspace-state[data-state="created"],.workspace-state[data-state="restarting"]{color:var(--state-running,#ae760b)}
+.workspace-state[data-state="unknown"],.workspace-state[data-state="unhealthy"]{color:var(--state-failed)}
+.workspace-stop.button{min-height:28px;padding:4px 8px;font-size:12px;gap:5px}.workspace-stop svg{color:inherit}
+.workspace-stop-error{color:var(--state-failed);font-size:12px;max-width:220px;overflow-wrap:anywhere}
+@media(max-width:700px){.project-row{display:grid;grid-template-columns:minmax(0,1fr) auto}.project-row .project-open{grid-column:1/-1}.project-workspace{flex-direction:row;align-items:center;flex-wrap:wrap;padding:0 18px 14px}.project-delete{grid-column:2;grid-row:2;margin-bottom:14px}}
