@@ -1,0 +1,20 @@
+{
+  "project": "project:21ccb677e9dd256aa70d5186",
+  "case": "q049 v8",
+  "rules": [
+    {
+      "id": "joint:cb5b3d300c5b75160f6cc320",
+      "rule": "AND"
+    },
+    {
+      "id": "joint:d52b0a199e20f5eedef2fe66",
+      "rule": "OR"
+    },
+    {
+      "id": "joint:1ee54c52a3051fb5db20f103",
+      "rule": "k-of-N"
+    }
+  ],
+  "newScientificExperiments": false,
+  "mobileOverflow": false
+}
