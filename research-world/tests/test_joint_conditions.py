@@ -113,3 +113,21 @@ async def test_agent_tool_reaches_real_http_validation(setup, monkeypatch):
         await bridge.invoke(token, 'joint_condition', request | {'rule': 'unbounded-meaning'})
     with pytest.raises(PermissionError):
         await bridge.invoke(token, 'record', {})
+
+
+def test_all_conditions_remain_discoverable_after_all_members_are_revoked(setup):
+    kernel, project, records, request, client = setup
+    for number in range(21):
+        kernel.create_joint_condition(project.id, request | {'title': f'condition {number}'})
+    path = f'/api/v1/projects/{project.id}/local-map'
+    selected = client.post(path, json={'record_id': records[2].id, 'limit': 50}).json()
+    assert len(selected['joint_conditions']) == 21
+    for record in records:
+        kernel.remove_record(project.id, record.id)
+    result = client.post(path, json={'limit': 50}).json()
+    assert result['records'] == []
+    assert len(result['joint_conditions']) == 21
+    assert all(len(c['unavailable_ids']) == 3 for c in result['joint_conditions'])
+    assert result['artifacts'][0]['id'] == request['evidence'][0]['artifact_id']
+    searched = client.post(path, json={'text': 'condition 20', 'limit': 1}).json()
+    assert len(searched['joint_conditions']) == 1

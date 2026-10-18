@@ -69,4 +69,10 @@ async function checkRevocation(page,request,fixture) {
   await expect(page.locator('.joint-inspector')).toContainText('部分研究对象已撤销');
   await expect(page.locator('.joint-inspector')).toContainText('研究对象已撤销');
   await expect(page.locator('.joint-inspector .joint-record-link').first()).toContainText('目标解释');
+  for(const record of fixture.records.slice(1)) await request.delete(`${fixture.root}/records/${record.id}`);
+  await page.reload();
+  await expect(page.locator('.joint-node')).toHaveCount(3);
+  await expect(page.locator('.joint-inspector')).toContainText('部分研究对象已撤销');
+  await page.getByRole('button',{name:'条件列表 · 3'}).click();
+  await expect(page.locator('.joint-list .joint-list-item')).toHaveCount(3);
 }

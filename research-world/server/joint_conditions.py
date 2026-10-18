@@ -83,17 +83,26 @@ def list_conditions(kernel, project_id):
 
 def condition_view(row, active):
     content = json.loads(row['content'])
-    ids = [content['target_id'], *(m['record_id'] for m in content['members'])]
+    ids = referenced_ids(content)
     return {'id': row['id'], 'project_id': row['project_id'], **content,
             'created_at': row['created_at'], 'unavailable_ids': [i for i in ids if i not in active]}
 
 
+def referenced_ids(condition):
+    return [condition['target_id'], *(m['record_id'] for m in condition['members'])]
+
+
+def matches_condition(condition, ids, query):
+    if query.text is None and query.record_id is None:
+        return True
+    return bool(ids.intersection(referenced_ids(condition)) or
+                (query.text and query.text.casefold() in json.dumps(condition, ensure_ascii=False).casefold()))
+
+
 def local_conditions(kernel, project_id, records, query):
     ids = {r.id for r in records}
-    conditions = [c for c in list_conditions(kernel, project_id)
-                  if ids.intersection([c['target_id'], *(m['record_id'] for m in c['members'])])
-                  or (query.text and query.text.casefold() in json.dumps(c, ensure_ascii=False).casefold())][:20]
-    related = {i for c in conditions for i in [c['target_id'], *(m['record_id'] for m in c['members'])]}
+    conditions = [c for c in list_conditions(kernel, project_id) if matches_condition(c, ids, query)]
+    related = {i for c in conditions for i in referenced_ids(c)}
     records = (*records, *(r for r in kernel.list_records(project_id) if r.id in related - ids))
     return records, tuple(conditions)
 
