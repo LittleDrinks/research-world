@@ -17,7 +17,7 @@ export function WorkspaceFilePage(){
     return()=>{current=false;};
   },[projectId,path,loading,attempt]);
   return <section className="workspace-page"><h1>打开工作区文件</h1><p>{path}</p>
-    {error?<><p role="alert">{error}</p><button className="button secondary" onClick={()=>setAttempt(n=>n+1)}>重试</button><a className="button secondary" href="/workspace">返回工作区</a></>:<p role="status">正在准备工作区并打开编辑器…</p>}
+    {error?<><p role="alert">{error}</p><button className="button secondary" onClick={()=>setAttempt(n=>n+1)}>重试</button><a className="button secondary" href="/map">返回项目</a></>:<p role="status">正在准备工作区并打开编辑器…</p>}
   </section>;
 }
 

@@ -1,9 +1,9 @@
-import { Activity, Bot, FlaskConical, LogOut, Map, Menu, MessagesSquare, Settings, X } from "lucide-react";
+import { Activity, Bot, ExternalLink, FlaskConical, LogOut, Map, Menu, MessagesSquare, Settings, X } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useWorld } from "../context/WorldContext";
 import { RecordList } from "./RecordList";
-import { WorkspaceReady } from "../context/WorkspaceContext";
+import { useWorkspace, WorkspaceReady } from "../context/WorkspaceContext";
 
 
 export const MODULES = [
@@ -30,7 +30,19 @@ function Brand() {
 
 function ModuleNav({ close }) {
   return <nav className="module-nav">{MODULES.map(([to, label, Icon]) =>
-    <NavLink key={to} to={to} onClick={close} end={false}><Icon size={17} /><span>{label}</span></NavLink>)}</nav>;
+    to === "/workspace" ? <WorkspaceLink key={to} close={close} /> :
+      <NavLink key={to} to={to} onClick={close} end={false}><Icon size={17} /><span>{label}</span></NavLink>)}</nav>;
+}
+
+
+function WorkspaceLink({ close }) {
+  const { state } = useWorkspace();
+  const ready = state.status === "ready";
+  return <a href={ready ? state.url : undefined} role="link" aria-disabled={!ready} tabIndex={ready ? 0 : -1}
+    target="_blank" rel="noopener noreferrer" onClick={ready ? close : undefined}
+    title={ready ? "在新标签页打开 JupyterLab" : "工作区尚未就绪"}>
+    <FlaskConical size={17} aria-hidden="true" /><span>实验工作区</span>
+    <ExternalLink className="workspace-external" size={14} aria-hidden="true" /></a>;
 }
 
 
