@@ -17,20 +17,23 @@ async function graphFixture(page) {
   await expect(page.locator('.signal-flow-path')).toHaveCount(12);
 }
 
+function bubbleAppearance(node) {
+  let opacity=1;
+  for(let parent=node;parent;parent=parent.parentElement) {
+    const style=getComputedStyle(parent);
+    if(style.display==='none'||style.visibility==='hidden') return {visible:false};
+    opacity*=Number(style.opacity);
+  }
+  const style=getComputedStyle(node), dashes=style.strokeDasharray.split(/[ ,]+/).map(parseFloat);
+  return {visible:opacity>0 && style.stroke!=='none' && parseFloat(style.strokeWidth)>0 && node.getTotalLength()>0
+    && style.strokeLinecap==='round' && dashes.length>=2 && dashes[1]>0,
+    color:style.stroke,edgeColor:getComputedStyle(node.parentElement.querySelector('.react-flow__edge-path')).stroke};
+}
+
 async function expectMovingBubble(path) {
-  const visible=await path.evaluate(node=>{
-    let opacity=1;
-    for(let parent=node;parent;parent=parent.parentElement) {
-      const style=getComputedStyle(parent);
-      if(style.display==='none'||style.visibility==='hidden') return false;
-      opacity*=Number(style.opacity);
-    }
-    const style=getComputedStyle(node);
-    const dashes=style.strokeDasharray.split(/[ ,]+/).map(parseFloat);
-    return opacity>0 && style.stroke!=='none' && parseFloat(style.strokeWidth)>0 && node.getTotalLength()>0
-      && style.strokeLinecap==='round' && dashes.length>=2 && dashes[1]>0;
-  });
-  expect(visible,`气泡不可见：${path}`).toBeTruthy();
+  const appearance=await path.evaluate(bubbleAppearance);
+  expect(appearance.visible,`气泡不可见：${path}`).toBeTruthy();
+  expect(appearance.color,`气泡与边的语义颜色不一致：${path}`).toBe(appearance.edgeColor);
   const offset=()=>path.evaluate(node=>getComputedStyle(node).strokeDashoffset);
   const before=await offset();
   await expect.poll(offset,{message:'气泡必须沿边移动，不能只保留静态路径',timeout:3000}).not.toBe(before);

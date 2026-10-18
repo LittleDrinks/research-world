@@ -1,4 +1,5 @@
 import { Position } from "@xyflow/react";
+import { layoutComponents } from "./packComponents.js";
 
 
 export const NODE_WIDTH = 280;
@@ -13,7 +14,8 @@ function handlePoints(node) {
   return [[Position.Top,width/2,0],[Position.Right,width,height/2],[Position.Bottom,width/2,height],[Position.Left,0,height/2]];
 }
 const OPTIONS = { "elk.algorithm": "layered", "elk.direction": "RIGHT", "elk.edgeRouting": "ORTHOGONAL",
-  "elk.partitioning.activate": "true", "elk.separateConnectedComponents": "false",
+  "elk.partitioning.activate": "false", "elk.separateConnectedComponents": "true",
+  "elk.spacing.componentComponent": "100",
   "elk.spacing.nodeNode": "76", "elk.spacing.edgeNode": "32",
   "elk.layered.spacing.nodeNodeBetweenLayers": "150", "elk.layered.spacing.edgeNodeBetweenLayers": "32",
   "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX", "elk.layered.crossingMinimization.strategy": "LAYER_SWEEP" };
@@ -35,11 +37,11 @@ function ports(node){
     layoutOptions:{'elk.port.side':sides[side]}}));
 }
 
-function inputGraph(nodes, edges) {
+function inputGraph(nodes, edges, aspectRatio) {
   const nodeMap=new Map(nodes.map(node=>[node.id,node]));
-  return {id:'research-graph',layoutOptions:{...OPTIONS,'elk.partitioning.activate':String(!nodes.some(n=>n.kind==='joint'))},
+  return {id:'research-graph',layoutOptions:{...OPTIONS,'elk.aspectRatio':String(aspectRatio)},
     children:nodes.map(node=>({id:node.id,...dimensions(node),ports:ports(node),
-      layoutOptions:{'elk.partitioning.partition':String(KIND_ORDER.indexOf(node.kind)),'elk.portConstraints':'FIXED_POS'}})),
+      layoutOptions:{'elk.portConstraints':'FIXED_POS'}})),
     edges:validEdges(edges,nodeMap)};
 }
 
@@ -61,9 +63,9 @@ function edgeRoutes(edges) {
 }
 
 
-export async function layoutGraph(nodes, edges) {
+export async function layoutGraph(nodes, edges, aspectRatio = 1.3) {
   if (!nodes.length) return { nodes: [], routes: new Map() };
-  const result = await (await engine()).layout(inputGraph(nodes, edges));
+  const result = await layoutComponents(await engine(), inputGraph(nodes, edges, aspectRatio), nodes, edges, aspectRatio);
   return { nodes: result.children.map(child => flowNode(child, nodes.find(node => node.id === child.id))), routes: edgeRoutes(result.edges) };
 }
 

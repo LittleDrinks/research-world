@@ -47,7 +47,8 @@
 .signal-flow-path { pointer-events: none; stroke: var(--text-faint); stroke-width: 8; opacity: .82; }
 .signal-edge.polarity-supports .signal-flow-path { stroke: var(--state-success); }
 .signal-edge.polarity-refutes .signal-flow-path { stroke: var(--state-failed); }
-.signal-edge.incident .signal-flow-path { stroke: var(--state-selected); stroke-width: 10; opacity: 1; }
+.signal-edge.incident .signal-flow-path { stroke-width: 10; opacity: 1; }
+.signal-edge.incident.polarity-depends_on .signal-flow-path { stroke: var(--state-selected); }
 
 /* —— 检查器 —— */
 .inspector { display: block; min-width: 0; min-height: 0; overflow-y: auto; border-left: 1px solid var(--line); background: var(--app-panel); }
@@ -120,3 +121,7 @@
 .joint-warning{color:var(--state-failed);font-size:13px}.joint-evidence{border-left:3px solid var(--line);padding-left:12px;margin:12px 0}.joint-evidence a{color:var(--state-selected);font-size:13px}
 .joint-list{height:100%;overflow:auto;padding:76px 24px 24px;box-sizing:border-box}.joint-list-item{display:flex;align-items:center;gap:12px;width:100%;padding:14px;margin:8px 0;border:1px solid var(--line);border-radius:12px;background:var(--surface-raised);color:var(--text-strong);text-align:left;cursor:pointer}
 .joint-list-item>span:last-child{min-width:0;overflow-wrap:anywhere}.joint-list-item small{display:block;margin-top:4px;color:var(--text-muted)}.joint-badge{flex-shrink:0;min-width:46px;padding:6px;border-radius:8px;text-align:center;font:600 12px 'Geist Mono',monospace;background:var(--surface-overlay);color:var(--state-selected)}
+
+.graph-legend{position:absolute;z-index:5;right:14px;top:16px;display:flex;gap:12px;padding:8px 10px;background:var(--app-panel);border:1px solid var(--line);border-radius:9px;font-size:11px;color:var(--text-muted)}
+.graph-legend span{display:flex;align-items:center;gap:5px}.graph-legend span::before{content:'';width:14px;border-top:2px solid var(--text-faint)}.graph-legend .supports::before{border-color:var(--state-success)}.graph-legend .refutes::before{border-color:var(--state-failed);border-top-style:dashed}
+@media(max-width:600px){.graph-legend{top:66px;right:12px}}

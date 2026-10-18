@@ -30,11 +30,12 @@ function edgeClass(data) {
 
 export function SignalEdge(props) {
   const path = edgePath(props);
+  const label = props.data?.role || {supports:'支持',refutes:'反驳',depends_on:'依赖'}[props.data?.polarity];
   const duration = props.data?.active ? "1.25s" : "2s";
   return <><g className={edgeClass(props.data)} data-source={props.source} data-target={props.target}>
     <BaseEdge id={props.id} path={path} style={props.style} markerEnd={props.markerEnd} />
     <path className="signal-flow-path" d={path} fill="none" strokeLinecap="round" strokeDasharray="0 60" strokeDashoffset="60" aria-hidden="true">
       <animate attributeName="stroke-dashoffset" from="60" to="0" dur={duration} calcMode="linear" repeatCount="indefinite" />
     </path>
-  </g>{props.data?.role && props.data.incident && <EdgeLabelRenderer><span className="joint-edge-label" style={{transform:`translate(-50%, -50%) translate(${(props.sourceX+props.targetX)/2}px, ${(props.sourceY+props.targetY)/2}px)`}}>{props.data.role}</span></EdgeLabelRenderer>}</>;
+  </g>{label && (props.data.incident || props.data.polarity === 'refutes') && <EdgeLabelRenderer><span className="joint-edge-label" style={{transform:`translate(-50%, -50%) translate(${(props.sourceX+props.targetX)/2}px, ${(props.sourceY+props.targetY)/2}px)`}}>{label}</span></EdgeLabelRenderer>}</>;
 }
