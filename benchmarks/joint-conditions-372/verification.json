@@ -1,0 +1,14 @@
+{
+  "code_commit": "332cb50fc6ec7ace6debcf3482d5d013304956ca",
+  "backend_tests_passed": 199,
+  "latest_browser_tests_passed": 10,
+  "browser_scope": [
+    "graph layout and route endpoints",
+    "joint-condition public API and browser",
+    "workspace lifecycle",
+    "bubble visibility, movement, semantic colors, reduced motion"
+  ],
+  "paid_model_run": false,
+  "audit_reports_are_artifacts": true,
+  "demo_contains_new_scientific_results": false
+}
