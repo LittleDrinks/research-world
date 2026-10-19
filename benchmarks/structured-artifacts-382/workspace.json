@@ -1,0 +1,16 @@
+{
+  "project_id": "project:21ccb677e9dd256aa70d5186",
+  "record_id": "record:fb2e6a198871a92fbfcf0bfb",
+  "schema_id": "artifact:c914bfe207221b0d0b747a3af468d76f3e358e63e17a0a23d39d1eb098a6eb70",
+  "artifact_id": "artifact:5d9f5c6c635dfe9165cecafe04474114d2136bde7f21293e32414f2cf5ef680e",
+  "preview": "http://localhost:8095/projects/project%3A21ccb677e9dd256aa70d5186/artifacts/artifact%3A5d9f5c6c635dfe9165cecafe04474114d2136bde7f21293e32414f2cf5ef680e",
+  "workspace_path": "reports/q049-audit-382.json",
+  "workspace_capture_id": "artifact:5d9f5c6c635dfe9165cecafe04474114d2136bde7f21293e32414f2cf5ef680e",
+  "validate": {
+    "valid": true
+  },
+  "escape_status": 422,
+  "target_mismatch_status": 422,
+  "reading_chars": 624,
+  "limit": 5000
+}

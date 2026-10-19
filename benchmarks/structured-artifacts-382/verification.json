@@ -1,0 +1,27 @@
+{
+  "issue": 382,
+  "code_head": "a39bd1a531df4efa15b30b4c6530ae5e3cf6d581",
+  "backend": {
+    "passed": 217,
+    "new_document_tests": 18
+  },
+  "runtime": {
+    "passed": 246,
+    "skipped": 12,
+    "docker_file_capture_passed": 1
+  },
+  "browser": {
+    "passed": 15,
+    "suites": [
+      "artifact-documents",
+      "chat-markdown",
+      "chat-presentation",
+      "chat-math"
+    ],
+    "q049_mobile_overflow": false,
+    "q049_formula_count": 1
+  },
+  "agent_transport": "422 schema error paths preserved by real bridge-request.mjs with MockAgent",
+  "demo": "Historical V3/review-v3 presentation only; no new scientific execution or independent audit",
+  "review": "pending"
+}
