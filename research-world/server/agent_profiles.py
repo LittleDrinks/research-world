@@ -29,7 +29,21 @@ class AgentProfiles:
         return values
 
     def get(self, agent_id, default_model):
-        return next(value for value in self.list(default_model) if value['id'] == agent_id)
+        value = next((value for value in self.list(default_model) if value['id'] == agent_id), None)
+        if value is None:
+            raise KeyError(agent_id)
+        return value
+
+    def delete(self, agent_id):
+        if not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,63}', agent_id):
+            raise ValueError('Agent 标识无效')
+        if agent_id == 'research-assistant':
+            raise ValueError('内置研究助手不能删除')
+        path = self.root / f'{agent_id}.json'
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            raise KeyError(agent_id) from None
 
     def save(self, value):
         value = validate_profile(value)

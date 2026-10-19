@@ -1,26 +1,34 @@
 import '../settings.css';
 import {useEffect, useState} from 'react';
-import {useParams} from 'react-router-dom';
+import {useNavigate,useParams} from 'react-router-dom';
 import {agents, catalog, saveAgent} from '../sessionApi';
 import {useWorld} from '../context/WorldContext';
+import {DeleteAgent} from '../components/DeleteAgent';
 import '../agents.css';
 
-export function AgentsPage() {
-  const {agentId} = useParams();
+function useAgentEditor() {
+  const {agentId} = useParams(),navigate=useNavigate();
   const {refresh, setError} = useWorld();
   const [values,setValues] = useState([]), [options,setOptions] = useState(null), [draft,setDraft] = useState(null);
-  useEffect(() => {Promise.all([agents(),catalog()]).then(([a,c]) => {
-    setValues(a);setOptions(c);setDraft(a.find(v=>v.id===agentId)||a[0]);
-  }).catch(e=>setError(e.message));},[agentId]);
+  useEffect(() => {let active=true;Promise.all([agents(),catalog()]).then(([a,c]) => {
+    if(!active)return;setValues(a);setOptions(c);setDraft(a.find(v=>v.id===(agentId||'research-assistant'))||a.find(v=>v.id==='research-assistant'));
+  }).catch(e=>{if(active)setError(e.message);});return()=>{active=false;};},[agentId]);
   async function save(event) {
     event.preventDefault();
-    try {const value=await saveAgent(draft);setDraft(value);setValues(await agents());await refresh();setError('');}
+    try {const value=await saveAgent(draft);setDraft(value);setValues(await agents());await refresh();setError('');navigate('/agents/'+value.id,{replace:true});}
     catch(e){setError(e.message);}
   }
+  const removed=()=>{navigate('/agents/research-assistant',{replace:true});refresh().catch(e=>setError(e.message));};
+  return {values,options,draft,setDraft,save,navigate,removed};
+}
+
+export function AgentsPage(){
+  const {values,options,draft,setDraft,save,navigate,removed}=useAgentEditor();
   if(!draft||!options) return <p>正在载入 Pi 配置…</p>;
   return <section className="settings-page"><h1>Agent · Pi</h1>
-    <select aria-label="选择 Agent" value={values.some(v=>v.id===draft.id)?draft.id:''} onChange={e=>setDraft(values.find(v=>v.id===e.target.value))}>{values.map(v=><option key={v.id} value={v.id}>{v.name}</option>)}</select>
+    <div className="agent-profile-actions"><select aria-label="选择 Agent" value={values.some(v=>v.id===draft.id)?draft.id:''} onChange={e=>navigate('/agents/'+e.target.value)}>{!values.some(v=>v.id===draft.id)&&<option value="">未保存的配置</option>}{values.map(v=><option key={v.id} value={v.id}>{v.name}</option>)}</select>
     <button className="button secondary" onClick={()=>setDraft({...draft,id:`agent-${Date.now()}`,name:'新研究 Agent'})}>复制为新 Agent</button>
+    <DeleteAgent key={draft.id} agent={draft} saved={values.some(v=>v.id===draft.id)} onDeleted={removed}/></div>
     <AgentForm draft={draft} patch={(key,value)=>setDraft({...draft,[key]:value})} options={options} save={save}/></section>;
 }
 

@@ -1,7 +1,9 @@
 import {test,expect} from '@playwright/test';
 
 const created=new WeakMap();
+const createdAgents=new WeakMap();
 test.afterEach(async({page,request})=>{
+  const agent=createdAgents.get(page);if(agent)expect([204,404]).toContain((await request.delete(`/api/v1/agents/${agent}`)).status());
   const id=created.get(page);if(!id)return;
   await page.close();await request.post(`/api/v1/projects/${id}/workspace/stop`);
   expect((await request.delete(`/api/v1/projects/${id}`)).status()).toBe(204);
@@ -62,7 +64,9 @@ async function saveCopiedAgent(page) {
   await page.getByRole('button',{name:'复制为新 Agent'}).click();
   const name=`浏览器配置验收 ${Date.now()}`;
   await page.getByLabel('名称',{exact:true}).fill(name);
+  const saving=page.waitForRequest(r=>r.method()==='PUT'&&r.url().includes('/api/v1/agents/')).then(r=>createdAgents.set(page,r.postDataJSON().id));
   await page.getByRole('button',{name:'保存 Agent',exact:true}).click();
+  await saving;
   await expect(page.getByRole('option',{name,exact:true})).toHaveCount(1);
   await page.reload();
   await expect(page.getByLabel('选择 Agent')).toBeVisible({timeout:90000});
@@ -88,7 +92,9 @@ test('selecting a graph node keeps the other records visible',async({page,reques
   await page.locator('.react-flow__node').filter({hasText:'方向乙'}).click();
   await expect(page.locator('.react-flow__node')).toHaveCount(2);
   await expect(page.locator('.inspector h1')).toHaveText('方向乙');
-  await expect(page.locator('.inspector strong')).toHaveText('待验证');
+  await expect(page.locator('.inspector .record-workspace')).toHaveCount(0);
+  const recordLink=await page.locator('.inspector .record-open').getAttribute('href');await page.goto(recordLink);
+  await expect(page.locator('.research-record-page .node-body strong')).toHaveText('待验证');
 });
 
 test('new conversation stays a draft until sending',async({page,request})=>{

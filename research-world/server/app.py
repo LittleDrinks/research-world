@@ -59,6 +59,7 @@ def _errors(app):
 
 
 def _agent_routes(app, runtime, profiles):
+    _agent_removal(app, profiles)
     @app.get('/api/v1/runtime/catalog')
     async def catalog():
         return await runtime.catalog()
@@ -74,6 +75,13 @@ def _agent_routes(app, runtime, profiles):
             raise ValueError('Agent id 不匹配')
         await runtime.validate(value)
         return profiles.save(value)
+
+
+def _agent_removal(app, profiles):
+    @app.delete('/api/v1/agents/{agent_id}', status_code=204)
+    def remove(agent_id: str):
+        profiles.delete(agent_id)
+        return Response(status_code=204)
 
 
 def _project_routes(app, kernel, runtime):

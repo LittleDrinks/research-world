@@ -60,5 +60,19 @@
       "ensemble"
     ],
     "model_calls": 0
+  },
+  "agent_deletion": {
+    "backend_passed": 14,
+    "browser_passed": 4,
+    "real_model_calls": 0,
+    "checks": [
+      "cancel",
+      "failure preserves configuration",
+      "delete and reload",
+      "sidebar and selector refresh",
+      "built-in profile protection",
+      "existing session snapshot preserved",
+      "test-created profile cleanup"
+    ]
   }
 }

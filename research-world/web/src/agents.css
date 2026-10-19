@@ -67,3 +67,4 @@
 }
 
 .pi-capabilities{border:1px solid var(--line);border-radius:8px;padding:12px}.pi-capabilities>div{max-height:220px;overflow-y:auto;display:grid;gap:8px}.pi-capabilities input{margin-right:8px}.settings-page>.button{margin-left:12px}.settings-page>.form-stack{margin-top:20px}
+.agent-profile-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.agent-profile-actions select{min-width:0;max-width:100%;flex:1}.agent-delete{color:var(--state-failed)}.agent-delete:disabled{opacity:.5;cursor:not-allowed}
