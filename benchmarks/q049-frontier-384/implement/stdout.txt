@@ -1,0 +1,61 @@
+=== q049 地球-太阳孤立圆轨道 GW 计算（本脚本实际运行输出）===
+{
+  "timestamp_utc": "2026-10-19T13:11:22.103545Z",
+  "inputs": {
+    "G": 6.6743e-11,
+    "c": 299792458.0,
+    "M_sun_kg": 1.98847e+30,
+    "M_earth_kg": 5.9722e+24,
+    "a_m": 149597870700.0,
+    "a_AU": 1.0,
+    "eccentricity": 0.0,
+    "units": "SI (m, kg, s, W)"
+  },
+  "results": {
+    "P_gw_W": 196.29055998241506,
+    "E_orb_J": -2.64913263187496e+33,
+    "t_energy_s": 1.349597572146254e+31,
+    "t_energy_yr": 4.276616637977077e+23,
+    "t_merge_s": 3.3739939303656355e+30,
+    "t_merge_yr": 1.0691541594942694e+23,
+    "da_dt_m_per_s": -1.1084628024492938e-20,
+    "da_dt_AU_per_yr": -2.338297033968e-24
+  },
+  "comparisons": {
+    "sun_MS_remaining_life_yr": 5000000000.0,
+    "ratio_t_merge_over_sun_life": 21383083189885.387,
+    "note": "GW并合时间比太阳主序剩余寿命长约1e13量级"
+  }
+}
+
+关键数值（核对用）:
+  P_gw        = 196.3 W        （文献量级 ~200 W，一致）
+  t_merge     = 3.374e+30 s = 1.069e+23 yr
+  t_energy    = 4.277e+23 yr
+  da/dt       = -1.108e-20 m/s = -2.338e-24 AU/yr
+  t_merge/太阳剩余主序寿命 ≈ 2.14e+13
+
+=== 诊断示例（输入为显式标记的fixture，非真实论文提取结果）===
+{
+  "fixture": "FIXTURE-META-ONLY-2024",
+  "status": "warning",
+  "label": "need-info",
+  "message": "缺少全文，仅能核验书目元数据；无法核验文内公式、常数或数据。",
+  "action": "获取全文后重新提取，不得以摘要代替全文。"
+}
+{
+  "models": [
+    "FIXTURE-MODEL-A",
+    "FIXTURE-MODEL-B"
+  ],
+  "status": "not-comparable-yet",
+  "label": "need-grill",
+  "differing_assumptions": [
+    "eccentricity",
+    "system"
+  ],
+  "message": "两模型在假设层面不一致，结果差异不能解释为矛盾或科学反驳。",
+  "action": "先对齐假设（或做同假设重算），再比较数值。"
+}
+
+诊断断言全部通过（缺全文->need-info；假设不同->need-grill，无科学反驳输出）。

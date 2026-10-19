@@ -1,0 +1,42 @@
+[
+  {
+    "file": "nist_G.html",
+    "url": "https://physics.nist.gov/cgi-bin/cuu/Value?bg",
+    "final_url": "https://physics.nist.gov/cgi-bin/cuu/Value?bg",
+    "bytes": 8355,
+    "content_type": "text/html",
+    "status": "downloaded"
+  },
+  {
+    "file": "iau2015_B3.pdf",
+    "url": "https://www.iau.org/static/resolutions/IAU2015_English.pdf",
+    "status": "failed",
+    "error": "HTTP Error 404: Not Found"
+  },
+  {
+    "file": "iau2012_B2.pdf",
+    "url": "https://www.iau.org/static/resolutions/IAU2012_English.pdf",
+    "status": "failed",
+    "error": "HTTP Error 404: Not Found"
+  },
+  {
+    "file": "peters1964.pdf",
+    "url": "https://articles.adsabs.harvard.edu/pdf/1964PhRv..136.1224P",
+    "status": "failed",
+    "error": "HTTP Error 403: Forbidden"
+  },
+  {
+    "file": "iau2015_nominal.pdf",
+    "url": "https://arxiv.org/pdf/1510.07674",
+    "final_url": "https://arxiv.org/pdf/1510.07674",
+    "bytes": 39218,
+    "content_type": "application/pdf",
+    "status": "downloaded"
+  },
+  {
+    "file": "gravitational_wave.html",
+    "url": "https://en.wikipedia.org/wiki/Gravitational_wave",
+    "status": "failed",
+    "error": "<urlopen error timed out>"
+  }
+]

@@ -1,0 +1,41 @@
+MODEL: isolated circular constant-mass point-particle binary; leading quadrupole, adiabatic energy balance
+INPUTS (nominal GM values are exact conversion factors, not exact physical measurements):
+G = 6.674300000000e-11 m^3 kg^-1 s^-2
+G_standard_uncertainty = 1.500000000000e-15 m^3 kg^-1 s^-2
+c = 2.997924580000e+08 m s^-1
+a_relative = 1.495978707000e+11 m
+GM_Sun_nominal = 1.327124400000e+20 m^3 s^-2
+GM_Earth_nominal = 3.986004000000e+14 m^3 s^-2
+Julian_year = 3.155760000000e+07 s
+RESULTS (extra printed digits are arithmetic reproducibility, not physical accuracy):
+m_Sun_model = 1.988409870698e+30 kg
+m_Earth_model = 5.972167867791e+24 kg
+reduced_mass = 5.972149930503e+24 kg
+orbital_angular_frequency = 1.990986664401e-07 rad s^-1
+orbital_period = 1.000017384977e+00 Julian yr
+relative_speed_over_c = 9.935118700900e-05 dimensionless
+GM_total_over_a_c_squared = 9.870658360097e-09 dimensionless
+binding_energy = -2.649038272121e+33 J
+GW_power_mass_formula = 1.962706416517e+02 W
+GW_power_tensor_contraction = 1.962706416517e+02 W
+GW_power_GM_formula = 1.962706416517e+02 W
+initial_da_dt = -1.108389802481e-20 m s^-1
+initial_da_per_Julian_year = -3.497812203078e-13 m yr^-1
+formal_Peters_time = 3.374216145915e+30 s
+formal_Peters_time_years = 1.069224575353e+23 Julian yr
+formal_time_quadrature = 3.374216145915e+30 s
+local_energy_over_power = 1.349686458366e+31 s
+local_a_over_abs_adot = 1.349686458366e+31 s
+local_timescale_years = 4.276898301411e+23 Julian yr
+fractional_energy_loss_per_orbit = 2.338183689443e-24 dimensionless
+CHECK quadrupole_tensor_vs_mass_formula: PASS
+CHECK GM_vs_mass_power: PASS
+CHECK GM_vs_mass_time: PASS
+CHECK time_integral_vs_Peters_circular: PASS
+CHECK energy_balance: PASS
+CHECK local_timescale_is_four_times_formal_time: PASS
+CHECKS are internal arithmetic/model consistency only, not observational validation or independent verification of GR.
+Fixed nominal GM inputs imply P proportional to 1/G and formal t independent of G; do not propagate derived kg masses as independent inputs.
+No primary Peters full text was accessed. No real-system fate or detection claim is made.
+REPORT_SCHEMA: PASS (required keys, array limits, string scalar fields, summary <=300 Chinese characters)
+WROTE result.json and result.md

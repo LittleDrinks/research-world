@@ -1,0 +1,11 @@
+{
+  "artifact": {
+    "id": "artifact:ca8d63fbd81cc52ca54fd6776593d1e577f5c616bfe63385edf3113c1ba8a790",
+    "project_id": "project:ad1d591090135edaaf50748b",
+    "sha256": "ca8d63fbd81cc52ca54fd6776593d1e577f5c616bfe63385edf3113c1ba8a790",
+    "media_type": "text/plain",
+    "size": 2011,
+    "created_at": "2026-10-19T13:17:50.204214+00:00"
+  },
+  "text": "=== q049 地球-太阳孤立圆轨道 GW 计算（本脚本实际运行输出）===\n{\n  \"timestamp_utc\": \"2026-10-19T13:11:22.103545Z\",\n  \"inputs\": {\n    \"G\": 6.6743e-11,\n    \"c\": 299792458.0,\n    \"M_sun_kg\": 1.98847e+30,\n    \"M_earth_kg\": 5.9722e+24,\n    \"a_m\": 149597870700.0,\n    \"a_AU\": 1.0,\n    \"eccentricity\": 0.0,\n    \"units\": \"SI (m, kg, s, W)\"\n  },\n  \"results\": {\n    \"P_gw_W\": 196.29055998241506,\n    \"E_orb_J\": -2.64913263187496e+33,\n    \"t_energy_s\": 1.349597572146254e+31,\n    \"t_energy_yr\": 4.276616637977077e+23,\n    \"t_merge_s\": 3.3739939303656355e+30,\n    \"t_merge_yr\": 1.0691541594942694e+23,\n    \"da_dt_m_per_s\": -1.1084628024492938e-20,\n    \"da_dt_AU_per_yr\": -2.338297033968e-24\n  },\n  \"comparisons\": {\n    \"sun_MS_remaining_life_yr\": 5000000000.0,\n    \"ratio_t_merge_over_sun_life\": 21383083189885.387,\n    \"note\": \"GW并合时间比太阳主序剩余寿命长约1e13量级\"\n  }\n}\n\n关键数值（核对用）:\n  P_gw        = 196.3 W        （文献量级 ~200 W，一致）\n  t_merge     = 3.374e+30 s = 1.069e+23 yr\n  t_energy    = 4.277e+23 yr\n  da/dt       = -1.108e-20 m/s = -2.338e-24 AU/yr\n  t_merge/太阳剩余主序寿命 ≈ 2.14e+13\n\n=== 诊断示例（输入为显式标记的fixture，非真实论文提取结果）===\n{\n  \"fixture\": \"FIXTURE-META-ONLY-2024\",\n  \"status\": \"warning\",\n  \"label\": \"need-info\",\n  \"message\": \"缺少全文，仅能核验书目元数据；无法核验文内公式、常数或数据。\",\n  \"action\": \"获取全文后重新提取，不得以摘要代替全文。\"\n}\n{\n  \"models\": [\n    \"FIXTURE-MODEL-A\",\n    \"FIXTURE-MODEL-B\"\n  ],\n  \"status\": \"not-comparable-yet\",\n  \"label\": \"need-grill\",\n  \"differing_assumptions\": [\n    \"eccentricity\",\n    \"system\"\n  ],\n  \"message\": \"两模型在假设层面不一致，结果差异不能解释为矛盾或科学反驳。\",\n  \"action\": \"先对齐假设（或做同假设重算），再比较数值。\"\n}\n\n诊断断言全部通过（缺全文->need-info；假设不同->need-grill，无科学反驳输出）。\n"
+}

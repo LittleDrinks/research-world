@@ -1,0 +1,384 @@
+{
+  "project_name": "q049 · 研究前沿实验室 · 384",
+  "project_id": "project:ad1d591090135edaaf50748b",
+  "captured_at": "2026-10-19T13:17:50.707097+00:00",
+  "superseded_count": 2,
+  "tasks": [
+    {
+      "role": "compute",
+      "title": "限定模型复算",
+      "model": "dyy/gpt-6.1-sol",
+      "session_id": "s-31e8fc23ae9e6fe67a8a9f059fd7ca8a",
+      "status": "completed",
+      "summary": "已完成独立复算，未运行长期 N 体模拟。\n\n**1 au、固定质量、孤立圆轨道模型的结果：**\n- 四极矩引力波功率：**196.27 W**。\n- Peters 形式并合时间：**3.3742×10³⁰ s＝1.0692×10²³ 年**。\n- 初始局部时标 \\(|E|/P=a/|\\dot a|\\)：**4.2769×10²³ 年**，恰为形式并合时间的 **4 倍**。\n\n功率是当前能流；并合时间是随轨道收缩积分、外推至点质量零间距的时间。二者不能直接比较大小。真实太阳系涉及恒星失质量、半径演化、潮汐和多体交换，不能仅凭功率非零预测其命运。\n\n脚本、实际 stdout、来源与访问日志已保存于 `/workspace/frontier/compute/`。内部一致性检查通过，但不等于观测验证。Peters 原文访问失败，尚未逐式核验；外部访问额度已用完。\n\n**报告及原件：**\n- [阅读报告](../../artifacts/artifact%3A15e1fdbc52ac6ccd3042cf83d8015c386888358dc30e2661d165170ccbeb9607)  \n  ID：`artifact:15e1fdbc52ac6ccd3042cf83d8015c386888358dc30e2661d165170ccbeb9607`\n- [JSON 原件](../../artifacts/artifact%3Afeb12c7817756640bc2745b01ee8892eb7478846034392a6e2117d8ca372631c)  \n  ID：`artifact:feb12c7817756640bc2745b01ee8892eb7478846034392a6e2117d8ca372631c`",
+      "elapsed_seconds": 693,
+      "artifacts": [
+        {
+          "id": "artifact:feb12c7817756640bc2745b01ee8892eb7478846034392a6e2117d8ca372631c",
+          "label": "结构化原件",
+          "url": "http://localhost:8095/projects/project:ad1d591090135edaaf50748b/artifacts/artifact:feb12c7817756640bc2745b01ee8892eb7478846034392a6e2117d8ca372631c"
+        },
+        {
+          "id": "artifact:15e1fdbc52ac6ccd3042cf83d8015c386888358dc30e2661d165170ccbeb9607",
+          "label": "阅读报告",
+          "url": "http://localhost:8095/projects/project:ad1d591090135edaaf50748b/artifacts/artifact:15e1fdbc52ac6ccd3042cf83d8015c386888358dc30e2661d165170ccbeb9607"
+        },
+        {
+          "id": "artifact:e251bc848ad609070bd234f1ec9ab4605f59f9b95dd8460b3507544ae964c1d6",
+          "label": "计算代码/附件",
+          "url": "http://localhost:8095/api/v1/projects/project:ad1d591090135edaaf50748b/artifacts/artifact:e251bc848ad609070bd234f1ec9ab4605f59f9b95dd8460b3507544ae964c1d6?download=true"
+        },
+        {
+          "id": "artifact:73a2f9d2ea5fe17036a02727c161720eeb62d6befe7dfc3a4721e4f2846f4305",
+          "label": "计算代码/附件",
+          "url": "http://localhost:8095/api/v1/projects/project:ad1d591090135edaaf50748b/artifacts/artifact:73a2f9d2ea5fe17036a02727c161720eeb62d6befe7dfc3a4721e4f2846f4305?download=true"
+        },
+        {
+          "id": "artifact:3e896bf4a22895015eb06072cf31deb6fe713af6c2b2f74b3d1a44a8a89df18e",
+          "label": "结构化原件",
+          "url": "http://localhost:8095/projects/project:ad1d591090135edaaf50748b/artifacts/artifact:3e896bf4a22895015eb06072cf31deb6fe713af6c2b2f74b3d1a44a8a89df18e"
+        }
+      ],
+      "result": {
+        "title": "q049子任务：地球—太阳圆轨道四极矩功率与Peters形式时间的独立复算",
+        "summary": "本轮以1 au相对间距、IAU标称日地GM及CODATA G复算：四极矩功率196 W，圆轨道Peters形式并合时间1.07e+23年。张量收缩、能量平衡与一维积分内部一致；脚本和实际stdout已保存，未做N体模拟。功率是初始能流，时间是固定点质量模型积分至零间距的外推，不是实测衰变或真实太阳系结局。Peters原文未获取，不能声称全文核验。",
+        "findings": [
+          {
+            "claim": "模型初始引力波总功率为196.271 W（约196 W），非零但极小。",
+            "basis": "【本轮执行】calculate.py以Qij=μ(ri rj−δij a²/3)，P=G〈Qij三阶时间导数的逐项平方和〉/(5c⁵)，4096相位收缩得到32Gμ²a⁴ω⁶/(5c⁵)，与32G⁴m₁²m₂²(m₁+m₂)/(5c⁵a⁵)一致。ω²=G(m₁+m₂)/a³。G、GM、a的来源正文已读取；原始stdout保留额外算术位数。",
+            "limitations": "【模型】孤立、圆轨道、无自旋点质量、固定质量、弱场慢速、领先四极矩及绝热反作用。此值是远区总能量/时间，不是某地点的W/m²，也不是直接观测。两种表达共享同一理论，内部一致不等于独立验证GR。"
+          },
+          {
+            "claim": "形式并合时间为3.37422e+30 s，即1.06922e+23儒略年；局部衰减时标却为其4倍。",
+            "basis": "【本轮推导及执行】E=−Gm₁m₂/(2a)，dE/dt=−P导出da/dt=−K/a³，K=64G³m₁m₂(m₁+m₂)/(5c⁵)。积分a₀→0得t=a₀⁴/(4K)=5c⁵a₀⁴/[256G³m₁m₂(m₁+m₂)]。Simpson积分核对通过；|E₀|/P₀=a₀/|da/dt₀|=4t。初始da/dt=-1.10839e-20 m/s，即-3.49781e-13 m/年。",
+            "limitations": "【未核验】称为Peters圆轨道形式，但原文403，未逐式核对作者文本。积分至零是数学终点；真实太阳有限半径、潮汐及末端强场均破坏假设。不能把初始P保持不变积分，也不能把|E|/P误叫总并合时间。"
+          },
+          {
+            "claim": "可比较的必须是相同轨道定义、输入约定、近似阶数与同一物理量。",
+            "basis": "【已读来源】IAU B3将GM太阳=1.3271244e20、GM地球=3.986004e14 m³/s²定义为精确标称换算因子，不是精确真值；a=149597870700 m。NIST G=6.67430(15)e−11 m³ kg⁻¹ s⁻²，m=GM/G。c=299792458 m/s作为SI定义值采用，1儒略年=31557600 s为单位约定。【推断】固定这些GM时P∝1/G，而t中的G完全抵消；由GM/G导出的kg质量不能作为互相独立输入重复传播误差。",
+            "limitations": "本轮未另访问SI定义原文；不提供真实历元星历参数、偏心率误差预算。a是相对轨道半长轴/圆轨道中心间距，不是太阳或地球各自绕质心的半径；非圆轨道需平均功率和耦合的a、e演化，不能直接套用本圆轨道时间。"
+          },
+          {
+            "claim": "P>0只说明此耗散近似有轨道能量流出，不能推出真实太阳系会在上述时间并合或其稳定性结局。",
+            "basis": "【本轮执行】初始v/c=9.94e-05、GM/(ac²)=9.87e-09，支持当前弱场慢速近似；每轨道GW能量损失占|E|约2.34e-24。【模型推断】纯牛顿孤立双体守恒且无辐射；加入领先GR耗散后才有极小内旋。多体之间可交换轨道能量与角动量；恒星失质量、半径演化和潮汐会改变模型，慢速各向同性失质量甚至可使轨道膨胀。",
+            "limitations": "不把牛顿无耗散与GR有耗散当作同假设的矛盾。无N体模拟、无恒星演化或潮汐参数拟合；未核验太阳演化文献，不给吞没时间、逃逸概率、混沌稳定性或最终命运的定量预测。"
+          }
+        ],
+        "warnings": [
+          {
+            "label": "need-info",
+            "reason": "Peters 1964原文获取失败；6次外部检索/下载额度耗尽。",
+            "next_action": "后续取得可访问的作者原文并核对功率、圆轨道da/dt及时间公式的定义；当前仅声称自主推导和算术复算。"
+          },
+          {
+            "label": "need-grill",
+            "reason": "把196 W、|E|/P与1.07e23年混为同一种量，或声称由此预测地球真实结局，会跨越量纲与模型边界。",
+            "next_action": "逐项注明瞬时总辐射功率、局部时标、积分终点和外推期间维持的假设；真实系统需另列失质量、潮汐、多体与有限半径效应。"
+          },
+          {
+            "label": "need-info",
+            "reason": "标称常数不是带历元的实际地日参数；本计算也不是极小衰变的检测。",
+            "next_action": "若需与星历或测量比较，先指定历元、GM时间尺度约定、相对半长轴和偏心率，并分离非GW效应与观测不确定度。"
+          }
+        ],
+        "questions": [
+          {
+            "title": "比较对象究竟是当前功率、局部衰减时标，还是理想点质量的积分终点？",
+            "why": "三者定义、单位和物理意义不同；局部时标与圆轨道形式时间恰差4倍。"
+          },
+          {
+            "title": "真实太阳系中哪些过程会先使固定质量孤立圆轨道前提失效？",
+            "why": "本任务只复算GW通道；恒星演化、多体相互作用和潮汐需要各自输入与证据，不能由非零GW功率代替。"
+          }
+        ],
+        "proposed_changes": [
+          {
+            "before": "行星轨道完全不衰变／有引力波就能预测地球最终撞太阳。",
+            "after": "牛顿孤立双体轨道守恒；领先GR四极矩模型给出极小内旋，但不单独确定真实太阳系命运。",
+            "reason": "避免混合不同假设，把有限近似的数学结果误当现实预言。",
+            "evidence": "本轮功率、能量平衡、da/dt复算；真实命运未计算。"
+          },
+          {
+            "before": "地日的并合时间就是当前束缚能除以辐射功率。",
+            "after": "圆轨道模型的局部|E|/P=a/|da/dt|=4t；形式t须随a变化积分，并标注点质量外推。",
+            "reason": "功率随a⁻⁵增大，不能假设全程固定为初值。",
+            "evidence": "calculate.py的能量平衡和一维积分检查；stdout.txt实际输出。"
+          },
+          {
+            "before": "采用精确地球质量和太阳质量即可给出高精度真实并合时间。",
+            "after": "明确使用标称GM及选定G推导模型kg质量；报约196 W、1.07e23年，不暗示真实系统预测精度。",
+            "reason": "标称精确性是换算约定，不是天体真值精确性；物理模型限制远大于打印位数。",
+            "evidence": "已读IAU 2015 B3第2—3页关于标称换算因子的明确说明及NIST G页面。"
+          }
+        ],
+        "sources": [
+          {
+            "URL": "https://physics.nist.gov/cgi-bin/cuu/Value?bg",
+            "实际访问范围": "本轮成功下载并读取常数页面正文，2022 CODATA G=6.67430(15)e-11 SI；原件 sources/nist_G.html。"
+          },
+          {
+            "URL": "https://arxiv.org/pdf/1510.07674",
+            "实际访问范围": "本轮成功下载 IAU 2015 B3 决议6页PDF并读取全部提取文本；第3页标称GM，第6页注4引用au定义。原件 sources/iau2015_nominal.pdf；不是Peters论文。"
+          },
+          {
+            "URL": "https://www.iau.org/static/resolutions/IAU2015_English.pdf",
+            "实际访问范围": "本轮请求返回404，未读到正文；用上述arXiv决议副本替代。"
+          },
+          {
+            "URL": "https://www.iau.org/static/resolutions/IAU2012_English.pdf",
+            "实际访问范围": "本轮请求返回404，未读到正文；au定义仅从已读IAU 2015决议注4核实。"
+          },
+          {
+            "URL": "https://articles.adsabs.harvard.edu/pdf/1964PhRv..136.1224P",
+            "实际访问范围": "本轮请求403，Peters 1964（Phys. Rev. 136, B1224）全文未核验；不声称逐式对照原文。"
+          },
+          {
+            "URL": "https://en.wikipedia.org/wiki/Gravitational_wave",
+            "实际访问范围": "本轮请求超时，未获取正文、不作证据。六次外部访问已用完；详细日志 sources/access_log.json。"
+          }
+        ]
+      }
+    },
+    {
+      "role": "implement",
+      "title": "实现限定模型的可复查计算与warning诊断",
+      "model": "dyy/glm-5.3",
+      "session_id": "s-44b9b2aaa87e6a9e04db4ad6b9093c09",
+      "status": "completed",
+      "summary": "**实际完成**：编写并实际运行了限定计算脚本 `/workspace/frontier/implement/q049_gw_calc.py`（SI单位、常数显式声明、零外部依赖），stdout保存于 `stdout.txt`；另实现并运行了极小诊断示例（输入为显式标记的FIXTURE，非真实论文）。用Crossref核验了Peters 1964（Phys.Rev.136 B1224）与Peters & Mathews 1963的书目元数据（未取全文）。\n\n**关键发现（本轮实际计算）**：地球-太阳孤立圆轨道引力波功率P≈196.3 W；Peters圆轨道并合时间t≈3.37×10³⁰ s≈1.07×10²³年；da/dt≈−2.3×10⁻²⁴ AU/年；t_merge比太阳主序剩余寿命（5×10⁹年，文献常用值）长约2.1×10¹³倍。即在太阳演化时标内GW耗散完全可忽略但非为零，行星轨道不衰变的主导分层是：理想二体守恒 → GW极弱 → 长时标由多体摄动与太阳演化主导（后两者为推断级，未数值复算）。诊断断言全部通过：缺全文→warning+need-info；假设不同的两模型→暂不可比较+need-grill，无科学反驳输出。\n\n**仍未解决**：偏心率（e≈0.0167）修正的量化；太阳红巨星质量流失与潮汐对轨道的净效应；太阳系多体混沌时标与GW时标的定量对比；Peters原文公式系数逐项核验（仅书目级）。\n\n**报告与原件**：\n- result.json Artifact ID: `artifact:4b6a6c78d6d424871ac5fd3389776631260dc7231a0196481e005a911ac9fcd4`\n- result.md Artifact ID: `artifact:245e2c9c64c900f5e081749a3b8d06151bf7a66eac5298e353d49c45f8e6b8c6`\n- 均已关联 record:9fc0b70893135f4af7d3073a；阅读链接见 `/projects/project:ad1d591090135edaaf50748b/artifacts/...`",
+      "elapsed_seconds": 595,
+      "artifacts": [
+        {
+          "id": "artifact:4b6a6c78d6d424871ac5fd3389776631260dc7231a0196481e005a911ac9fcd4",
+          "label": "结构化原件",
+          "url": "http://localhost:8095/projects/project:ad1d591090135edaaf50748b/artifacts/artifact:4b6a6c78d6d424871ac5fd3389776631260dc7231a0196481e005a911ac9fcd4"
+        },
+        {
+          "id": "artifact:245e2c9c64c900f5e081749a3b8d06151bf7a66eac5298e353d49c45f8e6b8c6",
+          "label": "阅读报告",
+          "url": "http://localhost:8095/projects/project:ad1d591090135edaaf50748b/artifacts/artifact:245e2c9c64c900f5e081749a3b8d06151bf7a66eac5298e353d49c45f8e6b8c6"
+        },
+        {
+          "id": "artifact:d1d17b2ec3692f77cc72da6005fae806b37a6965a1ef6d4691d4c5917d35fc1e",
+          "label": "计算代码/附件",
+          "url": "http://localhost:8095/api/v1/projects/project:ad1d591090135edaaf50748b/artifacts/artifact:d1d17b2ec3692f77cc72da6005fae806b37a6965a1ef6d4691d4c5917d35fc1e?download=true"
+        },
+        {
+          "id": "artifact:ca8d63fbd81cc52ca54fd6776593d1e577f5c616bfe63385edf3113c1ba8a790",
+          "label": "计算代码/附件",
+          "url": "http://localhost:8095/api/v1/projects/project:ad1d591090135edaaf50748b/artifacts/artifact:ca8d63fbd81cc52ca54fd6776593d1e577f5c616bfe63385edf3113c1ba8a790?download=true"
+        }
+      ],
+      "result": {
+        "title": "q049 行星轨道不衰变的分层解释：地球-太阳孤立圆轨道引力波功率与Peters并合时间的限定复算及证据诊断示例",
+        "summary": "本任务用自写Python脚本（SI单位、常数显式声明）复算了地球-太阳孤立准圆轨道的引力波辐射：功率P≈196.3 W，能量耗散时标≈4.3×10^23年，Peters圆轨道并合时间≈1.07×10^23年，半长轴收缩率约-2.3×10^-24 AU/年，均与文献量级一致。比值t_merge/太阳主序剩余寿命(≈5×10^9年)≈2.1×10^13，说明在太阳演化时标内引力波耗散完全可忽略，行星轨道不衰变的直接原因是GW耗散极弱而非无耗散；更长时标上限制因素是太阳演化（红巨星、质量流失）与多体扰动，而非引力波。脚本另含极小诊断示例：仅元数据源输出warning+need-info；假设不同的两模型输出暂不可比较+need-grill，不输出科学反驳，断言全部通过。Peters 1964仅核验Crossref书目元数据，未取全文。",
+        "findings": [
+          {
+            "claim": "地球-太阳孤立圆轨道引力波功率约196.3 W（数量级10^2 W），Peters圆轨道并合时间约1.07×10^23年。",
+            "basis": "本轮实际执行脚本 /workspace/frontier/implement/q049_gw_calc.py 的输出（stdout.txt）：P=(32/5)G^4 μ^2 M^3/(c^5 a^5)=196.29 W；t=a^4/(4β)，β=(64/5)G^3 μM^2/c^5，得3.374×10^30 s。常数采用G=6.67430e-11、c=299792458、M_sun=1.98847e30 kg、M_earth=5.9722e24 kg、a=1 AU（SI单位）。",
+            "limitations": "理想化模型：孤立二体、e=0、牛顿轨道+最弱阶辐射反作用；未含偏心率修正（真实地球e≈0.0167会使GW功率略增但量级不变）、未含后牛顿项。文献量级~200 W系本人与教科书常识的一致性核对，非本轮全文核验。"
+          },
+          {
+            "claim": "在太阳演化时标（主序剩余约5×10^9年）内，引力波耗散使轨道收缩的效应可忽略：t_merge/太阳剩余寿命≈2.1×10^13，da/dt≈-2.3×10^-24 AU/年。",
+            "basis": "本轮脚本计算da/dt=-β/a^3及与太阳主序剩余寿命（采用5×10^9年这一文献常用值，作者报告级假设）的比值。",
+            "limitations": "太阳寿命5×10^9年是外部文献常用值，本轮未独立计算；太阳红巨星阶段质量流失会使地球轨道外扩，方向与GW收缩相反，未定量计入。"
+          },
+          {
+            "claim": "行星轨道不衰变的正确分层解释是：理想两体模型守恒（无耗散）；真实耗散通道中引力波极弱；决定长时标命运的是多体摄动与太阳演化，而非引力波。",
+            "basis": "由本轮计算（GW时标10^23年）与常识性天体物理分层推断（本人推断级，非本轮数值验证）。多体混沌时标（约10^5-10^7 Myr量级的研究结果）与太阳演化结局未在本轮复算。",
+            "limitations": "本结论中多体稳定性与太阳演化部分未做任何数值复算，属推断；与孤立二体模型比较时假设不同，依诊断规则属暂不可比较，不可作为矛盾判据。"
+          },
+          {
+            "claim": "诊断示例按设计工作：缺全文fixture输出warning+need-info；假设不同的两模型输出not-comparable-yet+need-grill且无科学反驳语句，脚本内断言全部通过。",
+            "basis": "本轮实际运行输出的诊断段（stdout.txt后半部分），含fixture标识FIXTURE-*，未将fixture当作真实论文提取结果。",
+            "limitations": "诊断仅为最小示例，未覆盖全文可得但内容与元数据不符等更复杂情形。"
+          }
+        ],
+        "warnings": [
+          {
+            "label": "need-info",
+            "reason": "Peters 1964 (Phys.Rev.136 B1224) 与 Peters & Mathews 1963 (Phys.Rev.131 435) 仅通过Crossref核验书目元数据（DOI、页码、标题），未获取全文，文内推导细节与系数未逐项核验。",
+            "next_action": "获取两篇全文，核对β定义、圆轨道并合时间系数5c^5a^4/(256G^3μM^2)与功率公式系数32/5。"
+          },
+          {
+            "label": "need-info",
+            "reason": "太阳主序剩余寿命≈5×10^9年与红巨星阶段质量流失对地球轨道的影响未独立计算或取原文核验。",
+            "next_action": "用恒星演化模型参数独立估算太阳剩余主序寿命与AGB质量流失率，评估轨道外扩幅度。"
+          },
+          {
+            "label": "need-grill",
+            "reason": "孤立二体GW模型与真实太阳系N体模型的比较假设不同（孤立vs多体、e=0 vs e≈0.0167），依规则暂不可比较，不能据此宣称任何矛盾或反驳。",
+            "next_action": "在同假设框架下重算（如同一孤立模型加入偏心率，或同一N体模型开/关GW耗散）后再比较。"
+          }
+        ],
+        "questions": [
+          {
+            "title": "偏心率对地球轨道GW耗散的修正有多大",
+            "why": "真实e≈0.0167，Peters偏心率增强因子会改变功率与并合时间；量化后可确认圆轨道近似误差是否确实可忽略。"
+          },
+          {
+            "title": "太阳红巨星质量流失与潮汐作用对地球轨道的净效应",
+            "why": "这是决定地球最终命运的主导因素，与GW耗散方向相反，需定量对比才能完整回答轨道演化。"
+          },
+          {
+            "title": "太阳系多体摄动/混沌时标与GW耗散时标的相对重要性",
+            "why": "行星轨道长时标稳定性主要受多体混沌限制（作者报告级结论），需复算或取一手文献核验其量级。"
+          }
+        ],
+        "proposed_changes": [
+          {
+            "before": "将行星轨道不衰变笼统归因于『引力波不存在或可忽略而无需量化』。",
+            "after": "量化表述：地球-太阳GW功率约196 W、并合时标约10^23年，比太阳剩余主序寿命长约2×10^13倍，在太阳演化时标内可忽略但非为零。",
+            "reason": "以本轮实际复算数值替代定性叙述。",
+            "evidence": "stdout.txt计算结果；Peters 1964公式（书目级核验）。"
+          },
+          {
+            "before": "将理想二体守恒模型与含耗散/多体模型的结果直接对比并判矛盾。",
+            "after": "对假设不同的模型标注暂不可比较（need-grill），先对齐假设再比较。",
+            "reason": "假设不同的数值差异不构成科学反驳。",
+            "evidence": "脚本诊断示例断言通过（stdout.txt）。"
+          }
+        ],
+        "sources": [
+          "Peters 1964, Phys. Rev. 136, B1224, DOI 10.1103/PhysRev.136.B1224, https://doi.org/10.1103/physrev.136.b1224 — 本轮实际访问范围：Crossref元数据（标题/DOI/页码/日期），全文未获取",
+          "Peters & Mathews 1963, Phys. Rev. 131, 435, DOI 10.1103/PhysRev.131.435, https://doi.org/10.1103/physrev.131.435 — 本轮实际访问范围：Crossref元数据，全文未获取",
+          "本任务实际执行产物：/workspace/frontier/implement/q049_gw_calc.py 与 stdout.txt（本轮真实运行输出）",
+          "常数：G、c、M_sun、M_earth、AU取CODATA/IAU标准值（脚本内显式声明）；文献量级~200 W的一致性核对为本人推断级，未取教材原文"
+        ]
+      },
+      "review_note": "本轮整理者观察：总结中“轨道不衰变的直接原因”有扩大限定模型结论的风险；findings[2]还包含未提供来源的混沌时间尺度。保留原文，暂不采纳这些句子为已核验结论。"
+    },
+    {
+      "role": "challenge",
+      "title": "反例与问题拆分",
+      "model": "dyy/k3",
+      "session_id": "s-ba8a29454ceb22436b6ca03e52b6a3a0",
+      "status": "completed",
+      "summary": "已完成 q049 最小问题地图、圆轨道引力波量级复算及证据边界说明，文件位于 `/workspace/frontier/challenge-v2/`。\n\n关键发现：\n- 理想二体的“不衰变”是能量、角动量守恒的模型结论，不能外推为真实太阳系永恒稳定。\n- 本轮复算 Peters 圆轨道并入时标：水星约 \\(4.34\\times10^{22}\\) 年、地球约 \\(1.07\\times10^{23}\\) 年、木星约 \\(2.47\\times10^{23}\\) 年，耗散存在但当前量级极小。\n- 多体混沌描述可预报性和轨道扩散，不等同于单向衰变；太阳质量损失方向反而使轨道扩张。\n\n仍未解决：缺太阳演化一手模型、精密初值/星历及独立长期 N 体复现；Peters 与 Laskar–Gastineau 本轮仅核验元数据，未声称全文通过。\n\n报告：\n- 原件 JSON Artifact：`artifact:38332f1f192229eeb7c26c53ca646c769587c5239a5bcd2e39176e5b914e2411`  \n  [查看](artifact:38332f1f192229eeb7c26c53ca646c769587c5239a5bcd2e39176e5b914e2411)\n- Markdown Artifact：`artifact:3512dfd2e6ab1fec6203f979e94e39c9d026dc8b548bcbe1562917e597228266`  \n  [查看](artifact:3512dfd2e6ab1fec6203f979e94e39c9d026dc8b548bcbe1562917e597228266)",
+      "elapsed_seconds": 595,
+      "artifacts": [
+        {
+          "id": "artifact:c0d4f2995b04b698ecada13e6cf497d8a4d6b09b7106888d1ff7e1ae49119a54",
+          "label": "结构化原件",
+          "url": "http://localhost:8095/projects/project:ad1d591090135edaaf50748b/artifacts/artifact:c0d4f2995b04b698ecada13e6cf497d8a4d6b09b7106888d1ff7e1ae49119a54"
+        },
+        {
+          "id": "artifact:38332f1f192229eeb7c26c53ca646c769587c5239a5bcd2e39176e5b914e2411",
+          "label": "结构化原件",
+          "url": "http://localhost:8095/projects/project:ad1d591090135edaaf50748b/artifacts/artifact:38332f1f192229eeb7c26c53ca646c769587c5239a5bcd2e39176e5b914e2411"
+        },
+        {
+          "id": "artifact:872eba354de94cbbdce1ee45c7d3155c3847e5ec435392cfb08a1355b72dcc29",
+          "label": "计算代码/附件",
+          "url": "http://localhost:8095/api/v1/projects/project:ad1d591090135edaaf50748b/artifacts/artifact:872eba354de94cbbdce1ee45c7d3155c3847e5ec435392cfb08a1355b72dcc29?download=true"
+        },
+        {
+          "id": "artifact:3512dfd2e6ab1fec6203f979e94e39c9d026dc8b548bcbe1562917e597228266",
+          "label": "阅读报告",
+          "url": "http://localhost:8095/projects/project:ad1d591090135edaaf50748b/artifacts/artifact:3512dfd2e6ab1fec6203f979e94e39c9d026dc8b548bcbe1562917e597228266"
+        }
+      ],
+      "result": {
+        "title": "q049：行星轨道为何不衰变的最小可核查问题地图",
+        "summary": "本轮把“不衰变”拆成四类可直接核验的对象：理想二体守恒、引力波耗散、多体混沌扩散、太阳质量损失/潮汐。完成圆轨道Peters量级复算：水星、地球、木星的引力波并入时标约4.3e22、1.1e23、2.5e23年。主要缺口是太阳演化模型、精确星历/初值和长期N体可复现实验；本轮仅检索到两篇一手文献元数据，未声称全文核验。",
+        "findings": [
+          {
+            "claim": "理想二体“不衰变”是模型内的解析结论，不是对真实太阳系的完整经验解释。",
+            "basis": "本轮推导/判断：孤立中心反平方力场中扭矩为零且势能只依赖距离，因此总能量与角动量守恒，固定a、e；它可直接与短期精密星历的守恒量残差比较。",
+            "limitations": "缺条件：太阳非点质量、行星间摄动、潮汐、辐射、质量损失与观测误差均被排除；因此不能用它证明真实轨道永不改变。"
+          },
+          {
+            "claim": "引力波确实使两体轨道收缩，但在当前行星尺度上是极小项。",
+            "basis": "本轮实际执行 /workspace/frontier/challenge-v2/q049_calc.py，按圆轨道Peters量级公式复算：水星t≈4.343e22年、da/dt≈-3.333e-13米/年；地球t≈1.069e23年、da/dt≈-3.498e-13米/年；木星t≈2.465e23年、da/dt≈-7.895e-13米/年。Peters 1964文献由Crossref定位到DOI 10.1103/PhysRev.136.B1224。",
+            "limitations": "计算采用圆轨道、孤立点质量和领头阶四极近似，未含偏心率修正；本轮未核验Peters全文公式页，不能把该复算当成真实多体太阳系预测。"
+          },
+          {
+            "claim": "真实多体混沌不能直接等同于“轨道衰变”；它首先是可预报性和轨道扩散问题。",
+            "basis": "Laskar与Gastineau 2009的一手论文元数据（Nature 459:817–819，DOI 10.1038/nature08096）显示其报告了水星、火星、金星与地球碰撞轨迹的存在性；其参考文献链也定位到太阳系混沌数值研究。理想模型、GW耗散与该问题可用同一初始状态的a、e、能量和碰撞/逃逸结局集合来比较。",
+            "limitations": "本轮只获得Crossref元数据和参考文献，未读取全文/补充材料，未复核作者报告的积分器、样本数、概率、Lyapunov时标或5 Gyr结论；不能把题名内容扩展成已核验数值。"
+          },
+          {
+            "claim": "太阳演化与GW方向相反且量级可能远大得多，但当前缺判定条件。",
+            "basis": "本轮实际计算的绝热等温质量损失what-if显示：若恒星失去总质量5%、10%、30%，在a*M近似守恒下类地轨道分别扩张0.0526、0.1111、0.4286 AU。该方向与GW收缩相反，因此可用同一a(t)和能量预算直接比较。",
+            "limitations": "这不是太阳演化预测；缺M(t)、R(t)、自转、潮汐品质因子、包层相互作用和行星穿越包层条件。第三次一手文献检索失败，未取得太阳演化原始论文。"
+          }
+        ],
+        "warnings": [
+          {
+            "label": "need-grill",
+            "reason": "“不衰变”没有操作定义：半长径、周期、机械能、偏心率、碰撞概率和体系寿命可能给出不同答案。",
+            "next_action": "先指定观测量、时间窗、容差和终点事件，再比较机制；否则理想守恒、长期混沌和恒星演化不可判为矛盾。"
+          },
+          {
+            "label": "need-grill",
+            "reason": "不能把Lyapunov时间、GW并入时间和恒星演化时间直接排队；三者分别描述相空间发散、耗散收缩和边界质量/半径变化。",
+            "next_action": "在同一套初始条件、误差模型和输出变量下计算每个机制单独及联合的Δa、Δe、ΔE和结局分布。"
+          },
+          {
+            "label": "need-info",
+            "reason": "Laskar–Gastineau和Peters本轮只访问到文献元数据，未读取全文、方法或数值表。",
+            "next_action": "获取两篇全文/补充材料，摘录公式编号、初始星历、积分容差、样本规模和作者报告的量化结果。"
+          },
+          {
+            "label": "need-info",
+            "reason": "缺太阳演化一手模型；本轮第三次检索返回422，未获得可用记录。",
+            "next_action": "重查Schröder & Smith 2008或同级恒星演化论文，提取M(t)、R(t)、L(t)、潮汐假设与地球结局。"
+          }
+        ],
+        "questions": [
+          {
+            "title": "“不衰变”的最小可证伪定义是什么？",
+            "why": "若定义为孤立二体的E、L守恒，答案是定理；若定义为5 Gyr内a/e可预测或无碰撞，答案依赖混沌积分；若定义到太阳死亡，则恒星演化可能成为主项。"
+          },
+          {
+            "title": "多体混沌结论能否在独立实现下复现？",
+            "why": "需要区分物理混沌、截断/舍入误差、积分器偏差和初值不确定性；最小证据是至少两种独立积分器与星历在相同容差下的一致结局分布。"
+          },
+          {
+            "title": "哪一项先使地球轨道发生可观测或结局性改变？",
+            "why": "GW复算显示当前尺度下极小；剩余竞争者是多体扩散、太阳质量损失、潮汐和红巨星包层，必须用统一时间轴比较而非各自孤立报时标。"
+          }
+        ],
+        "proposed_changes": [
+          {
+            "before": "行星轨道不衰变。",
+            "after": "在孤立理想二体模型内，E和L守恒；真实行星轨道会受GW、多体摄动、潮汐和恒星质量损失改变，必须指定时标与变量。",
+            "reason": "消除把模型定理误当真实体系永恒稳定证据的歧义。",
+            "evidence": "本轮解析判断与Peters量级复算；真实多体部分尚待全文和长期积分核验。"
+          },
+          {
+            "before": "引力波最终会使行星螺旋落入太阳。",
+            "after": "领头阶圆轨道估计给出当前行星尺度10^22–10^23年级并入时标；若没有更长寿命机制，数学上存在收缩，但在太阳正常寿命比较中通常不是主项。",
+            "reason": "同时保留GW耗散的方向性与其极小量级，避免“完全不衰变”和“很快衰变”两种误读。",
+            "evidence": "q049_calc.py实际输出：水星4.343e22年、地球1.069e23年、木星2.465e23年。"
+          },
+          {
+            "before": "太阳系是混沌的，因此轨道会衰变。",
+            "after": "太阳系混沌意味着对初值敏感、长期可预报性受限，并可能出现轨道扩散或碰撞轨迹；它本身不是单向耗散，需以结局分布和能量/轨道元素变化证明。",
+            "reason": "区分确定性保守系统中的混沌扩散与辐射、潮汐等物理耗散。",
+            "evidence": "Laskar–Gastineau 2009元数据定位到碰撞轨迹研究；具体概率和动力学细节本轮未核验。"
+          }
+        ],
+        "sources": [
+          {
+            "url": "https://doi.org/10.1103/PhysRev.136.B1224",
+            "access": "本轮通过Crossref literature工具实际访问题录、作者、期刊、页码、DOI、参考文献列表；未访问PDF或全文公式。"
+          },
+          {
+            "url": "https://doi.org/10.1038/nature08096",
+            "access": "本轮通过Crossref literature工具实际访问题录、作者、期刊、页码、DOI、参考文献列表；未访问全文、补充材料或作者代码。"
+          },
+          {
+            "url": "file:///workspace/frontier/challenge-v2/q049_calc.py",
+            "access": "本轮写入并实际执行；输出保存为q049_calc_output.json。常数和行星参数为脚本明示的名义假设。"
+          },
+          {
+            "url": "file:///workspace/frontier/challenge-v2/q049_calc_output.json",
+            "access": "本轮实际生成的计算输出；用于报告GW时标、da/dt和绝热质量损失what-if。"
+          }
+        ]
+      }
+    }
+  ],
+  "note": "三个独立Session在同一个新项目工作区的不同目录研究。以下是模型返回内容，未由本轮界面原型代为判真；任何额外计算都保留其实际执行范围。"
+}

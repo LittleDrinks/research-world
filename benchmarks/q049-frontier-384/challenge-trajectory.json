@@ -1,0 +1,1849 @@
+{
+  "session": {
+    "id": "s-ba8a29454ceb22436b6ca03e52b6a3a0",
+    "project_id": "project:ad1d591090135edaaf50748b",
+    "title": "q049最小可核查问题地图",
+    "created_at": "2026-10-19T13:07:55.591966+00:00",
+    "messages": [
+      {
+        "id": "04b53253f09744099612a5606b725c2c",
+        "content": "围绕q049给出最小的可核查问题地图：理想模型守恒、引力波耗散、真实多体混沌、太阳演化哪些可以直接比较，哪些缺条件？指出最多3个最值得grill的问题和能区分竞争解释的最小计算/证据需求。可以检索最多3份一手来源。禁止伪造新实验结果或把没有执行的计划称为发现。你是科学质疑者，不替用户回答研究目标偏好。",
+        "assistant_response": "已完成 q049 最小问题地图、圆轨道引力波量级复算及证据边界说明，文件位于 `/workspace/frontier/challenge-v2/`。\n\n关键发现：\n- 理想二体的“不衰变”是能量、角动量守恒的模型结论，不能外推为真实太阳系永恒稳定。\n- 本轮复算 Peters 圆轨道并入时标：水星约 \\(4.34\\times10^{22}\\) 年、地球约 \\(1.07\\times10^{23}\\) 年、木星约 \\(2.47\\times10^{23}\\) 年，耗散存在但当前量级极小。\n- 多体混沌描述可预报性和轨道扩散，不等同于单向衰变；太阳质量损失方向反而使轨道扩张。\n\n仍未解决：缺太阳演化一手模型、精密初值/星历及独立长期 N 体复现；Peters 与 Laskar–Gastineau 本轮仅核验元数据，未声称全文通过。\n\n报告：\n- 原件 JSON Artifact：`artifact:38332f1f192229eeb7c26c53ca646c769587c5239a5bcd2e39176e5b914e2411`  \n  [查看](artifact:38332f1f192229eeb7c26c53ca646c769587c5239a5bcd2e39176e5b914e2411)\n- Markdown Artifact：`artifact:3512dfd2e6ab1fec6203f979e94e39c9d026dc8b548bcbe1562917e597228266`  \n  [查看](artifact:3512dfd2e6ab1fec6203f979e94e39c9d026dc8b548bcbe1562917e597228266)",
+        "created_at": "2026-10-19T13:07:55.597299+00:00"
+      }
+    ]
+  },
+  "run": {
+    "id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+    "turns": [
+      {
+        "message_id": "04b53253f09744099612a5606b725c2c",
+        "id": "t-1f246fdd8b854076a2a23fdd024da828",
+        "result_text": "已完成 q049 最小问题地图、圆轨道引力波量级复算及证据边界说明，文件位于 `/workspace/frontier/challenge-v2/`。\n\n关键发现：\n- 理想二体的“不衰变”是能量、角动量守恒的模型结论，不能外推为真实太阳系永恒稳定。\n- 本轮复算 Peters 圆轨道并入时标：水星约 \\(4.34\\times10^{22}\\) 年、地球约 \\(1.07\\times10^{23}\\) 年、木星约 \\(2.47\\times10^{23}\\) 年，耗散存在但当前量级极小。\n- 多体混沌描述可预报性和轨道扩散，不等同于单向衰变；太阳质量损失方向反而使轨道扩张。\n\n仍未解决：缺太阳演化一手模型、精密初值/星历及独立长期 N 体复现；Peters 与 Laskar–Gastineau 本轮仅核验元数据，未声称全文通过。\n\n报告：\n- 原件 JSON Artifact：`artifact:38332f1f192229eeb7c26c53ca646c769587c5239a5bcd2e39176e5b914e2411`  \n  [查看](artifact:38332f1f192229eeb7c26c53ca646c769587c5239a5bcd2e39176e5b914e2411)\n- Markdown Artifact：`artifact:3512dfd2e6ab1fec6203f979e94e39c9d026dc8b548bcbe1562917e597228266`  \n  [查看](artifact:3512dfd2e6ab1fec6203f979e94e39c9d026dc8b548bcbe1562917e597228266)",
+        "events": [
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 359,
+            "type": "tool",
+            "time": "2026-10-19T13:08:22.283203+00:00",
+            "data": {
+              "phase": "started",
+              "id": "tool_TEUvoP5TKGl7QOeko7j1hNok",
+              "name": "graph",
+              "arguments": {
+                "query": "q049 行星轨道为何不衰变 当前研究项目 问题对象 record:0d5e3cb11c1e3b715b2e54be"
+              }
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 360,
+            "type": "tool",
+            "time": "2026-10-19T13:08:22.288125+00:00",
+            "data": {
+              "phase": "started",
+              "id": "tool_RHaqPfYgS2EsPFSSyFptursX",
+              "name": "artifact",
+              "arguments": {
+                "operation": "templates"
+              }
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 361,
+            "type": "tool",
+            "time": "2026-10-19T13:08:22.337894+00:00",
+            "data": {
+              "phase": "completed",
+              "id": "tool_RHaqPfYgS2EsPFSSyFptursX",
+              "name": "artifact",
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "[{\"id\": \"artifact:c914bfe207221b0d0b747a3af468d76f3e358e63e17a0a23d39d1eb098a6eb70\", \"title\": \"审计报告\", \"schema\": {\"type\": \"object\", \"additionalProperties\": false, \"required\": [\"title\", \"target_artifact_id\", \"summary\", \"sections\", \"conclusion\"], \"properties\": {\"title\": {\"type\": \"string\", \"minLength\": 1, \"maxLength\": 100, \"pattern\": \"\\\\S\"}, \"target_artifact_id\": {\"type\": \"string\", \"pattern\": \"^artifact:[a-f0-9]{64}$\"}, \"summary\": {\"type\": \"string\", \"minLength\": 1, \"maxLength\": 400, \"pattern\": \"\\\\S\"}, \"sections\": {\"type\": \"array\", \"prefixItems\": [{\"type\": \"object\", \"additionalProperties\": false, \"required\": [\"id\", \"title\", \"markdown\", \"evidence\"], \"properties\": {\"id\": {\"const\": \"scope\"}, \"title\": {\"const\": \"范围与方法\"}, \"markdown\": {\"type\": \"string\", \"minLength\": 1, \"maxLength\": 1200, \"pattern\": \"\\\\S\"}, \"evidence\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"additionalProperties\": false, \"required\": [\"artifact_id\", \"locator\"], \"properties\": {\"artifact_id\": {\"type\": \"string\", \"pattern\": \"^artifact:[a-f0-9]{64}$\"}, \"locator\": {\"type\": \"string\", \"minLength\": 1, \"maxLength\": 160, \"pattern\": \"\\\\S\"}}}, \"minItems\": 0, \"maxItems\": 8}}}, {\"type\": \"object\", \"additionalProperties\": false, \"required\": [\"id\", \"title\", \"markdown\", \"evidence\", \"checks\"], \"properties\": {\"id\": {\"const\": \"checks\"}, \"title\": {\"const\": \"检查项\"}, \"markdown\": {\"type\": \"string\", \"minLength\": 1, \"maxLength\": 1200, \"pattern\": \"\\\\S\"}, \"evidence\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"additionalProperties\": false, \"required\": [\"artifact_id\", \"locator\"], \"properties\": {\"artifact_id\": {\"type\": \"string\", \"pattern\": \"^artifact:[a-f0-9]{64}$\"}, \"locator\": {\"type\": \"string\", \"minLength\": 1, \"maxLength\": 160, \"pattern\": \"\\\\S\"}}}, \"minItems\": 0, \"maxItems\": 8}, \"checks\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"additionalProperties\": false, \"required\": [\"label\", \"action\", \"reason\", \"result\", \"evidence\"], \"properties\": {\"label\": {\"type\": \"string\", \"minLength\": 1, \"maxLength\": 100, \"pattern\": \"\\\\S\"}, \"action\": {\"enum\": [\"check\", \"skip\"]}, \"reason\": {\"type\": \"string\", \"minLength\": 1, \"maxLength\": 240, \"pattern\": \"\\\\S\"}, \"result\": {\"enum\": [\"pass\", \"partial\", \"fail\", \"unverified\", \"not_applicable\"]}, \"evidence\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"additionalProperties\": false, \"required\": [\"artifact_id\", \"locator\"], \"properties\": {\"artifact_id\": {\"type\": \"string\", \"pattern\": \"^artifact:[a-f0-9]{64}$\"}, \"locator\": {\"type\": \"string\", \"minLength\": 1, \"maxLength\": 160, \"pattern\": \"\\\\S\"}}}, \"minItems\": 0, \"maxItems\": 4}}, \"allOf\": [{\"if\": {\"properties\": {\"action\": {\"const\": \"skip\"}}}, \"then\": {\"properties\": {\"result\": {\"const\": \"not_applicable\"}, \"evidence\": {\"maxItems\": 0}}}, \"else\": {\"properties\": {\"result\": {\"enum\": [\"pass\", \"partial\", \"fail\", \"unverified\"]}}}}, {\"if\": {\"properties\": {\"result\": {\"enum\": [\"pass\", \"partial\", \"fail\"]}}}, \"then\": {\"properties\": {\"evidence\": {\"minItems\": 1}}}}]}, \"minItems\": 1, \"maxItems\": 12}}}, {\"type\": \"object\", \"additionalProperties\": false, \"required\": [\"id\", \"title\", \"markdown\", \"evidence\"], \"properties\": {\"id\": {\"const\": \"limitations\"}, \"title\": {\"const\": \"缺口与下一步\"}, \"markdown\": {\"type\": \"string\", \"minLength\": 1, \"maxLength\": 1200, \"pattern\": \"\\\\S\"}, \"evidence\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"additionalProperties\": false, \"required\": [\"artifact_id\", \"locator\"], \"properties\": {\"artifact_id\": {\"type\": \"string\", \"pattern\": \"^artifact:[a-f0-9]{64}$\"}, \"locator\": {\"type\": \"string\", \"minLength\": 1, \"maxLength\": 160, \"pattern\": \"\\\\S\"}}}, \"minItems\": 0, \"maxItems\": 8}}}], \"items\": false, \"minItems\": 3, \"maxItems\": 3}, \"conclusion\": {\"type\": \"object\", \"additionalProperties\": false, \"required\": [\"verdict\", \"markdown\"], \"properties\": {\"verdict\": {\"enum\": [\"pass\", \"revise\", \"inconclusive\"]}, \"markdown\": {\"type\": \"string\", \"minLength\": 1, \"maxLength\": 400, \"pattern\": \"\\\\S\"}}}}, \"$schema\": \"https://json-schema.org/draft/2020-12/schema\", \"title\": \"审计报告\", \"description\": \"结构化审计记录；格式校验不判定科学结论。\", \"x-max-reading-chars\": 5000, \"allOf\": [{\"if\": {\"properties\": {\"conclusion\": {\"properties\": {\"verdict\": {\"const\": \"pass\"}}}}}, \"then\": {\"properties\": {\"sections\": {\"prefixItems\": [{}, {\"properties\": {\"checks\": {\"items\": {\"properties\": {\"result\": {\"enum\": [\"pass\", \"not_applicable\"]}}}, \"contains\": {\"properties\": {\"action\": {\"const\": \"check\"}}}, \"minContains\": 1}}}]}}}}], \"examples\": [{\"title\": \"待填写的审计报告\", \"target_artifact_id\": \"artifact:0000000000000000000000000000000000000000000000000000000000000000\", \"summary\": \"说明审计范围、主要发现和仍未核验的部分。\", \"sections\": [{\"id\": \"scope\", \"title\": \"范围与方法\", \"markdown\": \"填写本节内容，详细证据另附并在下方定位。\", \"evidence\": []}, {\"id\": \"checks\", \"title\": \"检查项\", \"markdown\": \"填写本节内容，详细证据另附并在下方定位。\", \"evidence\": [], \"checks\": [{\"label\": \"关键结论核验\", \"action\": \"check\", \"reason\": \"尚未执行核验；请补充实际检查过程与结果。\", \"result\": \"unverified\", \"evidence\": []}]}, {\"id\": \"limitations\", \"title\": \"缺口与下一步\", \"markdown\": \"填写本节内容，详细证据另附并在下方定位。\", \"evidence\": []}], \"conclusion\": {\"verdict\": \"inconclusive\", \"markdown\": \"仍有检查未完成，暂不能给出通过结论。\"}}]}, \"example\": {\"title\": \"待填写的审计报告\", \"target_artifact_id\": \"artifact:0000000000000000000000000000000000000000000000000000000000000000\", \"summary\": \"说明审计范围、主要发现和仍未核验的部分。\", \"sections\": [{\"id\": \"scope\", \"title\": \"范围与方法\", \"markdown\": \"填写本节内容，详细证据另附并在下方定位。\", \"evidence\": []}, {\"id\": \"checks\", \"title\": \"检查项\", \"markdown\": \"填写本节内容，详细证据另附并在下方定位。\", \"evidence\": [], \"checks\": [{\"label\": \"关键结论核验\", \"action\": \"check\", \"reason\": \"尚未执行核验；请补充实际检查过程与结果。\", \"result\": \"unverified\", \"evidence\": []}]}, {\"id\": \"limitations\", \"title\": \"缺口与下一步\", \"markdown\": \"填写本节内容，详细证据另附并在下方定位。\", \"evidence\": []}], \"conclusion\": {\"verdict\": \"inconclusive\", \"markdown\": \"仍有检查未完成，暂不能给出通过结论。\"}}, \"max_reading_chars\": 5000}]"
+                  }
+                ],
+                "details": {}
+              },
+              "is_error": false
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 362,
+            "type": "tool",
+            "time": "2026-10-19T13:08:22.349845+00:00",
+            "data": {
+              "phase": "completed",
+              "id": "tool_TEUvoP5TKGl7QOeko7j1hNok",
+              "name": "graph",
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"records\": [], \"relations\": [], \"artifacts\": [], \"joint_conditions\": []}"
+                  }
+                ],
+                "details": {}
+              },
+              "is_error": false
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 382,
+            "type": "tool",
+            "time": "2026-10-19T13:08:28.690080+00:00",
+            "data": {
+              "phase": "started",
+              "id": "tool_sZQzNdMMMB3ufJiOcxMXRpKz",
+              "name": "literature",
+              "arguments": {
+                "query": "Peters 1964 Gravitational radiation and the motion of two point masses Physical Review",
+                "source": "crossref"
+              }
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 383,
+            "type": "tool",
+            "time": "2026-10-19T13:08:28.695898+00:00",
+            "data": {
+              "phase": "started",
+              "id": "tool_r0VyfTQCBvLpxm1w9hPIvb5O",
+              "name": "literature",
+              "arguments": {
+                "query": "Laskar Gastineau 2009 Existence of collisional trajectories of Mercury Mars and Venus with the Earth Nature",
+                "source": "crossref"
+              }
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 384,
+            "type": "tool",
+            "time": "2026-10-19T13:08:28.700155+00:00",
+            "data": {
+              "phase": "started",
+              "id": "tool_OVUGoCHmcHLs1tpBM9HstDjc",
+              "name": "literature",
+              "arguments": {
+                "query": "Schroder Smith 2008 Distant future of the Sun and Earth revisited Monthly Notices Royal Astronomical Society",
+                "source": "arxiv"
+              }
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 385,
+            "type": "tool",
+            "time": "2026-10-19T13:08:30.227715+00:00",
+            "data": {
+              "phase": "completed",
+              "id": "tool_sZQzNdMMMB3ufJiOcxMXRpKz",
+              "name": "literature",
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "[{\"indexed\": {\"date-parts\": [[2026, 10, 17]], \"date-time\": \"2026-10-17T20:25:33Z\", \"timestamp\": 1792268733728, \"version\": \"4.4.0\"}, \"reference-count\": 13, \"publisher\": \"American Physical Society (APS)\", \"issue\": \"4B\", \"license\": [{\"start\": {\"date-parts\": [[1964, 11, 23]], \"date-time\": \"1964-11-23T00:00:00Z\", \"timestamp\": -161136000000}, \"content-version\": \"vor\", \"delay-in-days\": 0, \"URL\": \"http://link.aps.org/licenses/aps-default-license\"}], \"content-domain\": {\"domain\": [], \"crossmark-restriction\": false}, \"short-container-title\": [\"Phys. Rev.\"], \"DOI\": \"10.1103/physrev.136.b1224\", \"type\": \"journal-article\", \"created\": {\"date-parts\": [[2002, 7, 27]], \"date-time\": \"2002-07-27T00:10:47Z\", \"timestamp\": 1027728647000}, \"page\": \"B1224-B1232\", \"source\": \"Crossref\", \"is-referenced-by-count\": 2223, \"title\": [\"Gravitational Radiation and the Motion of Two Point Masses\"], \"prefix\": \"10.1103\", \"volume\": \"136\", \"author\": [{\"given\": \"P. C.\", \"family\": \"Peters\", \"sequence\": \"first\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}], \"member\": \"16\", \"published-online\": {\"date-parts\": [[1964, 11, 23]]}, \"reference\": [{\"key\": \"PhysRev.136.B1224Cc1R1\", \"first-page\": \"688\", \"author\": \"A. Einstein\", \"year\": \"1916\", \"journal-title\": \"Sb. Preuss. Akad. Wiss.\"}, {\"key\": \"PhysRev.136.B1224Cc2R1\", \"first-page\": \"154\", \"author\": \"A. Einstein\", \"year\": \"1918\", \"journal-title\": \"Sb. Preuss. Akad. Wiss.\"}, {\"key\": \"PhysRev.136.B1224Cc3R1\", \"volume-title\": \"Gravitation: An Introduction to Current Research\", \"author\": \"F. A. E. Pirani\", \"year\": \"1962\"}, {\"key\": \"PhysRev.136.B1224Cc4R1\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"268\", \"DOI\": \"10.1098/rspa.1922.0085\", \"volume\": \"A102\", \"author\": \"A. S. Eddington\", \"year\": \"1922\", \"journal-title\": \"Proc. Roy. Soc. (London)\"}, {\"key\": \"PhysRev.136.B1224Cc5R1\", \"volume-title\": \"The Classical Theory of Fields\", \"author\": \"L. Landau\", \"year\": \"1959\"}, {\"key\": \"PhysRev.136.B1224Cc6R1\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"398\", \"DOI\": \"10.1103/PhysRev.128.398\", \"volume\": \"128\", \"author\": \"P. Havas\", \"year\": \"1962\", \"journal-title\": \"Phys. Rev.\"}, {\"key\": \"PhysRev.136.B1224Cc7R1\", \"volume-title\": \"Motion and Relativity\", \"author\": \"L. Infeld\", \"year\": \"1960\"}, {\"key\": \"PhysRev.136.B1224Cc8R1\", \"volume-title\": \"General Relativity and Gravitational Waves\", \"author\": \"J. Weber\", \"year\": \"1961\"}, {\"key\": \"PhysRev.136.B1224Cc10R1\", \"first-page\": \"615\", \"volume\": \"8\", \"author\": \"P. C. Peters\", \"year\": \"1963\", \"journal-title\": \"Bull. Am. Phys. Soc.\"}, {\"key\": \"PhysRev.136.B1224Cc11R1\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"2471\", \"DOI\": \"10.1103/PhysRev.128.2471\", \"volume\": \"128\", \"author\": \"A. Peres\", \"year\": \"1962\", \"journal-title\": \"Phys. Rev.\"}, {\"key\": \"PhysRev.136.B1224Cc12R1\", \"volume-title\": \"The Mathematical Theory of Relativity\", \"author\": \"A. S. Eddington\", \"year\": \"1960\"}, {\"key\": \"PhysRev.136.B1224Cc13R1\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"494\", \"DOI\": \"10.1103/PhysRev.131.494\", \"volume\": \"131\", \"author\": \"T. A. Morgan\", \"year\": \"1963\", \"journal-title\": \"Phys. Rev.\"}, {\"key\": \"PhysRev.136.B1224Cc15R1\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"435\", \"DOI\": \"10.1103/PhysRev.131.435\", \"volume\": \"131\", \"author\": \"P. C. Peters\", \"year\": \"1963\", \"journal-title\": \"Phys. Rev.\"}], \"container-title\": [\"Physical Review\"], \"language\": \"en\", \"link\": [{\"URL\": \"http://link.aps.org/article/10.1103/PhysRev.136.B1224\", \"content-type\": \"unspecified\", \"content-version\": \"vor\", \"intended-application\": \"syndication\"}, {\"URL\": \"http://harvest.aps.org/v2/journals/articles/10.1103/PhysRev.136.B1224/fulltext\", \"content-type\": \"unspecified\", \"content-version\": \"vor\", \"intended-application\": \"similarity-checking\"}], \"deposited\": {\"date-parts\": [[2017, 6, 15]], \"date-time\": \"2017-06-15T05:34:10Z\", \"timestamp\": 1497504850000}, \"score\": 68.44145, \"resource\": {\"primary\": {\"URL\": \"https://link.aps.org/doi/10.1103/PhysRev.136.B1224\"}}, \"issued\": {\"date-parts\": [[1964, 11, 23]]}, \"references-count\": 13, \"journal-issue\": {\"issue\": \"4B\", \"published-print\": {\"date-parts\": [[1964, 11]]}}, \"URL\": \"https://doi.org/10.1103/physrev.136.b1224\", \"ISSN\": [\"0031-899X\"], \"issn-type\": [{\"value\": \"0031-899X\", \"type\": \"print\"}], \"published\": {\"date-parts\": [[1964, 11, 23]]}}, {\"indexed\": {\"date-parts\": [[2026, 10, 16]], \"date-time\": \"2026-10-16T13:04:24Z\", \"timestamp\": 1792155864249, \"version\": \"4.4.0\"}, \"reference-count\": 5, \"publisher\": \"American Physical Society (APS)\", \"issue\": \"1\", \"license\": [{\"start\": {\"date-parts\": [[1963, 7, 1]], \"date-time\": \"1963-07-01T00:00:00Z\", \"timestamp\": -205286400000}, \"content-version\": \"vor\", \"delay-in-days\": 0, \"URL\": \"http://link.aps.org/licenses/aps-default-license\"}], \"content-domain\": {\"domain\": [], \"crossmark-restriction\": false}, \"short-container-title\": [\"Phys. Rev.\"], \"DOI\": \"10.1103/physrev.131.435\", \"type\": \"journal-article\", \"created\": {\"date-parts\": [[2002, 7, 27]], \"date-time\": \"2002-07-27T00:08:39Z\", \"timestamp\": 1027728519000}, \"page\": \"435-440\", \"source\": \"Crossref\", \"is-referenced-by-count\": 1387, \"title\": [\"Gravitational Radiation from Point Masses in a Keplerian Orbit\"], \"prefix\": \"10.1103\", \"volume\": \"131\", \"author\": [{\"given\": \"P. C.\", \"family\": \"Peters\", \"sequence\": \"first\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}, {\"given\": \"J.\", \"family\": \"Mathews\", \"sequence\": \"additional\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}], \"member\": \"16\", \"published-online\": {\"date-parts\": [[1963, 7, 1]]}, \"reference\": [{\"key\": \"PhysRev.131.435Cc1R1\", \"volume-title\": \"Motion and Relativity\", \"author\": \"L. Infeld\", \"year\": \"1960\"}, {\"key\": \"PhysRev.131.435Cc2R1\", \"volume-title\": \"The Classical Theory of Fields\", \"author\": \"L. Landau\", \"year\": \"1959\"}, {\"key\": \"PhysRev.131.435Cc3R1\", \"volume-title\": \"lectures, California Institute of Technology\", \"author\": \"R. P. Feynman\"}, {\"key\": \"PhysRev.131.435Cc5R1\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"768\", \"DOI\": \"10.1137/0110059\", \"volume\": \"10\", \"author\": \"J. Mathews\", \"year\": \"1962\", \"journal-title\": \"J. Soc. Ind. Appl. Math.\"}, {\"key\": \"PhysRev.131.435Cc5R2\", \"volume-title\": \"Gravitation, an Introduction to Current Research\", \"author\": \"J. Mathews\", \"year\": \"1962\"}], \"container-title\": [\"Physical Review\"], \"language\": \"en\", \"link\": [{\"URL\": \"http://link.aps.org/article/10.1103/PhysRev.131.435\", \"content-type\": \"unspecified\", \"content-version\": \"vor\", \"intended-application\": \"syndication\"}, {\"URL\": \"http://harvest.aps.org/v2/journals/articles/10.1103/PhysRev.131.435/fulltext\", \"content-type\": \"unspecified\", \"content-version\": \"vor\", \"intended-application\": \"similarity-checking\"}], \"deposited\": {\"date-parts\": [[2017, 6, 15]], \"date-time\": \"2017-06-15T05:33:45Z\", \"timestamp\": 1497504825000}, \"score\": 47.479977, \"resource\": {\"primary\": {\"URL\": \"https://link.aps.org/doi/10.1103/PhysRev.131.435\"}}, \"issued\": {\"date-parts\": [[1963, 7, 1]]}, \"references-count\": 5, \"journal-issue\": {\"issue\": \"1\", \"published-print\": {\"date-parts\": [[1963, 7]]}}, \"URL\": \"https://doi.org/10.1103/physrev.131.435\", \"ISSN\": [\"0031-899X\"], \"issn-type\": [{\"value\": \"0031-899X\", \"type\": \"print\"}], \"published\": {\"date-parts\": [[1963, 7, 1]]}}, {\"indexed\": {\"date-parts\": [[2026, 9, 15]], \"date-time\": \"2026-09-15T23:41:32Z\", \"timestamp\": 1789515692505, \"version\": \"build-2803163510\"}, \"reference-count\": 3, \"publisher\": \"American Physical Society (APS)\", \"issue\": \"4\", \"license\": [{\"start\": {\"date-parts\": [[1972, 2, 15]], \"date-time\": \"1972-02-15T00:00:00Z\", \"timestamp\": 66960000000}, \"content-version\": \"vor\", \"delay-in-days\": 0, \"URL\": \"http://link.aps.org/licenses/aps-default-license\"}], \"content-domain\": {\"domain\": [], \"crossmark-restriction\": false}, \"short-container-title\": [\"Phys. Rev. D\"], \"DOI\": \"10.1103/physrevd.5.1021\", \"type\": \"journal-article\", \"created\": {\"date-parts\": [[2002, 7, 26]], \"date-time\": \"2002-07-26T20:33:09Z\", \"timestamp\": 1027715589000}, \"page\": \"1021-1023\", \"source\": \"Crossref\", \"is-referenced-by-count\": 57, \"title\": [\"Post-Newtonian Gravitational Radiation from Point Masses in a Hyperbolic Kepler Orbit\"], \"prefix\": \"10.1103\", \"volume\": \"5\", \"author\": [{\"given\": \"R. O.\", \"family\": \"Hansen\", \"sequence\": \"first\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}], \"member\": \"16\", \"published-online\": {\"date-parts\": [[1972, 2, 15]]}, \"reference\": [{\"key\": \"PhysRevD.5.1021Cc1R1\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"435\", \"DOI\": \"10.1103/PhysRev.131.435\", \"volume\": \"131\", \"author\": \"P. C. Peters\", \"year\": \"1963\", \"journal-title\": \"Phys. Rev.\"}, {\"key\": \"PhysRevD.5.1021Cc2R1\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"B1224\", \"DOI\": \"10.1103/PhysRev.136.B1224\", \"volume\": \"136\", \"author\": \"P. C. Peters\", \"year\": \"1964\", \"journal-title\": \"Phys. Rev.\"}, {\"key\": \"PhysRevD.5.1021Cc3R1\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"153\", \"DOI\": \"10.1086/150414\", \"volume\": \"160\", \"author\": \"S. Chandrasekhar\", \"year\": \"1970\", \"journal-title\": \"Astrophys. J.\"}], \"container-title\": [\"Physical Review D\"], \"language\": \"en\", \"link\": [{\"URL\": \"http://link.aps.org/article/10.1103/PhysRevD.5.1021\", \"content-type\": \"unspecified\", \"content-version\": \"vor\", \"intended-application\": \"syndication\"}, {\"URL\": \"http://harvest.aps.org/v2/journals/articles/10.1103/PhysRevD.5.1021/fulltext\", \"content-type\": \"unspecified\", \"content-version\": \"vor\", \"intended-application\": \"similarity-checking\"}], \"deposited\": {\"date-parts\": [[2017, 6, 15]], \"date-time\": \"2017-06-15T03:50:50Z\", \"timestamp\": 1497498650000}, \"score\": 37.98365, \"resource\": {\"primary\": {\"URL\": \"https://link.aps.org/doi/10.1103/PhysRevD.5.1021\"}}, \"issued\": {\"date-parts\": [[1972, 2, 15]]}, \"references-count\": 3, \"journal-issue\": {\"issue\": \"4\", \"published-print\": {\"date-parts\": [[1972, 2]]}}, \"URL\": \"https://doi.org/10.1103/physrevd.5.1021\", \"ISSN\": [\"0556-2821\"], \"issn-type\": [{\"value\": \"0556-2821\", \"type\": \"print\"}], \"published\": {\"date-parts\": [[1972, 2, 15]]}}, {\"indexed\": {\"date-parts\": [[2026, 9, 10]], \"date-time\": \"2026-09-10T04:30:36Z\", \"timestamp\": 1789014636371, \"version\": \"build-2803163510\"}, \"reference-count\": 45, \"publisher\": \"American Physical Society (APS)\", \"issue\": \"8\", \"license\": [{\"start\": {\"date-parts\": [[2017, 4, 5]], \"date-time\": \"2017-04-05T00:00:00Z\", \"timestamp\": 1491350400000}, \"content-version\": \"vor\", \"delay-in-days\": 0, \"URL\": \"http://link.aps.org/licenses/aps-default-license\"}], \"funder\": [{\"DOI\": \"10.13039/501100004281\", \"name\": \"Narodowe Centrum Nauki\", \"doi-asserted-by\": \"publisher\", \"award\": [\"UMO-2014/14/M/ST9/00707\"], \"award-info\": [{\"award-number\": [\"UMO-2014/14/M/ST9/00707\"]}], \"id\": [{\"id\": \"10.13039/501100004281\", \"id-type\": \"DOI\", \"asserted-by\": \"publisher\"}]}], \"content-domain\": {\"domain\": [], \"crossmark-restriction\": false}, \"short-container-title\": [\"Phys. Rev. D\"], \"DOI\": \"10.1103/physrevd.95.084005\", \"type\": \"journal-article\", \"created\": {\"date-parts\": [[2017, 4, 5]], \"date-time\": \"2017-04-05T22:08:35Z\", \"timestamp\": 1491430115000}, \"source\": \"Crossref\", \"is-referenced-by-count\": 34, \"title\": [\"Four-loop static contribution to the gravitational interaction potential of two point masses\"], \"prefix\": \"10.1103\", \"volume\": \"95\", \"author\": [{\"given\": \"Thibault\", \"family\": \"Damour\", \"sequence\": \"first\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}, {\"given\": \"Piotr\", \"family\": \"Jaranowski\", \"sequence\": \"additional\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}], \"member\": \"16\", \"published-online\": {\"date-parts\": [[2017, 4, 5]]}, \"reference\": [{\"key\": \"PhysRevD.95.084005Cc1R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevX.6.041015\"}, {\"key\": \"PhysRevD.95.084005Cc2R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.89.061502\"}, {\"key\": \"PhysRevD.95.084005Cc3R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.90.044018\"}, {\"key\": \"PhysRevD.95.084005Cc4R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.59.084006\"}, {\"key\": \"PhysRevD.95.084005Cc5R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.62.064015\"}, {\"key\": \"PhysRevD.95.084005Cc6R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.62.084011\"}, {\"key\": \"PhysRevD.95.084005Cc7R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.64.124013\"}, {\"key\": \"PhysRevD.95.084005Cc8R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.79.064004\"}, {\"key\": \"PhysRevD.95.084005Cc9R1\", \"volume-title\": \"Gravitational Radiation\", \"author\": \"T. Damour\", \"year\": \"1983\"}, {\"key\": \"PhysRevD.95.084005Cc10R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.89.064058\"}, {\"key\": \"PhysRevD.95.084005Cc11R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.92.124043\"}, {\"key\": \"PhysRevD.95.084005Cc12R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.87.064011\"}, {\"key\": \"PhysRevD.95.084005Cc13R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.86.061503\"}, {\"key\": \"PhysRevD.95.084005Cc14R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.87.081503\"}, {\"key\": \"PhysRevD.95.084005Cc15R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.87.121501\"}, {\"key\": \"PhysRevD.95.084005Cc16R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.91.084024\"}, {\"key\": \"PhysRevD.95.084005Cc17R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.93.084014\"}, {\"key\": \"PhysRevD.95.084005Cc18R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.93.084037\"}, {\"key\": \"PhysRevD.95.084005Cc19R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.95.044026\"}, {\"key\": \"PhysRevD.95.084005Cc21R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.73.104029\"}, {\"key\": \"PhysRevD.95.084005Cc22R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1007/BF00773685\"}, {\"key\": \"PhysRevD.95.084005Cc23R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1063/1.529135\"}, {\"key\": \"PhysRevD.95.084005Cc24R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1016/0375-9601(84)90947-2\"}, {\"key\": \"PhysRevD.95.084005Cc25R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.57.7274\"}, {\"key\": \"PhysRevD.95.084005Cc25R2\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.63.029902\"}, {\"key\": \"PhysRevD.95.084005Cc26R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1007/BF02395016\"}, {\"key\": \"PhysRevD.95.084005Cc26R2\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1007/BF02395016\"}, {\"key\": \"PhysRevD.95.084005Cc27R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1016/j.cpc.2016.02.018\"}, {\"key\": \"PhysRevD.95.084005Cc28R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.53.5541\"}, {\"key\": \"PhysRevD.95.084005Cc29R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1007/BF01340389\"}, {\"key\": \"PhysRevD.95.084005Cc30R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/RevModPhys.21.425\"}, {\"key\": \"PhysRevD.95.084005Cc31R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRev.80.440\"}, {\"key\": \"PhysRevD.95.084005Cc32R1\", \"volume-title\": \"Motion and Relativity\", \"author\": \"L. Infeld\", \"year\": \"1960\"}, {\"key\": \"PhysRevD.95.084005Cc33R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.84.044031\"}, {\"key\": \"PhysRevD.95.084005Cc34R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1016/S0370-2693(01)00642-6\"}, {\"key\": \"PhysRevD.95.084005Cc35R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.85.044029\"}, {\"key\": \"PhysRevD.95.084005Cc36R1\", \"first-page\": \"1355\", \"volume\": \"294\", \"author\": \"T. Damour\", \"year\": \"1982\", \"journal-title\": \"C. R. Acad. Sci. Paris, Ser. II\"}, {\"key\": \"PhysRevD.95.084005Cc37R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.69.124007\"}, {\"key\": \"PhysRevD.95.084005Cc38R1\", \"volume-title\": \"The Theory of Space, Time and Gravitation\", \"author\": \"V. A. Fock\", \"year\": \"1955\"}, {\"key\": \"PhysRevD.95.084005Cc39R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1016/0550-3213(80)90289-8\"}, {\"key\": \"PhysRevD.95.084005Cc41R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1063/1.1471366\"}, {\"key\": \"PhysRevD.95.084005Cc42R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1016/j.cpc.2007.12.008\"}, {\"key\": \"PhysRevD.95.084005Cc43R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.89.104047\"}, {\"key\": \"PhysRevD.95.084005Cc44R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.91.064050\"}, {\"key\": \"PhysRevD.95.084005Cc45R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.92.084025\"}], \"container-title\": [\"Physical Review D\"], \"language\": \"en\", \"link\": [{\"URL\": \"http://link.aps.org/article/10.1103/PhysRevD.95.084005\", \"content-type\": \"unspecified\", \"content-version\": \"vor\", \"intended-application\": \"syndication\"}, {\"URL\": \"http://harvest.aps.org/v2/journals/articles/10.1103/PhysRevD.95.084005/fulltext\", \"content-type\": \"unspecified\", \"content-version\": \"vor\", \"intended-application\": \"similarity-checking\"}], \"deposited\": {\"date-parts\": [[2017, 4, 5]], \"date-time\": \"2017-04-05T22:10:46Z\", \"timestamp\": 1491430246000}, \"score\": 36.09569, \"resource\": {\"primary\": {\"URL\": \"http://link.aps.org/doi/10.1103/PhysRevD.95.084005\"}}, \"issued\": {\"date-parts\": [[2017, 4, 5]]}, \"references-count\": 45, \"journal-issue\": {\"issue\": \"8\", \"published-print\": {\"date-parts\": [[2017, 4]]}}, \"URL\": \"https://doi.org/10.1103/physrevd.95.084005\", \"ISSN\": [\"2470-0010\", \"2470-0029\"], \"issn-type\": [{\"value\": \"2470-0010\", \"type\": \"print\"}, {\"value\": \"2470-0029\", \"type\": \"electronic\"}], \"published\": {\"date-parts\": [[2017, 4, 5]]}, \"article-number\": \"084005\"}, {\"indexed\": {\"date-parts\": [[2026, 9, 28]], \"date-time\": \"2026-09-28T20:20:07Z\", \"timestamp\": 1790626807731, \"version\": \"4.1.0\"}, \"reference-count\": 48, \"publisher\": \"American Physical Society (APS)\", \"issue\": \"2\", \"license\": [{\"start\": {\"date-parts\": [[2005, 1, 6]], \"date-time\": \"2005-01-06T00:00:00Z\", \"timestamp\": 1104969600000}, \"content-version\": \"vor\", \"delay-in-days\": 0, \"URL\": \"http://link.aps.org/licenses/aps-default-license\"}], \"content-domain\": {\"domain\": [], \"crossmark-restriction\": false}, \"short-container-title\": [\"Phys. Rev. D\"], \"DOI\": \"10.1103/physrevd.71.024004\", \"type\": \"journal-article\", \"created\": {\"date-parts\": [[2005, 1, 7]], \"date-time\": \"2005-01-07T17:42:28Z\", \"timestamp\": 1105119748000}, \"source\": \"Crossref\", \"is-referenced-by-count\": 82, \"title\": [\"Hadamard regularization of the third post-Newtonian gravitational wave generation of two point masses\"], \"prefix\": \"10.1103\", \"volume\": \"71\", \"author\": [{\"given\": \"Luc\", \"family\": \"Blanchet\", \"sequence\": \"first\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}, {\"given\": \"Bala R.\", \"family\": \"Iyer\", \"sequence\": \"additional\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}], \"member\": \"16\", \"published-online\": {\"date-parts\": [[2005, 1, 6]]}, \"reference\": [{\"key\": \"PhysRevD.71.024004Cc1R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.65.064005\"}, {\"key\": \"PhysRevD.71.024004Cc2R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1086/382155\"}, {\"key\": \"PhysRevD.71.024004Cc3R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevLett.70.2984\"}, {\"key\": \"PhysRevD.71.024004Cc4R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.49.2658\"}, {\"key\": \"PhysRevD.71.024004Cc5R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.49.4016\"}, {\"key\": \"PhysRevD.71.024004Cc6R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.52.5719\"}, {\"key\": \"PhysRevD.71.024004Cc6R2\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.55.7980\"}, {\"key\": \"PhysRevD.71.024004Cc7R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.57.885\"}, {\"key\": \"PhysRevD.71.024004Cc8R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.63.044023\"}, {\"key\": \"PhysRevD.71.024004Cc9R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.67.064028\"}, {\"key\": \"PhysRevD.71.024004Cc10R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.67.024016\"}, {\"key\": \"PhysRevD.71.024004Cc11R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.67.104025\"}, {\"key\": \"PhysRevD.71.024004Cc12R1\", \"volume-title\": \"Gravitational Radiation\", \"author\": \"T. Damour\", \"year\": \"1983\"}, {\"key\": \"PhysRevD.71.024004Cc13R1\", \"volume-title\": \"Le Problème de Cauchy et les Équations aux Dérivées Partielles Linéaires Hyperboliques\", \"author\": \"J. Hadamard\", \"year\": \"1932\"}, {\"key\": \"PhysRevD.71.024004Cc14R1\", \"volume-title\": \"Théorie des Distributions\", \"author\": \"L. Schwartz\", \"year\": \"1978\"}, {\"key\": \"PhysRevD.71.024004Cc15R1\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"69\", \"DOI\": \"10.1098/rspa.1994.0049\", \"volume\": \"445\", \"author\": \"A. Sellier\", \"year\": \"1994\", \"journal-title\": \"Proc. R. Soc. London A\", \"ISSN\": \"https://id.crossref.org/issn/0080-4630\", \"issn-type\": \"print\"}, {\"key\": \"PhysRevD.71.024004Cc16R1\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"17\", \"DOI\": \"10.1143/ptp/92.1.17\", \"volume\": \"92\", \"author\": \"M. Sasaki\", \"year\": \"1994\", \"journal-title\": \"Prog. Theor. Phys.\", \"ISSN\": \"https://id.crossref.org/issn/0033-068X\", \"issn-type\": \"print\"}, {\"key\": \"PhysRevD.71.024004Cc17R1\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"1087\", \"DOI\": \"10.1143/PTP.96.1087\", \"volume\": \"96\", \"author\": \"T. Tanaka\", \"year\": \"1996\", \"journal-title\": \"Prog. Theor. Phys.\", \"ISSN\": \"https://id.crossref.org/issn/0033-068X\", \"issn-type\": \"print\"}, {\"key\": \"PhysRevD.71.024004Cc18R1\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"745\", \"DOI\": \"10.1143/ptp/92.4.745\", \"volume\": \"92\", \"author\": \"H. Tagoshi\", \"year\": \"1994\", \"journal-title\": \"Prog. Theor. Phys.\", \"ISSN\": \"https://id.crossref.org/issn/0033-068X\", \"issn-type\": \"print\"}, {\"key\": \"PhysRevD.71.024004Cc19R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.57.7274\"}, {\"key\": \"PhysRevD.71.024004Cc20R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.60.124003\"}, {\"key\": \"PhysRevD.71.024004Cc21R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1016/S0375-9601(00)00360-1\"}, {\"key\": \"PhysRevD.71.024004Cc22R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.63.062005\"}, {\"key\": \"PhysRevD.71.024004Cc23R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1063/1.1308506\"}, {\"key\": \"PhysRevD.71.024004Cc24R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1063/1.1384864\"}, {\"key\": \"PhysRevD.71.024004Cc25R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.62.021501\"}, {\"key\": \"PhysRevD.71.024004Cc25R2\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.63.029903\"}, {\"key\": \"PhysRevD.71.024004Cc26R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1016/S0370-2693(01)00642-6\"}, {\"key\": \"PhysRevD.71.024004Cc27R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.69.124007\"}, {\"key\": \"PhysRevD.71.024004Cc28R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.62.064002\"}, {\"key\": \"PhysRevD.71.024004Cc29R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.63.064038\"}, {\"key\": \"PhysRevD.71.024004Cc30R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.68.121501\"}, {\"key\": \"PhysRevD.71.024004Cc31R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.69.064018\"}, {\"key\": \"PhysRevD.71.024004Cc32R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevLett.93.091101\"}, {\"key\": \"PhysRevD.71.024004Cc34R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1088/0264-9381/22/1/011\"}, {\"key\": \"PhysRevD.71.024004Cc35R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1088/0264-9381/18/5/301\"}, {\"key\": \"PhysRevD.71.024004Cc36R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.63.044021\"}, {\"key\": \"PhysRevD.71.024004Cc37R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.51.2559\"}, {\"key\": \"PhysRevD.71.024004Cc38R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1088/0264-9381/15/7/013\"}, {\"key\": \"PhysRevD.71.024004Cc39R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.65.124020\"}, {\"key\": \"PhysRevD.71.024004Cc40R1\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"379\", \"DOI\": \"10.1098/rsta.1986.0125\", \"volume\": \"320\", \"author\": \"L. Blanchet\", \"year\": \"1986\", \"journal-title\": \"Philos. Trans. R. Soc. London A\", \"ISSN\": \"https://id.crossref.org/issn/1364-503X\", \"issn-type\": \"print\"}, {\"key\": \"PhysRevD.71.024004Cc41R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1088/0264-9381/15/1/009\"}, {\"key\": \"PhysRevD.71.024004Cc42R1\", \"first-page\": \"377\", \"volume\": \"50\", \"author\": \"L. Blanchet\", \"year\": \"1989\", \"journal-title\": \"Ann. Inst. Henri Poincare Phys. Theor.\", \"ISSN\": \"https://id.crossref.org/issn/0246-0211\", \"issn-type\": \"print\"}, {\"key\": \"PhysRevD.71.024004Cc43R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.43.3259\"}, {\"key\": \"PhysRevD.71.024004Cc44R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1103/PhysRevD.58.124002\"}, {\"key\": \"PhysRevD.71.024004Cc45R1\", \"volume-title\": \"Generalized Functions\", \"author\": \"I. M. Gel’fand\", \"year\": \"1964\"}, {\"key\": \"PhysRevD.71.024004Cc46R1\", \"doi-asserted-by\": \"crossref\", \"DOI\": \"10.1119/1.15756\", \"volume-title\": \"Table of Integrals, Series and Products\", \"author\": \"I. Gradshteyn\", \"year\": \"1980\"}, {\"key\": \"PhysRevD.71.024004Cc47R1\", \"doi-asserted-by\": \"publisher\", \"DOI\": \"10.1088/0264-9381/20/4/309\"}], \"container-title\": [\"Physical Review D\"], \"language\": \"en\", \"link\": [{\"URL\": \"http://link.aps.org/article/10.1103/PhysRevD.71.024004\", \"content-type\": \"unspecified\", \"content-version\": \"vor\", \"intended-application\": \"syndication\"}, {\"URL\": \"http://harvest.aps.org/v2/journals/articles/10.1103/PhysRevD.71.024004/fulltext\", \"content-type\": \"unspecified\", \"content-version\": \"vor\", \"intended-application\": \"similarity-checking\"}], \"deposited\": {\"date-parts\": [[2017, 6, 16]], \"date-time\": \"2017-06-16T14:42:58Z\", \"timestamp\": 1497624178000}, \"score\": 35.06856, \"resource\": {\"primary\": {\"URL\": \"https://link.aps.org/doi/10.1103/PhysRevD.71.024004\"}}, \"issued\": {\"date-parts\": [[2005, 1, 6]]}, \"references-count\": 48, \"journal-issue\": {\"issue\": \"2\", \"published-print\": {\"date-parts\": [[2005, 1]]}}, \"URL\": \"https://doi.org/10.1103/physrevd.71.024004\", \"ISSN\": [\"1550-7998\", \"1550-2368\"], \"issn-type\": [{\"value\": \"1550-7998\", \"type\": \"print\"}, {\"value\": \"1550-2368\", \"type\": \"electronic\"}], \"published\": {\"date-parts\": [[2005, 1, 6]]}, \"article-number\": \"024004\"}]"
+                  }
+                ],
+                "details": {}
+              },
+              "is_error": false
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 386,
+            "type": "tool",
+            "time": "2026-10-19T13:08:30.382151+00:00",
+            "data": {
+              "phase": "completed",
+              "id": "tool_r0VyfTQCBvLpxm1w9hPIvb5O",
+              "name": "literature",
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "[{\"indexed\": {\"date-parts\": [[2026, 10, 6]], \"date-time\": \"2026-10-06T16:52:16Z\", \"timestamp\": 1791305536641, \"version\": \"4.3.1\"}, \"reference-count\": 20, \"publisher\": \"Springer Science and Business Media LLC\", \"issue\": \"7248\", \"license\": [{\"start\": {\"date-parts\": [[2009, 6, 1]], \"date-time\": \"2009-06-01T00:00:00Z\", \"timestamp\": 1243814400000}, \"content-version\": \"tdm\", \"delay-in-days\": 0, \"URL\": \"http://www.springer.com/tdm\"}], \"content-domain\": {\"domain\": [], \"crossmark-restriction\": false}, \"short-container-title\": [\"Nature\"], \"published-print\": {\"date-parts\": [[2009, 6]]}, \"DOI\": \"10.1038/nature08096\", \"type\": \"journal-article\", \"created\": {\"date-parts\": [[2009, 6, 10]], \"date-time\": \"2009-06-10T12:59:04Z\", \"timestamp\": 1244638744000}, \"page\": \"817-819\", \"source\": \"Crossref\", \"is-referenced-by-count\": 197, \"title\": [\"Existence of collisional trajectories of Mercury, Mars and Venus with the Earth\"], \"prefix\": \"10.1038\", \"volume\": \"459\", \"author\": [{\"given\": \"J.\", \"family\": \"Laskar\", \"sequence\": \"first\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}, {\"given\": \"M.\", \"family\": \"Gastineau\", \"sequence\": \"additional\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}], \"member\": \"297\", \"reference\": [{\"key\": \"BFnature08096_CR1\", \"first-page\": \"L9\", \"volume\": \"287\", \"author\": \"J Laskar\", \"year\": \"1994\", \"unstructured\": \"Laskar, J. Large scale chaos in the Solar System. Astron. Astrophys. 287, L9–L12 (1994)\", \"journal-title\": \"Astron. Astrophys.\"}, {\"key\": \"BFnature08096_CR2\", \"first-page\": \"312\", \"volume\": \"185\", \"author\": \"J Laskar\", \"year\": \"2008\", \"unstructured\": \"Laskar, J. Chaotic diffusion in the Solar System. Icarus 185, 312–330 (2008)\", \"journal-title\": \"Icarus\"}, {\"key\": \"BFnature08096_CR3\", \"doi-asserted-by\": \"publisher\", \"first-page\": \"1207\", \"DOI\": \"10.1086/589232\", \"volume\": \"683\", \"author\": \"K Batygin\", \"year\": \"2008\", \"unstructured\": \"Batygin, K. & Laughlin, G. On the dynamical stability of the Solar System. Astrophys. J. 683, 1207–1216 (2008)\", \"journal-title\": \"Astrophys. J.\"}, {\"key\": \"BFnature08096_CR4\", \"doi-asserted-by\": \"publisher\", \"first-page\": \"237\", \"DOI\": \"10.1038/338237a0\", \"volume\": \"338\", \"author\": \"J Laskar\", \"year\": \"1989\", \"unstructured\": \"Laskar, J. A numerical experiment on the chaotic behaviour of the Solar System. Nature 338, 237–238 (1989)\", \"journal-title\": \"Nature\"}, {\"key\": \"BFnature08096_CR5\", \"doi-asserted-by\": \"publisher\", \"first-page\": \"266\", \"DOI\": \"10.1016/0019-1035(90)90084-M\", \"volume\": \"88\", \"author\": \"J Laskar\", \"year\": \"1990\", \"unstructured\": \"Laskar, J. The chaotic motion of the Solar System. A numerical estimate of the size of the chaotic zones. Icarus 88, 266–291 (1990)\", \"journal-title\": \"Icarus\"}, {\"key\": \"BFnature08096_CR6\", \"doi-asserted-by\": \"publisher\", \"first-page\": \"148\", \"DOI\": \"10.1016/0019-1035(92)90196-E\", \"volume\": \"95\", \"author\": \"J Laskar\", \"year\": \"1992\", \"unstructured\": \"Laskar, J., Quinn, T. & Tremaine, S. Confirmation of resonant structure in the Solar System. Icarus 95, 148–152 (1992)\", \"journal-title\": \"Icarus\"}, {\"key\": \"BFnature08096_CR7\", \"doi-asserted-by\": \"publisher\", \"first-page\": \"56\", \"DOI\": \"10.1126/science.257.5066.56\", \"volume\": \"257\", \"author\": \"GJ Sussman\", \"year\": \"1992\", \"unstructured\": \"Sussman, G. J. & Wisdom, J. Chaotic evolution of the Solar System. Science 257, 56–62 (1992)\", \"journal-title\": \"Science\"}, {\"key\": \"BFnature08096_CR8\", \"doi-asserted-by\": \"publisher\", \"first-page\": \"1735\", \"DOI\": \"10.1098/rsta.1999.0399\", \"volume\": \"357\", \"author\": \"J Laskar\", \"year\": \"1999\", \"unstructured\": \"Laskar, J. The limits of Earth orbital calculations for geological time scale use. Phil. Trans. R. Soc. Lond. A 357, 1735–1759 (1999)\", \"journal-title\": \"Phil. Trans. R. Soc. Lond. A\"}, {\"key\": \"BFnature08096_CR9\", \"doi-asserted-by\": \"publisher\", \"first-page\": \"261\", \"DOI\": \"10.1051/0004-6361:20041335\", \"volume\": \"428\", \"author\": \"J Laskar\", \"year\": \"2004\", \"unstructured\": \"Laskar, J. et al. A long term numerical solution for the insolation quantities of the Earth. Astron. Astrophys. 428, 261–285 (2004)\", \"journal-title\": \"Astron. Astrophys.\"}, {\"key\": \"BFnature08096_CR10\", \"doi-asserted-by\": \"publisher\", \"first-page\": \"620\", \"DOI\": \"10.1086/375560\", \"volume\": \"592\", \"author\": \"F Varadi\", \"year\": \"2003\", \"unstructured\": \"Varadi, F., Runnegar, B. & Ghil, M. Successive refinements in long-term integrations of planetary orbits. Astrophys. J. 592, 620–630 (2003)\", \"journal-title\": \"Astrophys. J.\"}, {\"key\": \"BFnature08096_CR11\", \"doi-asserted-by\": \"publisher\", \"first-page\": \"483\", \"DOI\": \"10.1046/j.1365-8711.2002.05765.x\", \"volume\": \"336\", \"author\": \"T Ito\", \"year\": \"2002\", \"unstructured\": \"Ito, T. & Tanikawa, K. Long-term integrations and stability of planetary orbits in our Solar System. Mon. Not. R. Astron. Soc. 336, 483–500 (2002)\", \"journal-title\": \"Mon. Not. R. Astron. Soc.\"}, {\"key\": \"BFnature08096_CR12\", \"doi-asserted-by\": \"publisher\", \"first-page\": \"343\", \"DOI\": \"10.1016/j.icarus.2004.04.005\", \"volume\": \"170\", \"author\": \"J Laskar\", \"year\": \"2004\", \"unstructured\": \"Laskar, J. et al. Long term evolution and chaotic diffusion of the insolation quantities of Mars. Icarus 170, 343–364 (2004)\", \"journal-title\": \"Icarus\"}, {\"key\": \"BFnature08096_CR13\", \"doi-asserted-by\": \"publisher\", \"first-page\": \"1962\", \"DOI\": \"10.1086/117210\", \"volume\": \"108\", \"author\": \"P Saha\", \"year\": \"1994\", \"unstructured\": \"Saha, P. & Tremaine, S. Long-term planetary integration with individual time steps. Astron. J. 108, 1962–1969 (1994)\", \"journal-title\": \"Astron. J.\"}, {\"key\": \"BFnature08096_CR14\", \"doi-asserted-by\": \"publisher\", \"first-page\": \"1\", \"DOI\": \"10.1016/j.icarus.2008.02.017\", \"volume\": \"196\", \"author\": \"G Boué\", \"year\": \"2008\", \"unstructured\": \"Boué, G. & Laskar, J. Precession of a planet with a satellite. Icarus 196, 1–15 (2008)\", \"journal-title\": \"Icarus\"}, {\"key\": \"BFnature08096_CR15\", \"doi-asserted-by\": \"publisher\", \"first-page\": \"39\", \"DOI\": \"10.1023/A:1012098603882\", \"volume\": \"80\", \"author\": \"J Laskar\", \"year\": \"2001\", \"unstructured\": \"Laskar, J. & Robutel, P. High order symplectic integrators for perturbed Hamiltonian systems. Celest. Mech. Dynam. Astron. 80, 39–62 (2001)\", \"journal-title\": \"Celest. Mech. Dynam. Astron.\"}, {\"key\": \"BFnature08096_CR16\", \"doi-asserted-by\": \"publisher\", \"first-page\": \"1165\", \"DOI\": \"10.1051/0004-6361:20035663\", \"volume\": \"417\", \"author\": \"M Standish\", \"year\": \"2004\", \"unstructured\": \"Standish, M. An approximation to the errors in the planetary ephemerides of the Astronomical Almanac. Astron. Astrophys. 417, 1165–1171 (2004)\", \"journal-title\": \"Astron. Astrophys.\"}, {\"key\": \"BFnature08096_CR17\", \"doi-asserted-by\": \"publisher\", \"first-page\": \"315\", \"DOI\": \"10.1051/0004-6361:20066607\", \"volume\": \"477\", \"author\": \"A Fienga\", \"year\": \"2008\", \"unstructured\": \"Fienga, A., Manche, H., Laskar, J. & Gastineau, M. INPOP06: a new numerical planetary ephemeris. Astron. Astrophys. 477, 315–327 (2008)\", \"journal-title\": \"Astron. Astrophys.\"}, {\"key\": \"BFnature08096_CR18\", \"doi-asserted-by\": \"publisher\", \"first-page\": \"331\", \"DOI\": \"10.1016/j.icarus.2006.03.013\", \"volume\": \"183\", \"author\": \"KA Holsapple\", \"year\": \"2006\", \"unstructured\": \"Holsapple, K. A. & Michel, P. Tidal disruptions: a continuum theory for solid bodies. Icarus 183, 331–348 (2006)\", \"journal-title\": \"Icarus\"}, {\"key\": \"BFnature08096_CR19\", \"doi-asserted-by\": \"publisher\", \"first-page\": \"155\", \"DOI\": \"10.1038/nature04311\", \"volume\": \"439\", \"author\": \"E Asphaug\", \"year\": \"2006\", \"unstructured\": \"Asphaug, E., Agnor, C. B. & Williams, Q. Hit-and-run planetary collisions. Nature 439, 155–160 (2006)\", \"journal-title\": \"Nature\"}, {\"key\": \"BFnature08096_CR20\", \"first-page\": \"L75\", \"volume\": \"317\", \"author\": \"J Laskar\", \"year\": \"2007\", \"unstructured\": \"Laskar, J. Large scale chaos and the spacing of the inner planets. Astron. Astrophys. 317, L75–L78 (2007)\", \"journal-title\": \"Astron. Astrophys.\"}], \"container-title\": [\"Nature\"], \"language\": \"en\", \"link\": [{\"URL\": \"http://www.nature.com/articles/nature08096.pdf\", \"content-type\": \"application/pdf\", \"content-version\": \"vor\", \"intended-application\": \"text-mining\"}, {\"URL\": \"http://www.nature.com/articles/nature08096\", \"content-type\": \"text/html\", \"content-version\": \"vor\", \"intended-application\": \"text-mining\"}, {\"URL\": \"http://www.nature.com/articles/nature08096.pdf\", \"content-type\": \"application/pdf\", \"content-version\": \"vor\", \"intended-application\": \"similarity-checking\"}], \"deposited\": {\"date-parts\": [[2023, 5, 18]], \"date-time\": \"2023-05-18T18:25:15Z\", \"timestamp\": 1684434315000}, \"score\": 95.72061, \"resource\": {\"primary\": {\"URL\": \"https://www.nature.com/articles/nature08096\"}}, \"issued\": {\"date-parts\": [[2009, 6]]}, \"references-count\": 20, \"journal-issue\": {\"issue\": \"7248\", \"published-print\": {\"date-parts\": [[2009, 6]]}}, \"alternative-id\": [\"BFnature08096\"], \"URL\": \"https://doi.org/10.1038/nature08096\", \"ISSN\": [\"0028-0836\", \"1476-4687\"], \"issn-type\": [{\"value\": \"0028-0836\", \"type\": \"print\"}, {\"value\": \"1476-4687\", \"type\": \"electronic\"}], \"published\": {\"date-parts\": [[2009, 6]]}}, {\"indexed\": {\"date-parts\": [[2024, 9, 5]], \"date-time\": \"2024-09-05T06:11:06Z\", \"timestamp\": 1725516666256}, \"publisher-location\": \"New York, NY\", \"reference-count\": 0, \"publisher\": \"Praxis\", \"isbn-type\": [{\"type\": \"print\", \"value\": \"9780387489254\"}, {\"type\": \"electronic\", \"value\": \"9780387489278\"}], \"content-domain\": {\"domain\": [], \"crossmark-restriction\": false}, \"DOI\": \"10.1007/978-0-387-48927-8_8\", \"type\": \"book-chapter\", \"created\": {\"date-parts\": [[2008, 8, 11]], \"date-time\": \"2008-08-11T17:13:21Z\", \"timestamp\": 1218474801000}, \"page\": \"27-29\", \"source\": \"Crossref\", \"is-referenced-by-count\": 0, \"title\": [\"The evolution of Mars, the Earth, Venus and Mercury\"], \"prefix\": \"10.1007\", \"member\": \"297\", \"container-title\": [\"Planet Mars\"], \"language\": \"en\", \"link\": [{\"URL\": \"http://link.springer.com/content/pdf/10.1007/978-0-387-48927-8_8.pdf\", \"content-type\": \"unspecified\", \"content-version\": \"vor\", \"intended-application\": \"similarity-checking\"}], \"deposited\": {\"date-parts\": [[2021, 4, 27]], \"date-time\": \"2021-04-27T22:21:38Z\", \"timestamp\": 1619562098000}, \"score\": 41.959473, \"resource\": {\"primary\": {\"URL\": \"http://link.springer.com/10.1007/978-0-387-48927-8_8\"}}, \"issued\": {\"date-parts\": [[null]]}, \"ISBN\": [\"9780387489254\", \"9780387489278\"], \"references-count\": 0, \"URL\": \"https://doi.org/10.1007/978-0-387-48927-8_8\"}, {\"indexed\": {\"date-parts\": [[2022, 4, 3]], \"date-time\": \"2022-04-03T09:59:36Z\", \"timestamp\": 1648979976586}, \"reference-count\": 0, \"publisher\": \"Elsevier BV\", \"issue\": \"3\", \"license\": [{\"start\": {\"date-parts\": [[1982, 3, 1]], \"date-time\": \"1982-03-01T00:00:00Z\", \"timestamp\": 383788800000}, \"content-version\": \"tdm\", \"delay-in-days\": 0, \"URL\": \"https://www.elsevier.com/tdm/userlicense/1.0/\"}], \"content-domain\": {\"domain\": [], \"crossmark-restriction\": false}, \"short-container-title\": [\"Icarus\"], \"published-print\": {\"date-parts\": [[1982, 3]]}, \"DOI\": \"10.1016/0019-1035(82)90049-5\", \"type\": \"journal-article\", \"created\": {\"date-parts\": [[2002, 11, 11]], \"date-time\": \"2002-11-11T15:23:53Z\", \"timestamp\": 1037028233000}, \"page\": \"439\", \"source\": \"Crossref\", \"is-referenced-by-count\": 0, \"title\": [\"Earthlike planets (Surfaces of Mercury, Venus, Earth, Moon, and Mars)\"], \"prefix\": \"10.1016\", \"volume\": \"49\", \"author\": [{\"given\": \"J.\", \"family\": \"Veverka\", \"sequence\": \"first\", \"affiliation\": [], \"role\": [{\"role\": \"author\", \"vocabulary\": \"crossref\"}]}], \"member\": \"78\", \"container-title\": [\"Icarus\"], \"language\": \"en\", \"link\": [{\"URL\": \"https://api.elsevier.com/content/article/PII:0019103582900495?httpAccept=text/xml\", \"content-type\": \"text/xml\", \"content-version\": \"vor\", \"intended-application\": \"text-mining\"}, {\"URL\": \"https://api.elsevier.com/content/article/PII:0019103582900495?httpAccept=text/plain\", \"content-type\": \"text/plain\", \"content-version\": \"vor\", \"intended-application\": \"text-mining\"}], \"deposited\": {\"date-parts\": [[2019, 4, 3]], \"date-time\": \"2019-04-03T20:51:43Z\", \"timestamp\": 1554324703000}, \"score\": 35.88942, \"resource\": {\"primary\": {\"URL\": \"https://linkinghub.elsevier.com/retrieve/pii/0019103582900495\"}}, \"issued\": {\"date-parts\": [[1982, 3]]}, \"references-count\": 0, \"journal-issue\": {\"issue\": \"3\", \"published-print\": {\"date-parts\": [[1982, 3]]}}, \"alternative-id\": [\"0019103582900495\"], \"URL\": \"https://doi.org/10.1016/0019-1035(82)90049-5\", \"ISSN\": [\"0019-1035\"], \"issn-type\": [{\"value\": \"0019-1035\", \"type\": \"print\"}], \"published\": {\"date-parts\": [[1982, 3]]}}, {\"indexed\": {\"date-parts\": [[2026, 10, 6]], \"date-time\": \"2026-10-06T09:30:13Z\", \"timestamp\": 1791279013290, \"version\": \"4.1.0\"}, \"reference-count\": 30, \"publisher\": \"EDP Sciences\", \"issue\": \"3\", \"content-domain\": {\"domain\": [], \"crossmark-restriction\": false}, \"short-container-title\": [\"A&amp;A\"], \"published-print\": {\"date-parts\": [[2009, 12]]}, \"DOI\": \"10.1051/0004-6361/200911755\", \"type\": \"journal-article\", \"created\": {\"date-parts\": [[2009, 9, 17]], \"date-time\": \"2009-09-17T14:12:22Z\", \"timestamp\": 1253196742000}, \"page\": \"1675-1686\", \"source\": \"Crossref\", \"is-referenced-by-count\": 135, \"title\": [\"INPOP08, a 4-D planetary ephemeris: from asteroid and time-scale computations to ESA Mars Express and Venus Express contributions\"], \"prefix\": \"10.1051\", \"volume\": \"507\", \"author\": [{\"given\": \"A.\", \"family\": \"Fienga\", \"sequence\": \"first\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}, {\"given\": \"J.\", \"family\": \"Laskar\", \"sequence\": \"additional\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}, {\"given\": \"T.\", \"family\": \"Morley\", \"sequence\": \"additional\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}, {\"given\": \"H.\", \"family\": \"Manche\", \"sequence\": \"additional\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}, {\"given\": \"P.\", \"family\": \"Kuchynka\", \"sequence\": \"additional\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}, {\"given\": \"C.\", \"family\": \"Le Poncin-Lafitte\", \"sequence\": \"additional\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}, {\"given\": \"F.\", \"family\": \"Budnik\", \"sequence\": \"additional\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}, {\"given\": \"M.\", \"family\": \"Gastineau\", \"sequence\": \"additional\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}, {\"given\": \"L.\", \"family\": \"Somenzi\", \"sequence\": \"additional\", \"affiliation\": [], \"role\": [{\"vocabulary\": \"crossref\", \"role\": \"author\"}]}], \"member\": \"250\", \"published-online\": {\"date-parts\": [[2009, 9, 17]]}, \"reference\": [{\"key\": \"R1\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"27\", \"DOI\": \"10.1007/s10569-007-9103-8\", \"volume\": \"100\", \"author\": \"Baer\", \"year\": \"2008\", \"journal-title\": \"Celest. Mechan. Dynam. Astron.\"}, {\"key\": \"R2\", \"first-page\": \"40\", \"volume\": \"9-28\", \"author\": \"Baer\", \"year\": \"2008\", \"journal-title\": \"AAS/Division for Planetary Sciences Meeting Abstracts\"}, {\"key\": \"R3\", \"first-page\": \"387\", \"volume\": \"548\", \"author\": \"Budnik\", \"year\": \"2004\", \"journal-title\": \"ESA SP\"}, {\"key\": \"R4\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"4455\", \"DOI\": \"10.1103/PhysRevD.52.4455\", \"volume\": \"52\", \"author\": \"Damour\", \"year\": \"1995\", \"journal-title\": \"Phys. Rev. D\"}, {\"key\": \"R5\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"3273\", \"DOI\": \"10.1103/PhysRevD.43.3273\", \"volume\": \"43\", \"author\": \"Damour\", \"year\": \"1991\", \"journal-title\": \"Phys. Rev. D\"}, {\"key\": \"R6\", \"first-page\": \"240\", \"volume\": \"229\", \"author\": \"Fairhead\", \"year\": \"1990\", \"journal-title\": \"A&A\"}, {\"key\": \"R7\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"315\", \"DOI\": \"10.1051/0004-6361:20066607\", \"volume\": \"477\", \"author\": \"Fienga\", \"year\": \"2008\", \"journal-title\": \"A&A\"}, {\"key\": \"R8\", \"first-page\": \"08\", \"volume\": \"343R\", \"author\": \"Folkner\", \"year\": \"2008\", \"journal-title\": \"JPL Interoffice Memorandum\"}, {\"key\": \"R9\", \"first-page\": \"642\", \"volume\": \"348\", \"author\": \"Irwin\", \"year\": \"1999\", \"journal-title\": \"A&A\"}, {\"key\": \"R10\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"1077\", \"DOI\": \"10.1086/300728\", \"volume\": \"117\", \"author\": \"Hilton\", \"year\": \"1999\", \"journal-title\": \"AJ\"}, {\"key\": \"R11\", \"unstructured\": \"IERS Conventions 2003, 2004, IERS Technical Note, 32, Frankfurt am Main: Verlag des Bundesamts fur Kartographie und Geodesie\"}, {\"key\": \"R12\", \"first-page\": \"356\", \"volume\": \"248\", \"author\": \"Klioner\", \"year\": \"2008\", \"journal-title\": \"IAU Symp.\"}, {\"key\": \"R13\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"23\", \"DOI\": \"10.1016/j.icarus.2005.12.025\", \"volume\": \"182\", \"author\": \"Konopliv\", \"year\": \"2006\", \"journal-title\": \"Icarus\"}, {\"key\": \"R14\", \"unstructured\": \"Kuchynka, P., Laskar, J., Fienga, A., Manche, H., & Somenzi, L. 2009, JOURNEES-2008, Astrometry, Geodynamics and Astronomical Reference Systems, ed. M. Soffel, & N. Capitaine (Dresden)\"}, {\"key\": \"R15\", \"unstructured\": \"Manche, H., Bouquillon, S., Fienga, A., Laskar, J., & Francou, G. 2007, JOURNEES-2007, The Celestial Reference Frame for the Future, ed. N. Capitaine (Paris)\"}, {\"key\": \"R16\", \"first-page\": \"363\", \"volume\": \"360\", \"author\": \"Michalak\", \"year\": \"2000\", \"journal-title\": \"A&A\"}, {\"key\": \"R17\", \"unstructured\": \"Moyer, T. 1971, Technical report 32-1527, JPL, May 15\"}, {\"key\": \"R18\", \"unstructured\": \"Moyer, T. 2000, Formulation for Observed and Computed Values of Deep Space Network Data Types for Navigation, ed. J. H. Yuen (John Wiley & Sons)\"}, {\"key\": \"R19\", \"unstructured\": \"Morley, T. 2006a, MEX data release\"}, {\"key\": \"R20\", \"unstructured\": \"Morley, T. 2007a, MEX data release\"}, {\"key\": \"R21\", \"unstructured\": \"Morley, T. 2007b, MEX data release\"}, {\"key\": \"R22\", \"unstructured\": \"Morley, T., & Budnik, F. 2007, Proc. 20th Inter. Symp. on Space Flight Dynamics, Annapolis, MD\"}, {\"key\": \"R23\", \"unstructured\": \"Pitjeva, E. V. 2008, JOURNEES-2008, Astrometry, Geodynamics and Astronomical Reference Systems, ed. M. Soffel, & N. Capitaine (Dresden)\"}, {\"key\": \"R24\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"2687\", \"DOI\": \"10.1086/378162\", \"volume\": \"126\", \"author\": \"Soffel\", \"year\": \"2003\", \"journal-title\": \"AJ\"}, {\"key\": \"R25\", \"unstructured\": \"Somenzi, L., Fienga, A., & Laskar, J. 2009, A&A, submitted\"}, {\"key\": \"R26\", \"first-page\": \"381\", \"volume\": \"336\", \"author\": \"Standish\", \"year\": \"1998\", \"journal-title\": \"A&A\"}, {\"key\": \"R27\", \"unstructured\": \"Standish, E. M. 1998b, JPL Interoffice Memorandum, 312.F, 98\"}, {\"key\": \"R28\", \"unstructured\": \"Standish, E. M. 2006, JPL Interoffice Memorandum, 343R-06-002, 1\"}, {\"key\": \"R29\", \"unstructured\": \"Standish, E. M., & Williams, J. G. 2001, ftp://ssd.jpl.nasa.gov/pub/eph/planets/ioms/ExplSupplChap8.pdf\"}, {\"key\": \"R30\", \"doi-asserted-by\": \"crossref\", \"first-page\": \"2869\", \"DOI\": \"10.1086/429734\", \"volume\": \"129\", \"author\": \"Tedesco\", \"year\": \"2005\", \"journal-title\": \"AJ\"}], \"container-title\": [\"Astronomy &amp; Astrophysics\"], \"link\": [{\"URL\": \"http://www.aanda.org/10.1051/0004-6361/200911755/pdf\", \"content-type\": \"unspecified\", \"content-version\": \"vor\", \"intended-application\": \"similarity-checking\"}], \"deposited\": {\"date-parts\": [[2017, 7, 10]], \"date-time\": \"2017-07-10T15:52:29Z\", \"timestamp\": 1499701949000}, \"score\": 35.6198, \"resource\": {\"primary\": {\"URL\": \"http://www.aanda.org/10.1051/0004-6361/200911755\"}}, \"issued\": {\"date-parts\": [[2009, 9, 17]]}, \"references-count\": 30, \"journal-issue\": {\"issue\": \"3\"}, \"alternative-id\": [\"aa11755-09\"], \"URL\": \"https://doi.org/10.1051/0004-6361/200911755\", \"ISSN\": [\"0004-6361\", \"1432-0746\"], \"issn-type\": [{\"value\": \"0004-6361\", \"type\": \"print\"}, {\"value\": \"1432-0746\", \"type\": \"electronic\"}], \"published\": {\"date-parts\": [[2009, 9, 17]]}}, {\"indexed\": {\"date-parts\": [[2022, 4, 4]], \"date-time\": \"2022-04-04T07:54:41Z\", \"timestamp\": 1649058881528}, \"reference-count\": 0, \"publisher\": \"Elsevier BV\", \"issue\": \"1\", \"license\": [{\"start\": {\"date-parts\": [[1982, 3, 1]], \"date-time\": \"1982-03-01T00:00:00Z\", \"timestamp\": 383788800000}, \"content-version\": \"tdm\", \"delay-in-days\": 0, \"URL\": \"https://www.elsevier.com/tdm/userlicense/1.0/\"}], \"content-domain\": {\"domain\": [], \"crossmark-restriction\": false}, \"short-container-title\": [\"Physics of the Earth and Planetary Interiors\"], \"published-print\": {\"date-parts\": [[1982, 3]]}, \"DOI\": \"10.1016/0031-9201(82)90120-0\", \"type\": \"journal-article\", \"created\": {\"date-parts\": [[2002, 11, 12]], \"date-time\": \"2002-11-12T15:46:34Z\", \"timestamp\": 1037115994000}, \"page\": \"86-87\", \"source\": \"Crossref\", \"is-referenced-by-count\": 0, \"title\": [\"Earth-like planets. Surfaces of Mercury, Venus, Earth, Moon and Mars\"], \"prefix\": \"10.1016\", \"volume\": \"28\", \"author\": [{\"given\": \"P.\", \"family\": \"Hédervári\", \"sequence\": \"first\", \"affiliation\": [], \"role\": [{\"role\": \"author\", \"vocabulary\": \"crossref\"}]}], \"member\": \"78\", \"container-title\": [\"Physics of the Earth and Planetary Interiors\"], \"language\": \"en\", \"link\": [{\"URL\": \"https://api.elsevier.com/content/article/PII:0031920182901200?httpAccept=text/xml\", \"content-type\": \"text/xml\", \"content-version\": \"vor\", \"intended-application\": \"text-mining\"}, {\"URL\": \"https://api.elsevier.com/content/article/PII:0031920182901200?httpAccept=text/plain\", \"content-type\": \"text/plain\", \"content-version\": \"vor\", \"intended-application\": \"text-mining\"}], \"deposited\": {\"date-parts\": [[2019, 4, 4]], \"date-time\": \"2019-04-04T10:25:08Z\", \"timestamp\": 1554373508000}, \"score\": 33.869774, \"resource\": {\"primary\": {\"URL\": \"https://linkinghub.elsevier.com/retrieve/pii/0031920182901200\"}}, \"issued\": {\"date-parts\": [[1982, 3]]}, \"references-count\": 0, \"journal-issue\": {\"issue\": \"1\", \"published-print\": {\"date-parts\": [[1982, 3]]}}, \"alternative-id\": [\"0031920182901200\"], \"URL\": \"https://doi.org/10.1016/0031-9201(82)90120-0\", \"ISSN\": [\"0031-9201\"], \"issn-type\": [{\"value\": \"0031-9201\", \"type\": \"print\"}], \"published\": {\"date-parts\": [[1982, 3]]}}]"
+                  }
+                ],
+                "details": {}
+              },
+              "is_error": false
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 387,
+            "type": "tool",
+            "time": "2026-10-19T13:08:48.890745+00:00",
+            "data": {
+              "phase": "completed",
+              "id": "tool_OVUGoCHmcHLs1tpBM9HstDjc",
+              "name": "literature",
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Tool failed (422)"
+                  }
+                ],
+                "details": {}
+              },
+              "is_error": true
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 1367,
+            "type": "tool",
+            "time": "2026-10-19T13:10:09.191881+00:00",
+            "data": {
+              "phase": "started",
+              "id": "tool_VZ477qmVRXr1hwNVrjZEbwM9",
+              "name": "write",
+              "arguments": {
+                "content": "#!/usr/bin/env python3\n\"\"\"Minimal q049 order-of-magnitude recomputation.\n\nActual local computation only; constants and planet properties are nominal assumptions,\nnot newly retrieved observational fits.\n\"\"\"\nimport json\nfrom pathlib import Path\n\nG = 6.67430e-11          # SI\nC = 299792458.0          # m/s\nAU = 1.495978707e11      # m\nYR = 365.25 * 24 * 3600  # s\nM_SUN = 1.98847e30       # kg\nAGE = 4.6e9 * YR\n\nplanets = {\n    \"Mercury\": {\"m\": 3.3011e23, \"a_au\": 0.387098},\n    \"Earth\":   {\"m\": 5.9722e24, \"a_au\": 1.0},\n    \"Jupiter\": {\"m\": 1.8982e27, \"a_au\": 5.2044},\n}\n\ndef peters_circular(m1, m2, a):\n    \"\"\"Peters 1964 circular-binary lifetime and instantaneous da/dt.\"\"\"\n    mtot = m1 + m2\n    lifetime_s = (5.0/256.0) * C**5 * a**4 / (G**3 * m1*m2*mtot)\n    da_dt = -(64.0/5.0) * G**3 * m1*m2*mtot / (C**5 * a**3)\n    return lifetime_s, da_dt\n\nout = {\n    \"assumptions\": {\n        \"model\": \"isolated two point masses, circular orbit, leading-order Peters quadrupole inspiral\",\n        \"constants\": {\"G_SI\": G, \"c_m_s\": C, \"AU_m\": AU, \"M_sun_kg\": M_SUN},\n        \"age_comparison_yr\": AGE / YR,\n        \"not_included\": [\"eccentricity\", \"other planets\", \"tides\", \"stellar mass loss\", \"asteroids\", \"non-gravitational forces\"]\n    },\n    \"gw_recomputation\": {},\n    \"adiabatic_mass_loss_scenarios\": {}\n}\n\nfor name, p in planets.items():\n    m1 = M_SUN\n    m2 = p[\"m\"]\n    a = p[\"a_au\"] * AU\n    t_s, da_dt = peters_circular(m1, m2, a)\n    out[\"gw_recomputation\"][name] = {\n        \"planet_mass_kg\": m2,\n        \"semimajor_axis_AU\": p[\"a_au\"],\n        \"circular_inspiral_lifetime_yr\": t_s / YR,\n        \"instantaneous_da_dt_m_per_yr\": da_dt * YR,\n        \"drift_over_4p6_Gyr_m\": da_dt * AGE,\n        \"fractional_change_over_4p6_Gyr_linear\": abs(da_dt * AGE) / a\n    }\n\n# For slow isotropic stellar mass loss and negligible planet mass, a*M_star is conserved.\n# These are dimensionless what-if scenarios, not claimed solar evolution predictions.\nfor f in [0.05, 0.10, 0.30]:\n    ratio = 1.0 / (1.0 - f)\n    out[\"adiabatic_mass_loss_scenarios\"][f\"fraction_{f:.2f}\"] = {\n        \"final_a_over_initial_a\": ratio,\n        \"earth_like_delta_AU\": ratio - 1.0,\n        \"earth_like_delta_km\": (ratio - 1.0) * AU / 1000.0\n    }\n\npath = Path(\"/workspace/frontier/challenge-v2/q049_calc_output.json\")\npath.write_text(json.dumps(out, indent=2, ensure_ascii=False) + \"\\n\", encoding=\"utf-8\")\nprint(path)\nprint(json.dumps(out, indent=2, ensure_ascii=False))\n",
+                "path": "/workspace/frontier/challenge-v2/q049_calc.py"
+              }
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 1368,
+            "type": "tool",
+            "time": "2026-10-19T13:10:10.155949+00:00",
+            "data": {
+              "phase": "completed",
+              "id": "tool_VZ477qmVRXr1hwNVrjZEbwM9",
+              "name": "write",
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Successfully wrote to /workspace/frontier/challenge-v2/q049_calc.py"
+                  }
+                ]
+              },
+              "is_error": false
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 1373,
+            "type": "tool",
+            "time": "2026-10-19T13:10:17.090372+00:00",
+            "data": {
+              "phase": "started",
+              "id": "tool_q0FniZUcNNRWUelTsBOSX4Jk",
+              "name": "bash",
+              "arguments": {
+                "command": "python3 /workspace/frontier/challenge-v2/q049_calc.py",
+                "timeout": 30
+              }
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 1374,
+            "type": "tool",
+            "time": "2026-10-19T13:10:17.098067+00:00",
+            "data": {
+              "phase": "updated",
+              "id": "tool_q0FniZUcNNRWUelTsBOSX4Jk",
+              "name": "bash",
+              "partial_result": {
+                "content": [],
+                "details": {}
+              }
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 1375,
+            "type": "tool",
+            "time": "2026-10-19T13:10:17.508398+00:00",
+            "data": {
+              "phase": "updated",
+              "id": "tool_q0FniZUcNNRWUelTsBOSX4Jk",
+              "name": "bash",
+              "partial_result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "/workspace/frontier/challenge-v2/q049_calc_output.json\n{\n  \"assumptions\": {\n    \"model\": \"isolated two point masses, circular orbit, leading-order Peters quadrupole inspiral\",\n    \"constants\": {\n      \"G_SI\": 6.6743e-11,\n      \"c_m_s\": 299792458.0,\n      \"AU_m\": 149597870700.0,\n      \"M_sun_kg\": 1.98847e+30\n    },\n    \"age_comparison_yr\": 4600000000.0,\n    \"not_included\": [\n      \"eccentricity\",\n      \"other planets\",\n      \"tides\",\n      \"stellar mass loss\",\n      \"asteroids\",\n      \"non-gravitational forces\"\n    ]\n  },\n  \"gw_recomputation\": {\n    \"Mercury\": {\n      \"planet_mass_kg\": 3.3011e+23,\n      \"semimajor_axis_AU\": 0.387098,\n      \"circular_inspiral_lifetime_yr\": 4.343111055741855e+22,\n      \"instantaneous_da_dt_m_per_yr\": -3.3333845145215286e-13,\n      \"drift_over_4p6_Gyr_m\": -0.0015333568766799032,\n      \"fractional_change_over_4p6_Gyr_linear\": 2.64787150326177e-14\n    },\n    \"Earth\": {\n      \"planet_mass_kg\": 5.9722e+24,\n      \"semimajor_axis_AU\": 1.0,\n      \"circular_inspiral_lifetime_yr\": 1.0691541594942692e+23,\n      \"instantaneous_da_dt_m_per_yr\": -3.4980425734573847e-13,\n      \"drift_over_4p6_Gyr_m\": -0.0016090995837903968,\n      \"fractional_change_over_4p6_Gyr_linear\": 1.0756166356252802e-14\n    },\n    \"Jupiter\": {\n      \"planet_mass_kg\": 1.8982e+27,\n      \"semimajor_axis_AU\": 5.2044,\n      \"circular_inspiral_lifetime_yr\": 2.4654846328950642e+23,\n      \"instantaneous_da_dt_m_per_yr\": -7.894666507785705e-13,\n      \"drift_over_4p6_Gyr_m\": -0.003631546593581424,\n      \"fractional_change_over_4p6_Gyr_linear\": 4.66439735480982e-15\n    }\n  },\n  \"adiabatic_mass_loss_scenarios\": {\n    \"fraction_0.05\": {\n      \"final_a_over_initial_a\": 1.0526315789473684,\n      \"earth_like_delta_AU\": 0.05263157894736836,\n      \"earth_like_delta_km\": 7873572.142105254\n    },\n    \"fraction_0.10\": {\n      \"final_a_over_initial_a\": 1.1111111111111112,\n      \"earth_like_delta_AU\": 0.11111111111111116,\n      \"earth_like_delta_km\": 16621985.633333342\n    },\n    \"fraction_0.30\": {\n      \"final_a_over_initial_a\": 1.4285714285714286,\n      \"earth_like_delta_AU\": 0.4285714285714286,\n      \"earth_like_delta_km\": 64113373.15714286\n    }\n  }\n}\n"
+                  }
+                ],
+                "details": {}
+              }
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 1376,
+            "type": "tool",
+            "time": "2026-10-19T13:10:17.634952+00:00",
+            "data": {
+              "phase": "completed",
+              "id": "tool_q0FniZUcNNRWUelTsBOSX4Jk",
+              "name": "bash",
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "/workspace/frontier/challenge-v2/q049_calc_output.json\n{\n  \"assumptions\": {\n    \"model\": \"isolated two point masses, circular orbit, leading-order Peters quadrupole inspiral\",\n    \"constants\": {\n      \"G_SI\": 6.6743e-11,\n      \"c_m_s\": 299792458.0,\n      \"AU_m\": 149597870700.0,\n      \"M_sun_kg\": 1.98847e+30\n    },\n    \"age_comparison_yr\": 4600000000.0,\n    \"not_included\": [\n      \"eccentricity\",\n      \"other planets\",\n      \"tides\",\n      \"stellar mass loss\",\n      \"asteroids\",\n      \"non-gravitational forces\"\n    ]\n  },\n  \"gw_recomputation\": {\n    \"Mercury\": {\n      \"planet_mass_kg\": 3.3011e+23,\n      \"semimajor_axis_AU\": 0.387098,\n      \"circular_inspiral_lifetime_yr\": 4.343111055741855e+22,\n      \"instantaneous_da_dt_m_per_yr\": -3.3333845145215286e-13,\n      \"drift_over_4p6_Gyr_m\": -0.0015333568766799032,\n      \"fractional_change_over_4p6_Gyr_linear\": 2.64787150326177e-14\n    },\n    \"Earth\": {\n      \"planet_mass_kg\": 5.9722e+24,\n      \"semimajor_axis_AU\": 1.0,\n      \"circular_inspiral_lifetime_yr\": 1.0691541594942692e+23,\n      \"instantaneous_da_dt_m_per_yr\": -3.4980425734573847e-13,\n      \"drift_over_4p6_Gyr_m\": -0.0016090995837903968,\n      \"fractional_change_over_4p6_Gyr_linear\": 1.0756166356252802e-14\n    },\n    \"Jupiter\": {\n      \"planet_mass_kg\": 1.8982e+27,\n      \"semimajor_axis_AU\": 5.2044,\n      \"circular_inspiral_lifetime_yr\": 2.4654846328950642e+23,\n      \"instantaneous_da_dt_m_per_yr\": -7.894666507785705e-13,\n      \"drift_over_4p6_Gyr_m\": -0.003631546593581424,\n      \"fractional_change_over_4p6_Gyr_linear\": 4.66439735480982e-15\n    }\n  },\n  \"adiabatic_mass_loss_scenarios\": {\n    \"fraction_0.05\": {\n      \"final_a_over_initial_a\": 1.0526315789473684,\n      \"earth_like_delta_AU\": 0.05263157894736836,\n      \"earth_like_delta_km\": 7873572.142105254\n    },\n    \"fraction_0.10\": {\n      \"final_a_over_initial_a\": 1.1111111111111112,\n      \"earth_like_delta_AU\": 0.11111111111111116,\n      \"earth_like_delta_km\": 16621985.633333342\n    },\n    \"fraction_0.30\": {\n      \"final_a_over_initial_a\": 1.4285714285714286,\n      \"earth_like_delta_AU\": 0.4285714285714286,\n      \"earth_like_delta_km\": 64113373.15714286\n    }\n  }\n}\n"
+                  }
+                ],
+                "structuredContent": {
+                  "output": "/workspace/frontier/challenge-v2/q049_calc_output.json\n{\n  \"assumptions\": {\n    \"model\": \"isolated two point masses, circular orbit, leading-order Peters quadrupole inspiral\",\n    \"constants\": {\n      \"G_SI\": 6.6743e-11,\n      \"c_m_s\": 299792458.0,\n      \"AU_m\": 149597870700.0,\n      \"M_sun_kg\": 1.98847e+30\n    },\n    \"age_comparison_yr\": 4600000000.0,\n    \"not_included\": [\n      \"eccentricity\",\n      \"other planets\",\n      \"tides\",\n      \"stellar mass loss\",\n      \"asteroids\",\n      \"non-gravitational forces\"\n    ]\n  },\n  \"gw_recomputation\": {\n    \"Mercury\": {\n      \"planet_mass_kg\": 3.3011e+23,\n      \"semimajor_axis_AU\": 0.387098,\n      \"circular_inspiral_lifetime_yr\": 4.343111055741855e+22,\n      \"instantaneous_da_dt_m_per_yr\": -3.3333845145215286e-13,\n      \"drift_over_4p6_Gyr_m\": -0.0015333568766799032,\n      \"fractional_change_over_4p6_Gyr_linear\": 2.64787150326177e-14\n    },\n    \"Earth\": {\n      \"planet_mass_kg\": 5.9722e+24,\n      \"semimajor_axis_AU\": 1.0,\n      \"circular_inspiral_lifetime_yr\": 1.0691541594942692e+23,\n      \"instantaneous_da_dt_m_per_yr\": -3.4980425734573847e-13,\n      \"drift_over_4p6_Gyr_m\": -0.0016090995837903968,\n      \"fractional_change_over_4p6_Gyr_linear\": 1.0756166356252802e-14\n    },\n    \"Jupiter\": {\n      \"planet_mass_kg\": 1.8982e+27,\n      \"semimajor_axis_AU\": 5.2044,\n      \"circular_inspiral_lifetime_yr\": 2.4654846328950642e+23,\n      \"instantaneous_da_dt_m_per_yr\": -7.894666507785705e-13,\n      \"drift_over_4p6_Gyr_m\": -0.003631546593581424,\n      \"fractional_change_over_4p6_Gyr_linear\": 4.66439735480982e-15\n    }\n  },\n  \"adiabatic_mass_loss_scenarios\": {\n    \"fraction_0.05\": {\n      \"final_a_over_initial_a\": 1.0526315789473684,\n      \"earth_like_delta_AU\": 0.05263157894736836,\n      \"earth_like_delta_km\": 7873572.142105254\n    },\n    \"fraction_0.10\": {\n      \"final_a_over_initial_a\": 1.1111111111111112,\n      \"earth_like_delta_AU\": 0.11111111111111116,\n      \"earth_like_delta_km\": 16621985.633333342\n    },\n    \"fraction_0.30\": {\n      \"final_a_over_initial_a\": 1.4285714285714286,\n      \"earth_like_delta_AU\": 0.4285714285714286,\n      \"earth_like_delta_km\": 64113373.15714286\n    }\n  }\n}\n",
+                  "truncated": false,
+                  "exit_code": 0,
+                  "wall_time_seconds": 0.6
+                }
+              },
+              "is_error": false
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2188,
+            "type": "tool",
+            "time": "2026-10-19T13:11:55.844666+00:00",
+            "data": {
+              "phase": "started",
+              "id": "tool_J8kRzICgzcFbs8Gd8R4iVxCG",
+              "name": "write",
+              "arguments": {
+                "content": "{\"title\": \"q049：行星轨道为何不衰变的最小可核查问题地图\", \"summary\": \"本轮把“不衰变”拆成四类可直接核验的对象：理想二体守恒、引力波耗散、多体混沌扩散、太阳质量损失/潮汐。完成圆轨道Peters量级复算：水星、地球、木星的引力波并入时标约4.3e22、1.1e23、2.5e23年。主要缺口是太阳演化模型、精确星历/初值和长期N体可复现实验；本轮仅检索到两篇一手文献元数据，未声称全文核验。\", \"findings\": [{\"claim\": \"理想二体“不衰变”是模型内的解析结论，不是对真实太阳系的完整经验解释。\", \"basis\": \"本轮推导/判断：孤立中心反平方力场中扭矩为零且势能只依赖距离，因此总能量与角动量守恒，固定a、e；它可直接与短期精密星历的守恒量残差比较。\", \"limitations\": \"缺条件：太阳非点质量、行星间摄动、潮汐、辐射、质量损失与观测误差均被排除；因此不能用它证明真实轨道永不改变。\"}, {\"claim\": \"引力波确实使两体轨道收缩，但在当前行星尺度上是极小项。\", \"basis\": \"本轮实际执行 /workspace/frontier/challenge-v2/q049_calc.py，按圆轨道Peters量级公式复算：水星t≈4.343e22年、da/dt≈-3.333e-13米/年；地球t≈1.069e23年、da/dt≈-3.498e-13米/年；木星t≈2.465e23年、da/dt≈-7.895e-13米/年。Peters 1964文献由Crossref定位到DOI 10.1103/PhysRev.136.B1224。\", \"limitations\": \"计算采用圆轨道、孤立点质量和领头阶四极近似，未含偏心率修正；本轮未核验Peters全文公式页，不能把该复算当成真实多体太阳系预测。\"}, {\"claim\": \"真实多体混沌不能直接等同于“轨道衰变”；它首先是可预报性和轨道扩散问题。\", \"basis\": \"Laskar与Gastineau 2009的一手论文元数据（Nature 459:817–819，DOI 10.1038/nature08096）显示其报告了水星、火星、金星与地球碰撞轨迹的存在性；其参考文献链也定位到太阳系混沌数值研究。理想模型、GW耗散与该问题可用同一初始状态的a、e、能量和碰撞/逃逸结局集合来比较。\", \"limitations\": \"本轮只获得Crossref元数据和参考文献，未读取全文/补充材料，未复核作者报告的积分器、样本数、概率、Lyapunov时标或5 Gyr结论；不能把题名内容扩展成已核验数值。\"}, {\"claim\": \"太阳演化与GW方向相反且量级可能远大得多，但当前缺判定条件。\", \"basis\": \"本轮实际计算的绝热等温质量损失what-if显示：若恒星失去总质量5%、10%、30%，在a*M近似守恒下类地轨道分别扩张0.0526、0.1111、0.4286 AU。该方向与GW收缩相反，因此可用同一a(t)和能量预算直接比较。\", \"limitations\": \"这不是太阳演化预测；缺M(t)、R(t)、自转、潮汐品质因子、包层相互作用和行星穿越包层条件。第三次一手文献检索失败，未取得太阳演化原始论文。\"}], \"warnings\": [{\"label\": \"need-grill\", \"reason\": \"“不衰变”没有操作定义：半长径、周期、机械能、偏心率、碰撞概率和体系寿命可能给出不同答案。\", \"next_action\": \"先指定观测量、时间窗、容差和终点事件，再比较机制；否则理想守恒、长期混沌和恒星演化不可判为矛盾。\"}, {\"label\": \"need-grill\", \"reason\": \"不能把Lyapunov时间、GW并入时间和恒星演化时间直接排队；三者分别描述相空间发散、耗散收缩和边界质量/半径变化。\", \"next_action\": \"在同一套初始条件、误差模型和输出变量下计算每个机制单独及联合的Δa、Δe、ΔE和结局分布。\"}, {\"label\": \"need-info\", \"reason\": \"Laskar–Gastineau和Peters本轮只访问到文献元数据，未读取全文、方法或数值表。\", \"next_action\": \"获取两篇全文/补充材料，摘录公式编号、初始星历、积分容差、样本规模和作者报告的量化结果。\"}, {\"label\": \"need-info\", \"reason\": \"缺太阳演化一手模型；本轮第三次检索返回422，未获得可用记录。\", \"next_action\": \"重查Schröder & Smith 2008或同级恒星演化论文，提取M(t)、R(t)、L(t)、潮汐假设与地球结局。\"}], \"questions\": [{\"title\": \"“不衰变”的最小可证伪定义是什么？\", \"why\": \"若定义为孤立二体的E、L守恒，答案是定理；若定义为5 Gyr内a/e可预测或无碰撞，答案依赖混沌积分；若定义到太阳死亡，则恒星演化可能成为主项。\"}, {\"title\": \"多体混沌结论能否在独立实现下复现？\", \"why\": \"需要区分物理混沌、截断/舍入误差、积分器偏差和初值不确定性；最小证据是至少两种独立积分器与星历在相同容差下的一致结局分布。\"}, {\"title\": \"哪一项先使地球轨道发生可观测或结局性改变？\", \"why\": \"GW复算显示当前尺度下极小；剩余竞争者是多体扩散、太阳质量损失、潮汐和红巨星包层，必须用统一时间轴比较而非各自孤立报时标。\"}], \"proposed_changes\": [{\"before\": \"行星轨道不衰变。\", \"after\": \"在孤立理想二体模型内，E和L守恒；真实行星轨道会受GW、多体摄动、潮汐和恒星质量损失改变，必须指定时标与变量。\", \"reason\": \"消除把模型定理误当真实体系永恒稳定证据的歧义。\", \"evidence\": \"本轮解析判断与Peters量级复算；真实多体部分尚待全文和长期积分核验。\"}, {\"before\": \"引力波最终会使行星螺旋落入太阳。\", \"after\": \"领头阶圆轨道估计给出当前行星尺度10^22–10^23年级并入时标；若没有更长寿命机制，数学上存在收缩，但在太阳正常寿命比较中通常不是主项。\", \"reason\": \"同时保留GW耗散的方向性与其极小量级，避免“完全不衰变”和“很快衰变”两种误读。\", \"evidence\": \"q049_calc.py实际输出：水星4.343e22年、地球1.069e23年、木星2.465e23年。\"}, {\"before\": \"太阳系是混沌的，因此轨道会衰变。\", \"after\": \"太阳系混沌意味着对初值敏感、长期可预报性受限，并可能出现轨道扩散或碰撞轨迹；它本身不是单向耗散，需以结局分布和能量/轨道元素变化证明。\", \"reason\": \"区分确定性保守系统中的混沌扩散与辐射、潮汐等物理耗散。\", \"evidence\": \"Laskar–Gastineau 2009元数据定位到碰撞轨迹研究；具体概率和动力学细节本轮未核验。\"}], \"sources\": [{\"url\": \"https://doi.org/10.1103/PhysRev.136.B1224\", \"access\": \"本轮通过Crossref literature工具实际访问题录、作者、期刊、页码、DOI、参考文献列表；未访问PDF或全文公式。\"}, {\"url\": \"https://doi.org/10.1038/nature08096\", \"access\": \"本轮通过Crossref literature工具实际访问题录、作者、期刊、页码、DOI、参考文献列表；未访问全文、补充材料或作者代码。\"}, {\"url\": \"file:///workspace/frontier/challenge-v2/q049_calc.py\", \"access\": \"本轮写入并实际执行；输出保存为q049_calc_output.json。常数和行星参数为脚本明示的名义假设。\"}, {\"url\": \"file:///workspace/frontier/challenge-v2/q049_calc_output.json\", \"access\": \"本轮实际生成的计算输出；用于报告GW时标、da/dt和绝热质量损失what-if。\"}]}",
+                "path": "/workspace/frontier/challenge-v2/result.json"
+              }
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2189,
+            "type": "tool",
+            "time": "2026-10-19T13:11:56.694339+00:00",
+            "data": {
+              "phase": "completed",
+              "id": "tool_J8kRzICgzcFbs8Gd8R4iVxCG",
+              "name": "write",
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Successfully wrote to /workspace/frontier/challenge-v2/result.json"
+                  }
+                ]
+              },
+              "is_error": false
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2203,
+            "type": "tool",
+            "time": "2026-10-19T13:12:21.295197+00:00",
+            "data": {
+              "phase": "started",
+              "id": "tool_mpZ6JUphqDnfDzxPqlGonvvs",
+              "name": "write",
+              "arguments": {
+                "content": "# q049：行星轨道为何不衰变——最小可核查问题地图\n\n## 结论边界\n\n“不衰变”必须先定义观测量与时间窗。孤立理想二体模型中的能量、角动量守恒，是模型内解析结论；它不能单独证明真实太阳系长期不变。真实问题至少分裂为四个机制层：\n\n| 层 | 可直接比较的量 | 本轮状态 | 缺什么 |\n|---|---|---|---|\n| 理想二体 | \\(E,L,a,e,P\\) 的解析或短期积分残差 | 可直接比较 | 要说明这只是反平方点质量模型 |\n| 引力波耗散 | \\(da/dt\\)、并入时标、轨道能量损失 | 已做圆轨道量级复算 | 偏心率、多体与后牛顿完整模型 |\n| 真实多体混沌 | 轨道元素扩散、结局分布、Lyapunov时标 | 可与前两项共用初值比较 | 精密星历、初值误差、独立积分器复现 |\n| 太阳演化 | \\(a(t)\\)、潮汐扭矩、包层接触/吞没 | 方向与GW相反，可做what-if | \\(M(t),R(t)\\)、自转、潮汐参数与恒星模型 |\n\n## 本轮实际复算\n\n脚本：`/workspace/frontier/challenge-v2/q049_calc.py`  \n输出：`/workspace/frontier/challenge-v2/q049_calc_output.json`\n\n采用孤立点质量、圆轨道、领头阶Peters四极近似：\n\n| 行星 | 圆轨道GW并入时标 | 当前\\(da/dt\\) |\n|---|---:|---:|\n| 水星 | \\(4.343\\times10^{22}\\) 年 | \\(-3.333\\times10^{-13}\\) 米/年 |\n| 地球 | \\(1.069\\times10^{23}\\) 年 | \\(-3.498\\times10^{-13}\\) 米/年 |\n| 木星 | \\(2.465\\times10^{23}\\) 年 | \\(-7.895\\times10^{-13}\\) 米/年 |\n\n解释：GW方向是收缩，但量级极小。不能把“存在耗散”包装成太阳系寿命内的显著衰变，也不能把“短期近似守恒”说成真实轨道永不改变。\n\n绝热等温恒星质量损失的纯what-if：若恒星失去5%、10%、30%质量且 \\(aM\\) 守恒，类地轨道分别扩张约0.0526、0.1111、0.4286 AU。这只是机制敏感性演示，不是太阳演化预测。\n\n## 三个最值得 grill 的问题\n\n1. **“不衰变”的最小可证伪定义是什么？**  \n   需指定 \\(a\\)、\\(P\\)、\\(E\\)、\\(e\\)、碰撞/逃逸结局、时间窗和容差。否则不同论文可能在回答不同问题。\n\n2. **多体混沌结论能否独立复现？**  \n   最小需求：公开精密星历和初值协方差；至少两套独立积分器；辛德勒/高阶与严格误差控制对照；同一初值集合输出 \\(a,e,E\\)、最小接近距离和碰撞/逃逸分布。仅凭Lyapunov时标不能推出衰变。\n\n3. **在太阳死亡前，哪个机制先造成可观测或结局性轨道变化？**  \n   最小需求：同一时间轴合并GW、多体、恒星质量损失、自转-轨道潮汐与红巨星包层；逐项和联合输出 \\(a(t),e(t),E(t)\\)。本轮计算已表明GW单独项极小，但缺恒星演化一手模型。\n\n## 证据访问边界\n\n- Peters 1964：实际访问Crossref元数据，定位 DOI `10.1103/PhysRev.136.B1224`；未读全文公式页。\n- Laskar & Gastineau 2009：实际访问Crossref元数据，定位 DOI `10.1038/nature08096`；未读全文/补充材料，故未复核作者的概率、样本数或积分细节。\n- 太阳演化一手论文：第三次检索请求返回422，未取得可用记录。\n- 本轮没有执行新的长期N体积分，也没有声称发现新实验结果。\n\n详细结构化结果见 `result.json`。\n",
+                "path": "/workspace/frontier/challenge-v2/result.md"
+              }
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2204,
+            "type": "tool",
+            "time": "2026-10-19T13:12:22.214151+00:00",
+            "data": {
+              "phase": "completed",
+              "id": "tool_mpZ6JUphqDnfDzxPqlGonvvs",
+              "name": "write",
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Successfully wrote to /workspace/frontier/challenge-v2/result.md"
+                  }
+                ]
+              },
+              "is_error": false
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2259,
+            "type": "tool",
+            "time": "2026-10-19T13:12:30.208580+00:00",
+            "data": {
+              "phase": "started",
+              "id": "tool_gzXSrsCS0S29cjpy8UcVZKDw",
+              "name": "bash",
+              "arguments": {
+                "command": "python3 -m json.tool /workspace/frontier/challenge-v2/result.json >/dev/null && wc -c /workspace/frontier/challenge-v2/result.json /workspace/frontier/challenge-v2/result.md /workspace/frontier/challenge-v2/q049_calc.py /workspace/frontier/challenge-v2/q049_calc_output.json",
+                "timeout": 30
+              }
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2260,
+            "type": "tool",
+            "time": "2026-10-19T13:12:30.213104+00:00",
+            "data": {
+              "phase": "updated",
+              "id": "tool_gzXSrsCS0S29cjpy8UcVZKDw",
+              "name": "bash",
+              "partial_result": {
+                "content": [],
+                "details": {}
+              }
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2261,
+            "type": "tool",
+            "time": "2026-10-19T13:12:30.666090+00:00",
+            "data": {
+              "phase": "updated",
+              "id": "tool_gzXSrsCS0S29cjpy8UcVZKDw",
+              "name": "bash",
+              "partial_result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": " 7825 /workspace/frontier/challenge-v2/result.json\n 3312 /workspace/frontier/challenge-v2/result.md\n 2442 /workspace/frontier/challenge-v2/q049_calc.py\n 2104 /workspace/frontier/challenge-v2/q049_calc_output.json\n15683 total\n"
+                  }
+                ],
+                "details": {}
+              }
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2262,
+            "type": "tool",
+            "time": "2026-10-19T13:12:30.787629+00:00",
+            "data": {
+              "phase": "completed",
+              "id": "tool_gzXSrsCS0S29cjpy8UcVZKDw",
+              "name": "bash",
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": " 7825 /workspace/frontier/challenge-v2/result.json\n 3312 /workspace/frontier/challenge-v2/result.md\n 2442 /workspace/frontier/challenge-v2/q049_calc.py\n 2104 /workspace/frontier/challenge-v2/q049_calc_output.json\n15683 total\n"
+                  }
+                ],
+                "structuredContent": {
+                  "output": " 7825 /workspace/frontier/challenge-v2/result.json\n 3312 /workspace/frontier/challenge-v2/result.md\n 2442 /workspace/frontier/challenge-v2/q049_calc.py\n 2104 /workspace/frontier/challenge-v2/q049_calc_output.json\n15683 total\n",
+                  "truncated": false,
+                  "exit_code": 0,
+                  "wall_time_seconds": 0.6
+                }
+              },
+              "is_error": false
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2294,
+            "type": "tool",
+            "time": "2026-10-19T13:12:40.440939+00:00",
+            "data": {
+              "phase": "started",
+              "id": "tool_VzDqtabDIMZRqdubuQHZBzRB",
+              "name": "artifact",
+              "arguments": {
+                "media_type": "application/json",
+                "operation": "capture",
+                "path": "/workspace/frontier/challenge-v2/result.json",
+                "record_id": "record:0d5e3cb11c1e3b715b2e54be"
+              }
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2295,
+            "type": "tool",
+            "time": "2026-10-19T13:12:40.445659+00:00",
+            "data": {
+              "phase": "started",
+              "id": "tool_DxjrCD78KybhRhOUDKrsoqSg",
+              "name": "artifact",
+              "arguments": {
+                "media_type": "text/markdown",
+                "operation": "capture",
+                "path": "/workspace/frontier/challenge-v2/result.md",
+                "record_id": "record:0d5e3cb11c1e3b715b2e54be"
+              }
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2296,
+            "type": "tool",
+            "time": "2026-10-19T13:12:40.449898+00:00",
+            "data": {
+              "phase": "started",
+              "id": "tool_uis0chngjVXqZdtigVlL1fV8",
+              "name": "artifact",
+              "arguments": {
+                "media_type": "text/x-python",
+                "operation": "capture",
+                "path": "/workspace/frontier/challenge-v2/q049_calc.py",
+                "record_id": "record:0d5e3cb11c1e3b715b2e54be"
+              }
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2297,
+            "type": "tool",
+            "time": "2026-10-19T13:12:40.454227+00:00",
+            "data": {
+              "phase": "started",
+              "id": "tool_84Li7atUDUKTnhvPUhe562gP",
+              "name": "artifact",
+              "arguments": {
+                "media_type": "application/json",
+                "operation": "capture",
+                "path": "/workspace/frontier/challenge-v2/q049_calc_output.json",
+                "record_id": "record:0d5e3cb11c1e3b715b2e54be"
+              }
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2298,
+            "type": "tool",
+            "time": "2026-10-19T13:12:41.408721+00:00",
+            "data": {
+              "phase": "completed",
+              "id": "tool_84Li7atUDUKTnhvPUhe562gP",
+              "name": "artifact",
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"id\": \"artifact:c0d4f2995b04b698ecada13e6cf497d8a4d6b09b7106888d1ff7e1ae49119a54\", \"project_id\": \"project:ad1d591090135edaaf50748b\", \"sha256\": \"c0d4f2995b04b698ecada13e6cf497d8a4d6b09b7106888d1ff7e1ae49119a54\", \"media_type\": \"application/json\", \"size\": 2104, \"created_at\": \"2026-10-19T13:12:41.388874+00:00\", \"download_url\": \"/api/v1/projects/project:ad1d591090135edaaf50748b/artifacts/artifact:c0d4f2995b04b698ecada13e6cf497d8a4d6b09b7106888d1ff7e1ae49119a54?download=true\", \"view_url\": \"/projects/project%3Aad1d591090135edaaf50748b/artifacts/artifact%3Ac0d4f2995b04b698ecada13e6cf497d8a4d6b09b7106888d1ff7e1ae49119a54\"}"
+                  }
+                ],
+                "details": {}
+              },
+              "is_error": false
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2299,
+            "type": "tool",
+            "time": "2026-10-19T13:12:41.422839+00:00",
+            "data": {
+              "phase": "completed",
+              "id": "tool_VzDqtabDIMZRqdubuQHZBzRB",
+              "name": "artifact",
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"id\": \"artifact:38332f1f192229eeb7c26c53ca646c769587c5239a5bcd2e39176e5b914e2411\", \"project_id\": \"project:ad1d591090135edaaf50748b\", \"sha256\": \"38332f1f192229eeb7c26c53ca646c769587c5239a5bcd2e39176e5b914e2411\", \"media_type\": \"application/json\", \"size\": 7825, \"created_at\": \"2026-10-19T13:12:41.403116+00:00\", \"download_url\": \"/api/v1/projects/project:ad1d591090135edaaf50748b/artifacts/artifact:38332f1f192229eeb7c26c53ca646c769587c5239a5bcd2e39176e5b914e2411?download=true\", \"view_url\": \"/projects/project%3Aad1d591090135edaaf50748b/artifacts/artifact%3A38332f1f192229eeb7c26c53ca646c769587c5239a5bcd2e39176e5b914e2411\"}"
+                  }
+                ],
+                "details": {}
+              },
+              "is_error": false
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2300,
+            "type": "tool",
+            "time": "2026-10-19T13:12:41.437385+00:00",
+            "data": {
+              "phase": "completed",
+              "id": "tool_uis0chngjVXqZdtigVlL1fV8",
+              "name": "artifact",
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"id\": \"artifact:872eba354de94cbbdce1ee45c7d3155c3847e5ec435392cfb08a1355b72dcc29\", \"project_id\": \"project:ad1d591090135edaaf50748b\", \"sha256\": \"872eba354de94cbbdce1ee45c7d3155c3847e5ec435392cfb08a1355b72dcc29\", \"media_type\": \"text/x-python\", \"size\": 2442, \"created_at\": \"2026-10-19T13:12:41.422934+00:00\", \"download_url\": \"/api/v1/projects/project:ad1d591090135edaaf50748b/artifacts/artifact:872eba354de94cbbdce1ee45c7d3155c3847e5ec435392cfb08a1355b72dcc29?download=true\", \"view_url\": \"/projects/project%3Aad1d591090135edaaf50748b/artifacts/artifact%3A872eba354de94cbbdce1ee45c7d3155c3847e5ec435392cfb08a1355b72dcc29\"}"
+                  }
+                ],
+                "details": {}
+              },
+              "is_error": false
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2301,
+            "type": "tool",
+            "time": "2026-10-19T13:12:41.450255+00:00",
+            "data": {
+              "phase": "completed",
+              "id": "tool_DxjrCD78KybhRhOUDKrsoqSg",
+              "name": "artifact",
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"id\": \"artifact:3512dfd2e6ab1fec6203f979e94e39c9d026dc8b548bcbe1562917e597228266\", \"project_id\": \"project:ad1d591090135edaaf50748b\", \"sha256\": \"3512dfd2e6ab1fec6203f979e94e39c9d026dc8b548bcbe1562917e597228266\", \"media_type\": \"text/markdown\", \"size\": 3312, \"created_at\": \"2026-10-19T13:12:41.436894+00:00\", \"download_url\": \"/api/v1/projects/project:ad1d591090135edaaf50748b/artifacts/artifact:3512dfd2e6ab1fec6203f979e94e39c9d026dc8b548bcbe1562917e597228266?download=true\", \"view_url\": \"/projects/project%3Aad1d591090135edaaf50748b/artifacts/artifact%3A3512dfd2e6ab1fec6203f979e94e39c9d026dc8b548bcbe1562917e597228266\"}"
+                  }
+                ],
+                "details": {}
+              },
+              "is_error": false
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2334,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.575435+00:00",
+            "data": {
+              "text": "已完成 q"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2335,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.581186+00:00",
+            "data": {
+              "text": "049 最小问题"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2336,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.586705+00:00",
+            "data": {
+              "text": "地图、圆"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2337,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.591969+00:00",
+            "data": {
+              "text": "轨道引力"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2338,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.597037+00:00",
+            "data": {
+              "text": "波量级"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2339,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.601507+00:00",
+            "data": {
+              "text": "复算及"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2340,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.605742+00:00",
+            "data": {
+              "text": "证据边界说明，"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2341,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.610126+00:00",
+            "data": {
+              "text": "文件"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2342,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.614717+00:00",
+            "data": {
+              "text": "位于"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2343,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.619159+00:00",
+            "data": {
+              "text": " `/workspace/frontier"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2344,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.623791+00:00",
+            "data": {
+              "text": "/challenge-v2"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2345,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.628195+00:00",
+            "data": {
+              "text": "/`。\n\n关键发现"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2346,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.632460+00:00",
+            "data": {
+              "text": "：\n- 理想"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2347,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.637121+00:00",
+            "data": {
+              "text": "二体的"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2348,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.641511+00:00",
+            "data": {
+              "text": "“不衰变”"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2349,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.648130+00:00",
+            "data": {
+              "text": "是能量"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2350,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.652643+00:00",
+            "data": {
+              "text": "、角动量"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2351,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.658315+00:00",
+            "data": {
+              "text": "守恒的模型结论"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2352,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.662382+00:00",
+            "data": {
+              "text": "，不能"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2353,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.669201+00:00",
+            "data": {
+              "text": "外推为"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2354,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.674268+00:00",
+            "data": {
+              "text": "真实太阳系永恒"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2355,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.678368+00:00",
+            "data": {
+              "text": "稳定。\n- "
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2356,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.682564+00:00",
+            "data": {
+              "text": "本轮复"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2357,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.687130+00:00",
+            "data": {
+              "text": "算 Peters 圆"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2358,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.693033+00:00",
+            "data": {
+              "text": "轨道并入"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2359,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.697512+00:00",
+            "data": {
+              "text": "时标：水星"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2360,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.702361+00:00",
+            "data": {
+              "text": "约 \\(4."
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2361,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.706612+00:00",
+            "data": {
+              "text": "34\\times10"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2362,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.710910+00:00",
+            "data": {
+              "text": "^{22}\\)"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2363,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.714954+00:00",
+            "data": {
+              "text": " 年、地球"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2364,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.719161+00:00",
+            "data": {
+              "text": "约 \\(1."
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2365,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.724178+00:00",
+            "data": {
+              "text": "07\\times10"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2366,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.728878+00:00",
+            "data": {
+              "text": "^{23}\\)"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2367,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.733723+00:00",
+            "data": {
+              "text": " 年、木星"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2368,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.738994+00:00",
+            "data": {
+              "text": "约 \\(2."
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2369,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.744100+00:00",
+            "data": {
+              "text": "47\\times10"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2370,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.748892+00:00",
+            "data": {
+              "text": "^{23}\\)"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2371,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.754779+00:00",
+            "data": {
+              "text": " 年，耗"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2372,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.760381+00:00",
+            "data": {
+              "text": "散存在"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2373,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.766325+00:00",
+            "data": {
+              "text": "但当前"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2374,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.772052+00:00",
+            "data": {
+              "text": "量级极小。\n-"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2375,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.776792+00:00",
+            "data": {
+              "text": " 多体混沌"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2376,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.782289+00:00",
+            "data": {
+              "text": "描述"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2377,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.787048+00:00",
+            "data": {
+              "text": "可预报性和"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2378,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.791523+00:00",
+            "data": {
+              "text": "轨道"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2379,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.796052+00:00",
+            "data": {
+              "text": "扩散，不等"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2380,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.800533+00:00",
+            "data": {
+              "text": "同于"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2381,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.805808+00:00",
+            "data": {
+              "text": "单向衰"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2382,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.810073+00:00",
+            "data": {
+              "text": "变；太阳"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2383,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.814382+00:00",
+            "data": {
+              "text": "质量损失方向"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2384,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.818671+00:00",
+            "data": {
+              "text": "反而"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2385,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.822798+00:00",
+            "data": {
+              "text": "使"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2386,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.827179+00:00",
+            "data": {
+              "text": "轨道扩张。\n\n"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2387,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.831642+00:00",
+            "data": {
+              "text": "仍未解决：缺"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2388,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.835788+00:00",
+            "data": {
+              "text": "太阳演化一手"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2389,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.840391+00:00",
+            "data": {
+              "text": "模型、精密"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2390,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.844848+00:00",
+            "data": {
+              "text": "初"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2391,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.849269+00:00",
+            "data": {
+              "text": "值/"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2392,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.854703+00:00",
+            "data": {
+              "text": "星"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2393,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.860670+00:00",
+            "data": {
+              "text": "历及"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2394,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.866198+00:00",
+            "data": {
+              "text": "独立长期 N "
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2395,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.871784+00:00",
+            "data": {
+              "text": "体复现；"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2396,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.877468+00:00",
+            "data": {
+              "text": "P"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2397,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.881978+00:00",
+            "data": {
+              "text": "eters 与"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2398,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.886256+00:00",
+            "data": {
+              "text": " Laskar–"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2399,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.890845+00:00",
+            "data": {
+              "text": "Gastineau"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2400,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.895154+00:00",
+            "data": {
+              "text": " 本轮仅"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2401,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.899331+00:00",
+            "data": {
+              "text": "核验元"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2402,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.903411+00:00",
+            "data": {
+              "text": "数据，未声称"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2403,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.908038+00:00",
+            "data": {
+              "text": "全文通过"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2404,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.914726+00:00",
+            "data": {
+              "text": "。\n\n报告：\n"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2405,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.919101+00:00",
+            "data": {
+              "text": "- 原件"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2406,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.923615+00:00",
+            "data": {
+              "text": " JSON"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2407,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.927906+00:00",
+            "data": {
+              "text": " Artifact"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2408,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.932925+00:00",
+            "data": {
+              "text": "：`artifact"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2409,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.939740+00:00",
+            "data": {
+              "text": ":38332f"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2410,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.944345+00:00",
+            "data": {
+              "text": "1f192229"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2411,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.949399+00:00",
+            "data": {
+              "text": "eeb7c26"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2412,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.954250+00:00",
+            "data": {
+              "text": "c53ca646"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2413,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.959354+00:00",
+            "data": {
+              "text": "c769587c"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2414,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.963561+00:00",
+            "data": {
+              "text": "5239a5"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2415,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.967807+00:00",
+            "data": {
+              "text": "bcd2e391"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2416,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.973709+00:00",
+            "data": {
+              "text": "76e5"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2417,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.978537+00:00",
+            "data": {
+              "text": "b914e241"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2418,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.983402+00:00",
+            "data": {
+              "text": "1`  \n"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2419,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.988710+00:00",
+            "data": {
+              "text": "  [查看"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2420,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.993429+00:00",
+            "data": {
+              "text": "](artifact"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2421,
+            "type": "delta",
+            "time": "2026-10-19T13:12:52.998037+00:00",
+            "data": {
+              "text": ":38332f"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2422,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.003301+00:00",
+            "data": {
+              "text": "1f192229"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2423,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.007957+00:00",
+            "data": {
+              "text": "eeb7c26"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2424,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.012096+00:00",
+            "data": {
+              "text": "c53ca646"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2425,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.016845+00:00",
+            "data": {
+              "text": "c769587c"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2426,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.022122+00:00",
+            "data": {
+              "text": "5239a5"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2427,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.026619+00:00",
+            "data": {
+              "text": "bcd2e391"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2428,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.031217+00:00",
+            "data": {
+              "text": "76e5b"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2429,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.036093+00:00",
+            "data": {
+              "text": "914e2411"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2430,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.040565+00:00",
+            "data": {
+              "text": ")\n- Markdown"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2431,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.045318+00:00",
+            "data": {
+              "text": " Artifact"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2432,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.049963+00:00",
+            "data": {
+              "text": "：`artifact:351"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2433,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.054361+00:00",
+            "data": {
+              "text": "2dfd2e"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2434,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.058677+00:00",
+            "data": {
+              "text": "6ab1fec"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2435,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.063611+00:00",
+            "data": {
+              "text": "6203f"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2436,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.069172+00:00",
+            "data": {
+              "text": "979e94e"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2437,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.075357+00:00",
+            "data": {
+              "text": "39c9d"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2438,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.081189+00:00",
+            "data": {
+              "text": "026dc8b"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2439,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.085513+00:00",
+            "data": {
+              "text": "548bcbe156"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2440,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.090820+00:00",
+            "data": {
+              "text": "2917e597"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2441,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.095759+00:00",
+            "data": {
+              "text": "228266`  \n"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2442,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.100968+00:00",
+            "data": {
+              "text": "  [查看]("
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2443,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.105730+00:00",
+            "data": {
+              "text": "artifact:3512"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2444,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.111333+00:00",
+            "data": {
+              "text": "dfd2e6"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2445,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.116902+00:00",
+            "data": {
+              "text": "ab1fec620"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2446,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.123378+00:00",
+            "data": {
+              "text": "3f979e"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2447,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.129540+00:00",
+            "data": {
+              "text": "94e39c"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2448,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.135253+00:00",
+            "data": {
+              "text": "9d026dc"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2449,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.139595+00:00",
+            "data": {
+              "text": "8b548bc"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2450,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.144091+00:00",
+            "data": {
+              "text": "be1562917"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2451,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.148604+00:00",
+            "data": {
+              "text": "e597228266"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2452,
+            "type": "delta",
+            "time": "2026-10-19T13:12:53.153309+00:00",
+            "data": {
+              "text": ")"
+            }
+          },
+          {
+            "run_id": "r-9ee9d55af0ff47adae1b3e1e67a7385a",
+            "turn_id": "t-1f246fdd8b854076a2a23fdd024da828",
+            "seq": 2454,
+            "type": "turn_end",
+            "time": "2026-10-19T13:12:53.175040+00:00",
+            "data": {
+              "status": "completed",
+              "result_text": "已完成 q049 最小问题地图、圆轨道引力波量级复算及证据边界说明，文件位于 `/workspace/frontier/challenge-v2/`。\n\n关键发现：\n- 理想二体的“不衰变”是能量、角动量守恒的模型结论，不能外推为真实太阳系永恒稳定。\n- 本轮复算 Peters 圆轨道并入时标：水星约 \\(4.34\\times10^{22}\\) 年、地球约 \\(1.07\\times10^{23}\\) 年、木星约 \\(2.47\\times10^{23}\\) 年，耗散存在但当前量级极小。\n- 多体混沌描述可预报性和轨道扩散，不等同于单向衰变；太阳质量损失方向反而使轨道扩张。\n\n仍未解决：缺太阳演化一手模型、精密初值/星历及独立长期 N 体复现；Peters 与 Laskar–Gastineau 本轮仅核验元数据，未声称全文通过。\n\n报告：\n- 原件 JSON Artifact：`artifact:38332f1f192229eeb7c26c53ca646c769587c5239a5bcd2e39176e5b914e2411`  \n  [查看](artifact:38332f1f192229eeb7c26c53ca646c769587c5239a5bcd2e39176e5b914e2411)\n- Markdown Artifact：`artifact:3512dfd2e6ab1fec6203f979e94e39c9d026dc8b548bcbe1562917e597228266`  \n  [查看](artifact:3512dfd2e6ab1fec6203f979e94e39c9d026dc8b548bcbe1562917e597228266)"
+            }
+          }
+        ],
+        "status": "completed"
+      }
+    ]
+  }
+}

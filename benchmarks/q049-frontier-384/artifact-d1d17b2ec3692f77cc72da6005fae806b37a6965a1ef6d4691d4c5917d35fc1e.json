@@ -1,0 +1,11 @@
+{
+  "artifact": {
+    "id": "artifact:d1d17b2ec3692f77cc72da6005fae806b37a6965a1ef6d4691d4c5917d35fc1e",
+    "project_id": "project:ad1d591090135edaaf50748b",
+    "sha256": "d1d17b2ec3692f77cc72da6005fae806b37a6965a1ef6d4691d4c5917d35fc1e",
+    "media_type": "text/x-python",
+    "size": 5513,
+    "created_at": "2026-10-19T13:17:49.714462+00:00"
+  },
+  "text": ""
+}
