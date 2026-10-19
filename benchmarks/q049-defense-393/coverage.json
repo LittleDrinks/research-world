@@ -17,7 +17,44 @@
     "duration": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A64d971e33ff70d9018f3dc5a",
     "resolution_plan": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A158e4ae8587a8dbad65db57b",
     "duration_plan": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Aaa400afc5a3fa6bc4c6e85fc",
-    "ensemble_plan": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A115f91b4ae82e796bc75b937"
+    "ensemble_plan": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A115f91b4ae82e796bc75b937",
+    "detection": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A9cf867f4ac4da1aa73b94db5",
+    "calibration": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A70abc96e198139707a1c076c",
+    "glitch": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A13c2d7577dc60a1ebbcff5d8",
+    "catalog": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Afa947c0cd8f34298cd4104f5",
+    "flow": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A9edac4061a4c44c2432ee47e",
+    "bns": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A84ce74e8610e7873f94888a2",
+    "bns_update": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ab408c62e40bc03405a097a3f",
+    "q_mass": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A1805dae1d6a436b7623b2608",
+    "q_detect": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A786d65aff43316724327e79d",
+    "q_calibrate": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Aa03e77f4a754be3a76a22e5d",
+    "q_noise": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Acbafca514626ae251a1ba055",
+    "q_flow": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A35815d21f7afd5377debf329",
+    "q_tidal": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ae6197b8dba7feba6e466af88",
+    "q_population": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A8bbc5ab81fc648550158c26b",
+    "mass_old": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A978c5b4eee875bb595aa1a24",
+    "mass_frames": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ae56b546dadd44835297d1e80",
+    "signal": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A79f5dd95a99a396f1af2b11f",
+    "phase": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ac46fd17c680e0d5cfc123c59",
+    "noise": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A5b3cd9280e9610a26f48e595",
+    "flow_direction": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A66a668c14b13e36ab09248e9",
+    "tidal_old": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A2372af5305ec2e224027472a",
+    "tidal_version": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Acb27b89b738299437488b8ae",
+    "hierarchy": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A2a53f02aa91483c96d30af7d",
+    "selection": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ac989563a3db9fe8aef48a59e",
+    "mass_fit": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Aabaaa435e320e5e7b870e188",
+    "timing_scan": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A4dadb43b0ca05b0b68950d3f",
+    "noise_rates": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A95ee207a61cd1def4e7660a5",
+    "zero_background": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Aeae973daf108a305bb1c669f",
+    "tidal_scan": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A7972c600927f5f9651dbd7bd",
+    "chirp_generated": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A9e33e7b4c57caff5ba01fd45",
+    "noise_generated": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A198018a4c035aaa87cd2f3c9",
+    "calibration_generated": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A66d0e2781e6b8786336ce90b",
+    "catalog_generated": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ae97f616b85de12ea07fa06d3",
+    "flow_plan": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Afe1c75006c24faf73fbc6dee",
+    "q_scales": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A44a1752ee0926617c81df9ea",
+    "scales_direction": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A276f72c72b56909e700edea6",
+    "scales_compute": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A38ab51bfd8a5ff23d7ca5195"
   },
   "audit_urls": {
     "v1": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
@@ -35,7 +72,7 @@
       "Euler/Leapfrog at 100/200/400 steps per orbit",
       "Leapfrog 30/300 orbits"
     ],
-    "review": "All 15 current records need-review. Only historical V1/V3 manuscripts have scores; no current graph approval.",
+    "review": "All 52 records need-review; no new model run or six-dimensional approval.",
     "changes": [
       "revision",
       "comments",
@@ -97,8 +134,8 @@
     }
   },
   "qa": {
-    "active_records": 15,
-    "need_review": 15,
+    "active_records": 52,
+    "need_review": 52,
     "removed_nodes": [
       "record:6f2cb710e7b174a146ffdc70",
       "record:3a45cdb341aee9d12753dd00",
@@ -108,5 +145,17 @@
     ],
     "new_review_runs": 0,
     "snapshot_artifact": "artifact:f58001c971c5b34d3a5f9be77bc59cb13a5c3d36a368acb98348dcd6e2b857a9"
+  },
+  "expansion": {
+    "evidence": "expansion/coverage.json",
+    "counts": {
+      "records": 52,
+      "relations": 41,
+      "joint_conditions": 5,
+      "need_review": 52,
+      "new_review_runs": 0
+    },
+    "related_tasks": 14,
+    "new_reference_executions": 10
   }
 }

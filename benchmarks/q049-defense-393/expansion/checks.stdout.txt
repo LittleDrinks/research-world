@@ -1,0 +1,92 @@
+{
+  "mass": {
+    "t_s": [
+      -0.19118234,
+      -0.04541778,
+      -0.01540456
+    ],
+    "f_Hz": [
+      35.0,
+      60.0,
+      90.0
+    ],
+    "tc_s": 0,
+    "slope": 2505.8932084378544,
+    "chirp_mass_detector_Msun": 28.000000145381655,
+    "eta": 0.25,
+    "total_mass_detector_Msun": 64.32710821383328,
+    "redshift_assumed": 0.09,
+    "total_mass_source_at_assumed_z_Msun": 59.01569560902136,
+    "remnant_mass": "not inferred by this approximation"
+  },
+  "timing": {
+    "timing_error_s": 1e-05,
+    "frequency_Hz": [
+      20.0,
+      100.0,
+      250.0,
+      1000.0
+    ],
+    "phase_error_deg": [
+      0.07200000000000001,
+      0.36000000000000004,
+      0.9,
+      3.6
+    ],
+    "phase_budget_deg": 10,
+    "fraction_at_100Hz_percent": 3.6000000000000005
+  },
+  "glitches": {
+    "input_rates_per_hour": {
+      "Livingston": {
+        "Tomte": 6.44,
+        "Fast Scattering": 9.05
+      },
+      "Hanford": {
+        "Tomte": 0.23,
+        "Fast Scattering": 0.22
+      }
+    },
+    "difference_per_hour": 15.04,
+    "measure": "rates after the source selection and observing-time definition"
+  },
+  "background": {
+    "background_years": [
+      1000.0,
+      10000.0,
+      203000.0
+    ],
+    "louder_events": 0,
+    "poisson_95_rate_upper_per_year": [
+      0.0029957322735539907,
+      0.0002995732273553991,
+      1.4757301840167443e-05
+    ],
+    "candidate_window_days": 16,
+    "poisson_95_fap_upper": [
+      0.00013122127714595985,
+      1.312290263505884e-05,
+      6.464524383943074e-07
+    ],
+    "assumption": "independent Poisson background; no trials-factor correction"
+  },
+  "tidal_scaling": {
+    "mass_Msun": 1.4,
+    "Love_number_k2": 0.1,
+    "radius_km": [
+      10.0,
+      11.0,
+      12.0,
+      13.0,
+      14.0
+    ],
+    "Lambda_dimensionless": [
+      176.54351030614538,
+      284.3250887831502,
+      439.2967475649875,
+      655.4936957209966,
+      949.4933688689237
+    ],
+    "scope": "single-star Lambda; not the binary weighted tidal deformability"
+  }
+}
