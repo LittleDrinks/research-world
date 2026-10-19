@@ -29,24 +29,38 @@ function append(parts,type,text) {
   else parts.push({type,text});
 }
 
-export function splitThinking(source,initial=[]) {
-  const state=[...initial],parts=[];let cursor=0;
+function thinkingSpans(source) {
+  const stack=[],spans=[];let cursor=0;
   for(const match of markers(source)) {
     const [,closing,name]=match;
-    if(closing&&state.at(-1)!==name)continue;
-    append(parts,state.length?'thinking':'text',source.slice(cursor,match.index));
-    if(closing)state.pop();else state.push(name);
+    if(closing&&stack.at(-1)!==name)continue;
+    if(cursor<match.index)spans.push({type:stack.length?'thinking':'text',start:cursor,end:match.index});
+    if(closing)stack.pop();else stack.push(name);
     cursor=match.index+match[0].length;
   }
-  append(parts,state.length?'thinking':'text',source.slice(cursor));
-  return {parts,state};
+  if(cursor<source.length)spans.push({type:stack.length?'thinking':'text',start:cursor,end:source.length});
+  return spans;
+}
+
+function projectSpans(source,start,end,spans) {
+  const parts=[];
+  for(const span of spans) {
+    const left=Math.max(start,span.start),right=Math.min(end,span.end);
+    if(left<right)append(parts,span.type,source.slice(left,right));
+  }
+  return parts;
+}
+
+export function splitThinking(source) {
+  return {parts:projectSpans(source,0,source.length,thinkingSpans(source))};
 }
 
 export function thinkingParts(parts) {
-  let state=[];
+  const source=parts.filter(part=>part.type==='text').map(part=>part.text).join('');
+  const spans=thinkingSpans(source);let cursor=0;
   return parts.flatMap(part=>{
     if(part.type!=='text')return [part];
-    const result=splitThinking(part.text,state);state=result.state;
-    return result.parts.map((value,index)=>({...value,id:`${part.id}:${index}`}));
+    const projected=projectSpans(source,cursor,cursor+part.text.length,spans);cursor+=part.text.length;
+    return projected.map((value,index)=>({...value,id:`${part.id}:${index}`}));
   });
 }

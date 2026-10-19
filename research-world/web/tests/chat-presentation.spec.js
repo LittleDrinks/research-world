@@ -68,3 +68,26 @@ test('child results fold their own tagged thinking without affecting the parent 
   await expect(page.locator('.child-result-body')).toContainText('子任务结论。');
   await expect(page.locator('.pi-assistant > .pi-text')).toHaveText('主结论。');
 });
+
+test('a thinking marker split around a tool cannot expose its body',async({page})=>{
+  const tool=event(2,'tool',{id:'tool',name:'graph',phase:'completed',arguments:{},result:{}});
+  await fixture(page,[event(1,'delta',{text:'<think'}),tool,event(3,'delta',{text:'ing>内部检查</thinking>正式结论。'})]);
+  await expect(page.locator('.pi-thinking')).toHaveCount(1);
+  await expect(page.locator('.thinking-body')).toBeHidden();
+  expect((await page.locator('.pi-assistant').innerText())).not.toContain('内部检查');
+  await expect(page.locator('.pi-assistant > .pi-text')).toHaveText('正式结论。');
+  await expect(page.locator('.pi-tool')).toHaveCount(1);
+});
+
+test('code-fence context survives a tool inside a thinking section',async({page})=>{
+  const first=event(1,'delta',{text:'<thinking>检查\n```text\n'});
+  const tool=event(2,'tool',{id:'tool',name:'graph',phase:'completed',arguments:{},result:{}});
+  const last=event(3,'delta',{text:'</thinking>\n```\n仍在思考</thinking>正式结论。'});
+  const detail=await fixture(page,[first,tool,last]);
+  await expect(page.locator('.pi-thinking')).toHaveCount(2);
+  expect(await page.locator('.pi-assistant').innerText()).not.toContain('仍在思考');
+  await expect(page.locator('.pi-assistant > .pi-text')).toHaveText('正式结论。');
+  detail.run.turns[0].status='completed';await page.reload();
+  expect(await page.locator('.pi-assistant').innerText()).not.toContain('仍在思考');
+  await expect(page.locator('.pi-assistant > .pi-text')).toHaveText('正式结论。');
+});
