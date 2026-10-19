@@ -88,6 +88,31 @@ def test_validate_only_unknown_schema_and_bad_json(case):
     assert len(kernel.list_artifacts(record.project_id)) == before
 
 
+def test_evidence_locators_count_toward_total_reading_budget(case):
+    kernel, _, _, _, record, data, _ = case
+    reference = {'artifact_id': record.artifact_ids[0], 'locator': '定位' * 80}
+    for section in data['sections']:
+        section['evidence'] = [reference] * 8
+    checks = data['sections'][1]['checks']
+    checks[0]['evidence'] = [reference] * 4
+    data['sections'][1]['checks'] = checks * 12
+    response = post(case)
+    assert response.status_code == 422
+    assert '5000' in response.json()['detail']['errors'][0]['message']
+    assert kernel.get_record(record.project_id, record.id).artifact_ids == record.artifact_ids
+
+
+def test_field_limit_errors_report_actual_limit_and_keyword_without_echoing_input(case):
+    _, _, _, _, _, data, _ = case
+    response = post(case, data | {'summary': '超' * 401})
+    error = response.json()['detail']['errors'][0]
+    assert error == {'path': 'summary', 'code': 'maxLength', 'actual': 401, 'limit': 400,
+                     'message': '当前 401 字符，要求最多 400 字符'}
+    response = post(case, data | {'sections': data['sections'] * 2})
+    errors = response.json()['detail']['errors']
+    assert any(e.get('code') == 'maxItems' and e.get('limit') == 3 for e in errors)
+
+
 def test_cross_project_unattached_and_revoked_targets_are_rejected(case):
     kernel, _, _, _, record, data, _ = case
     other = kernel.create_project('foreign', 'other')
@@ -152,8 +177,9 @@ async def test_agent_workspace_capture_reaches_real_product_validation(case, mon
     values = {k: v for k, v in body.items() if k != 'content'} | {'path': 'paper.json'}
     assert (await bridge.invoke(token, 'artifact', values))['view_url'].startswith('/projects/')
     bridge.workspace_tools = FileWorkspace(json.dumps(data | {'summary': 'x' * 401}).encode())
-    with pytest.raises(httpx.HTTPStatusError):
+    with pytest.raises(httpx.HTTPStatusError) as caught:
         await bridge.invoke(token, 'artifact', values)
+    assert caught.value.response.json()['detail']['errors'][0]['limit'] == 400
 
 
 class FileWorkspace:

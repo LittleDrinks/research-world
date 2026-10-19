@@ -37,7 +37,7 @@ async function uploadAndValidate(page,data,valid){
   await page.getByLabel('选择已填写的报告').setInputFiles({name:'audit.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(data))});
   await page.getByRole('button',{name:'校验',exact:true}).click();
   if(valid)await expect(page.getByRole('status')).toContainText('校验通过');
-  else await expect(page.getByRole('alert')).toContainText('summary');
+  else {await expect(page.getByRole('alert')).toContainText('summary');await expect(page.getByRole('alert')).toContainText('400');}
 }
 
 async function verifyReading(page,request,f){
