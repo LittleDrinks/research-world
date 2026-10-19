@@ -15,16 +15,22 @@
     "@vitejs/plugin-react": "latest",
     "@xyflow/react": "latest",
     "elkjs": "0.12.0",
+    "katex": "0.19.0",
     "lucide-react": "latest",
     "nanoid": "3.3.18",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "latest",
+    "rehype-katex": "7.0.1",
     "remark-cjk-friendly": "2.3.2",
+    "remark-math-extended": "6.1.1",
     "vite": "latest"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1"
+  },
+  "overrides": {
+    "katex": "$katex"
   }
 }
