@@ -1,0 +1,14 @@
+{
+  "project": "project:bc524d1d221ec0dcf82f72a2",
+  "record": "record:40f99ce4e2defc8d16103369",
+  "record_url": "http://localhost:8095/projects/project%3Abc524d1d221ec0dcf82f72a2/records/record%3A40f99ce4e2defc8d16103369",
+  "label": "need-review",
+  "binding_enabled": true,
+  "tasks": 0,
+  "real_model_calls": 0,
+  "checks": [
+    "Binding visible",
+    "Selected label shows model invocation before save",
+    "Closed without submitting"
+  ]
+}

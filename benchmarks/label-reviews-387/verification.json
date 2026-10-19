@@ -1,0 +1,37 @@
+{
+  "backend": {
+    "full_suite_passed": 281,
+    "additional_tests_passed": 3,
+    "review_tests_passed": 15
+  },
+  "runtime": {
+    "passed": 255,
+    "skipped": 12
+  },
+  "browser": {
+    "distinct_tests_passed": 5,
+    "final_review_tests_passed": 2,
+    "bindings": "real Compose HTTP",
+    "task_states": "controlled browser responses; worker and writeback tested through real backend with a Runtime substitute"
+  },
+  "production": {
+    "compose": "control and runtime rebuilt",
+    "q049": "need-review binding enabled; no label assigned and no review task launched"
+  },
+  "real_model_calls": 0,
+  "coverage": [
+    "atomic label Change and enqueue rollback",
+    "independent frozen Session",
+    "validated report provenance and targets",
+    "version changes retain request",
+    "comment and label rename preserve applicability",
+    "restart after accepted Turn reuses message",
+    "explicit retry uses same Session",
+    "queued cancellation and revoked objects",
+    "project isolation",
+    "background lifespan dispatch and completion",
+    "disabled rules do not replay old labels",
+    "binding can stop after deleting saved Agent",
+    "mobile configuration and report access"
+  ]
+}

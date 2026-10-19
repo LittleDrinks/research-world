@@ -53,13 +53,13 @@ class ToolBridge:
         if tool == 'mmr':
             return select_candidates(values)
         if tool == 'artifact':
-            if values.get('operation') == 'templates':
-                return await _graph(request.agent_snapshot['project_id'], tool, values)
+            if values.get('operation') in {'templates', 'read'}:
+                return await _graph(request.agent_snapshot['project_id'], tool, values, request.run_id)
             if ('path' in values) == ('content' in values):
                 raise ValueError('artifact requires exactly one of content or path')
             if 'path' in values:
                 values = await self._file_artifact(token, values)
-        return await _graph(request.agent_snapshot['project_id'], tool, values)
+        return await _graph(request.agent_snapshot['project_id'], tool, values, request.run_id)
 
     async def _file_artifact(self, token, values):
         path = values['path']
@@ -117,14 +117,15 @@ def bridge_router(bridge):
     return router
 
 
-async def _graph(project_id, tool, values):
+async def _graph(project_id, tool, values, run_id=None):
     root = f'/api/v1/projects/{project_id}'
     operations = {'graph': ('local-map', {'text': values.get('query'), 'limit': 30}),
                   'joint_condition': ('joint-conditions', values),
                   'artifact': ('artifacts', values), 'record': ('records', values), 'connect': ('relations', values)}
     path, payload = operations[tool]
     async with httpx.AsyncClient(base_url=os.environ['CONTROL_URL'], timeout=30) as client:
-        response = await client.post(f'{root}/{path}', json=payload)
+        headers = {'x-research-author': 'agent:' + run_id} if run_id else {}
+        response = await client.post(f'{root}/{path}', json=payload, headers=headers)
         response.raise_for_status()
         return response.json()
 

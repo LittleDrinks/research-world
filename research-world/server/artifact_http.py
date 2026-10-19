@@ -3,17 +3,20 @@ import base64
 import binascii
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict
 
 from .artifact_documents import DOCUMENT_TYPE, MAX_BYTES, DocumentError, invalid, parse, prepare, templates
 from .artifact_reading import markdown, reading, view_url
+from .review_store import ReviewStore
+from .review_results import check_report
 
 
 class CaptureRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    operation: Literal['capture', 'validate', 'templates'] = 'capture'
+    operation: Literal['capture', 'validate', 'templates', 'read'] = 'capture'
+    artifact_id: str | None = None
     content: str | None = None
     content_base64: str | None = None
     path: str | None = None
@@ -27,10 +30,10 @@ def artifact_router(kernel, runtime):
     router = APIRouter(prefix='/api/v1/projects/{project_id}')
 
     @router.post('/artifacts', status_code=201)
-    async def capture(project_id: str, body: CaptureRequest):
+    async def capture(project_id: str, body: CaptureRequest, request: Request):
         kernel.get_project(project_id)
         try:
-            return await capture_request(kernel, runtime, project_id, body)
+            return await capture_request(kernel, runtime, project_id, body, request.headers.get('x-research-author', 'user'))
         except DocumentError as error:
             raise HTTPException(422, {'message': '报告校验未通过', 'errors': error.errors}) from None
 
@@ -38,9 +41,11 @@ def artifact_router(kernel, runtime):
     return router
 
 
-async def capture_request(kernel, runtime, project_id, body):
+async def capture_request(kernel, runtime, project_id, body, author='user'):
     if body.operation == 'templates':
         return templates(kernel, project_id)
+    if body.operation == 'read':
+        return reading(kernel, project_id, body.artifact_id)
     raw, media_type = await capture_bytes(runtime, project_id, body), body.media_type
     if len(raw) > MAX_BYTES:
         raise ValueError('Artifact 超过 4 MiB')
@@ -51,7 +56,20 @@ async def capture_request(kernel, runtime, project_id, body):
         raise ValueError('结构化校验需要选择模板')
     elif media_type.strip() == DOCUMENT_TYPE:
         raise ValueError('请通过 schema_id 和 record_id 发布结构化报告')
-    return finish_capture(kernel, project_id, body, raw, media_type)
+    return reviewed_capture(kernel, project_id, body, raw, media_type, author)
+
+
+def reviewed_capture(kernel, project_id, body, raw, media_type, author):
+    store = ReviewStore(kernel)
+    task = check_report(store, project_id, raw, author) if media_type == DOCUMENT_TYPE else None
+    if task and task['report_id']:
+        from .artifacts import ArtifactStore
+        if ArtifactStore.identifier(raw) != task['report_id']:
+            raise ValueError('本次复核已经提交报告，不能替换原件')
+    result = finish_capture(kernel, project_id, body, raw, media_type)
+    if task and body.operation == 'capture':
+        store.update(task['id'], report_id=result['id'])
+    return result
 
 
 async def capture_bytes(runtime, project_id, body):

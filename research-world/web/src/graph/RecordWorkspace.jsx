@@ -6,6 +6,7 @@ import {RecordContent} from './RecordContent';
 import {ResearchTimeline} from './ResearchTimeline';
 import {LabelBadge} from './Labels';
 import {ChatMarkdown} from '../chat/ChatMarkdown';
+import {RecordReviews} from './RecordReviews';
 
 export function RecordWorkspace({node}){
   const {projectId}=useWorld(),[changes,setChanges]=useState([]),[past,setPast]=useState(null),[error,setError]=useState(''),[edit,setEdit]=useState(null);
@@ -13,7 +14,7 @@ export function RecordWorkspace({node}){
   const version=async revision=>{try{setPast(await getRecordRevision(projectId,node.id,revision));setError('');}catch(e){setError(e.message);}};
   return <section className="record-workspace"><article className="issue-description"><header><b>研究记录</b><div className="record-version"><span>{past?`固定版本 r${past.revision}`:`r${node.revision}`}</span><button className="text-link" onClick={()=>version(1)}>初始版本</button>{past?<button className="text-link" onClick={()=>setPast(null)}>返回当前</button>:<button className="text-link" onClick={()=>setEdit({revision:node.revision,content:node.content})}>编辑正文</button>}</div></header>
     {error&&<p role="alert">{error}</p>}{past&&<FixedRecord record={past} projectId={projectId}/>}<RecordContent content={(past||node).content}/></article>
-    <ResearchTimeline changes={changes} projectId={projectId} onVersion={version}/>
+    <RecordReviews projectId={projectId} recordId={node.id}/><ResearchTimeline changes={changes} projectId={projectId} onVersion={version}/>
     <RecordDiscussion key={past?.revision||'current'} node={node} revision={past?.revision||node.revision} projectId={projectId}/>
     {edit&&<EditRecord node={node} draft={edit} projectId={projectId} onClose={()=>setEdit(null)}/>}
   </section>;

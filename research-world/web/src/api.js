@@ -28,6 +28,10 @@ export const captureArtifact = (projectId, body) => fetch(`/api/v1/projects/${en
 export const listLabels = projectId => fetch(`/api/v1/projects/${enc(projectId)}/labels`).then(decode);
 export const saveLabel = (projectId,body,id) => fetch(`/api/v1/projects/${enc(projectId)}/labels${id?'/'+enc(id):''}`,json(id?'PUT':'POST',body)).then(decode);
 export const removeLabel = (projectId,id) => fetch(`/api/v1/projects/${enc(projectId)}/labels/${enc(id)}`,{method:'DELETE'}).then(decode);
+export const listReviewRules = projectId => fetch(`/api/v1/projects/${enc(projectId)}/review-rules`).then(decode);
+export const saveReviewRule = (projectId,labelId,body) => fetch(`/api/v1/projects/${enc(projectId)}/review-rules/${enc(labelId)}`,json('PUT',body)).then(decode);
+export const listRecordReviews = (projectId,recordId) => fetch(`/api/v1/projects/${enc(projectId)}/records/${enc(recordId)}/reviews`).then(decode);
+export const reviewAction = (projectId,id,action) => fetch(`/api/v1/projects/${enc(projectId)}/reviews/${enc(id)}/${action}`,{method:'POST'}).then(decode);
 export const listChanges = (projectId,recordId) => fetch(`/api/v1/projects/${enc(projectId)}/changes${recordId?'?record_id='+enc(recordId):''}`).then(decode);
 export const changeRecord = (projectId,recordId,body) => fetch(`/api/v1/projects/${enc(projectId)}/records/${enc(recordId)}/changes`,json('POST',body)).then(decode);
 export const getRecordRevision = (projectId,recordId,revision) => fetch(`/api/v1/projects/${enc(projectId)}/records/${enc(recordId)}/revisions/${revision}`).then(decode);

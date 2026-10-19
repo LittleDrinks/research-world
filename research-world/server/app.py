@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import asyncio
+from contextlib import suppress
 from contextlib import asynccontextmanager
 from dataclasses import asdict
 
@@ -18,27 +20,41 @@ from .project_export import export_project
 from .project_control import project_deletion_router
 from .project_workspace import workspace_router
 from .artifact_http import artifact_router
+from .review_worker import ReviewWorker
+from .review_http import review_router
 
 
 def create_product(kernel, runtime, profiles, workspace):
-    @asynccontextmanager
-    async def lifespan(_app):
-        yield
-        await runtime.close()
-
-    app = FastAPI(title='Research World', lifespan=lifespan)
+    control = SessionControl(kernel, runtime, profiles, workspace)
+    reviews = ReviewWorker(control)
+    app = FastAPI(title='Research World', lifespan=_review_lifespan(reviews))
+    app.state.reviews = reviews
     _errors(app)
     _agent_routes(app, runtime, profiles)
     _project_routes(app, kernel, runtime)
     _selection_route(app, kernel, runtime)
     app.include_router(artifact_router(kernel, runtime))
-    control=SessionControl(kernel, runtime, profiles, workspace)
+    app.include_router(review_router(reviews))
     app.include_router(session_router(control))
     app.include_router(project_deletion_router(control))
     app.include_router(workspace_router(control))
     app.include_router(kernel_graph_router(kernel))
     _frontend(app)
     return app
+
+
+def _review_lifespan(reviews):
+    @asynccontextmanager
+    async def lifespan(_app):
+        task = asyncio.create_task(reviews.run())
+        try:
+            yield
+        finally:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
+            await reviews.runtime.close()
+    return lifespan
 
 
 def _errors(app):

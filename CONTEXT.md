@@ -11,6 +11,7 @@ _Avoid_: Fact Graph、事实图谱、Research Kernel
 _Avoid_: Research Graph（页面名称）
 **标签（Label）**：用户管理的项目内名称、颜色与描述，可同时关联多个研究对象；warning、need-info、need-grill 是可编辑示例，不代表流程阶段或科学判定。
 **变更（Change）**：针对研究对象的追加式修改或讨论记录，保存作者、原因和前后版本快照。正文、标签及附件变动和评论均可追溯；当前对象由初始记录与变更投影，固定版本可回读。
+**标签自动复核**：项目规则将标签 ID 绑定到固定 AgentSpec 与报告 Schema；新增标签 Change 原子登记复核请求，独立 Session 由既有 Runtime 执行。相同规则、对象及正文/输入附件不重复派发；执行状态不成为研究标签。报告固定被审快照，完成意见回到对象讨论；只有输入未变且请求标签未被重新操作时才移除请求标签。
 **Question**：Research Graph 中定义研究对象、范围与约束的节点；不能作为 supports/refutes 的起点或终点。Direction 对 Question 的关系使用 Direction→Question 的 depends_on。
 **Source**：Research Graph 中描述一份外部资料及其可用范围的节点。
 **Direction**：Research Graph 中记录待探索解释、路线或反例的节点；赛题中的候选假设、机制解释、数学结构和研究路线均投影为 Direction，不是已证实结论。
