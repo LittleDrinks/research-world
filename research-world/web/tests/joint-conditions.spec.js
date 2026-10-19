@@ -14,7 +14,7 @@ async function seed(request) {
   for (const title of ['守恒前提','耗散尺度','碰撞条件','目标解释']) records.push(await post(request,root+'/records',{type:'direction',content:{title,text:'待核查'},artifact_ids:[artifact.id]}));
   const conditions=[];
   for (const rule of ['AND','OR','k-of-N']) conditions.push(await post(request,root+'/joint-conditions',{
-    title:`${rule} 关系示例`,rule,k:rule==='k-of-N'?2:null,members:records.slice(0,3).map(r=>({record_id:r.id,role:r.content.title})),
+    title:`${rule} 核查条件`,rule,k:rule==='k-of-N'?2:null,members:records.slice(0,3).map(r=>({record_id:r.id,role:r.content.title})),
     target_id:records[3].id,statement:'限定条件下的解释',rationale:'不同条件分别承担解释的一部分。',evidence:[{artifact_id:artifact.id,locator:'q049 原文定位'}],
   }));
   return {root,project,records,conditions};
@@ -39,20 +39,20 @@ test('joint junctions, list, evidence, refresh, revocation and mobile use real A
 });
 
 async function checkJunctionAndRefresh(page,request) {
-    await page.locator('.joint-node[aria-label="AND 联合条件：AND 关系示例"]').click();
+    await page.locator('.joint-node[aria-label="AND 联合条件：AND 核查条件"]').click();
     await expect(page.locator('.joint-inspector')).toContainText('全部 3 项共同满足');
     await expect(page.locator('.joint-inspector')).toContainText('不同条件分别承担解释的一部分。');
     const href=await page.getByRole('link',{name:'查看原文'}).getAttribute('href');
     expect((await (await request.get('/api/v1'+decodeURI(href)+'/reading')).json()).text).toContain('q049 引用内容');
     await page.reload();
-    await expect(page.locator('.joint-inspector')).toContainText('AND 关系示例');
+    await expect(page.locator('.joint-inspector')).toContainText('AND 核查条件');
 }
 
 async function checkListAndMobile(page) {
   await page.getByRole('button',{name:'条件列表 · 3'}).click();
-  await page.locator('.joint-list-item').filter({hasText:'OR 关系示例'}).click();
+  await page.locator('.joint-list-item').filter({hasText:'OR 核查条件'}).click();
   await expect(page.locator('.joint-inspector')).toContainText('至少满足其中一项');
-  await page.locator('.joint-list-item').filter({hasText:'k-of-N 关系示例'}).click();
+  await page.locator('.joint-list-item').filter({hasText:'k-of-N 核查条件'}).click();
   await expect(page.locator('.joint-inspector')).toContainText('3 项中至少满足 2 项');
   await page.setViewportSize({width:390,height:844});
   await page.locator('.joint-inspector').scrollIntoViewIfNeeded();

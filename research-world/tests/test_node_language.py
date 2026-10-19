@@ -45,6 +45,22 @@ def test_research_text_and_original_evidence_remain_readable(case):
     assert kernel.read_artifact(project, artifact.id).decode() == '论文中的纠错演示'
 
 
+@pytest.mark.parametrize('field', ['title', 'statement', 'rationale', 'role'])
+def test_joint_node_rejects_toy_copy(case, field):
+    kernel, client, project, root = case
+    records = [kernel.record(project, 'direction', {'title': f'检验条件{i}'}) for i in range(3)]
+    artifact = kernel.capture_artifact(project, b'Conditions', 'text/plain')
+    members = [{'record_id': r.id, 'role': '检验前提'} for r in records[:2]]
+    body = {'title': '联合检验', 'rule': 'AND', 'members': members, 'target_id': records[2].id,
+            'statement': '前提共同约束结论', 'rationale': '对齐输入条件',
+            'evidence': [{'artifact_id': artifact.id, 'locator': 'L1'}]}
+    if field == 'role': members[0]['role'] = '演示'
+    else: body[field] = '演示'
+    response = client.post(root + '/joint-conditions', json=body)
+    assert response.status_code == 422
+    assert client.get(root + '/joint-conditions').json() == []
+
+
 @pytest.mark.asyncio
 async def test_agent_record_uses_the_same_language_guard(case, monkeypatch):
     from runtime.bridge import ToolBridge
