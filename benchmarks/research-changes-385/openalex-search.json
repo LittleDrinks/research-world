@@ -1,0 +1,5134 @@
+[
+  {
+    "query": "On the Dynamical Stability of the Solar System",
+    "retrieved_at": "2026-10-19T13:25:26Z",
+    "status": "ok",
+    "results": [
+      {
+        "id": "https://openalex.org/W2071681224",
+        "doi": "https://doi.org/10.1086/589232",
+        "title": "On the Dynamical Stability of the Solar System",
+        "publication_year": 2008,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": null,
+              "display_name": "Konstantin Batygin",
+              "orcid": null,
+              "observed_orcids": []
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I185103710",
+                "display_name": "University of California, Santa Cruz",
+                "ror": "https://ror.org/03s65by71",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I185103710"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Konstantin Batygin",
+            "raw_affiliation_strings": [
+              "Lick Observatory, University of California, Santa Cruz, CA 95064"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Lick Observatory, University of California, Santa Cruz, CA 95064",
+                "institution_ids": [
+                  "https://openalex.org/I185103710"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": null,
+              "display_name": "Gregory Laughlin",
+              "orcid": null,
+              "observed_orcids": []
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I185103710",
+                "display_name": "University of California, Santa Cruz",
+                "ror": "https://ror.org/03s65by71",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I185103710"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Gregory Laughlin",
+            "raw_affiliation_strings": [
+              "Department of Astronomy and Astrophysics, University of California, Santa Cruz, CA 95064",
+              "Lick Observatory, University of California, Santa Cruz, CA 95064"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Department of Astronomy and Astrophysics, University of California, Santa Cruz, CA 95064",
+                "institution_ids": [
+                  "https://openalex.org/I185103710"
+                ]
+              },
+              {
+                "raw_affiliation_string": "Lick Observatory, University of California, Santa Cruz, CA 95064",
+                "institution_ids": [
+                  "https://openalex.org/I185103710"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.1086/589232",
+          "doi": "https://doi.org/10.1086/589232",
+          "is_oa": true,
+          "landing_page_url": "https://doi.org/10.1086/589232",
+          "pdf_url": "https://iopscience.iop.org/article/10.1086/589232/pdf",
+          "source": {
+            "id": "https://openalex.org/S1980519",
+            "display_name": "The Astrophysical Journal",
+            "issn_l": "0004-637X",
+            "issn": [
+              "0004-637X",
+              "1538-4357"
+            ],
+            "is_oa": false,
+            "is_in_doaj": true,
+            "is_core": true,
+            "listed_in": [
+              "anvur-scientific",
+              "cwts-core",
+              "doaj",
+              "dongbi-a",
+              "jufo-1",
+              "ki-jl-1",
+              "norway-2",
+              "poland-140",
+              "russia-white-list-1",
+              "vabb-shw"
+            ],
+            "host_organization": "https://openalex.org/P4310320083",
+            "host_organization_name": "IOP Publishing",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310320083",
+              "https://openalex.org/P4310311669"
+            ],
+            "host_organization_lineage_names": [
+              "IOP Publishing",
+              "Institute of Physics"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "The Astrophysical Journal",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "bronze",
+          "oa_url": "https://iopscience.iop.org/article/10.1086/589232/pdf",
+          "any_repository_has_fulltext": true
+        },
+        "referenced_works": [
+          "https://openalex.org/W1634825185",
+          "https://openalex.org/W1976309947",
+          "https://openalex.org/W1976860825",
+          "https://openalex.org/W2022200504",
+          "https://openalex.org/W2044368395",
+          "https://openalex.org/W2058622906",
+          "https://openalex.org/W2062149527",
+          "https://openalex.org/W2066400251",
+          "https://openalex.org/W2080614756",
+          "https://openalex.org/W2088017846",
+          "https://openalex.org/W2096001350",
+          "https://openalex.org/W2134217601",
+          "https://openalex.org/W2141394518",
+          "https://openalex.org/W2170048119",
+          "https://openalex.org/W4240145381",
+          "https://openalex.org/W4255449257"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W3106037875",
+        "doi": null,
+        "title": "On the Dynamical Stability of the Solar System",
+        "publication_year": 2013,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5078835212",
+              "display_name": "Konstantin Batygin",
+              "orcid": "https://orcid.org/0000-0002-7094-7908",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-7094-7908"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I185103710",
+                "display_name": "University of California, Santa Cruz",
+                "ror": "https://ror.org/03s65by71",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I185103710"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Konstantin Batygin",
+            "raw_affiliation_strings": [
+              "Lick Observatory, University of California, Santa Cruz, CA 95064"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Lick Observatory, University of California, Santa Cruz, CA 95064",
+                "institution_ids": [
+                  "https://openalex.org/I185103710"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": "https://openalex.org/A5082331803",
+              "display_name": "Gregory Laughlin",
+              "orcid": "https://orcid.org/0000-0002-3253-2621",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-3253-2621"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I185103710",
+                "display_name": "University of California, Santa Cruz",
+                "ror": "https://ror.org/03s65by71",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I185103710"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Gregory Laughlin",
+            "raw_affiliation_strings": [
+              "Department of Astronomy and Astrophysics, University of California, Santa Cruz, CA 95064",
+              "Lick Observatory, University of California, Santa Cruz, CA 95064"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Department of Astronomy and Astrophysics, University of California, Santa Cruz, CA 95064",
+                "institution_ids": [
+                  "https://openalex.org/I185103710"
+                ]
+              },
+              {
+                "raw_affiliation_string": "Lick Observatory, University of California, Santa Cruz, CA 95064",
+                "institution_ids": [
+                  "https://openalex.org/I185103710"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "pmh:oai:CiteSeerX.psu:10.1.1.312.4780",
+          "doi": null,
+          "is_oa": false,
+          "landing_page_url": "http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.312.4780",
+          "pdf_url": null,
+          "source": null,
+          "license": null,
+          "license_id": null,
+          "version": "submittedVersion",
+          "is_accepted": false,
+          "is_published": false,
+          "raw_source_name": "http://arxiv.org/pdf/0804.1946v1.pdf",
+          "raw_type": "text"
+        },
+        "open_access": {
+          "is_oa": false,
+          "oa_status": "closed",
+          "oa_url": null,
+          "any_repository_has_fulltext": false
+        },
+        "referenced_works": [
+          "https://openalex.org/W40036024",
+          "https://openalex.org/W1568151868",
+          "https://openalex.org/W1610714213",
+          "https://openalex.org/W1634825185",
+          "https://openalex.org/W1965548823",
+          "https://openalex.org/W1976309947",
+          "https://openalex.org/W1976860825",
+          "https://openalex.org/W2022200504",
+          "https://openalex.org/W2044368395",
+          "https://openalex.org/W2052414771",
+          "https://openalex.org/W2058622906",
+          "https://openalex.org/W2061963840",
+          "https://openalex.org/W2062149527",
+          "https://openalex.org/W2066400251",
+          "https://openalex.org/W2080614756",
+          "https://openalex.org/W2088017846",
+          "https://openalex.org/W2096001350",
+          "https://openalex.org/W2134217601",
+          "https://openalex.org/W2141394518",
+          "https://openalex.org/W2170048119",
+          "https://openalex.org/W2432517183",
+          "https://openalex.org/W2981264952",
+          "https://openalex.org/W2995963679",
+          "https://openalex.org/W4240145381",
+          "https://openalex.org/W4255449257"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W2670655458",
+        "doi": "https://doi.org/10.3847/1538-3881/aa7aa2",
+        "title": "Evaluating the Dynamical Stability of Outer Solar System Objects in the Presence of Planet Nine",
+        "publication_year": 2017,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5020263321",
+              "display_name": "Juliette Becker",
+              "orcid": "https://orcid.org/0000-0002-7733-4522",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-7733-4522"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I27837315",
+                "display_name": "University of Michigan",
+                "ror": "https://ror.org/00jmfr291",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": true,
+            "raw_author_name": "Juliette C. Becker",
+            "raw_affiliation_strings": [
+              "Astronomy Department, University of Michigan, Ann Arbor, MI 48109, USA; jcbecker@umich.edu",
+              "Astronomy Department, University of Michigan, Ann Arbor, MI 48109, USA"
+            ],
+            "raw_orcid": "https://orcid.org/0000-0002-7733-4522",
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Astronomy Department, University of Michigan, Ann Arbor, MI 48109, USA; jcbecker@umich.edu",
+                "institution_ids": [
+                  "https://openalex.org/I27837315"
+                ]
+              },
+              {
+                "raw_affiliation_string": "Astronomy Department, University of Michigan, Ann Arbor, MI 48109, USA",
+                "institution_ids": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "middle",
+            "author": {
+              "id": "https://openalex.org/A5045905223",
+              "display_name": "Fred C. Adams",
+              "orcid": "https://orcid.org/0000-0002-8167-1767",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-8167-1767"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I27837315",
+                "display_name": "University of Michigan",
+                "ror": "https://ror.org/00jmfr291",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Fred C. Adams",
+            "raw_affiliation_strings": [
+              "Astronomy Department, University of Michigan, Ann Arbor, MI 48109, USA; jcbecker@umich.edu",
+              "Physics Department, University of Michigan, Ann Arbor, MI 48109, USA",
+              "Astronomy Department, University of Michigan, Ann Arbor, MI 48109, USA"
+            ],
+            "raw_orcid": "https://orcid.org/0000-0002-8167-1767",
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Astronomy Department, University of Michigan, Ann Arbor, MI 48109, USA; jcbecker@umich.edu",
+                "institution_ids": [
+                  "https://openalex.org/I27837315"
+                ]
+              },
+              {
+                "raw_affiliation_string": "Physics Department, University of Michigan, Ann Arbor, MI 48109, USA",
+                "institution_ids": [
+                  "https://openalex.org/I27837315"
+                ]
+              },
+              {
+                "raw_affiliation_string": "Astronomy Department, University of Michigan, Ann Arbor, MI 48109, USA",
+                "institution_ids": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "middle",
+            "author": {
+              "id": "https://openalex.org/A5017086478",
+              "display_name": "Tali Khain",
+              "orcid": "https://orcid.org/0000-0001-7721-6457",
+              "observed_orcids": [
+                "https://orcid.org/0000-0001-7721-6457"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I27837315",
+                "display_name": "University of Michigan",
+                "ror": "https://ror.org/00jmfr291",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Tali Khain",
+            "raw_affiliation_strings": [
+              "Physics Department, University of Michigan, Ann Arbor, MI 48109, USA"
+            ],
+            "raw_orcid": "https://orcid.org/0000-0001-7721-6457",
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Physics Department, University of Michigan, Ann Arbor, MI 48109, USA",
+                "institution_ids": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "middle",
+            "author": {
+              "id": "https://openalex.org/A5112357553",
+              "display_name": "Stephanie J. Hamilton",
+              "orcid": null,
+              "observed_orcids": []
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I27837315",
+                "display_name": "University of Michigan",
+                "ror": "https://ror.org/00jmfr291",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Stephanie J. Hamilton",
+            "raw_affiliation_strings": [
+              "Physics Department, University of Michigan, Ann Arbor, MI 48109, USA"
+            ],
+            "raw_orcid": "https://orcid.org/0000-0002-6126-8487",
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Physics Department, University of Michigan, Ann Arbor, MI 48109, USA",
+                "institution_ids": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": "https://openalex.org/A5036524287",
+              "display_name": "D. W. Gerdes",
+              "orcid": "https://orcid.org/0000-0001-6942-2736",
+              "observed_orcids": [
+                "https://orcid.org/0000-0001-6942-2736"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I27837315",
+                "display_name": "University of Michigan",
+                "ror": "https://ror.org/00jmfr291",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "David Gerdes",
+            "raw_affiliation_strings": [
+              "Astronomy Department, University of Michigan, Ann Arbor, MI 48109, USA; jcbecker@umich.edu",
+              "Physics Department, University of Michigan, Ann Arbor, MI 48109, USA",
+              "Astronomy Department, University of Michigan, Ann Arbor, MI 48109, USA"
+            ],
+            "raw_orcid": "https://orcid.org/0000-0001-6942-2736",
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Astronomy Department, University of Michigan, Ann Arbor, MI 48109, USA; jcbecker@umich.edu",
+                "institution_ids": [
+                  "https://openalex.org/I27837315"
+                ]
+              },
+              {
+                "raw_affiliation_string": "Physics Department, University of Michigan, Ann Arbor, MI 48109, USA",
+                "institution_ids": [
+                  "https://openalex.org/I27837315"
+                ]
+              },
+              {
+                "raw_affiliation_string": "Astronomy Department, University of Michigan, Ann Arbor, MI 48109, USA",
+                "institution_ids": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.3847/1538-3881/aa7aa2",
+          "doi": "https://doi.org/10.3847/1538-3881/aa7aa2",
+          "is_oa": true,
+          "landing_page_url": "https://doi.org/10.3847/1538-3881/aa7aa2",
+          "pdf_url": "https://iopscience.iop.org/article/10.3847/1538-3881/aa7aa2/pdf",
+          "source": {
+            "id": "https://openalex.org/S100695177",
+            "display_name": "The Astronomical Journal",
+            "issn_l": "0004-6256",
+            "issn": [
+              "0004-6256",
+              "1538-3881"
+            ],
+            "is_oa": false,
+            "is_in_doaj": true,
+            "is_core": true,
+            "listed_in": [
+              "cwts-core",
+              "doaj",
+              "dongbi-b",
+              "jufo-1",
+              "norway-1",
+              "poland-140",
+              "russia-white-list-1",
+              "vabb-shw"
+            ],
+            "host_organization": "https://openalex.org/P4310311669",
+            "host_organization_name": "Institute of Physics",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310311669"
+            ],
+            "host_organization_lineage_names": [
+              "Institute of Physics"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "The Astronomical Journal",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "bronze",
+          "oa_url": "https://iopscience.iop.org/article/10.3847/1538-3881/aa7aa2/pdf",
+          "any_repository_has_fulltext": true
+        },
+        "referenced_works": [
+          "https://openalex.org/W1023184951",
+          "https://openalex.org/W1870646795",
+          "https://openalex.org/W1907744116",
+          "https://openalex.org/W2038945445",
+          "https://openalex.org/W2043701535",
+          "https://openalex.org/W2049297962",
+          "https://openalex.org/W2056420346",
+          "https://openalex.org/W2061075683",
+          "https://openalex.org/W2073330782",
+          "https://openalex.org/W2092504316",
+          "https://openalex.org/W2094993366",
+          "https://openalex.org/W2102529734",
+          "https://openalex.org/W2109471833",
+          "https://openalex.org/W2134217601",
+          "https://openalex.org/W2150375650",
+          "https://openalex.org/W2170052387",
+          "https://openalex.org/W2227274187",
+          "https://openalex.org/W2283852246",
+          "https://openalex.org/W2287698241",
+          "https://openalex.org/W2291602825",
+          "https://openalex.org/W2294745121",
+          "https://openalex.org/W2298655042",
+          "https://openalex.org/W2340625833",
+          "https://openalex.org/W2342259892",
+          "https://openalex.org/W2366893103",
+          "https://openalex.org/W2404453584",
+          "https://openalex.org/W2486766886",
+          "https://openalex.org/W2494286130",
+          "https://openalex.org/W2498195370",
+          "https://openalex.org/W2500073897",
+          "https://openalex.org/W2510121696",
+          "https://openalex.org/W2523497335",
+          "https://openalex.org/W2536736938",
+          "https://openalex.org/W2578820441",
+          "https://openalex.org/W2587642607",
+          "https://openalex.org/W3005347330",
+          "https://openalex.org/W3010432670",
+          "https://openalex.org/W3101426914",
+          "https://openalex.org/W3102640055",
+          "https://openalex.org/W3124878469",
+          "https://openalex.org/W4285719527"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W2137743288",
+        "doi": "https://doi.org/10.1088/0004-637x/798/1/8",
+        "title": "DYNAMIC STABILITY OF THE SOLAR SYSTEM: STATISTICALLY INCONCLUSIVE RESULTS FROM ENSEMBLE INTEGRATIONS",
+        "publication_year": 2014,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5051669323",
+              "display_name": "Richard E. Zeebe",
+              "orcid": "https://orcid.org/0000-0003-0806-8387",
+              "observed_orcids": [
+                "https://orcid.org/0000-0003-0806-8387"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I117965899",
+                "display_name": "University of Hawaiʻi at Mānoa",
+                "ror": "https://ror.org/01wspgy28",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I117965899"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": true,
+            "raw_author_name": "Richard E. Zeebe",
+            "raw_affiliation_strings": [
+              "School of Ocean and Earth Science and Technology, University of Hawaii at Manoa, 1000 Pope Road, MSB 629, Honolulu, HI 96822, USA; zeebe@soest.hawaii.edu"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "School of Ocean and Earth Science and Technology, University of Hawaii at Manoa, 1000 Pope Road, MSB 629, Honolulu, HI 96822, USA; zeebe@soest.hawaii.edu",
+                "institution_ids": [
+                  "https://openalex.org/I117965899"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.1088/0004-637x/798/1/8",
+          "doi": "https://doi.org/10.1088/0004-637x/798/1/8",
+          "is_oa": true,
+          "landing_page_url": "https://doi.org/10.1088/0004-637x/798/1/8",
+          "pdf_url": "https://iopscience.iop.org/article/10.1088/0004-637X/798/1/8/pdf",
+          "source": {
+            "id": "https://openalex.org/S1980519",
+            "display_name": "The Astrophysical Journal",
+            "issn_l": "0004-637X",
+            "issn": [
+              "0004-637X",
+              "1538-4357"
+            ],
+            "is_oa": false,
+            "is_in_doaj": true,
+            "is_core": true,
+            "listed_in": [
+              "anvur-scientific",
+              "cwts-core",
+              "doaj",
+              "dongbi-a",
+              "jufo-1",
+              "ki-jl-1",
+              "norway-2",
+              "poland-140",
+              "russia-white-list-1",
+              "vabb-shw"
+            ],
+            "host_organization": "https://openalex.org/P4310320083",
+            "host_organization_name": "IOP Publishing",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310320083",
+              "https://openalex.org/P4310311669"
+            ],
+            "host_organization_lineage_names": [
+              "IOP Publishing",
+              "Institute of Physics"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "The Astrophysical Journal",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "bronze",
+          "oa_url": "https://iopscience.iop.org/article/10.1088/0004-637X/798/1/8/pdf",
+          "any_repository_has_fulltext": true
+        },
+        "referenced_works": [
+          "https://openalex.org/W1969177663",
+          "https://openalex.org/W1976860825",
+          "https://openalex.org/W1979406027",
+          "https://openalex.org/W1981016396",
+          "https://openalex.org/W1992637546",
+          "https://openalex.org/W2022200504",
+          "https://openalex.org/W2035031111",
+          "https://openalex.org/W2060400964",
+          "https://openalex.org/W2062149527",
+          "https://openalex.org/W2066400251",
+          "https://openalex.org/W2071681224",
+          "https://openalex.org/W2080614756",
+          "https://openalex.org/W2096001350",
+          "https://openalex.org/W2100041209",
+          "https://openalex.org/W2130981385",
+          "https://openalex.org/W2134217601",
+          "https://openalex.org/W2154432883",
+          "https://openalex.org/W2167724286",
+          "https://openalex.org/W2170048119",
+          "https://openalex.org/W2171324723",
+          "https://openalex.org/W2201952521",
+          "https://openalex.org/W4255449257"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W3019705139",
+        "doi": "https://doi.org/10.48550/arxiv.1706.06609",
+        "title": "Evaluating the Dynamical Stability of Outer Solar System Objects in the Presence of Planet Nine",
+        "publication_year": 2017,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5020263321",
+              "display_name": "Juliette Becker",
+              "orcid": "https://orcid.org/0000-0002-7733-4522",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-7733-4522"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I27837315",
+                "display_name": "University of Michigan",
+                "ror": "https://ror.org/00jmfr291",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Becker, Juliette",
+            "raw_affiliation_strings": [
+              "#N#        Astronomy Department, University of Michigan, Ann Arbor, MI 48109, USA"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "#N#        Astronomy Department, University of Michigan, Ann Arbor, MI 48109, USA",
+                "institution_ids": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "middle",
+            "author": {
+              "id": "https://openalex.org/A5045905223",
+              "display_name": "Fred C. Adams",
+              "orcid": "https://orcid.org/0000-0002-8167-1767",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-8167-1767"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I27837315",
+                "display_name": "University of Michigan",
+                "ror": "https://ror.org/00jmfr291",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Adams, Fred",
+            "raw_affiliation_strings": [
+              "Physics Department, University of Michigan, Ann Arbor, MI 48109, USA"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Physics Department, University of Michigan, Ann Arbor, MI 48109, USA",
+                "institution_ids": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "middle",
+            "author": {
+              "id": "https://openalex.org/A5017086478",
+              "display_name": "Tali Khain",
+              "orcid": "https://orcid.org/0000-0001-7721-6457",
+              "observed_orcids": [
+                "https://orcid.org/0000-0001-7721-6457"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I27837315",
+                "display_name": "University of Michigan",
+                "ror": "https://ror.org/00jmfr291",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Khain, Tali",
+            "raw_affiliation_strings": [
+              "Physics Department University of Michigan Ann Arbor, MI 48109, USA"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Physics Department University of Michigan Ann Arbor, MI 48109, USA",
+                "institution_ids": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "middle",
+            "author": {
+              "id": "https://openalex.org/A5112357553",
+              "display_name": "Stephanie J. Hamilton",
+              "orcid": null,
+              "observed_orcids": []
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I27837315",
+                "display_name": "University of Michigan",
+                "ror": "https://ror.org/00jmfr291",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Hamilton, Stephanie",
+            "raw_affiliation_strings": [
+              "Physics Department University of Michigan Ann Arbor, MI 48109, USA"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Physics Department University of Michigan Ann Arbor, MI 48109, USA",
+                "institution_ids": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": "https://openalex.org/A5036524287",
+              "display_name": "D. W. Gerdes",
+              "orcid": "https://orcid.org/0000-0001-6942-2736",
+              "observed_orcids": [
+                "https://orcid.org/0000-0001-6942-2736"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I27837315",
+                "display_name": "University of Michigan",
+                "ror": "https://ror.org/00jmfr291",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Gerdes, David",
+            "raw_affiliation_strings": [
+              "Physics Department, University of Michigan, Ann Arbor, MI 48109, USA"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Physics Department, University of Michigan, Ann Arbor, MI 48109, USA",
+                "institution_ids": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.48550/arxiv.1706.06609",
+          "doi": "https://doi.org/10.48550/arxiv.1706.06609",
+          "is_oa": true,
+          "landing_page_url": "https://doi.org/10.48550/arxiv.1706.06609",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S4306400194",
+            "display_name": "arXiv (Cornell University)",
+            "issn_l": "2331-8422",
+            "issn": [
+              "2331-8422"
+            ],
+            "is_oa": true,
+            "is_in_doaj": false,
+            "is_core": false,
+            "listed_in": [],
+            "host_organization": "https://openalex.org/I205783295",
+            "host_organization_name": "Cornell University",
+            "host_organization_lineage": [
+              "https://openalex.org/I205783295"
+            ],
+            "host_organization_lineage_names": [],
+            "type": "repository"
+          },
+          "license": null,
+          "license_id": null,
+          "version": null,
+          "is_accepted": false,
+          "is_published": false,
+          "raw_source_name": null,
+          "raw_type": "article-journal"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "green",
+          "oa_url": "https://doi.org/10.48550/arxiv.1706.06609",
+          "any_repository_has_fulltext": true
+        },
+        "referenced_works": []
+      }
+    ]
+  },
+  {
+    "query": "Large-scale chaos and the spacing of the inner planets",
+    "retrieved_at": "2026-10-19T13:25:25Z",
+    "status": "ok",
+    "results": [
+      {
+        "id": "https://openalex.org/W2523072049",
+        "doi": null,
+        "title": "Large scale chaos and the spacing of the inner planets.",
+        "publication_year": 1997,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5008041995",
+              "display_name": "J. Laskar",
+              "orcid": "https://orcid.org/0000-0003-2634-789X",
+              "observed_orcids": [
+                "https://orcid.org/0000-0003-2634-789X"
+              ]
+            },
+            "institutions": [],
+            "countries": [],
+            "is_corresponding": true,
+            "raw_author_name": "Jacques Laskar",
+            "raw_affiliation_strings": [],
+            "raw_orcid": null,
+            "affiliations": []
+          }
+        ],
+        "primary_location": {
+          "id": "mag:2523072049",
+          "doi": null,
+          "is_oa": false,
+          "landing_page_url": "http://ui.adsabs.harvard.edu/abs/1997A&A...317L..75L/abstract",
+          "pdf_url": null,
+          "source": null,
+          "license": null,
+          "license_id": null,
+          "version": null,
+          "is_accepted": false,
+          "is_published": false,
+          "raw_source_name": "Astronomy and Astrophysics",
+          "raw_type": null
+        },
+        "open_access": {
+          "is_oa": false,
+          "oa_status": "closed",
+          "oa_url": null,
+          "any_repository_has_fulltext": false
+        },
+        "referenced_works": []
+      },
+      {
+        "id": "https://openalex.org/W2964332121",
+        "doi": "https://doi.org/10.1088/0004-637x/807/1/44",
+        "title": "SPACING OF KEPLER PLANETS: SCULPTING BY DYNAMICAL INSTABILITY",
+        "publication_year": 2015,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5053349562",
+              "display_name": "Bonan Pu",
+              "orcid": "https://orcid.org/0000-0002-5668-243X",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-5668-243X"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I185261750",
+                "display_name": "University of Toronto",
+                "ror": "https://ror.org/03dbr7087",
+                "country_code": "CA",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I185261750"
+                ]
+              }
+            ],
+            "countries": [
+              "CA"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Bonan Pu (濮勃南)",
+            "raw_affiliation_strings": [
+              "Department of Astronomy and Astrophysics, 50 St. George Street, University of Toronto, Canada"
+            ],
+            "raw_orcid": "https://orcid.org/0000-0002-5668-243X",
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Department of Astronomy and Astrophysics, 50 St. George Street, University of Toronto, Canada",
+                "institution_ids": [
+                  "https://openalex.org/I185261750"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": "https://openalex.org/A5016015356",
+              "display_name": "Yanqin Wu",
+              "orcid": "https://orcid.org/0000-0003-0511-0893",
+              "observed_orcids": [
+                "https://orcid.org/0000-0003-0511-0893"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I185261750",
+                "display_name": "University of Toronto",
+                "ror": "https://ror.org/03dbr7087",
+                "country_code": "CA",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I185261750"
+                ]
+              }
+            ],
+            "countries": [
+              "CA"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Yanqin Wu (武延庆)",
+            "raw_affiliation_strings": [
+              "Department of Astronomy and Astrophysics, 50 St. George Street, University of Toronto, Canada"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Department of Astronomy and Astrophysics, 50 St. George Street, University of Toronto, Canada",
+                "institution_ids": [
+                  "https://openalex.org/I185261750"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.1088/0004-637x/807/1/44",
+          "doi": "https://doi.org/10.1088/0004-637x/807/1/44",
+          "is_oa": true,
+          "landing_page_url": "https://doi.org/10.1088/0004-637x/807/1/44",
+          "pdf_url": "https://iopscience.iop.org/article/10.1088/0004-637X/807/1/44/pdf",
+          "source": {
+            "id": "https://openalex.org/S1980519",
+            "display_name": "The Astrophysical Journal",
+            "issn_l": "0004-637X",
+            "issn": [
+              "0004-637X",
+              "1538-4357"
+            ],
+            "is_oa": false,
+            "is_in_doaj": true,
+            "is_core": true,
+            "listed_in": [
+              "anvur-scientific",
+              "cwts-core",
+              "doaj",
+              "dongbi-a",
+              "jufo-1",
+              "ki-jl-1",
+              "norway-2",
+              "poland-140",
+              "russia-white-list-1",
+              "vabb-shw"
+            ],
+            "host_organization": "https://openalex.org/P4310320083",
+            "host_organization_name": "IOP Publishing",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310320083",
+              "https://openalex.org/P4310311669"
+            ],
+            "host_organization_lineage_names": [
+              "IOP Publishing",
+              "Institute of Physics"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "The Astrophysical Journal",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "bronze",
+          "oa_url": "https://iopscience.iop.org/article/10.1088/0004-637X/807/1/44/pdf",
+          "any_repository_has_fulltext": false
+        },
+        "referenced_works": [
+          "https://openalex.org/W1946917991",
+          "https://openalex.org/W1967414563",
+          "https://openalex.org/W1969515303",
+          "https://openalex.org/W1972239654",
+          "https://openalex.org/W1973398885",
+          "https://openalex.org/W1974515366",
+          "https://openalex.org/W1976860825",
+          "https://openalex.org/W1980858453",
+          "https://openalex.org/W1985109889",
+          "https://openalex.org/W1992486633",
+          "https://openalex.org/W2004905917",
+          "https://openalex.org/W2006224949",
+          "https://openalex.org/W2011549093",
+          "https://openalex.org/W2017989933",
+          "https://openalex.org/W2019037646",
+          "https://openalex.org/W2020637107",
+          "https://openalex.org/W2022726426",
+          "https://openalex.org/W2025453514",
+          "https://openalex.org/W2029353933",
+          "https://openalex.org/W2032228708",
+          "https://openalex.org/W2032480060",
+          "https://openalex.org/W2035225535",
+          "https://openalex.org/W2037323512",
+          "https://openalex.org/W2039484433",
+          "https://openalex.org/W2040651846",
+          "https://openalex.org/W2045483442",
+          "https://openalex.org/W2046302536",
+          "https://openalex.org/W2047176025",
+          "https://openalex.org/W2048775090",
+          "https://openalex.org/W2049721436",
+          "https://openalex.org/W2049860031",
+          "https://openalex.org/W2056436934",
+          "https://openalex.org/W2057575312",
+          "https://openalex.org/W2058208123",
+          "https://openalex.org/W2065584453",
+          "https://openalex.org/W2068008066",
+          "https://openalex.org/W2070508637",
+          "https://openalex.org/W2078933875",
+          "https://openalex.org/W2080968297",
+          "https://openalex.org/W2096258061",
+          "https://openalex.org/W2097524717",
+          "https://openalex.org/W2104154288",
+          "https://openalex.org/W2109887026",
+          "https://openalex.org/W2125954148",
+          "https://openalex.org/W2127113829",
+          "https://openalex.org/W2129273801",
+          "https://openalex.org/W2139170529",
+          "https://openalex.org/W2145265546",
+          "https://openalex.org/W2145612370",
+          "https://openalex.org/W2159723795",
+          "https://openalex.org/W2165365535",
+          "https://openalex.org/W2947592794",
+          "https://openalex.org/W2950249665",
+          "https://openalex.org/W3098318514",
+          "https://openalex.org/W3100091914",
+          "https://openalex.org/W3105090999",
+          "https://openalex.org/W3123569276",
+          "https://openalex.org/W4290992432"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W2796832653",
+        "doi": "https://doi.org/10.3847/1538-3881/ab0e0a",
+        "title": "Ultra-short-period Planets from Secular Chaos",
+        "publication_year": 2019,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5004354935",
+              "display_name": "Cristóbal Petrovich",
+              "orcid": "https://orcid.org/0000-0003-0412-9314",
+              "observed_orcids": [
+                "https://orcid.org/0000-0003-0412-9314",
+                "https://orcid.org/0000-0002-0969-6492"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I185261750",
+                "display_name": "University of Toronto",
+                "ror": "https://ror.org/03dbr7087",
+                "country_code": "CA",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I185261750"
+                ]
+              },
+              {
+                "id": "https://openalex.org/I4210110940",
+                "display_name": "Canadian Institute for Theoretical Astrophysics",
+                "ror": "https://ror.org/0265wc016",
+                "country_code": "CA",
+                "type": "facility",
+                "lineage": [
+                  "https://openalex.org/I185261750",
+                  "https://openalex.org/I4210110940"
+                ]
+              },
+              {
+                "id": "https://openalex.org/I4405278283",
+                "display_name": "University of Toronto Scarborough",
+                "ror": "https://ror.org/05k33q843",
+                "country_code": "CA",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I185261750",
+                  "https://openalex.org/I4405278283"
+                ]
+              }
+            ],
+            "countries": [
+              "CA"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Cristobal Petrovich",
+            "raw_affiliation_strings": [
+              "Canadian Institute for Theoretical Astrophysics, University of Toronto, 60 St. George Street, Toronto, Ontario, M5S 1A7, Canada",
+              "Centre for Planetary Sciences, Department of Physical & Environmental Sciences, University of Toronto at Scarborough, Toronto, Ontario M1C 1A4, Canada"
+            ],
+            "raw_orcid": "https://orcid.org/0000-0003-0412-9314",
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Canadian Institute for Theoretical Astrophysics, University of Toronto, 60 St. George Street, Toronto, Ontario, M5S 1A7, Canada",
+                "institution_ids": [
+                  "https://openalex.org/I185261750",
+                  "https://openalex.org/I4210110940"
+                ]
+              },
+              {
+                "raw_affiliation_string": "Centre for Planetary Sciences, Department of Physical & Environmental Sciences, University of Toronto at Scarborough, Toronto, Ontario M1C 1A4, Canada",
+                "institution_ids": [
+                  "https://openalex.org/I185261750",
+                  "https://openalex.org/I4405278283"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "middle",
+            "author": {
+              "id": "https://openalex.org/A5051291271",
+              "display_name": "Emily Deibert",
+              "orcid": "https://orcid.org/0000-0001-9796-2158",
+              "observed_orcids": [
+                "https://orcid.org/0000-0001-9796-2158"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I185261750",
+                "display_name": "University of Toronto",
+                "ror": "https://ror.org/03dbr7087",
+                "country_code": "CA",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I185261750"
+                ]
+              }
+            ],
+            "countries": [
+              "CA"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Emily Deibert",
+            "raw_affiliation_strings": [
+              "Department of Astronomy & Astrophysics, University of Toronto, 50 St. George Street, Toronto, Ontario, M5S 3H4, Canada"
+            ],
+            "raw_orcid": "https://orcid.org/0000-0001-9796-2158",
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Department of Astronomy & Astrophysics, University of Toronto, 50 St. George Street, Toronto, Ontario, M5S 3H4, Canada",
+                "institution_ids": [
+                  "https://openalex.org/I185261750"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": "https://openalex.org/A5016015356",
+              "display_name": "Yanqin Wu",
+              "orcid": "https://orcid.org/0000-0003-0511-0893",
+              "observed_orcids": [
+                "https://orcid.org/0000-0003-0511-0893"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I185261750",
+                "display_name": "University of Toronto",
+                "ror": "https://ror.org/03dbr7087",
+                "country_code": "CA",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I185261750"
+                ]
+              }
+            ],
+            "countries": [
+              "CA"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Yanqin Wu",
+            "raw_affiliation_strings": [
+              "Department of Astronomy & Astrophysics, University of Toronto, 50 St. George Street, Toronto, Ontario, M5S 3H4, Canada"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Department of Astronomy & Astrophysics, University of Toronto, 50 St. George Street, Toronto, Ontario, M5S 3H4, Canada",
+                "institution_ids": [
+                  "https://openalex.org/I185261750"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.3847/1538-3881/ab0e0a",
+          "doi": "https://doi.org/10.3847/1538-3881/ab0e0a",
+          "is_oa": true,
+          "landing_page_url": "https://doi.org/10.3847/1538-3881/ab0e0a",
+          "pdf_url": "https://iopscience.iop.org/article/10.3847/1538-3881/ab0e0a/pdf",
+          "source": {
+            "id": "https://openalex.org/S100695177",
+            "display_name": "The Astronomical Journal",
+            "issn_l": "0004-6256",
+            "issn": [
+              "0004-6256",
+              "1538-3881"
+            ],
+            "is_oa": false,
+            "is_in_doaj": true,
+            "is_core": true,
+            "listed_in": [
+              "cwts-core",
+              "doaj",
+              "dongbi-b",
+              "jufo-1",
+              "norway-1",
+              "poland-140",
+              "russia-white-list-1",
+              "vabb-shw"
+            ],
+            "host_organization": "https://openalex.org/P4310311669",
+            "host_organization_name": "Institute of Physics",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310311669"
+            ],
+            "host_organization_lineage_names": [
+              "Institute of Physics"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "The Astronomical Journal",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "bronze",
+          "oa_url": "https://iopscience.iop.org/article/10.3847/1538-3881/ab0e0a/pdf",
+          "any_repository_has_fulltext": true
+        },
+        "referenced_works": [
+          "https://openalex.org/W1602052939",
+          "https://openalex.org/W1636130649",
+          "https://openalex.org/W1864108573",
+          "https://openalex.org/W1942108275",
+          "https://openalex.org/W1968144717",
+          "https://openalex.org/W1974543936",
+          "https://openalex.org/W1995449758",
+          "https://openalex.org/W1995977574",
+          "https://openalex.org/W2008088814",
+          "https://openalex.org/W2009848492",
+          "https://openalex.org/W2016169696",
+          "https://openalex.org/W2019263264",
+          "https://openalex.org/W2021080567",
+          "https://openalex.org/W2032228708",
+          "https://openalex.org/W2034499602",
+          "https://openalex.org/W2037349416",
+          "https://openalex.org/W2049440256",
+          "https://openalex.org/W2049747765",
+          "https://openalex.org/W2059365121",
+          "https://openalex.org/W2059746706",
+          "https://openalex.org/W2061732820",
+          "https://openalex.org/W2064635898",
+          "https://openalex.org/W2065486185",
+          "https://openalex.org/W2067514182",
+          "https://openalex.org/W2067824076",
+          "https://openalex.org/W2078685221",
+          "https://openalex.org/W2079898038",
+          "https://openalex.org/W2080304286",
+          "https://openalex.org/W2083250837",
+          "https://openalex.org/W2094683071",
+          "https://openalex.org/W2097009437",
+          "https://openalex.org/W2100891189",
+          "https://openalex.org/W2103655040",
+          "https://openalex.org/W2104005781",
+          "https://openalex.org/W2107852741",
+          "https://openalex.org/W2112680576",
+          "https://openalex.org/W2122383266",
+          "https://openalex.org/W2125213188",
+          "https://openalex.org/W2125574420",
+          "https://openalex.org/W2125948256",
+          "https://openalex.org/W2132427241",
+          "https://openalex.org/W2132519231",
+          "https://openalex.org/W2133670009",
+          "https://openalex.org/W2137666254",
+          "https://openalex.org/W2139667773",
+          "https://openalex.org/W2140385666",
+          "https://openalex.org/W2152320386",
+          "https://openalex.org/W2158240367",
+          "https://openalex.org/W2160671489",
+          "https://openalex.org/W2162977671",
+          "https://openalex.org/W2165134157",
+          "https://openalex.org/W2167724286",
+          "https://openalex.org/W2171324723",
+          "https://openalex.org/W2263454067",
+          "https://openalex.org/W2267918487",
+          "https://openalex.org/W2277842854",
+          "https://openalex.org/W2318323104",
+          "https://openalex.org/W2326850392",
+          "https://openalex.org/W2336953531",
+          "https://openalex.org/W2403044733",
+          "https://openalex.org/W2427535364",
+          "https://openalex.org/W2461113342",
+          "https://openalex.org/W2482084051",
+          "https://openalex.org/W2530424786",
+          "https://openalex.org/W2547556251",
+          "https://openalex.org/W2547866796",
+          "https://openalex.org/W2563618253",
+          "https://openalex.org/W2593729706",
+          "https://openalex.org/W2612627020",
+          "https://openalex.org/W2738906023",
+          "https://openalex.org/W2753047555",
+          "https://openalex.org/W2762054619",
+          "https://openalex.org/W2774695731",
+          "https://openalex.org/W2783549963",
+          "https://openalex.org/W2787303338",
+          "https://openalex.org/W2787876915",
+          "https://openalex.org/W2788518763",
+          "https://openalex.org/W2792887064",
+          "https://openalex.org/W2883866351",
+          "https://openalex.org/W2950516743",
+          "https://openalex.org/W2963604282",
+          "https://openalex.org/W3098318514",
+          "https://openalex.org/W3099750609",
+          "https://openalex.org/W3100049122",
+          "https://openalex.org/W3101648795",
+          "https://openalex.org/W3102514863",
+          "https://openalex.org/W3102629466",
+          "https://openalex.org/W3102746679",
+          "https://openalex.org/W3102762255",
+          "https://openalex.org/W3102973228",
+          "https://openalex.org/W3105323184",
+          "https://openalex.org/W3123170950",
+          "https://openalex.org/W4237204345",
+          "https://openalex.org/W4292508310"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W2795025187",
+        "doi": "https://doi.org/10.3847/1538-3881/aad32c",
+        "title": "A Criterion for the Onset of Chaos in Systems of Two Eccentric Planets",
+        "publication_year": 2018,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5025457132",
+              "display_name": "Sam Hadden",
+              "orcid": "https://orcid.org/0000-0002-1032-0783",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-1032-0783"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I4210124175",
+                "display_name": "Center for Astrophysics Harvard & Smithsonian",
+                "ror": "https://ror.org/03c3r2d17",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I103187081",
+                  "https://openalex.org/I136199984",
+                  "https://openalex.org/I4210124175"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": true,
+            "raw_author_name": "Sam Hadden",
+            "raw_affiliation_strings": [
+              "Harvard-Smithsonian Center for Astrophysics, 60 Garden St., MS 51, Cambridge, MA 02138, USA; samuel.hadden@cfa.harvard.edu",
+              "Harvard-Smithsonian Center for Astrophysics, 60 Garden St., MS 51, Cambridge, MA 02138, USA"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Harvard-Smithsonian Center for Astrophysics, 60 Garden St., MS 51, Cambridge, MA 02138, USA; samuel.hadden@cfa.harvard.edu",
+                "institution_ids": [
+                  "https://openalex.org/I4210124175"
+                ]
+              },
+              {
+                "raw_affiliation_string": "Harvard-Smithsonian Center for Astrophysics, 60 Garden St., MS 51, Cambridge, MA 02138, USA",
+                "institution_ids": [
+                  "https://openalex.org/I4210124175"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": "https://openalex.org/A5057406128",
+              "display_name": "Yoram Lithwick",
+              "orcid": "https://orcid.org/0000-0003-4450-0528",
+              "observed_orcids": [
+                "https://orcid.org/0000-0003-4450-0528"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I111979921",
+                "display_name": "Northwestern University",
+                "ror": "https://ror.org/000e0be47",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I111979921"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Yoram Lithwick",
+            "raw_affiliation_strings": [
+              "Center for Interdisciplinary Exploration and Research in Astrophysics (CIERA), USA",
+              "Department of Physics & Astronomy, Northwestern University, Evanston, IL 60208, USA"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Center for Interdisciplinary Exploration and Research in Astrophysics (CIERA), USA",
+                "institution_ids": []
+              },
+              {
+                "raw_affiliation_string": "Department of Physics & Astronomy, Northwestern University, Evanston, IL 60208, USA",
+                "institution_ids": [
+                  "https://openalex.org/I111979921"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.3847/1538-3881/aad32c",
+          "doi": "https://doi.org/10.3847/1538-3881/aad32c",
+          "is_oa": true,
+          "landing_page_url": "https://doi.org/10.3847/1538-3881/aad32c",
+          "pdf_url": "https://iopscience.iop.org/article/10.3847/1538-3881/aad32c/pdf",
+          "source": {
+            "id": "https://openalex.org/S100695177",
+            "display_name": "The Astronomical Journal",
+            "issn_l": "0004-6256",
+            "issn": [
+              "0004-6256",
+              "1538-3881"
+            ],
+            "is_oa": false,
+            "is_in_doaj": true,
+            "is_core": true,
+            "listed_in": [
+              "cwts-core",
+              "doaj",
+              "dongbi-b",
+              "jufo-1",
+              "norway-1",
+              "poland-140",
+              "russia-white-list-1",
+              "vabb-shw"
+            ],
+            "host_organization": "https://openalex.org/P4310311669",
+            "host_organization_name": "Institute of Physics",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310311669"
+            ],
+            "host_organization_lineage_names": [
+              "Institute of Physics"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "The Astronomical Journal",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "bronze",
+          "oa_url": "https://iopscience.iop.org/article/10.3847/1538-3881/aad32c/pdf",
+          "any_repository_has_fulltext": true
+        },
+        "referenced_works": [
+          "https://openalex.org/W1496798092",
+          "https://openalex.org/W1497327584",
+          "https://openalex.org/W1542174237",
+          "https://openalex.org/W1600155354",
+          "https://openalex.org/W1615261101",
+          "https://openalex.org/W1634825185",
+          "https://openalex.org/W1864108573",
+          "https://openalex.org/W1946917991",
+          "https://openalex.org/W1964469559",
+          "https://openalex.org/W1967194571",
+          "https://openalex.org/W1968536505",
+          "https://openalex.org/W1969515303",
+          "https://openalex.org/W1973398885",
+          "https://openalex.org/W1976860825",
+          "https://openalex.org/W1980372148",
+          "https://openalex.org/W1992637546",
+          "https://openalex.org/W1998993532",
+          "https://openalex.org/W2006211322",
+          "https://openalex.org/W2008962126",
+          "https://openalex.org/W2024399115",
+          "https://openalex.org/W2033368462",
+          "https://openalex.org/W2036801811",
+          "https://openalex.org/W2046302536",
+          "https://openalex.org/W2052397708",
+          "https://openalex.org/W2052924470",
+          "https://openalex.org/W2053238598",
+          "https://openalex.org/W2058622906",
+          "https://openalex.org/W2059050851",
+          "https://openalex.org/W2065584453",
+          "https://openalex.org/W2066762948",
+          "https://openalex.org/W2071681224",
+          "https://openalex.org/W2073868859",
+          "https://openalex.org/W2079020156",
+          "https://openalex.org/W2080614756",
+          "https://openalex.org/W2080968297",
+          "https://openalex.org/W2096001350",
+          "https://openalex.org/W2107852741",
+          "https://openalex.org/W2108004335",
+          "https://openalex.org/W2109322957",
+          "https://openalex.org/W2111721471",
+          "https://openalex.org/W2114988922",
+          "https://openalex.org/W2126701677",
+          "https://openalex.org/W2135964044",
+          "https://openalex.org/W2155629631",
+          "https://openalex.org/W2160163816",
+          "https://openalex.org/W2162551747",
+          "https://openalex.org/W2167724286",
+          "https://openalex.org/W2170048119",
+          "https://openalex.org/W2171324723",
+          "https://openalex.org/W2205856826",
+          "https://openalex.org/W2264360248",
+          "https://openalex.org/W2539415518",
+          "https://openalex.org/W2582443962",
+          "https://openalex.org/W2601430140",
+          "https://openalex.org/W2617214147",
+          "https://openalex.org/W2964332121",
+          "https://openalex.org/W3099165489",
+          "https://openalex.org/W3099605185",
+          "https://openalex.org/W3103908209",
+          "https://openalex.org/W3106037875",
+          "https://openalex.org/W3122878272",
+          "https://openalex.org/W3123569276"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W3175140431",
+        "doi": "https://doi.org/10.5167/uzh-204613",
+        "title": "Terrestrial planet formation: water & chaos",
+        "publication_year": 2016,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5103176350",
+              "display_name": "Volker Hoffmann",
+              "orcid": "https://orcid.org/0000-0003-4928-7201",
+              "observed_orcids": [
+                "https://orcid.org/0000-0003-4928-7201"
+              ]
+            },
+            "institutions": [],
+            "countries": [],
+            "is_corresponding": true,
+            "raw_author_name": "Hoffmann, Volker",
+            "raw_affiliation_strings": [],
+            "raw_orcid": null,
+            "affiliations": []
+          }
+        ],
+        "primary_location": {
+          "id": "pmh:oai:www.zora.uzh.ch:204613",
+          "doi": null,
+          "is_oa": true,
+          "landing_page_url": "https://www.zora.uzh.ch/id/eprint/204613/1/20162807.pdf",
+          "pdf_url": "https://www.zora.uzh.ch/id/eprint/204613/1/20162807.pdf",
+          "source": {
+            "id": "https://openalex.org/S4306401281",
+            "display_name": "Zurich Open Repository and Archive (University of Zurich)",
+            "issn_l": null,
+            "issn": null,
+            "is_oa": false,
+            "is_in_doaj": false,
+            "is_core": false,
+            "listed_in": [],
+            "host_organization": "https://openalex.org/I202697423",
+            "host_organization_name": "University of Zurich",
+            "host_organization_lineage": [
+              "https://openalex.org/I202697423"
+            ],
+            "host_organization_lineage_names": [],
+            "type": "repository"
+          },
+          "license": "other-oa",
+          "license_id": "https://openalex.org/licenses/other-oa",
+          "version": "acceptedVersion",
+          "is_accepted": true,
+          "is_published": false,
+          "raw_source_name": "Hoffmann, Volker. Terrestrial planet formation: water &amp; chaos. 2016, University of Zurich, Faculty of Science.",
+          "raw_type": "Dissertation"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "green",
+          "oa_url": "https://www.zora.uzh.ch/id/eprint/204613/1/20162807.pdf",
+          "any_repository_has_fulltext": true
+        },
+        "referenced_works": []
+      }
+    ]
+  },
+  {
+    "query": "Dynamical evolution of the solar system",
+    "retrieved_at": "2026-10-19T13:25:26Z",
+    "status": "ok",
+    "results": [
+      {
+        "id": "https://openalex.org/W2113887078",
+        "doi": "https://doi.org/10.1146/annurev.aa.31.090193.001405",
+        "title": "The Long-Term Dynamical Evolution of the Solar System",
+        "publication_year": 1993,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5109977207",
+              "display_name": "Martin J. Duncan",
+              "orcid": null,
+              "observed_orcids": []
+            },
+            "institutions": [],
+            "countries": [],
+            "is_corresponding": false,
+            "raw_author_name": "Martin J. Duncan",
+            "raw_affiliation_strings": [],
+            "raw_orcid": null,
+            "affiliations": []
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": "https://openalex.org/A5003918379",
+              "display_name": "Thomas Quinn",
+              "orcid": "https://orcid.org/0000-0001-5510-2803",
+              "observed_orcids": [
+                "https://orcid.org/0000-0001-5510-2803"
+              ]
+            },
+            "institutions": [],
+            "countries": [],
+            "is_corresponding": false,
+            "raw_author_name": "Thomas Quinn",
+            "raw_affiliation_strings": [],
+            "raw_orcid": null,
+            "affiliations": []
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.1146/annurev.aa.31.090193.001405",
+          "doi": "https://doi.org/10.1146/annurev.aa.31.090193.001405",
+          "is_oa": false,
+          "landing_page_url": "https://doi.org/10.1146/annurev.aa.31.090193.001405",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S29882555",
+            "display_name": "Annual Review of Astronomy and Astrophysics",
+            "issn_l": "0066-4146",
+            "issn": [
+              "0066-4146",
+              "1545-4282"
+            ],
+            "is_oa": false,
+            "is_in_doaj": false,
+            "is_core": true,
+            "listed_in": [
+              "cwts-core",
+              "dongbi-a",
+              "jufo-3",
+              "norway-2",
+              "poland-200",
+              "russia-white-list-1"
+            ],
+            "host_organization": "https://openalex.org/P4310320373",
+            "host_organization_name": "Annual Reviews",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310320373"
+            ],
+            "host_organization_lineage_names": [
+              "Annual Reviews"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "Annual Review of Astronomy and Astrophysics",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": false,
+          "oa_status": "closed",
+          "oa_url": null,
+          "any_repository_has_fulltext": false
+        },
+        "referenced_works": [
+          "https://openalex.org/W3012275498"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W1481357767",
+        "doi": "https://doi.org/10.1007/978-94-010-0233-2_15",
+        "title": "Dynamical Evolution of the Solar System",
+        "publication_year": 2003,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5012504146",
+              "display_name": "B. Bertotti",
+              "orcid": null,
+              "observed_orcids": []
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I25217355",
+                "display_name": "University of Pavia",
+                "ror": "https://ror.org/00s6t1f81",
+                "country_code": "IT",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I25217355"
+                ]
+              }
+            ],
+            "countries": [
+              "IT"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Bruno Bertotti",
+            "raw_affiliation_strings": [
+              "Department of Nuclear and Theoretical Physics, University of Pavia, Italy",
+              "University of Pavia"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Department of Nuclear and Theoretical Physics, University of Pavia, Italy",
+                "institution_ids": [
+                  "https://openalex.org/I25217355"
+                ]
+              },
+              {
+                "raw_affiliation_string": "University of Pavia",
+                "institution_ids": [
+                  "https://openalex.org/I25217355"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "middle",
+            "author": {
+              "id": "https://openalex.org/A5114251116",
+              "display_name": "Paolo Farinella",
+              "orcid": null,
+              "observed_orcids": []
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I142444530",
+                "display_name": "University of Trieste",
+                "ror": "https://ror.org/02n742c10",
+                "country_code": "IT",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I142444530"
+                ]
+              }
+            ],
+            "countries": [
+              "IT"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Paolo Farinella",
+            "raw_affiliation_strings": [
+              "Department of Astronomy, University of Trieste, Italy",
+              "University of Trieste"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Department of Astronomy, University of Trieste, Italy",
+                "institution_ids": [
+                  "https://openalex.org/I142444530"
+                ]
+              },
+              {
+                "raw_affiliation_string": "University of Trieste",
+                "institution_ids": [
+                  "https://openalex.org/I142444530"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": "https://openalex.org/A5028875386",
+              "display_name": "David Vokrouhlický",
+              "orcid": "https://orcid.org/0000-0002-6034-5452",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-6034-5452"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I21250087",
+                "display_name": "Charles University",
+                "ror": "https://ror.org/024d6js02",
+                "country_code": "CZ",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I21250087"
+                ]
+              }
+            ],
+            "countries": [
+              "CZ"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "David Vokrouhlický",
+            "raw_affiliation_strings": [
+              "Institute of Astronomy, Charles University, Prague, Czech Republic",
+              "Charles University,"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Institute of Astronomy, Charles University, Prague, Czech Republic",
+                "institution_ids": [
+                  "https://openalex.org/I21250087"
+                ]
+              },
+              {
+                "raw_affiliation_string": "Charles University,",
+                "institution_ids": [
+                  "https://openalex.org/I21250087"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.1007/978-94-010-0233-2_15",
+          "doi": "https://doi.org/10.1007/978-94-010-0233-2_15",
+          "is_oa": false,
+          "landing_page_url": "https://doi.org/10.1007/978-94-010-0233-2_15",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S2764751824",
+            "display_name": "Astrophysics and space science library",
+            "issn_l": "0067-0057",
+            "issn": [
+              "0067-0057",
+              "2214-7985"
+            ],
+            "is_oa": false,
+            "is_in_doaj": false,
+            "is_core": true,
+            "listed_in": [
+              "cwts-core",
+              "norway-1"
+            ],
+            "host_organization": "https://openalex.org/P4310320108",
+            "host_organization_name": "Springer Nature (Netherlands)",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310320108",
+              "https://openalex.org/P4310319965"
+            ],
+            "host_organization_lineage_names": [
+              "Springer Nature (Netherlands)",
+              "Springer Nature"
+            ],
+            "type": "book series"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "Astrophysics and Space Science Library",
+          "raw_type": "book-chapter"
+        },
+        "open_access": {
+          "is_oa": false,
+          "oa_status": "closed",
+          "oa_url": null,
+          "any_repository_has_fulltext": false
+        },
+        "referenced_works": [
+          "https://openalex.org/W2027135516",
+          "https://openalex.org/W2031973634",
+          "https://openalex.org/W2040958665",
+          "https://openalex.org/W3012275498"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W4248001200",
+        "doi": "https://doi.org/10.1007/978-94-009-1916-7_15",
+        "title": "Dynamical Evolution of the Solar System",
+        "publication_year": 1990,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5012504146",
+              "display_name": "B. Bertotti",
+              "orcid": null,
+              "observed_orcids": []
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I25217355",
+                "display_name": "University of Pavia",
+                "ror": "https://ror.org/00s6t1f81",
+                "country_code": "IT",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I25217355"
+                ]
+              }
+            ],
+            "countries": [
+              "IT"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Bruno Bertotti",
+            "raw_affiliation_strings": [
+              "Department of Nuclear and Theoretical Physics, University of Pavia, Italy"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Department of Nuclear and Theoretical Physics, University of Pavia, Italy",
+                "institution_ids": [
+                  "https://openalex.org/I25217355"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": "https://openalex.org/A5114251116",
+              "display_name": "Paolo Farinella",
+              "orcid": null,
+              "observed_orcids": []
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I108290504",
+                "display_name": "University of Pisa",
+                "ror": "https://ror.org/03ad39j10",
+                "country_code": "IT",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I108290504"
+                ]
+              }
+            ],
+            "countries": [
+              "IT"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Paolo Farinella",
+            "raw_affiliation_strings": [
+              "Department of Mathematics, University of Pisa, Italy"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Department of Mathematics, University of Pisa, Italy",
+                "institution_ids": [
+                  "https://openalex.org/I108290504"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.1007/978-94-009-1916-7_15",
+          "doi": "https://doi.org/10.1007/978-94-009-1916-7_15",
+          "is_oa": false,
+          "landing_page_url": "https://doi.org/10.1007/978-94-009-1916-7_15",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S4306463937",
+            "display_name": "Springer eBooks",
+            "issn_l": null,
+            "issn": null,
+            "is_oa": false,
+            "is_in_doaj": false,
+            "is_core": false,
+            "listed_in": [],
+            "host_organization": "https://openalex.org/P4310319965",
+            "host_organization_name": "Springer Nature",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310319965"
+            ],
+            "host_organization_lineage_names": [
+              "Springer Nature"
+            ],
+            "type": "ebook platform"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "Physics of the Earth and the Solar System",
+          "raw_type": "book-chapter"
+        },
+        "open_access": {
+          "is_oa": false,
+          "oa_status": "closed",
+          "oa_url": null,
+          "any_repository_has_fulltext": false
+        },
+        "referenced_works": [
+          "https://openalex.org/W2027135516",
+          "https://openalex.org/W2031973634",
+          "https://openalex.org/W2040958665",
+          "https://openalex.org/W2316581934",
+          "https://openalex.org/W3036341826"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W3010671283",
+        "doi": null,
+        "title": "The dynamical evolution of the solar system",
+        "publication_year": 1982,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5103442508",
+              "display_name": "Joseph A. Burns",
+              "orcid": null,
+              "observed_orcids": []
+            },
+            "institutions": [],
+            "countries": [],
+            "is_corresponding": true,
+            "raw_author_name": "Joseph A. Burns",
+            "raw_affiliation_strings": [],
+            "raw_orcid": null,
+            "affiliations": []
+          }
+        ],
+        "primary_location": {
+          "id": "mag:3010671283",
+          "doi": null,
+          "is_oa": false,
+          "landing_page_url": "http://ui.adsabs.harvard.edu/abs/1982fps..conf..403B/abstract",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S4306418444",
+            "display_name": "Foundations and Practice of Security",
+            "issn_l": null,
+            "issn": null,
+            "is_oa": false,
+            "is_in_doaj": false,
+            "is_core": false,
+            "listed_in": [],
+            "host_organization": null,
+            "host_organization_name": null,
+            "host_organization_lineage": [],
+            "host_organization_lineage_names": [],
+            "type": "conference"
+          },
+          "license": null,
+          "license_id": null,
+          "version": null,
+          "is_accepted": false,
+          "is_published": false,
+          "raw_source_name": "Foundations and Practice of Security",
+          "raw_type": null
+        },
+        "open_access": {
+          "is_oa": false,
+          "oa_status": "closed",
+          "oa_url": null,
+          "any_repository_has_fulltext": false
+        },
+        "referenced_works": []
+      },
+      {
+        "id": "https://openalex.org/W2596236211",
+        "doi": null,
+        "title": "Dynamical Evolution of the Solar System",
+        "publication_year": 2012,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5068150034",
+              "display_name": "Hal Levinson",
+              "orcid": null,
+              "observed_orcids": []
+            },
+            "institutions": [],
+            "countries": [],
+            "is_corresponding": true,
+            "raw_author_name": "Hal Levinson",
+            "raw_affiliation_strings": [],
+            "raw_orcid": null,
+            "affiliations": []
+          }
+        ],
+        "primary_location": {
+          "id": "mag:2596236211",
+          "doi": null,
+          "is_oa": false,
+          "landing_page_url": "https://absimage.aps.org/image/4CF12/MWS_4CF12-2012-020035.pdf",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S2764664775",
+            "display_name": "Bulletin of the American Physical Society",
+            "issn_l": "0003-0503",
+            "issn": [
+              "0003-0503"
+            ],
+            "is_oa": false,
+            "is_in_doaj": false,
+            "is_core": true,
+            "listed_in": [
+              "cwts-core"
+            ],
+            "host_organization": "https://openalex.org/P4310311721",
+            "host_organization_name": "Cambridge University Press",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310311721",
+              "https://openalex.org/P4310311702"
+            ],
+            "host_organization_lineage_names": [
+              "Cambridge University Press",
+              "University of Cambridge"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": null,
+          "is_accepted": false,
+          "is_published": false,
+          "raw_source_name": "Bulletin of the American Physical Society",
+          "raw_type": null
+        },
+        "open_access": {
+          "is_oa": false,
+          "oa_status": "closed",
+          "oa_url": null,
+          "any_repository_has_fulltext": false
+        },
+        "referenced_works": []
+      }
+    ]
+  },
+  {
+    "query": "Distant future of the Sun and Earth revisited",
+    "retrieved_at": "2026-10-19T13:25:27Z",
+    "status": "ok",
+    "results": [
+      {
+        "id": "https://openalex.org/W2144176564",
+        "doi": "https://doi.org/10.1111/j.1365-2966.2008.13022.x",
+        "title": "Distant future of the Sun and Earth revisited",
+        "publication_year": 2008,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": null,
+              "display_name": "K.-P. SchrÃ¶der",
+              "orcid": null,
+              "observed_orcids": []
+            },
+            "institutions": [],
+            "countries": [],
+            "is_corresponding": false,
+            "raw_author_name": "K.-P. SchrÃ¶der",
+            "raw_affiliation_strings": [],
+            "raw_orcid": null,
+            "affiliations": []
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": null,
+              "display_name": "Robert Connon Smith",
+              "orcid": null,
+              "observed_orcids": []
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I162608824",
+                "display_name": "University of Sussex",
+                "ror": "https://ror.org/00ayhx656",
+                "country_code": "GB",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I162608824"
+                ]
+              }
+            ],
+            "countries": [
+              "GB"
+            ],
+            "is_corresponding": true,
+            "raw_author_name": "Robert Connon Smith",
+            "raw_affiliation_strings": [
+              "Astronomy Centre, Department of Physics and Astronomy, University of Sussex, Falmer, Brighton BN1 9QH"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Astronomy Centre, Department of Physics and Astronomy, University of Sussex, Falmer, Brighton BN1 9QH",
+                "institution_ids": [
+                  "https://openalex.org/I162608824"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.1111/j.1365-2966.2008.13022.x",
+          "doi": "https://doi.org/10.1111/j.1365-2966.2008.13022.x",
+          "is_oa": true,
+          "landing_page_url": "https://doi.org/10.1111/j.1365-2966.2008.13022.x",
+          "pdf_url": "https://academic.oup.com/mnras/article-pdf/386/1/155/2998239/mnras0386-0155.pdf",
+          "source": {
+            "id": "https://openalex.org/S195663288",
+            "display_name": "Monthly Notices of the Royal Astronomical Society",
+            "issn_l": "0035-8711",
+            "issn": [
+              "0035-8711",
+              "1365-2966",
+              "1365-8711"
+            ],
+            "is_oa": false,
+            "is_in_doaj": true,
+            "is_core": true,
+            "listed_in": [
+              "anvur-scientific",
+              "cwts-core",
+              "doaj",
+              "dongbi-a",
+              "jufo-2",
+              "ki-jl-1",
+              "norway-1",
+              "poland-140",
+              "russia-white-list-1",
+              "vabb-shw"
+            ],
+            "host_organization": "https://openalex.org/P4310311648",
+            "host_organization_name": "Oxford University Press",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310311648",
+              "https://openalex.org/P4310311647"
+            ],
+            "host_organization_lineage_names": [
+              "Oxford University Press",
+              "University of Oxford"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "Monthly Notices of the Royal Astronomical Society",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "bronze",
+          "oa_url": "https://academic.oup.com/mnras/article-pdf/386/1/155/2998239/mnras0386-0155.pdf",
+          "any_repository_has_fulltext": true
+        },
+        "referenced_works": [
+          "https://openalex.org/W1631904830",
+          "https://openalex.org/W1676118956",
+          "https://openalex.org/W1805262366",
+          "https://openalex.org/W1966013671",
+          "https://openalex.org/W1966567728",
+          "https://openalex.org/W1966988677",
+          "https://openalex.org/W1968152463",
+          "https://openalex.org/W1971578412",
+          "https://openalex.org/W1977457396",
+          "https://openalex.org/W1978339047",
+          "https://openalex.org/W1978372185",
+          "https://openalex.org/W1981253148",
+          "https://openalex.org/W1981281557",
+          "https://openalex.org/W1990958103",
+          "https://openalex.org/W1991596205",
+          "https://openalex.org/W1997572907",
+          "https://openalex.org/W2000079703",
+          "https://openalex.org/W2002172740",
+          "https://openalex.org/W2007166027",
+          "https://openalex.org/W2011734741",
+          "https://openalex.org/W2015310299",
+          "https://openalex.org/W2018843408",
+          "https://openalex.org/W2019310782",
+          "https://openalex.org/W2023498002",
+          "https://openalex.org/W2025159513",
+          "https://openalex.org/W2030943860",
+          "https://openalex.org/W2035697154",
+          "https://openalex.org/W2050900654",
+          "https://openalex.org/W2066025468",
+          "https://openalex.org/W2070517999",
+          "https://openalex.org/W2084711913",
+          "https://openalex.org/W2104659861",
+          "https://openalex.org/W2121863730",
+          "https://openalex.org/W2135709148",
+          "https://openalex.org/W2162549314",
+          "https://openalex.org/W4246944130"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W2972973066",
+        "doi": "https://doi.org/10.5465/amj.2018.0059",
+        "title": "Constructing a Distant Future: Imaginaries in Geoengineering",
+        "publication_year": 2019,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5078285504",
+              "display_name": "Grace L. Augustine",
+              "orcid": "https://orcid.org/0000-0003-0793-6816",
+              "observed_orcids": [
+                "https://orcid.org/0000-0003-0793-6816"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I180825142",
+                "display_name": "City, University of London",
+                "ror": "https://ror.org/04489at23",
+                "country_code": "GB",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I124357947",
+                  "https://openalex.org/I180825142",
+                  "https://openalex.org/I4401726869"
+                ]
+              },
+              {
+                "id": "https://openalex.org/I4401726869",
+                "display_name": "City St George's, University of London",
+                "ror": "https://ror.org/047ybhc09",
+                "country_code": "GB",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I124357947",
+                  "https://openalex.org/I4401726869"
+                ]
+              }
+            ],
+            "countries": [
+              "GB"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Grace Augustine",
+            "raw_affiliation_strings": [
+              "City University of London"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "City University of London",
+                "institution_ids": [
+                  "https://openalex.org/I180825142",
+                  "https://openalex.org/I4401726869"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "middle",
+            "author": {
+              "id": "https://openalex.org/A5027857617",
+              "display_name": "Sara B. Soderstrom",
+              "orcid": "https://orcid.org/0000-0003-0725-7469",
+              "observed_orcids": [
+                "https://orcid.org/0000-0003-0725-7469"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I27837315",
+                "display_name": "University of Michigan",
+                "ror": "https://ror.org/00jmfr291",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Sara Soderstrom",
+            "raw_affiliation_strings": [
+              "University of Michigan"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "University of Michigan",
+                "institution_ids": [
+                  "https://openalex.org/I27837315"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "middle",
+            "author": {
+              "id": "https://openalex.org/A5020311217",
+              "display_name": "Daniel Milner",
+              "orcid": null,
+              "observed_orcids": []
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I111979921",
+                "display_name": "Northwestern University",
+                "ror": "https://ror.org/000e0be47",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I111979921"
+                ]
+              },
+              {
+                "id": "https://openalex.org/I180825142",
+                "display_name": "City, University of London",
+                "ror": "https://ror.org/04489at23",
+                "country_code": "GB",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I124357947",
+                  "https://openalex.org/I180825142",
+                  "https://openalex.org/I4401726869"
+                ]
+              },
+              {
+                "id": "https://openalex.org/I27837315",
+                "display_name": "University of Michigan",
+                "ror": "https://ror.org/00jmfr291",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I27837315"
+                ]
+              },
+              {
+                "id": "https://openalex.org/I4401726869",
+                "display_name": "City St George's, University of London",
+                "ror": "https://ror.org/047ybhc09",
+                "country_code": "GB",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I124357947",
+                  "https://openalex.org/I4401726869"
+                ]
+              }
+            ],
+            "countries": [
+              "GB",
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Daniel Milner",
+            "raw_affiliation_strings": [
+              "Northwestern University",
+              "City University of London SARA SODERSTROM University of Michigan"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Northwestern University",
+                "institution_ids": [
+                  "https://openalex.org/I111979921"
+                ]
+              },
+              {
+                "raw_affiliation_string": "City University of London SARA SODERSTROM University of Michigan",
+                "institution_ids": [
+                  "https://openalex.org/I180825142",
+                  "https://openalex.org/I27837315",
+                  "https://openalex.org/I4401726869"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": "https://openalex.org/A5014884664",
+              "display_name": "Klaus Weber",
+              "orcid": "https://orcid.org/0000-0002-4460-4733",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-4460-4733"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I111979921",
+                "display_name": "Northwestern University",
+                "ror": "https://ror.org/000e0be47",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I111979921"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Klaus Weber",
+            "raw_affiliation_strings": [
+              "Northwestern University"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Northwestern University",
+                "institution_ids": [
+                  "https://openalex.org/I111979921"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.5465/amj.2018.0059",
+          "doi": "https://doi.org/10.5465/amj.2018.0059",
+          "is_oa": false,
+          "landing_page_url": "https://doi.org/10.5465/amj.2018.0059",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S117778295",
+            "display_name": "Academy of Management Journal",
+            "issn_l": "0001-4273",
+            "issn": [
+              "0001-4273",
+              "1948-0989"
+            ],
+            "is_oa": false,
+            "is_in_doaj": false,
+            "is_core": true,
+            "listed_in": [
+              "abdc-a-star",
+              "anvur-class-a",
+              "anvur-scientific",
+              "cwts-core",
+              "erih-plus",
+              "fnege-1-star",
+              "ft50",
+              "jufo-3",
+              "norway-2",
+              "poland-200",
+              "russia-white-list-1",
+              "utd24",
+              "vabb-shw"
+            ],
+            "host_organization": "https://openalex.org/P4310316266",
+            "host_organization_name": "Academy of Management",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310316266"
+            ],
+            "host_organization_lineage_names": [
+              "Academy of Management"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "Academy of Management Journal",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "green",
+          "oa_url": "https://purehost.bath.ac.uk/en/publications/a7784f28-f7cb-403c-ae44-f6b72d1a7459",
+          "any_repository_has_fulltext": true
+        },
+        "referenced_works": [
+          "https://openalex.org/W85431137",
+          "https://openalex.org/W117768590",
+          "https://openalex.org/W173482381",
+          "https://openalex.org/W201578715",
+          "https://openalex.org/W586523961",
+          "https://openalex.org/W603311465",
+          "https://openalex.org/W1483339446",
+          "https://openalex.org/W1507907600",
+          "https://openalex.org/W1559384167",
+          "https://openalex.org/W1565146988",
+          "https://openalex.org/W1596897039",
+          "https://openalex.org/W1965335447",
+          "https://openalex.org/W1965589872",
+          "https://openalex.org/W1969456993",
+          "https://openalex.org/W1987719539",
+          "https://openalex.org/W1988851888",
+          "https://openalex.org/W1989187639",
+          "https://openalex.org/W1995965963",
+          "https://openalex.org/W1999006275",
+          "https://openalex.org/W2001513998",
+          "https://openalex.org/W2002786121",
+          "https://openalex.org/W2002924716",
+          "https://openalex.org/W2004036185",
+          "https://openalex.org/W2017685754",
+          "https://openalex.org/W2023131476",
+          "https://openalex.org/W2026038425",
+          "https://openalex.org/W2029371952",
+          "https://openalex.org/W2034947612",
+          "https://openalex.org/W2048911136",
+          "https://openalex.org/W2048932651",
+          "https://openalex.org/W2051268679",
+          "https://openalex.org/W2062787529",
+          "https://openalex.org/W2068987184",
+          "https://openalex.org/W2069744925",
+          "https://openalex.org/W2075626188",
+          "https://openalex.org/W2077937580",
+          "https://openalex.org/W2086198908",
+          "https://openalex.org/W2089457241",
+          "https://openalex.org/W2091648984",
+          "https://openalex.org/W2093643082",
+          "https://openalex.org/W2096024875",
+          "https://openalex.org/W2096277470",
+          "https://openalex.org/W2097442767",
+          "https://openalex.org/W2099281799",
+          "https://openalex.org/W2111143102",
+          "https://openalex.org/W2122007741",
+          "https://openalex.org/W2122407370",
+          "https://openalex.org/W2125377513",
+          "https://openalex.org/W2126833522",
+          "https://openalex.org/W2141730957",
+          "https://openalex.org/W2145107370",
+          "https://openalex.org/W2145564081",
+          "https://openalex.org/W2148940838",
+          "https://openalex.org/W2157045205",
+          "https://openalex.org/W2255876463",
+          "https://openalex.org/W2262873433",
+          "https://openalex.org/W2315816331",
+          "https://openalex.org/W2320909101",
+          "https://openalex.org/W2325245228",
+          "https://openalex.org/W2331787203",
+          "https://openalex.org/W2340109459",
+          "https://openalex.org/W2343457024",
+          "https://openalex.org/W2466869231",
+          "https://openalex.org/W2505701133",
+          "https://openalex.org/W2516488127",
+          "https://openalex.org/W2559970435",
+          "https://openalex.org/W2565126480",
+          "https://openalex.org/W2584659073",
+          "https://openalex.org/W2768254789",
+          "https://openalex.org/W2772487859",
+          "https://openalex.org/W2798538881",
+          "https://openalex.org/W2808562677",
+          "https://openalex.org/W2810607988",
+          "https://openalex.org/W2883730164",
+          "https://openalex.org/W2884800145",
+          "https://openalex.org/W2885930642",
+          "https://openalex.org/W2889013418",
+          "https://openalex.org/W2956139052",
+          "https://openalex.org/W3005002645",
+          "https://openalex.org/W3021327952",
+          "https://openalex.org/W3031566310",
+          "https://openalex.org/W3081245319",
+          "https://openalex.org/W3118149923",
+          "https://openalex.org/W3123466493",
+          "https://openalex.org/W4205694217",
+          "https://openalex.org/W4211167625",
+          "https://openalex.org/W4230957748",
+          "https://openalex.org/W4239727386",
+          "https://openalex.org/W4242990214",
+          "https://openalex.org/W4256204275",
+          "https://openalex.org/W4285719527",
+          "https://openalex.org/W4299352768",
+          "https://openalex.org/W4301407881",
+          "https://openalex.org/W4301860741",
+          "https://openalex.org/W6831499389"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W7170350997",
+        "doi": "https://doi.org/10.4236/ijaa.2026.163012",
+        "title": "The Faint Young Sun Paradox Revisited",
+        "publication_year": 2026,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5080842192",
+              "display_name": "Golden Gadzirayi Nyambuya",
+              "orcid": "https://orcid.org/0000-0002-3228-6467",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-3228-6467"
+              ]
+            },
+            "institutions": [],
+            "countries": [],
+            "is_corresponding": true,
+            "raw_author_name": "Golden Gadzirayi Nyambuya",
+            "raw_affiliation_strings": [],
+            "raw_orcid": null,
+            "affiliations": []
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.4236/ijaa.2026.163012",
+          "doi": "https://doi.org/10.4236/ijaa.2026.163012",
+          "is_oa": true,
+          "landing_page_url": "https://doi.org/10.4236/ijaa.2026.163012",
+          "pdf_url": "https://www.scirp.net/pdf/ijaa_4501459.pdf",
+          "source": {
+            "id": "https://openalex.org/S2764899421",
+            "display_name": "International Journal of Astronomy and Astrophysics",
+            "issn_l": "2161-4717",
+            "issn": [
+              "2161-4717",
+              "2161-4725"
+            ],
+            "is_oa": true,
+            "is_in_doaj": false,
+            "is_core": true,
+            "listed_in": [
+              "cwts-core"
+            ],
+            "host_organization": "https://openalex.org/P4310320480",
+            "host_organization_name": "Scientific Research Publishing",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310320480"
+            ],
+            "host_organization_lineage_names": [
+              "Scientific Research Publishing"
+            ],
+            "type": "journal"
+          },
+          "license": "cc-by",
+          "license_id": "https://openalex.org/licenses/cc-by",
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "International Journal of Astronomy and Astrophysics",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "diamond",
+          "oa_url": "https://www.scirp.net/pdf/ijaa_4501459.pdf",
+          "any_repository_has_fulltext": false
+        },
+        "referenced_works": [
+          "https://openalex.org/W116464226",
+          "https://openalex.org/W1045169788",
+          "https://openalex.org/W1594282911",
+          "https://openalex.org/W1677385752",
+          "https://openalex.org/W1683066333",
+          "https://openalex.org/W1831021423",
+          "https://openalex.org/W1969453149",
+          "https://openalex.org/W1970418159",
+          "https://openalex.org/W1971621850",
+          "https://openalex.org/W1981281557",
+          "https://openalex.org/W1981435137",
+          "https://openalex.org/W1985008271",
+          "https://openalex.org/W1986601098",
+          "https://openalex.org/W1988536722",
+          "https://openalex.org/W1994174513",
+          "https://openalex.org/W1996058384",
+          "https://openalex.org/W1998040038",
+          "https://openalex.org/W2000698817",
+          "https://openalex.org/W2013167688",
+          "https://openalex.org/W2016389752",
+          "https://openalex.org/W2016703604",
+          "https://openalex.org/W2024491643",
+          "https://openalex.org/W2027534729",
+          "https://openalex.org/W2029469675",
+          "https://openalex.org/W2030191654",
+          "https://openalex.org/W2032500592",
+          "https://openalex.org/W2035803566",
+          "https://openalex.org/W2036420712",
+          "https://openalex.org/W2038008886",
+          "https://openalex.org/W2040087120",
+          "https://openalex.org/W2044333153",
+          "https://openalex.org/W2047996817",
+          "https://openalex.org/W2057187793",
+          "https://openalex.org/W2060692802",
+          "https://openalex.org/W2064111162",
+          "https://openalex.org/W2070887411",
+          "https://openalex.org/W2076918796",
+          "https://openalex.org/W2080723705",
+          "https://openalex.org/W2092081812",
+          "https://openalex.org/W2092626416",
+          "https://openalex.org/W2097381313",
+          "https://openalex.org/W2104222773",
+          "https://openalex.org/W2110785559",
+          "https://openalex.org/W2110967629",
+          "https://openalex.org/W2122226643",
+          "https://openalex.org/W2126033488",
+          "https://openalex.org/W2130815858",
+          "https://openalex.org/W2134593667",
+          "https://openalex.org/W2135171925",
+          "https://openalex.org/W2142168171",
+          "https://openalex.org/W2143993047",
+          "https://openalex.org/W2147325053",
+          "https://openalex.org/W2149882626",
+          "https://openalex.org/W2154982349",
+          "https://openalex.org/W2155093711",
+          "https://openalex.org/W2158832802",
+          "https://openalex.org/W2166733904",
+          "https://openalex.org/W2167858788",
+          "https://openalex.org/W2394998931",
+          "https://openalex.org/W2408461538",
+          "https://openalex.org/W2416437742",
+          "https://openalex.org/W2493916191",
+          "https://openalex.org/W2522381405",
+          "https://openalex.org/W2567350091",
+          "https://openalex.org/W2590922626",
+          "https://openalex.org/W2622473294",
+          "https://openalex.org/W4229854835",
+          "https://openalex.org/W4255094455",
+          "https://openalex.org/W4319321667"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W4388743841",
+        "doi": "https://doi.org/10.54254/2753-8818/10/20230313",
+        "title": "The essential sun: Its past, present, and future",
+        "publication_year": 2023,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5093277382",
+              "display_name": "Jiayi Ke",
+              "orcid": null,
+              "observed_orcids": []
+            },
+            "institutions": [],
+            "countries": [],
+            "is_corresponding": true,
+            "raw_author_name": "Jiayi Ke",
+            "raw_affiliation_strings": [
+              "Beijing Cam Express Education Consulting Co., Ltd"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Beijing Cam Express Education Consulting Co., Ltd",
+                "institution_ids": []
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.54254/2753-8818/10/20230313",
+          "doi": "https://doi.org/10.54254/2753-8818/10/20230313",
+          "is_oa": true,
+          "landing_page_url": "https://doi.org/10.54254/2753-8818/10/20230313",
+          "pdf_url": "https://www.ewadirect.com/proceedings/tns/article/view/6764/pdf",
+          "source": {
+            "id": "https://openalex.org/S4387283303",
+            "display_name": "Theoretical and Natural Science",
+            "issn_l": "2753-8818",
+            "issn": [
+              "2753-8818",
+              "2753-8826"
+            ],
+            "is_oa": false,
+            "is_in_doaj": false,
+            "is_core": true,
+            "listed_in": [
+              "cwts-core"
+            ],
+            "host_organization": null,
+            "host_organization_name": null,
+            "host_organization_lineage": [],
+            "host_organization_lineage_names": [],
+            "type": "journal"
+          },
+          "license": "cc-by",
+          "license_id": "https://openalex.org/licenses/cc-by",
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "Theoretical and Natural Science",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "hybrid",
+          "oa_url": "https://www.ewadirect.com/proceedings/tns/article/view/6764/pdf",
+          "any_repository_has_fulltext": false
+        },
+        "referenced_works": [
+          "https://openalex.org/W1598233575",
+          "https://openalex.org/W1609403337",
+          "https://openalex.org/W1966988677",
+          "https://openalex.org/W1969776306",
+          "https://openalex.org/W2040005525",
+          "https://openalex.org/W2057781397",
+          "https://openalex.org/W2064445425",
+          "https://openalex.org/W2086536685",
+          "https://openalex.org/W2144176564",
+          "https://openalex.org/W2592258578",
+          "https://openalex.org/W6667892430",
+          "https://openalex.org/W6733551352"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W4205606646",
+        "doi": "https://doi.org/10.31871/ijntr.7.11.17",
+        "title": "Expansion and Contraction of Earth and Sun in Gravitational Field",
+        "publication_year": 2021,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5062215553",
+              "display_name": "Branko  M. Novakovic",
+              "orcid": "https://orcid.org/0000-0003-0735-770X",
+              "observed_orcids": [
+                "https://orcid.org/0000-0003-0735-770X"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I181343428",
+                "display_name": "University of Zagreb",
+                "ror": "https://ror.org/00mv6sv71",
+                "country_code": "HR",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I181343428"
+                ]
+              },
+              {
+                "id": "https://openalex.org/I4387154256",
+                "display_name": "Faculty of Mechanical Engineering and Naval Architecture in Zagreb",
+                "ror": "https://ror.org/00j5kgp20",
+                "country_code": "HR",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I181343428",
+                  "https://openalex.org/I4387154256"
+                ]
+              }
+            ],
+            "countries": [
+              "HR"
+            ],
+            "is_corresponding": true,
+            "raw_author_name": "Branko M. Novakovic",
+            "raw_affiliation_strings": [
+              "FSB -University of Zagreb, Luciceva 5, P.O.B. 509, 10000 Zagreb, Croatia"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "FSB -University of Zagreb, Luciceva 5, P.O.B. 509, 10000 Zagreb, Croatia",
+                "institution_ids": [
+                  "https://openalex.org/I181343428",
+                  "https://openalex.org/I4387154256"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.31871/ijntr.7.11.17",
+          "doi": "https://doi.org/10.31871/ijntr.7.11.17",
+          "is_oa": true,
+          "landing_page_url": "https://doi.org/10.31871/ijntr.7.11.17",
+          "pdf_url": "https://doi.org/10.31871/ijntr.7.11.17",
+          "source": {
+            "id": "https://openalex.org/S4210225392",
+            "display_name": "International Journal of New Technology and Research",
+            "issn_l": "2454-4116",
+            "issn": [
+              "2454-4116"
+            ],
+            "is_oa": true,
+            "is_in_doaj": false,
+            "is_core": true,
+            "listed_in": [
+              "cwts-core"
+            ],
+            "host_organization": null,
+            "host_organization_name": null,
+            "host_organization_lineage": [],
+            "host_organization_lineage_names": [],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "International Journal of New Technology and Research",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "diamond",
+          "oa_url": "https://doi.org/10.31871/ijntr.7.11.17",
+          "any_repository_has_fulltext": false
+        },
+        "referenced_works": [
+          "https://openalex.org/W1967831160",
+          "https://openalex.org/W1984318726",
+          "https://openalex.org/W2065769741",
+          "https://openalex.org/W2084711913",
+          "https://openalex.org/W2144176564",
+          "https://openalex.org/W2518104656",
+          "https://openalex.org/W2621425730",
+          "https://openalex.org/W2622044853",
+          "https://openalex.org/W2798226118",
+          "https://openalex.org/W2985092763",
+          "https://openalex.org/W3132497291",
+          "https://openalex.org/W3161544668",
+          "https://openalex.org/W4205105578",
+          "https://openalex.org/W6631466410"
+        ]
+      }
+    ]
+  },
+  {
+    "query": "Gravitational Radiation and the Motion of Two Point Masses",
+    "retrieved_at": "2026-10-19T13:25:27Z",
+    "status": "ok",
+    "results": [
+      {
+        "id": "https://openalex.org/W2064816908",
+        "doi": "https://doi.org/10.1103/physrev.136.b1224",
+        "title": "Gravitational Radiation and the Motion of Two Point Masses",
+        "publication_year": 1964,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5078736828",
+              "display_name": "P. C. Peters",
+              "orcid": null,
+              "observed_orcids": []
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I122411786",
+                "display_name": "California Institute of Technology",
+                "ror": "https://ror.org/05dxps055",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I122411786"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": true,
+            "raw_author_name": "P. C. Peters",
+            "raw_affiliation_strings": [
+              "California Institute of Technology, Pasadena, California",
+              "California institute of Technology, Pasadena, California#TAB#"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "California Institute of Technology, Pasadena, California",
+                "institution_ids": [
+                  "https://openalex.org/I122411786"
+                ]
+              },
+              {
+                "raw_affiliation_string": "California institute of Technology, Pasadena, California#TAB#",
+                "institution_ids": [
+                  "https://openalex.org/I122411786"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.1103/physrev.136.b1224",
+          "doi": "https://doi.org/10.1103/physrev.136.b1224",
+          "is_oa": false,
+          "landing_page_url": "https://doi.org/10.1103/physrev.136.b1224",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S54862371",
+            "display_name": "Physical Review",
+            "issn_l": "0031-899X",
+            "issn": [
+              "0031-899X",
+              "1536-6065"
+            ],
+            "is_oa": false,
+            "is_in_doaj": false,
+            "is_core": false,
+            "listed_in": [],
+            "host_organization": "https://openalex.org/P4310320261",
+            "host_organization_name": "American Physical Society",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310320261"
+            ],
+            "host_organization_lineage_names": [
+              "American Physical Society"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "Physical Review",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "green",
+          "oa_url": "https://doi.org/10.7907/rra4-1w07",
+          "any_repository_has_fulltext": true
+        },
+        "referenced_works": [
+          "https://openalex.org/W78315200",
+          "https://openalex.org/W119088996",
+          "https://openalex.org/W251992919",
+          "https://openalex.org/W1991427916",
+          "https://openalex.org/W2076480618",
+          "https://openalex.org/W2081914262",
+          "https://openalex.org/W2145005317",
+          "https://openalex.org/W2967436726",
+          "https://openalex.org/W3087429732"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W1994489827",
+        "doi": "https://doi.org/10.1093/mnras/239.3.845",
+        "title": "Higher order gravitational radiation losses in binary systems",
+        "publication_year": 1989,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5066825048",
+              "display_name": "Luc Blanchet A",
+              "orcid": "https://orcid.org/0000-0003-1142-9534",
+              "observed_orcids": [
+                "https://orcid.org/0000-0003-1142-9534"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I1294671590",
+                "display_name": "Centre National de la Recherche Scientifique",
+                "ror": "https://ror.org/02feahw73",
+                "country_code": "FR",
+                "type": "government",
+                "lineage": [
+                  "https://openalex.org/I1294671590"
+                ]
+              },
+              {
+                "id": "https://openalex.org/I2800004676",
+                "display_name": "Observatoire de Paris",
+                "ror": "https://ror.org/029nkcm90",
+                "country_code": "FR",
+                "type": "facility",
+                "lineage": [
+                  "https://openalex.org/I1294671590",
+                  "https://openalex.org/I2746051580",
+                  "https://openalex.org/I2800004676"
+                ]
+              }
+            ],
+            "countries": [
+              "FR"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Luc Blanchet",
+            "raw_affiliation_strings": [
+              "Groupe d'Astrophysique Relativiste, Centre National de la Recherche Scientifique, Département d'Astrophysique Relativiste et de Cosmologie, Observatoire de Paris, Section de Meudon, 92195 Meudon Principal Cedex, France"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Groupe d'Astrophysique Relativiste, Centre National de la Recherche Scientifique, Département d'Astrophysique Relativiste et de Cosmologie, Observatoire de Paris, Section de Meudon, 92195 Meudon Principal Cedex, France",
+                "institution_ids": [
+                  "https://openalex.org/I1294671590",
+                  "https://openalex.org/I2800004676"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": "https://openalex.org/A5043211610",
+              "display_name": "Gerhard Schäfer",
+              "orcid": "https://orcid.org/0000-0001-7337-1214",
+              "observed_orcids": [
+                "https://orcid.org/0000-0001-7337-1214"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I149899117",
+                "display_name": "Max Planck Society",
+                "ror": "https://ror.org/01hhn8329",
+                "country_code": "DE",
+                "type": "nonprofit",
+                "lineage": [
+                  "https://openalex.org/I149899117"
+                ]
+              },
+              {
+                "id": "https://openalex.org/I4210103661",
+                "display_name": "Max Planck Institute for Astrophysics",
+                "ror": "https://ror.org/017qcv467",
+                "country_code": "DE",
+                "type": "facility",
+                "lineage": [
+                  "https://openalex.org/I149899117",
+                  "https://openalex.org/I4210103661"
+                ]
+              }
+            ],
+            "countries": [
+              "DE"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Gerhard Schäfer",
+            "raw_affiliation_strings": [
+              "Max-Planck-Institut für Physik und Astrophysik, Institut für Astrophysik, Karl-Schwarzschild-Strasse 1, 8046 Garching bei München, FRG"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Max-Planck-Institut für Physik und Astrophysik, Institut für Astrophysik, Karl-Schwarzschild-Strasse 1, 8046 Garching bei München, FRG",
+                "institution_ids": [
+                  "https://openalex.org/I149899117",
+                  "https://openalex.org/I4210103661"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.1093/mnras/239.3.845",
+          "doi": "https://doi.org/10.1093/mnras/239.3.845",
+          "is_oa": false,
+          "landing_page_url": "https://doi.org/10.1093/mnras/239.3.845",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S195663288",
+            "display_name": "Monthly Notices of the Royal Astronomical Society",
+            "issn_l": "0035-8711",
+            "issn": [
+              "0035-8711",
+              "1365-2966",
+              "1365-8711"
+            ],
+            "is_oa": false,
+            "is_in_doaj": true,
+            "is_core": true,
+            "listed_in": [
+              "anvur-scientific",
+              "cwts-core",
+              "doaj",
+              "dongbi-a",
+              "jufo-2",
+              "ki-jl-1",
+              "norway-1",
+              "poland-140",
+              "russia-white-list-1",
+              "vabb-shw"
+            ],
+            "host_organization": "https://openalex.org/P4310311648",
+            "host_organization_name": "Oxford University Press",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310311648",
+              "https://openalex.org/P4310311647"
+            ],
+            "host_organization_lineage_names": [
+              "Oxford University Press",
+              "University of Oxford"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "Monthly Notices of the Royal Astronomical Society",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": false,
+          "oa_status": "closed",
+          "oa_url": null,
+          "any_repository_has_fulltext": false
+        },
+        "referenced_works": []
+      },
+      {
+        "id": "https://openalex.org/W1987218951",
+        "doi": "https://doi.org/10.1103/physrevd.52.6882",
+        "title": "Post-Newtonian gravitational radiation reaction for two-body systems: Nonspinning bodies",
+        "publication_year": 1995,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5079404842",
+              "display_name": "Bala R. Iyer",
+              "orcid": "https://orcid.org/0000-0002-4141-5179",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-4141-5179"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I119598438",
+                "display_name": "Raman Research Institute",
+                "ror": "https://ror.org/01qdav448",
+                "country_code": "IN",
+                "type": "facility",
+                "lineage": [
+                  "https://openalex.org/I119598438"
+                ]
+              }
+            ],
+            "countries": [
+              "IN"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Bala R. Iyer",
+            "raw_affiliation_strings": [
+              "Raman Research Institute, Bangalore 560 080, India",
+              "Raman Research Institute, Bangalore – 560 080, India"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Raman Research Institute, Bangalore 560 080, India",
+                "institution_ids": [
+                  "https://openalex.org/I119598438"
+                ]
+              },
+              {
+                "raw_affiliation_string": "Raman Research Institute, Bangalore – 560 080, India",
+                "institution_ids": [
+                  "https://openalex.org/I119598438"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": "https://openalex.org/A5050743554",
+              "display_name": "Clifford M. Will",
+              "orcid": "https://orcid.org/0000-0001-8209-0393",
+              "observed_orcids": [
+                "https://orcid.org/0000-0001-8209-0393"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I119598438",
+                "display_name": "Raman Research Institute",
+                "ror": "https://ror.org/01qdav448",
+                "country_code": "IN",
+                "type": "facility",
+                "lineage": [
+                  "https://openalex.org/I119598438"
+                ]
+              },
+              {
+                "id": "https://openalex.org/I204465549",
+                "display_name": "Washington University in St. Louis",
+                "ror": "https://ror.org/01yc7t268",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I204465549"
+                ]
+              }
+            ],
+            "countries": [
+              "IN",
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Clifford M. Will",
+            "raw_affiliation_strings": [
+              "Raman Research Institute, Bangalore 560 080, India",
+              "McDonnell Center for the Space Sciences, Department of Physics, Washington University, St. Louis, Missouri 63130"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Raman Research Institute, Bangalore 560 080, India",
+                "institution_ids": [
+                  "https://openalex.org/I119598438"
+                ]
+              },
+              {
+                "raw_affiliation_string": "McDonnell Center for the Space Sciences, Department of Physics, Washington University, St. Louis, Missouri 63130",
+                "institution_ids": [
+                  "https://openalex.org/I204465549"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.1103/physrevd.52.6882",
+          "doi": "https://doi.org/10.1103/physrevd.52.6882",
+          "is_oa": false,
+          "landing_page_url": "https://doi.org/10.1103/physrevd.52.6882",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S4210190737",
+            "display_name": "Physical review. D. Particles, fields, gravitation, and cosmology/Physical review. D. Particles and fields",
+            "issn_l": "0556-2821",
+            "issn": [
+              "0556-2821",
+              "1089-4918",
+              "1538-4500",
+              "1550-2368",
+              "1550-7998"
+            ],
+            "is_oa": false,
+            "is_in_doaj": false,
+            "is_core": true,
+            "listed_in": [
+              "anvur-scientific",
+              "cwts-core",
+              "vabb-shw"
+            ],
+            "host_organization": "https://openalex.org/P4310320261",
+            "host_organization_name": "American Physical Society",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310320261"
+            ],
+            "host_organization_lineage_names": [
+              "American Physical Society"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "Physical Review D",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": false,
+          "oa_status": "closed",
+          "oa_url": null,
+          "any_repository_has_fulltext": false
+        },
+        "referenced_works": [
+          "https://openalex.org/W1553215749",
+          "https://openalex.org/W1612551514",
+          "https://openalex.org/W1965535512",
+          "https://openalex.org/W1965995299",
+          "https://openalex.org/W1968835971",
+          "https://openalex.org/W1971402212",
+          "https://openalex.org/W1973492873",
+          "https://openalex.org/W1978411982",
+          "https://openalex.org/W1982050034",
+          "https://openalex.org/W1985278391",
+          "https://openalex.org/W1994489827",
+          "https://openalex.org/W1995114597",
+          "https://openalex.org/W2007966742",
+          "https://openalex.org/W2008010135",
+          "https://openalex.org/W2008960549",
+          "https://openalex.org/W2008999210",
+          "https://openalex.org/W2023767933",
+          "https://openalex.org/W2038083843",
+          "https://openalex.org/W2043601233",
+          "https://openalex.org/W2050844366",
+          "https://openalex.org/W2064575216",
+          "https://openalex.org/W2064816908",
+          "https://openalex.org/W2065028959",
+          "https://openalex.org/W2069922474",
+          "https://openalex.org/W2075705356",
+          "https://openalex.org/W2076480618",
+          "https://openalex.org/W2093470925",
+          "https://openalex.org/W2094329401",
+          "https://openalex.org/W2101573097",
+          "https://openalex.org/W2106723786",
+          "https://openalex.org/W2116811253",
+          "https://openalex.org/W2117464438",
+          "https://openalex.org/W2119254801",
+          "https://openalex.org/W2138250212",
+          "https://openalex.org/W2139823471",
+          "https://openalex.org/W2157515937",
+          "https://openalex.org/W2158263788",
+          "https://openalex.org/W2280795416",
+          "https://openalex.org/W2498016208",
+          "https://openalex.org/W2565472021",
+          "https://openalex.org/W2996274197",
+          "https://openalex.org/W3016390550",
+          "https://openalex.org/W3039083618",
+          "https://openalex.org/W3101326402",
+          "https://openalex.org/W4206575370"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W1989725831",
+        "doi": "https://doi.org/10.1016/0375-9601(80)90728-8",
+        "title": "Relativistic corrections to the gravitational radiation of a binary system and the fine structure of the spectrum",
+        "publication_year": 1980,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5111480031",
+              "display_name": "Dmitri V Gal'tsov",
+              "orcid": "https://orcid.org/0000-0002-0444-3381",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-0444-3381"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I19880235",
+                "display_name": "Lomonosov Moscow State University",
+                "ror": "https://ror.org/010pmpe69",
+                "country_code": "RU",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I19880235"
+                ]
+              }
+            ],
+            "countries": [
+              "RU"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "D.V. Galtsov",
+            "raw_affiliation_strings": [
+              "Moscow State University, Moscow, USSR",
+              "Moscow state University, Moscow, USSR"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Moscow State University, Moscow, USSR",
+                "institution_ids": [
+                  "https://openalex.org/I19880235"
+                ]
+              },
+              {
+                "raw_affiliation_string": "Moscow state University, Moscow, USSR",
+                "institution_ids": [
+                  "https://openalex.org/I19880235"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "middle",
+            "author": {
+              "id": "https://openalex.org/A5085598911",
+              "display_name": "Alexander A. Matiukhin",
+              "orcid": null,
+              "observed_orcids": []
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I19880235",
+                "display_name": "Lomonosov Moscow State University",
+                "ror": "https://ror.org/010pmpe69",
+                "country_code": "RU",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I19880235"
+                ]
+              }
+            ],
+            "countries": [
+              "RU"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "A.A. Matiukhin",
+            "raw_affiliation_strings": [
+              "Moscow State University, Moscow, USSR",
+              "Moscow state University, Moscow, USSR"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Moscow State University, Moscow, USSR",
+                "institution_ids": [
+                  "https://openalex.org/I19880235"
+                ]
+              },
+              {
+                "raw_affiliation_string": "Moscow state University, Moscow, USSR",
+                "institution_ids": [
+                  "https://openalex.org/I19880235"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": "https://openalex.org/A5007135305",
+              "display_name": "В. И. Петухов",
+              "orcid": null,
+              "observed_orcids": []
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I19880235",
+                "display_name": "Lomonosov Moscow State University",
+                "ror": "https://ror.org/010pmpe69",
+                "country_code": "RU",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I19880235"
+                ]
+              }
+            ],
+            "countries": [
+              "RU"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "V.I. Petukhov",
+            "raw_affiliation_strings": [
+              "Moscow State University, Moscow, USSR",
+              "Moscow state University, Moscow, USSR"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Moscow State University, Moscow, USSR",
+                "institution_ids": [
+                  "https://openalex.org/I19880235"
+                ]
+              },
+              {
+                "raw_affiliation_string": "Moscow state University, Moscow, USSR",
+                "institution_ids": [
+                  "https://openalex.org/I19880235"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.1016/0375-9601(80)90728-8",
+          "doi": "https://doi.org/10.1016/0375-9601(80)90728-8",
+          "is_oa": false,
+          "landing_page_url": "https://doi.org/10.1016/0375-9601(80)90728-8",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S104875562",
+            "display_name": "Physics Letters A",
+            "issn_l": "0375-9601",
+            "issn": [
+              "0375-9601",
+              "1873-2429"
+            ],
+            "is_oa": false,
+            "is_in_doaj": false,
+            "is_core": true,
+            "listed_in": [
+              "anvur-scientific",
+              "cwts-core",
+              "dongbi-d",
+              "jufo-1",
+              "norway-1",
+              "poland-70",
+              "russia-white-list-2"
+            ],
+            "host_organization": "https://openalex.org/P4310320990",
+            "host_organization_name": "Elsevier BV",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310320990"
+            ],
+            "host_organization_lineage_names": [
+              "Elsevier BV"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "Physics Letters A",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": false,
+          "oa_status": "closed",
+          "oa_url": null,
+          "any_repository_has_fulltext": false
+        },
+        "referenced_works": [
+          "https://openalex.org/W1999802359",
+          "https://openalex.org/W2021547757",
+          "https://openalex.org/W2023767933",
+          "https://openalex.org/W2028483511",
+          "https://openalex.org/W2029926324",
+          "https://openalex.org/W2048520730",
+          "https://openalex.org/W2076480618"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W2917023941",
+        "doi": "https://doi.org/10.3847/1538-4357/ab3293",
+        "title": "Gravitational Radiation from Close Binaries with Time-varying Masses",
+        "publication_year": 2019,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": null,
+              "display_name": "A. Miguel Holgado",
+              "orcid": "https://orcid.org/0000-0003-4143-8132",
+              "observed_orcids": [
+                "https://orcid.org/0000-0003-4143-8132"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I157725225",
+                "display_name": "University of Illinois Urbana-Champaign",
+                "ror": "https://ror.org/047426m28",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I157725225"
+                ]
+              },
+              {
+                "id": "https://openalex.org/I4210135837",
+                "display_name": "National Center for Supercomputing Applications",
+                "ror": "https://ror.org/03r10zj06",
+                "country_code": "US",
+                "type": "facility",
+                "lineage": [
+                  "https://openalex.org/I157725225",
+                  "https://openalex.org/I4210135837"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": true,
+            "raw_author_name": "A. Miguel Holgado",
+            "raw_affiliation_strings": [
+              "Department of Astronomy and National Center for Supercomputing Applications, University of Illinois at Urbana-Champaign, Urbana, IL 61801, USA; holgado2@illinois.edu"
+            ],
+            "raw_orcid": "https://orcid.org/0000-0003-4143-8132",
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Department of Astronomy and National Center for Supercomputing Applications, University of Illinois at Urbana-Champaign, Urbana, IL 61801, USA; holgado2@illinois.edu",
+                "institution_ids": [
+                  "https://openalex.org/I157725225",
+                  "https://openalex.org/I4210135837"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": null,
+              "display_name": "Paul M. Ricker",
+              "orcid": "https://orcid.org/0000-0002-5294-0630",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-5294-0630"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I157725225",
+                "display_name": "University of Illinois Urbana-Champaign",
+                "ror": "https://ror.org/047426m28",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I157725225"
+                ]
+              },
+              {
+                "id": "https://openalex.org/I4210135837",
+                "display_name": "National Center for Supercomputing Applications",
+                "ror": "https://ror.org/03r10zj06",
+                "country_code": "US",
+                "type": "facility",
+                "lineage": [
+                  "https://openalex.org/I157725225",
+                  "https://openalex.org/I4210135837"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Paul M. Ricker",
+            "raw_affiliation_strings": [
+              "Department of Astronomy and National Center for Supercomputing Applications, University of Illinois at Urbana-Champaign, Urbana, IL 61801, USA; holgado2@illinois.edu"
+            ],
+            "raw_orcid": "https://orcid.org/0000-0002-5294-0630",
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Department of Astronomy and National Center for Supercomputing Applications, University of Illinois at Urbana-Champaign, Urbana, IL 61801, USA; holgado2@illinois.edu",
+                "institution_ids": [
+                  "https://openalex.org/I157725225",
+                  "https://openalex.org/I4210135837"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.3847/1538-4357/ab3293",
+          "doi": "https://doi.org/10.3847/1538-4357/ab3293",
+          "is_oa": true,
+          "landing_page_url": "https://doi.org/10.3847/1538-4357/ab3293",
+          "pdf_url": "https://iopscience.iop.org/article/10.3847/1538-4357/ab3293/pdf",
+          "source": {
+            "id": "https://openalex.org/S1980519",
+            "display_name": "The Astrophysical Journal",
+            "issn_l": "0004-637X",
+            "issn": [
+              "0004-637X",
+              "1538-4357"
+            ],
+            "is_oa": false,
+            "is_in_doaj": true,
+            "is_core": true,
+            "listed_in": [
+              "anvur-scientific",
+              "cwts-core",
+              "doaj",
+              "dongbi-a",
+              "jufo-1",
+              "ki-jl-1",
+              "norway-2",
+              "poland-140",
+              "russia-white-list-1",
+              "vabb-shw"
+            ],
+            "host_organization": "https://openalex.org/P4310320083",
+            "host_organization_name": "IOP Publishing",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310320083",
+              "https://openalex.org/P4310311669"
+            ],
+            "host_organization_lineage_names": [
+              "IOP Publishing",
+              "Institute of Physics"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "The Astrophysical Journal",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "bronze",
+          "oa_url": "https://iopscience.iop.org/article/10.3847/1538-4357/ab3293/pdf",
+          "any_repository_has_fulltext": true
+        },
+        "referenced_works": [
+          "https://openalex.org/W1975884245",
+          "https://openalex.org/W1985809065",
+          "https://openalex.org/W2000244474",
+          "https://openalex.org/W2003834148",
+          "https://openalex.org/W2010218176",
+          "https://openalex.org/W2011301426",
+          "https://openalex.org/W2017576190",
+          "https://openalex.org/W2019709661",
+          "https://openalex.org/W2024680894",
+          "https://openalex.org/W2027466186",
+          "https://openalex.org/W2064816908",
+          "https://openalex.org/W2066532133",
+          "https://openalex.org/W2076480618",
+          "https://openalex.org/W2086146563",
+          "https://openalex.org/W2095240894",
+          "https://openalex.org/W2146292423",
+          "https://openalex.org/W2157017092",
+          "https://openalex.org/W2157545454",
+          "https://openalex.org/W2252795400",
+          "https://openalex.org/W2287311144",
+          "https://openalex.org/W2319341612",
+          "https://openalex.org/W2339931524",
+          "https://openalex.org/W2437571239",
+          "https://openalex.org/W2605417726",
+          "https://openalex.org/W2621266390",
+          "https://openalex.org/W2727378244",
+          "https://openalex.org/W2756512191",
+          "https://openalex.org/W2765081049",
+          "https://openalex.org/W2768286292",
+          "https://openalex.org/W2783195820",
+          "https://openalex.org/W2804229153",
+          "https://openalex.org/W2892205679"
+        ]
+      }
+    ]
+  },
+  {
+    "query": "symplectic maps planetary dynamics",
+    "retrieved_at": "2026-10-19T13:25:28Z",
+    "status": "ok",
+    "results": [
+      {
+        "id": "https://openalex.org/W4317462039",
+        "doi": "https://doi.org/10.48550/arxiv.2301.06526",
+        "title": "Bidimensional Symplectic Maps",
+        "publication_year": 2023,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5062743856",
+              "display_name": "Felipe G. Souza",
+              "orcid": "https://orcid.org/0000-0002-8604-0331",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-8604-0331"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I17974374",
+                "display_name": "Universidade de São Paulo",
+                "ror": "https://ror.org/036rp1748",
+                "country_code": "BR",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I17974374"
+                ]
+              }
+            ],
+            "countries": [
+              "BR"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Souza, Felipe G.",
+            "raw_affiliation_strings": [
+              ". University of São Paulo , Institute of Physics , São Paulo-SP , Brazil,"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": ". University of São Paulo , Institute of Physics , São Paulo-SP , Brazil,",
+                "institution_ids": [
+                  "https://openalex.org/I17974374"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "middle",
+            "author": {
+              "id": "https://openalex.org/A5064834513",
+              "display_name": "Gabriel C. Grime",
+              "orcid": "https://orcid.org/0000-0003-3746-0935",
+              "observed_orcids": [
+                "https://orcid.org/0000-0003-3746-0935"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I17974374",
+                "display_name": "Universidade de São Paulo",
+                "ror": "https://ror.org/036rp1748",
+                "country_code": "BR",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I17974374"
+                ]
+              }
+            ],
+            "countries": [
+              "BR"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Grime, Gabriel C.",
+            "raw_affiliation_strings": [
+              ". University of São Paulo , Institute of Physics , São Paulo-SP , Brazil,"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": ". University of São Paulo , Institute of Physics , São Paulo-SP , Brazil,",
+                "institution_ids": [
+                  "https://openalex.org/I17974374"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": "https://openalex.org/A5011936858",
+              "display_name": "Iberê Luiz Caldas",
+              "orcid": "https://orcid.org/0000-0002-1748-0106",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-1748-0106"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I17974374",
+                "display_name": "Universidade de São Paulo",
+                "ror": "https://ror.org/036rp1748",
+                "country_code": "BR",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I17974374"
+                ]
+              }
+            ],
+            "countries": [
+              "BR"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Caldas, Iberê L.",
+            "raw_affiliation_strings": [
+              ". University of São Paulo , Institute of Physics , São Paulo-SP , Brazil,"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": ". University of São Paulo , Institute of Physics , São Paulo-SP , Brazil,",
+                "institution_ids": [
+                  "https://openalex.org/I17974374"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "pmh:oai:arXiv.org:2301.06526",
+          "doi": null,
+          "is_oa": true,
+          "landing_page_url": "http://arxiv.org/abs/2301.06526",
+          "pdf_url": "https://arxiv.org/pdf/2301.06526",
+          "source": {
+            "id": "https://openalex.org/S4306400194",
+            "display_name": "arXiv (Cornell University)",
+            "issn_l": "2331-8422",
+            "issn": [
+              "2331-8422"
+            ],
+            "is_oa": true,
+            "is_in_doaj": false,
+            "is_core": false,
+            "listed_in": [],
+            "host_organization": "https://openalex.org/I205783295",
+            "host_organization_name": "Cornell University",
+            "host_organization_lineage": [
+              "https://openalex.org/I205783295"
+            ],
+            "host_organization_lineage_names": [],
+            "type": "repository"
+          },
+          "license": "cc-by-nc-sa",
+          "license_id": "https://openalex.org/licenses/cc-by-nc-sa",
+          "version": "submittedVersion",
+          "is_accepted": false,
+          "is_published": false,
+          "raw_source_name": null,
+          "raw_type": "text"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "green",
+          "oa_url": "https://arxiv.org/pdf/2301.06526",
+          "any_repository_has_fulltext": true
+        },
+        "referenced_works": []
+      },
+      {
+        "id": "https://openalex.org/W1612028279",
+        "doi": null,
+        "title": "Symplectic maps for the N-body problem with applications to solar system dynamics",
+        "publication_year": 1994,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5072561448",
+              "display_name": "Matthew J. Holman",
+              "orcid": "https://orcid.org/0000-0002-1139-4880",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-1139-4880"
+              ]
+            },
+            "institutions": [],
+            "countries": [],
+            "is_corresponding": true,
+            "raw_author_name": "Matthew J. Holman",
+            "raw_affiliation_strings": [],
+            "raw_orcid": "https://orcid.org/0000-0002-1139-4880",
+            "affiliations": []
+          }
+        ],
+        "primary_location": {
+          "id": "pmh:oai:dspace.mit.edu:1721.1/54394",
+          "doi": null,
+          "is_oa": true,
+          "landing_page_url": "http://hdl.handle.net/1721.1/54394",
+          "pdf_url": "http://hdl.handle.net/1721.1/54394",
+          "source": {
+            "id": "https://openalex.org/S4306400425",
+            "display_name": "DSpace@MIT (Massachusetts Institute of Technology)",
+            "issn_l": null,
+            "issn": null,
+            "is_oa": false,
+            "is_in_doaj": false,
+            "is_core": false,
+            "listed_in": [],
+            "host_organization": "https://openalex.org/I63966007",
+            "host_organization_name": "Massachusetts Institute of Technology",
+            "host_organization_lineage": [
+              "https://openalex.org/I63966007"
+            ],
+            "host_organization_lineage_names": [],
+            "type": "repository"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "submittedVersion",
+          "is_accepted": false,
+          "is_published": false,
+          "raw_source_name": null,
+          "raw_type": "Thesis"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "green",
+          "oa_url": "http://hdl.handle.net/1721.1/54394",
+          "any_repository_has_fulltext": true
+        },
+        "referenced_works": [
+          "https://openalex.org/W1606846262",
+          "https://openalex.org/W2126479355"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W3134799156",
+        "doi": "https://doi.org/10.48550/arxiv.2103.05632",
+        "title": "Data-driven Prediction of General Hamiltonian Dynamics via Learning Exactly-Symplectic Maps",
+        "publication_year": 2021,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5103095722",
+              "display_name": "Renyi Chen",
+              "orcid": "https://orcid.org/0000-0001-8475-8633",
+              "observed_orcids": [
+                "https://orcid.org/0000-0001-8475-8633"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I130701444",
+                "display_name": "Georgia Institute of Technology",
+                "ror": "https://ror.org/01zkghx44",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I130701444"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Chen, Renyi",
+            "raw_affiliation_strings": [
+              "School of Mathematics , Georgia Institute of Technol- ogy , Atlanta , GA , USA"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "School of Mathematics , Georgia Institute of Technol- ogy , Atlanta , GA , USA",
+                "institution_ids": [
+                  "https://openalex.org/I130701444"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": "https://openalex.org/A5073666656",
+              "display_name": "Molei Tao",
+              "orcid": "https://orcid.org/0000-0002-3308-6176",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-3308-6176"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I130701444",
+                "display_name": "Georgia Institute of Technology",
+                "ror": "https://ror.org/01zkghx44",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I130701444"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "Tao, Molei",
+            "raw_affiliation_strings": [
+              "School of Mathematics , Georgia Institute of Technol- ogy , Atlanta , GA , USA"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "School of Mathematics , Georgia Institute of Technol- ogy , Atlanta , GA , USA",
+                "institution_ids": [
+                  "https://openalex.org/I130701444"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "pmh:oai:arXiv.org:2103.05632",
+          "doi": null,
+          "is_oa": true,
+          "landing_page_url": "http://arxiv.org/abs/2103.05632",
+          "pdf_url": "https://arxiv.org/pdf/2103.05632",
+          "source": {
+            "id": "https://openalex.org/S4306400194",
+            "display_name": "arXiv (Cornell University)",
+            "issn_l": "2331-8422",
+            "issn": [
+              "2331-8422"
+            ],
+            "is_oa": true,
+            "is_in_doaj": false,
+            "is_core": false,
+            "listed_in": [],
+            "host_organization": "https://openalex.org/I205783295",
+            "host_organization_name": "Cornell University",
+            "host_organization_lineage": [
+              "https://openalex.org/I205783295"
+            ],
+            "host_organization_lineage_names": [],
+            "type": "repository"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "submittedVersion",
+          "is_accepted": false,
+          "is_published": false,
+          "raw_source_name": null,
+          "raw_type": "text"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "green",
+          "oa_url": "https://arxiv.org/pdf/2103.05632",
+          "any_repository_has_fulltext": true
+        },
+        "referenced_works": [
+          "https://openalex.org/W1544770838",
+          "https://openalex.org/W1546177817",
+          "https://openalex.org/W1967807518",
+          "https://openalex.org/W1979769287",
+          "https://openalex.org/W1982587838",
+          "https://openalex.org/W1994006347",
+          "https://openalex.org/W2027197837",
+          "https://openalex.org/W2050142243",
+          "https://openalex.org/W2068844879",
+          "https://openalex.org/W2081068198",
+          "https://openalex.org/W2093828424",
+          "https://openalex.org/W2160163816",
+          "https://openalex.org/W2172778576",
+          "https://openalex.org/W2239232218",
+          "https://openalex.org/W2466347430",
+          "https://openalex.org/W2502485013",
+          "https://openalex.org/W2519905446",
+          "https://openalex.org/W2525748878",
+          "https://openalex.org/W2528305538",
+          "https://openalex.org/W2735778951",
+          "https://openalex.org/W2740733496",
+          "https://openalex.org/W2745110207",
+          "https://openalex.org/W2765872171",
+          "https://openalex.org/W2782210340",
+          "https://openalex.org/W2782714865",
+          "https://openalex.org/W2798058877",
+          "https://openalex.org/W2887383111",
+          "https://openalex.org/W2899283552",
+          "https://openalex.org/W2905558281",
+          "https://openalex.org/W2945290015",
+          "https://openalex.org/W2948680363",
+          "https://openalex.org/W2951629468",
+          "https://openalex.org/W2962730452",
+          "https://openalex.org/W2966473221",
+          "https://openalex.org/W2975293371",
+          "https://openalex.org/W2976349204",
+          "https://openalex.org/W2995134832",
+          "https://openalex.org/W2995774847",
+          "https://openalex.org/W3004578308",
+          "https://openalex.org/W3019533439",
+          "https://openalex.org/W3033256359",
+          "https://openalex.org/W3081814969",
+          "https://openalex.org/W3094020114",
+          "https://openalex.org/W3096595861",
+          "https://openalex.org/W3129413417",
+          "https://openalex.org/W3164124231"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W2231371322",
+        "doi": "https://doi.org/10.1088/1751-8113/49/7/075501",
+        "title": "Vorticity and symplecticity in multi-symplectic, Lagrangian gas dynamics",
+        "publication_year": 2016,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5064818014",
+              "display_name": "Gary M. Webb",
+              "orcid": "https://orcid.org/0000-0002-0617-9502",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-0617-9502"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I82495205",
+                "display_name": "University of Alabama in Huntsville",
+                "ror": "https://ror.org/02zsxwr40",
+                "country_code": "US",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I82495205"
+                ]
+              }
+            ],
+            "countries": [
+              "US"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "G M Webb",
+            "raw_affiliation_strings": [
+              "The University of Alabama in Huntsville",
+              "Center for Space Plasma and Aeronomic Research, The University of Alabama in Huntsville, Huntsville AL 35805, USA"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "The University of Alabama in Huntsville",
+                "institution_ids": [
+                  "https://openalex.org/I82495205"
+                ]
+              },
+              {
+                "raw_affiliation_string": "Center for Space Plasma and Aeronomic Research, The University of Alabama in Huntsville, Huntsville AL 35805, USA",
+                "institution_ids": [
+                  "https://openalex.org/I82495205"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": "https://openalex.org/A5070612554",
+              "display_name": "Stephen C. Anco",
+              "orcid": "https://orcid.org/0000-0002-2125-3627",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-2125-3627"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I186803428",
+                "display_name": "Brock University",
+                "ror": "https://ror.org/056am2717",
+                "country_code": "CA",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I186803428"
+                ]
+              }
+            ],
+            "countries": [
+              "CA"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "S C Anco",
+            "raw_affiliation_strings": [
+              "Department of Mathematics, Brock University",
+              "Department of Mathematics, Brock University, St Catherines, ON L2S 3A1, Canada"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Department of Mathematics, Brock University",
+                "institution_ids": [
+                  "https://openalex.org/I186803428"
+                ]
+              },
+              {
+                "raw_affiliation_string": "Department of Mathematics, Brock University, St Catherines, ON L2S 3A1, Canada",
+                "institution_ids": [
+                  "https://openalex.org/I186803428"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.1088/1751-8113/49/7/075501",
+          "doi": "https://doi.org/10.1088/1751-8113/49/7/075501",
+          "is_oa": true,
+          "landing_page_url": "https://doi.org/10.1088/1751-8113/49/7/075501",
+          "pdf_url": "https://iopscience.iop.org/article/10.1088/1751-8113/49/7/075501/pdf",
+          "source": {
+            "id": "https://openalex.org/S79244937",
+            "display_name": "Journal of Physics A Mathematical and Theoretical",
+            "issn_l": "1751-8113",
+            "issn": [
+              "1751-8113",
+              "1751-8121"
+            ],
+            "is_oa": false,
+            "is_in_doaj": false,
+            "is_core": true,
+            "listed_in": [
+              "anvur-class-a",
+              "anvur-scientific",
+              "cwts-core",
+              "dongbi-b",
+              "jufo-2",
+              "norway-1",
+              "poland-100",
+              "russia-white-list-1",
+              "vabb-shw"
+            ],
+            "host_organization": "https://openalex.org/P4310311669",
+            "host_organization_name": "Institute of Physics",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310311669"
+            ],
+            "host_organization_lineage_names": [
+              "Institute of Physics"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "Journal of Physics A: Mathematical and Theoretical",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "bronze",
+          "oa_url": "https://iopscience.iop.org/article/10.1088/1751-8113/49/7/075501/pdf",
+          "any_repository_has_fulltext": true
+        },
+        "referenced_works": [
+          "https://openalex.org/W12303940",
+          "https://openalex.org/W75417299",
+          "https://openalex.org/W81313944",
+          "https://openalex.org/W655852084",
+          "https://openalex.org/W1481170646",
+          "https://openalex.org/W1490936394",
+          "https://openalex.org/W1504244791",
+          "https://openalex.org/W1529878799",
+          "https://openalex.org/W1544484932",
+          "https://openalex.org/W1565879659",
+          "https://openalex.org/W1623383074",
+          "https://openalex.org/W1625190816",
+          "https://openalex.org/W1816909598",
+          "https://openalex.org/W1963701026",
+          "https://openalex.org/W1967571326",
+          "https://openalex.org/W1967921407",
+          "https://openalex.org/W1968576294",
+          "https://openalex.org/W1968652979",
+          "https://openalex.org/W1971951217",
+          "https://openalex.org/W1975675864",
+          "https://openalex.org/W1979717695",
+          "https://openalex.org/W1979774187",
+          "https://openalex.org/W1991302355",
+          "https://openalex.org/W1994897752",
+          "https://openalex.org/W1999038482",
+          "https://openalex.org/W1999503195",
+          "https://openalex.org/W2003874495",
+          "https://openalex.org/W2009929226",
+          "https://openalex.org/W2010077735",
+          "https://openalex.org/W2019128130",
+          "https://openalex.org/W2027698801",
+          "https://openalex.org/W2047323465",
+          "https://openalex.org/W2047350863",
+          "https://openalex.org/W2048763515",
+          "https://openalex.org/W2049878935",
+          "https://openalex.org/W2052780920",
+          "https://openalex.org/W2054908020",
+          "https://openalex.org/W2060136573",
+          "https://openalex.org/W2064999535",
+          "https://openalex.org/W2066194737",
+          "https://openalex.org/W2069361765",
+          "https://openalex.org/W2081703719",
+          "https://openalex.org/W2083796813",
+          "https://openalex.org/W2095417221",
+          "https://openalex.org/W2096466217",
+          "https://openalex.org/W2106489908",
+          "https://openalex.org/W2110173557",
+          "https://openalex.org/W2110422653",
+          "https://openalex.org/W2118486772",
+          "https://openalex.org/W2121866105",
+          "https://openalex.org/W2123879932",
+          "https://openalex.org/W2136185563",
+          "https://openalex.org/W2139946023",
+          "https://openalex.org/W2142503887",
+          "https://openalex.org/W2148243538",
+          "https://openalex.org/W2150804440",
+          "https://openalex.org/W2151063181",
+          "https://openalex.org/W2153251426",
+          "https://openalex.org/W2153564726",
+          "https://openalex.org/W2156691534",
+          "https://openalex.org/W2162283192",
+          "https://openalex.org/W2162550557",
+          "https://openalex.org/W2164628954",
+          "https://openalex.org/W2172394012",
+          "https://openalex.org/W2210184833",
+          "https://openalex.org/W2251537778",
+          "https://openalex.org/W2272805445",
+          "https://openalex.org/W2313810294",
+          "https://openalex.org/W2344483413",
+          "https://openalex.org/W2502982738",
+          "https://openalex.org/W2505736657",
+          "https://openalex.org/W2797256054",
+          "https://openalex.org/W2949169588",
+          "https://openalex.org/W3099153488",
+          "https://openalex.org/W3099326186",
+          "https://openalex.org/W3099811161",
+          "https://openalex.org/W3104718465",
+          "https://openalex.org/W3106435628",
+          "https://openalex.org/W3107051266",
+          "https://openalex.org/W3125791447",
+          "https://openalex.org/W4232473186",
+          "https://openalex.org/W4250206250",
+          "https://openalex.org/W4251541164",
+          "https://openalex.org/W4307755210"
+        ]
+      },
+      {
+        "id": "https://openalex.org/W2114364337",
+        "doi": "https://doi.org/10.1016/j.physd.2015.10.012",
+        "title": "High-order control for symplectic maps",
+        "publication_year": 2015,
+        "authorships": [
+          {
+            "author_position": "first",
+            "author": {
+              "id": "https://openalex.org/A5008975259",
+              "display_name": "Marco Sansottera",
+              "orcid": "https://orcid.org/0000-0001-9703-7069",
+              "observed_orcids": [
+                "https://orcid.org/0000-0001-9703-7069"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I189158943",
+                "display_name": "University of Milan",
+                "ror": "https://ror.org/00wjc7c48",
+                "country_code": "IT",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I189158943"
+                ]
+              }
+            ],
+            "countries": [
+              "IT"
+            ],
+            "is_corresponding": true,
+            "raw_author_name": "M. Sansottera",
+            "raw_affiliation_strings": [
+              "Dipartimento di Matematica, Università degli Studi di Milano, via Saldini 50, 20133 Milano, Italy",
+              "Dipartimento di Matematica, Università degli Studi di Milano, via Saldini, 50–20133 Milano, Italy"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Dipartimento di Matematica, Università degli Studi di Milano, via Saldini 50, 20133 Milano, Italy",
+                "institution_ids": [
+                  "https://openalex.org/I189158943"
+                ]
+              },
+              {
+                "raw_affiliation_string": "Dipartimento di Matematica, Università degli Studi di Milano, via Saldini, 50–20133 Milano, Italy",
+                "institution_ids": [
+                  "https://openalex.org/I189158943"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "middle",
+            "author": {
+              "id": "https://openalex.org/A5053281608",
+              "display_name": "Antonio Giorgilli",
+              "orcid": "https://orcid.org/0000-0002-2627-5139",
+              "observed_orcids": [
+                "https://orcid.org/0000-0002-2627-5139"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I189158943",
+                "display_name": "University of Milan",
+                "ror": "https://ror.org/00wjc7c48",
+                "country_code": "IT",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I189158943"
+                ]
+              }
+            ],
+            "countries": [
+              "IT"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "A. Giorgilli",
+            "raw_affiliation_strings": [
+              "Dipartimento di Matematica, Università degli Studi di Milano, via Saldini 50, 20133 Milano, Italy",
+              "Dipartimento di Matematica, Università degli Studi di Milano, via Saldini, 50–20133 Milano, Italy"
+            ],
+            "raw_orcid": null,
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Dipartimento di Matematica, Università degli Studi di Milano, via Saldini 50, 20133 Milano, Italy",
+                "institution_ids": [
+                  "https://openalex.org/I189158943"
+                ]
+              },
+              {
+                "raw_affiliation_string": "Dipartimento di Matematica, Università degli Studi di Milano, via Saldini, 50–20133 Milano, Italy",
+                "institution_ids": [
+                  "https://openalex.org/I189158943"
+                ]
+              }
+            ]
+          },
+          {
+            "author_position": "last",
+            "author": {
+              "id": "https://openalex.org/A5001066958",
+              "display_name": "Timotéo Carletti",
+              "orcid": "https://orcid.org/0000-0003-2596-4503",
+              "observed_orcids": [
+                "https://orcid.org/0000-0003-2596-4503"
+              ]
+            },
+            "institutions": [
+              {
+                "id": "https://openalex.org/I149768937",
+                "display_name": "University of Namur",
+                "ror": "https://ror.org/03d1maw17",
+                "country_code": "BE",
+                "type": "education",
+                "lineage": [
+                  "https://openalex.org/I149768937"
+                ]
+              },
+              {
+                "id": "https://openalex.org/I4391767735",
+                "display_name": "Namur Institute for Complex Systems",
+                "ror": "https://ror.org/05ezwr821",
+                "country_code": "BE",
+                "type": "facility",
+                "lineage": [
+                  "https://openalex.org/I149768937",
+                  "https://openalex.org/I4391767735"
+                ]
+              }
+            ],
+            "countries": [
+              "BE"
+            ],
+            "is_corresponding": false,
+            "raw_author_name": "T. Carletti",
+            "raw_affiliation_strings": [
+              "Departement of Mathematics and Namur Center for Complex Systems - naXys, University of Namur, 8 Rempart de la Vierge, B5000 Namur, Belgium"
+            ],
+            "raw_orcid": "https://orcid.org/0000-0003-2596-4503",
+            "affiliations": [
+              {
+                "raw_affiliation_string": "Departement of Mathematics and Namur Center for Complex Systems - naXys, University of Namur, 8 Rempart de la Vierge, B5000 Namur, Belgium",
+                "institution_ids": [
+                  "https://openalex.org/I149768937",
+                  "https://openalex.org/I4391767735"
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_location": {
+          "id": "doi:10.1016/j.physd.2015.10.012",
+          "doi": "https://doi.org/10.1016/j.physd.2015.10.012",
+          "is_oa": false,
+          "landing_page_url": "https://doi.org/10.1016/j.physd.2015.10.012",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S4210235043",
+            "display_name": "Physica D Nonlinear Phenomena",
+            "issn_l": "0167-2789",
+            "issn": [
+              "0167-2789",
+              "1872-8022"
+            ],
+            "is_oa": false,
+            "is_in_doaj": false,
+            "is_core": true,
+            "listed_in": [
+              "anvur-class-a",
+              "anvur-scientific",
+              "cwts-core",
+              "dongbi-c",
+              "jufo-1",
+              "norway-2",
+              "poland-100",
+              "russia-white-list-1"
+            ],
+            "host_organization": "https://openalex.org/P4310320990",
+            "host_organization_name": "Elsevier BV",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310320990"
+            ],
+            "host_organization_lineage_names": [
+              "Elsevier BV"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "Physica D: Nonlinear Phenomena",
+          "raw_type": "journal-article"
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_status": "green",
+          "oa_url": "https://arxiv.org/pdf/1510.06561",
+          "any_repository_has_fulltext": true
+        },
+        "referenced_works": [
+          "https://openalex.org/W10078005",
+          "https://openalex.org/W355638855",
+          "https://openalex.org/W1520415682",
+          "https://openalex.org/W1567277313",
+          "https://openalex.org/W1578776640",
+          "https://openalex.org/W1594526892",
+          "https://openalex.org/W1618237215",
+          "https://openalex.org/W1667851602",
+          "https://openalex.org/W1679899655",
+          "https://openalex.org/W1887466242",
+          "https://openalex.org/W1965486767",
+          "https://openalex.org/W1965630079",
+          "https://openalex.org/W1966160012",
+          "https://openalex.org/W1969859442",
+          "https://openalex.org/W1970820693",
+          "https://openalex.org/W1972323860",
+          "https://openalex.org/W1974600210",
+          "https://openalex.org/W1976434499",
+          "https://openalex.org/W1978053137",
+          "https://openalex.org/W1984166663",
+          "https://openalex.org/W1984705965",
+          "https://openalex.org/W2004189420",
+          "https://openalex.org/W2004745456",
+          "https://openalex.org/W2010537503",
+          "https://openalex.org/W2015777851",
+          "https://openalex.org/W2021502284",
+          "https://openalex.org/W2025282430",
+          "https://openalex.org/W2027090909",
+          "https://openalex.org/W2030116866",
+          "https://openalex.org/W2036739882",
+          "https://openalex.org/W2042364543",
+          "https://openalex.org/W2042537863",
+          "https://openalex.org/W2043466275",
+          "https://openalex.org/W2045527516",
+          "https://openalex.org/W2052419105",
+          "https://openalex.org/W2066440418",
+          "https://openalex.org/W2068866342",
+          "https://openalex.org/W2071714161",
+          "https://openalex.org/W2084361267",
+          "https://openalex.org/W2084538138",
+          "https://openalex.org/W2089805095",
+          "https://openalex.org/W2090165262",
+          "https://openalex.org/W2099795777",
+          "https://openalex.org/W2104915731",
+          "https://openalex.org/W2118168339",
+          "https://openalex.org/W2118514348",
+          "https://openalex.org/W2121511041",
+          "https://openalex.org/W2131848627",
+          "https://openalex.org/W2145564478",
+          "https://openalex.org/W2160759148",
+          "https://openalex.org/W2194822145",
+          "https://openalex.org/W2461075134",
+          "https://openalex.org/W2591453328",
+          "https://openalex.org/W2771624116",
+          "https://openalex.org/W2951903265",
+          "https://openalex.org/W2993547202",
+          "https://openalex.org/W2999212641",
+          "https://openalex.org/W3099124302",
+          "https://openalex.org/W3099784559",
+          "https://openalex.org/W4230957669",
+          "https://openalex.org/W4247933444",
+          "https://openalex.org/W4248807039",
+          "https://openalex.org/W4293244147",
+          "https://openalex.org/W6636571449"
+        ]
+      }
+    ]
+  }
+]
