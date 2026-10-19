@@ -1,0 +1,104 @@
+{
+  "issue": 393,
+  "entry_url": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A8e8eaeb59def8ed8bbc91552",
+  "map_url": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map",
+  "record_urls": {
+    "root": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A8e8eaeb59def8ed8bbc91552",
+    "peters63": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ae394ca06ee2216e58422a223",
+    "peters64": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A96a008ab08ee8af753f5544e",
+    "chaos": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A03f7c402bc90f5d4b79ac9a1",
+    "integrator": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Aa5133e6857a624c33968429a",
+    "ias15": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A5f6ee7020bfe0ee1d3259398",
+    "physical": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A74de28a89259a9dd555a3a07",
+    "numeric": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Afd1edffaf3b2560933757506",
+    "old": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A90987c98529dafc91d79339a",
+    "corrected": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A6f2cb710e7b174a146ffdc70",
+    "diagnosis": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Aa6d8be0dab92cf1e4a99aa5e",
+    "integrate": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A77162981fb2aee4b2e992290",
+    "radiation": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A453d20811beeb1e76f282d97",
+    "duration": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A64d971e33ff70d9018f3dc5a",
+    "budget": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A87534f41ece83aac929b7823",
+    "resolution_plan": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A158e4ae8587a8dbad65db57b",
+    "duration_plan": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Aaa400afc5a3fa6bc4c6e85fc",
+    "ensemble_plan": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A115f91b4ae82e796bc75b937",
+    "next": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A3a45cdb341aee9d12753dd00",
+    "citation_check": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A0bd92520b23640ad4671d197"
+  },
+  "audit_urls": {
+    "v1": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+    "v3": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422"
+  },
+  "modules": {
+    "source_identity": "canonical DOI, authors, venue, raw metadata and available PDF",
+    "joint_conditions": [
+      "AND",
+      "OR",
+      "k-of-N"
+    ],
+    "experiments": [
+      "Peters radiation calculation",
+      "Euler/Leapfrog at 100/200/400 steps per orbit",
+      "Leapfrog 30/300 orbits",
+      "budget enumeration"
+    ],
+    "review": "historical six-dimensional V1 9/12 and V3 12/12; original artifacts retained",
+    "changes": [
+      "revision",
+      "comments",
+      "labels",
+      "close/reopen"
+    ],
+    "creation": "canonical link and SequenceMatcher text warning before persistence; reason plus current draft hash and record revisions required",
+    "document": "frontmatter plus Markdown read/export",
+    "agent": "shared creation check and Change API; 409 includes candidates",
+    "mmr": "actual deterministic candidate-selection API result; title words and Jaccard",
+    "automation": "need-review rule configured, disabled; no new model execution"
+  },
+  "historical_cases": [
+    {
+      "id": "q049",
+      "topic": "行星轨道为何不衰变",
+      "state": "completed"
+    },
+    {
+      "id": "q089",
+      "topic": "能量转换效率",
+      "state": "completed"
+    },
+    {
+      "id": "q021",
+      "topic": "抗生素耐药性",
+      "state": "waiting_human"
+    },
+    {
+      "id": "q112",
+      "topic": "环保塑料替代",
+      "state": "waiting_human"
+    },
+    {
+      "id": "q098",
+      "topic": "睡眠机制",
+      "state": "waiting_human"
+    }
+  ],
+  "historical_source": "research-world/evidence/contest-2026/deep-cases.md",
+  "full_corpus": {
+    "completed": 8,
+    "partial": 117,
+    "source": "research-world/evidence/contest-2026/submission-evidence.md"
+  },
+  "code_source": "benchmarks/research-changes-385/experiments/q049_cpu.py",
+  "image": "rw391-gw-experiments:local",
+  "reproduce": "Mount the code and extension.py into /work; run python /work/q049_cpu.py then python /work/extension.py. Image ID and dependencies in execution.json.",
+  "checks": {
+    "backend_suite": 337,
+    "final_creation_and_http": 45,
+    "browser": 8,
+    "browser_errors": [],
+    "mobile_overflow": false,
+    "runtime": {
+      "passed": 255,
+      "skipped": 12
+    }
+  }
+}

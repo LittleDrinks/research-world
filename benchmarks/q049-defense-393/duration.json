@@ -1,0 +1,18 @@
+[
+  {
+    "method": "Leapfrog",
+    "steps_per_orbit": 200,
+    "orbits": 30,
+    "max_relative_energy_error": 2.431627705856698e-07,
+    "final_relative_energy_error": 1.468025701001352e-11,
+    "seconds": 0.00440436000644695
+  },
+  {
+    "method": "Leapfrog",
+    "steps_per_orbit": 200,
+    "orbits": 300,
+    "max_relative_energy_error": 2.431627705856698e-07,
+    "final_relative_energy_error": 1.4656544866653576e-09,
+    "seconds": 0.04668544301239308
+  }
+]
