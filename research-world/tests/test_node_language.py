@@ -14,7 +14,7 @@ def case(tmp_path):
     return kernel, TestClient(app), project.id, f'/api/v1/projects/{project.id}'
 
 
-@pytest.mark.parametrize('word', ['演示②', '实例', '示例', 'DEMO', 'toy'])
+@pytest.mark.parametrize('word', ['演示②', '实例', '示例', 'DEMO', 'toy', 'SGI 参考方案', 'sgi-bench'])
 @pytest.mark.parametrize('field', ['title', 'text', 'summary', 'note'])
 def test_new_node_rejects_toy_copy_without_writing(case, word, field):
     kernel, client, project, root = case
@@ -43,6 +43,15 @@ def test_research_text_and_original_evidence_remain_readable(case):
     assert response.status_code == 201
     artifact = kernel.capture_artifact(project, '论文中的纠错演示'.encode(), 'text/plain')
     assert kernel.read_artifact(project, artifact.id).decode() == '论文中的纠错演示'
+
+
+def test_dataset_provenance_is_kept_out_of_attachment_display_names(case):
+    kernel, client, project, root = case
+    content = {'title': '时频斜率反演', 'origin': {'collection': 'SGI-DeepResearch'}}
+    assert client.post(root + '/records', json={'type': 'direction', 'content': content}).status_code == 201
+    content['attachments'] = [{'id': 'artifact:1', 'name': 'SGI_DeepResearch_0000.json'}]
+    assert client.post(root + '/records', json={'type': 'direction', 'content': content}).status_code == 422
+    assert len(kernel.list_records(project)) == 1
 
 
 @pytest.mark.parametrize('field', ['title', 'statement', 'rationale', 'role'])
