@@ -62,6 +62,8 @@ def _project(kernel, name="Orbit study"):
 
 
 def _record(client, project_id, record_type, content, artifact_ids=()):
+    if record_type == "source":
+        content = {**content, "canonical_url": "https://example.org/papers/" + content.get("title", "study").replace(" ", "-")}
     response = client.post(
         f"/api/v1/projects/{project_id}/records",
         json={

@@ -12,7 +12,7 @@ def test_page_evidence_artifact_round_trips_through_source_and_graph(graph_kerne
     evidence = {'source_sha256': 'a' * 64, 'page': 2, 'quote': 'A holds only if B.', 'limitations': 'B required'}
     artifact = client.post(root + '/artifacts', json={'content': json.dumps(evidence), 'media_type': 'application/json'})
     assert artifact.status_code == 201
-    source = client.post(root + '/records', json={'type': 'source', 'content': {'title': 'Paper', 'text': 'Conditional A'},
+    source = client.post(root + '/records', json={'type': 'source', 'content': {'canonical_url': 'https://example.org/paper', 'title': 'Paper', 'text': 'Conditional A'},
                                                 'artifact_ids': [artifact.json()['id']]}).json()
     direction = client.post(root + '/records', json={'type': 'direction', 'content': {'title': 'Conditional A', 'text': 'Requires B'}}).json()
     relation = client.post(root + '/relations', json={'source_id': source['id'], 'target_id': direction['id'], 'type': 'supports'})

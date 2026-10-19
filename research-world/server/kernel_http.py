@@ -2,14 +2,22 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Response
 from kernel_contract import LocalMapQuery
-from pydantic import BaseModel, ConfigDict, StrictInt, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator
 
 from .kernel_interface import KernelInterface
 from .joint_conditions import JointConditionRequest
 from .research_http import research_router
 from .node_language import validate_node_language
+from .record_creation import CreationConflict, inspect_creation
 
 __all__ = ["kernel_graph_router"]
+
+
+class CreationResolution(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: str = Field(min_length=1, max_length=500)
+    draft_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    matches: dict[str, StrictInt]
 
 
 class RecordRequest(BaseModel):
@@ -17,6 +25,7 @@ class RecordRequest(BaseModel):
     type: str
     content: dict
     artifact_ids: tuple[str, ...] = ()
+    duplicate_resolution: CreationResolution | None = None
 
     _language = field_validator('content')(validate_node_language)
 
@@ -83,6 +92,7 @@ def _create_project(kernel: KernelInterface):
 def _add_record_routes(router: APIRouter, kernel: KernelInterface) -> None:
     path = "/api/v1/projects/{project_id}/records"
     router.add_api_route(path, _record(kernel), methods=["POST"], status_code=201)
+    router.add_api_route(path + "/preflight", _preflight(kernel), methods=["POST"])
     router.add_api_route(path, _records(kernel), methods=["GET"])
     router.add_api_route(
         f"{path}/{{record_id}}", _remove_record(kernel), methods=["DELETE"]
@@ -114,11 +124,15 @@ def _add_local_map_route(router: APIRouter, kernel: KernelInterface) -> None:
 
 def _record(kernel: KernelInterface):
     def endpoint(project_id: str, request: RecordRequest):
-        return _kernel_call(
-            kernel.record,
-            project_id, request.type, request.content, request.artifact_ids
-        )
+        return _kernel_call(kernel.create_record, project_id, request.type, request.content,
+                            request.artifact_ids, request.duplicate_resolution.model_dump() if request.duplicate_resolution else None)
+    return endpoint
 
+
+def _preflight(kernel):
+    def endpoint(project_id: str, request: RecordRequest):
+        records = _kernel_call(kernel.list_records, project_id)
+        return _kernel_call(inspect_creation, records, request.type, request.content)[1]
     return endpoint
 
 
@@ -187,6 +201,8 @@ def _kernel_call(operation, *args):
         raise HTTPException(404, str(error)) from error
     except PermissionError as error:
         raise HTTPException(403, str(error)) from error
+    except CreationConflict as error:
+        raise HTTPException(409, error.detail) from None
     except ValueError as error:
         raise HTTPException(422, str(error)) from error
 

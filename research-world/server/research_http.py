@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from .change_store import ChangeConflict
 from .research_changes import ChangeRequest
 from .research_labels import LabelRequest
+from .record_document import render_document
 
 
 def research_router(kernel):
@@ -43,6 +44,11 @@ def label_routes(router, kernel):
 
 
 def change_routes(router, kernel):
+    @router.get('/records/{record_id}/document')
+    def document(project_id: str, record_id: str):
+        record = call(kernel.get_record, project_id, record_id)
+        return Response(render_document(record), media_type='text/markdown; charset=utf-8')
+
     @router.get('/records/{record_id}')
     def current(project_id: str, record_id: str):
         return call(kernel.get_record, project_id, record_id)

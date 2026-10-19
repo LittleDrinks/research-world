@@ -12,6 +12,9 @@ def operation(values):
     action = values.get('operation')
     if not isinstance(action, str):
         raise ValueError('需要研究操作名称')
+    if action == 'preflight':
+        require_fields(values, {'operation', 'type', 'content'})
+        return 'POST', '/records/preflight', {k:v for k,v in values.items() if k != 'operation'}
     if action == 'labels':
         require_fields(values, {'operation'})
         return 'GET', '/labels', None
