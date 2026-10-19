@@ -1,0 +1,32 @@
+{
+  "approximation": "isolated circular binary; leading quadrupole; fixed masses",
+  "systems": [
+    {
+      "system": "Sun-Earth",
+      "masses_kg": [
+        1.98847e+30,
+        5.9722e+24
+      ],
+      "separation_m": 149597870700.0,
+      "gw_frequency_Hz": 6.337603207200633e-08,
+      "power_W": 196.29055998241506,
+      "formal_inspiral_s": 3.373993930365635e+30,
+      "formal_inspiral_years": 1.0691541594942692e+23,
+      "separation_over_GM_c2": 101307301.35878436
+    },
+    {
+      "system": "30+30 solar masses at 2 Hz",
+      "masses_kg": [
+        5.96541e+31,
+        5.96541e+31
+      ],
+      "separation_m": 5864604.917108378,
+      "gw_frequency_Hz": 2.000000000000002,
+      "power_W": 1.1421865409093903e+43,
+      "formal_inspiral_s": 443.2212089422985,
+      "formal_inspiral_years": 1.4044832590003629e-05,
+      "separation_over_GM_c2": 66.19179351933094
+    }
+  ],
+  "limits": "formal integration extrapolates the approximation beyond its valid range; excludes solar evolution and strong-field merger"
+}

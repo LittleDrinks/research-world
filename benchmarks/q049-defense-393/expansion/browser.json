@@ -1,0 +1,67 @@
+{
+  "errors": [],
+  "mobileOverflow": false,
+  "pages": [
+    {
+      "name": "entry",
+      "url": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A8e8eaeb59def8ed8bbc91552",
+      "expected": "同样的引力辐射",
+      "images": []
+    },
+    {
+      "name": "mass",
+      "url": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Aabaaa435e320e5e7b870e188",
+      "expected": "64.3271",
+      "images": [
+        {
+          "loaded": true,
+          "src": "/api/v1/projects/project:40d0b33942d45f879c4335f9/artifacts/artifact:c01c68b34165f1ba080b538267b4448e8d33c55ee5d8f3e1d283385398b9c5f3"
+        }
+      ]
+    },
+    {
+      "name": "scales",
+      "url": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A38ab51bfd8a5ff23d7ca5195",
+      "expected": "443.22",
+      "images": []
+    },
+    {
+      "name": "tidal",
+      "url": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ab408c62e40bc03405a097a3f",
+      "expected": "900",
+      "images": []
+    },
+    {
+      "name": "closed",
+      "url": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A978c5b4eee875bb595aa1a24",
+      "expected": "Closed",
+      "images": []
+    },
+    {
+      "name": "noise",
+      "url": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A198018a4c035aaa87cd2f3c9",
+      "expected": "8.4947",
+      "images": []
+    },
+    {
+      "name": "calibration",
+      "url": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A66d0e2781e6b8786336ce90b",
+      "expected": "0.5268462088%",
+      "images": []
+    },
+    {
+      "name": "flow",
+      "url": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A35815d21f7afd5377debf329",
+      "expected": "覆盖率",
+      "images": []
+    },
+    {
+      "name": "mass-map",
+      "url": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=record%3A978c5b4eee875bb595aa1a24&view=focus"
+    },
+    {
+      "name": "tidal-map",
+      "url": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A25a0d6e3b8f03a01c3225ce4&view=focus"
+    }
+  ]
+}

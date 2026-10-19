@@ -1,0 +1,111 @@
+{
+  "radiation": {
+    "inputs": {
+      "G_SI": 6.6743e-11,
+      "c_m_s": 299792458.0,
+      "solar_mass_kg": 1.98847e+30,
+      "earth_mass_kg": 5.9722e+24,
+      "a_m": 149597870700.0,
+      "eccentricity": 0
+    },
+    "power_W": 196.29055998241506,
+    "merge_years": 1.069154159494269e+23,
+    "local_energy_years": 4.276616637977077e+23,
+    "local_to_merge_ratio": 4.000000000000001,
+    "da_m_per_second": -1.1084628024492943e-20
+  },
+  "integration": [
+    {
+      "method": "Euler",
+      "steps_per_orbit": 100,
+      "orbits": 30,
+      "max_relative_energy_error": 0.7660368106373306,
+      "final_relative_energy_error": 0.7660368106373306,
+      "seconds": 0.0016551150038139895
+    },
+    {
+      "method": "Euler",
+      "steps_per_orbit": 200,
+      "orbits": 30,
+      "max_relative_energy_error": 0.7028615214634912,
+      "final_relative_energy_error": 0.7028615214634912,
+      "seconds": 0.003225705004297197
+    },
+    {
+      "method": "Euler",
+      "steps_per_orbit": 400,
+      "orbits": 30,
+      "max_relative_energy_error": 0.6242669732778426,
+      "final_relative_energy_error": 0.6242669732778426,
+      "seconds": 0.006432132999179885
+    },
+    {
+      "method": "Leapfrog",
+      "steps_per_orbit": 100,
+      "orbits": 30,
+      "max_relative_energy_error": 3.8734338667634205e-06,
+      "final_relative_energy_error": 3.799530801096296e-09,
+      "seconds": 0.0024392369959969074
+    },
+    {
+      "method": "Leapfrog",
+      "steps_per_orbit": 200,
+      "orbits": 30,
+      "max_relative_energy_error": 2.431627705856698e-07,
+      "final_relative_energy_error": 1.468025701001352e-11,
+      "seconds": 0.005004899998311885
+    },
+    {
+      "method": "Leapfrog",
+      "steps_per_orbit": 400,
+      "orbits": 30,
+      "max_relative_energy_error": 1.5214538739982686e-08,
+      "final_relative_energy_error": 5.928590951498336e-14,
+      "seconds": 0.009268520996556617
+    }
+  ],
+  "budget": {
+    "budget_units": 3,
+    "minimum_tasks": 2,
+    "candidates": [
+      {
+        "id": "resolution",
+        "name": "\u52a0\u500d\u65f6\u95f4\u5206\u8fa8\u7387",
+        "cost": 1
+      },
+      {
+        "id": "duration",
+        "name": "\u5ef6\u957f\u79ef\u5206\u65f6\u95f4",
+        "cost": 2
+      },
+      {
+        "id": "ensemble",
+        "name": "\u521d\u503c\u6270\u52a8\u96c6\u5408",
+        "cost": 3
+      }
+    ],
+    "feasible_pairs": [
+      [
+        {
+          "id": "resolution",
+          "name": "\u52a0\u500d\u65f6\u95f4\u5206\u8fa8\u7387",
+          "cost": 1
+        },
+        {
+          "id": "duration",
+          "name": "\u5ef6\u957f\u79ef\u5206\u65f6\u95f4",
+          "cost": 2
+        }
+      ]
+    ],
+    "selected": [
+      "resolution",
+      "duration"
+    ],
+    "cost_basis": "\u89c4\u5212\u8ba1\u7b97\u914d\u989d\uff1b\u4e0d\u662f\u5b9e\u4ed8\u8d39\u7528"
+  },
+  "model": {
+    "integration": "GM=1, r0=1, v0=1, circular orbit, no physical dissipation",
+    "periods": 30
+  }
+}

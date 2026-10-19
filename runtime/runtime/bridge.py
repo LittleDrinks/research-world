@@ -126,6 +126,8 @@ async def _graph(project_id, tool, values, run_id=None):
     async with httpx.AsyncClient(base_url=os.environ['CONTROL_URL'], timeout=30) as client:
         headers = {'x-research-author': 'agent:' + run_id} if run_id else {}
         response = await client.post(f'{root}/{path}', json=payload, headers=headers)
+        if tool == 'record' and response.status_code == 409:
+            return {'created': False, 'review_required': response.json()['detail']}
         response.raise_for_status()
         return response.json()
 

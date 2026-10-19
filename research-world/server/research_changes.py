@@ -12,7 +12,7 @@ Identifier = Annotated[str, StringConstraints(strip_whitespace=True, min_length=
 
 class ChangeRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    kind: Literal['revise', 'comment', 'labels']
+    kind: Literal['revise', 'comment', 'labels', 'status']
     base_revision: Annotated[StrictInt, Field(ge=1)]
     reason: Text
     title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)] | None = None
@@ -21,9 +21,17 @@ class ChangeRequest(BaseModel):
     reference_revision: Annotated[StrictInt, Field(ge=1)] | None = None
     label_ids: Annotated[list[Identifier], Field(max_length=20)] | None = None
 
+    status: Literal['open', 'closed'] | None = None
+    close_reason: Literal['completed', 'not_planned', 'duplicate'] | None = None
+    duplicate_of: Identifier | None = None
+
     @model_validator(mode='after')
     def shape(self):
         fields = {'title': self.title, 'text': self.text, 'comment': self.comment, 'label_ids': self.label_ids, 'reference_revision': self.reference_revision}
+        if self.kind == 'status':
+            return validate_status_request(self, fields)
+        if any(value is not None for value in (self.status, self.close_reason, self.duplicate_of)):
+            raise ValueError('状态字段只适用于状态变更')
         required = {'revise': {'title', 'text'}, 'comment': {'comment', 'reference_revision'}, 'labels': {'label_ids'}}[self.kind]
         if {key for key, value in fields.items() if value is not None} != required:
             raise ValueError('变更字段与类型不匹配')
@@ -43,6 +51,8 @@ def submit_change(connection, project_id, record_id, values, author):
     after = json.loads(json.dumps(before))
     if request.kind == 'revise':
         after['content'].update(title=request.title, text=request.text)
+    if request.kind == 'status':
+        apply_status(connection, project_id, record_id, request, after)
     if request.kind == 'labels':
         after['labels'] = selected_labels(connection, project_id, request.label_ids)
     if request.reference_revision:
@@ -70,3 +80,27 @@ def attach(connection, project_id, record_id, artifact_id):
         return
     after = {**before, 'artifact_ids': [*before['artifact_ids'], artifact_id]}
     append(connection, row, before, after, 'attachment', 'system', '保存并关联不可变研究产物')
+
+
+def validate_status_request(request, fields):
+    if any(value is not None for value in fields.values()) or request.status is None:
+        raise ValueError('状态变更字段无效')
+    if (request.status == 'closed') != (request.close_reason is not None):
+        raise ValueError('关闭需要原因；重新打开不能包含关闭原因')
+    if (request.close_reason == 'duplicate') != (request.duplicate_of is not None):
+        raise ValueError('重复关闭需要指定保留的研究对象')
+    return request
+
+
+def apply_status(connection, project_id, record_id, request, after):
+    if request.duplicate_of:
+        target = root_record(connection, project_id, request.duplicate_of)
+        if target['id'] == record_id:
+            raise ValueError('不能将自身标为重复对象')
+    if after['content'].get('status', 'open') == request.status:
+        raise ValueError('节点已经处于该状态')
+    after['content']['status'] = request.status
+    for key in ('close_reason', 'duplicate_of'):
+        after['content'].pop(key, None)
+        if getattr(request, key) is not None:
+            after['content'][key] = getattr(request, key)

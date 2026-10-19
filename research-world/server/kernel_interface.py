@@ -199,6 +199,8 @@ class KernelInterface(Protocol):
         artifact_ids: tuple[str, ...] = (),
     ) -> Record: ...
 
+    def create_record(self, project_id, record_type, content, artifact_ids=(), resolution=None) -> Record: ...
+
     def get_record(self, project_id: str, record_id: str) -> Record: ...
 
     def list_records(self, project_id: str) -> list[Record]: ...
@@ -437,6 +439,24 @@ class _SQLiteKernel(KernelInterface):
                 "INSERT INTO kernel_records VALUES(?,?,?,?,?,?)",
                 _record_values(record),
             )
+
+    def create_record(self, project_id, record_type, content, artifact_ids=(), resolution=None):
+        from .record_creation import inspect_creation, confirm_creation
+        self.get_project(project_id)
+        _validate_record(record_type, content, artifact_ids)
+        for artifact_id in artifact_ids:
+            self.get_artifact(project_id, artifact_id)
+        with self._connect() as connection:
+            connection.execute('BEGIN IMMEDIATE')
+            rows = connection.execute('SELECT * FROM kernel_records WHERE project_id=? AND id NOT IN (SELECT object_id FROM kernel_revocations)', (project_id,)).fetchall()
+            records = [_record_projection(row, change_store.snapshot(connection, row)) for row in rows]
+            content, check = inspect_creation(records, record_type, content)
+            confirm_creation(check, resolution)
+            if resolution:
+                content['creation_decision'] = resolution
+            value = _new_record(project_id, record_type, content, artifact_ids)
+            connection.execute('INSERT INTO kernel_records VALUES(?,?,?,?,?,?)', _record_values(value))
+            return value
 
     def get_record(self, project_id: str, record_id: str) -> Record:
         self.get_project(project_id)

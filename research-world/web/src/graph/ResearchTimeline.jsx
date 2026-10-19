@@ -11,6 +11,7 @@ export function ResearchTimeline({changes,projectId,onVersion}){
 }
 
 function eventText(change){
+  if(change.kind==='status')return change.after.content.status==='closed'?'关闭了节点':'重新打开了节点';
   return {revise:'修改了正文',labels:'调整了标签',attachment:'添加了研究产物'}[change.kind]||'更新了记录';
 }
 

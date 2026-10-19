@@ -1,0 +1,46 @@
+{
+  "image": "rw393-gw-expansion:local",
+  "image_id": "sha256:1e52e6774085e4810f3ffa288404f29dfe2f72158834aa1d90775b961cf8ec5e",
+  "environment": {
+    "python": "3.10.12",
+    "numpy": "1.24.3",
+    "scipy": "1.10.1",
+    "pandas": "2.0.3",
+    "matplotlib": "3.7.2"
+  },
+  "runtime": {
+    "network": "none",
+    "cpus": 2,
+    "memory": "2g",
+    "pids_limit": 128,
+    "read_only": true,
+    "tmpfs": "/tmp:rw,size=128m"
+  },
+  "commands": [
+    "python /work/checks.py",
+    "python /work/scales.py",
+    "python /work/run_reference.py"
+  ],
+  "hashes": {
+    "mass-map.png": "d79bc81b9aeb6915695cfe1a068b52081b6b455fbb55ec3dea1c75685d719476",
+    "mass.png": "e7daf72f9b10ee0885ce233d0cddd3665e34288600bffb5a558d9ed9a35c6efd",
+    "physical-results.json": "125271161f3203dd5e73d838a3ebf2df604630343fae6a8e9690021d2b4dd708",
+    "scales.py": "34e29fc32832aa82b012300c75e20699a4e9113ce91c37fdfb2cfe4794298142",
+    "browser.json": "565f019f8222cbfc3c0b8f68445475cd58aa145e761a570b1fd95ce8d65b612c",
+    "earlier-reference-results.json": "2a71f7c97bbc5b2c956d63e16830f85a213bf5b0a8092323febf38432cc9a89c",
+    "scales.json": "7a2faa920b4dd7de0b1330a345accfcb10faa3472865cd8ea4c74cc6a8811d08",
+    "entry.png": "86e11812717dc1b360aaf66b418d2118dce8d0c36c9ab4fc7aca9ac4d70ffe4c",
+    "run_reference.py": "dacbb7e1ccaa41a3822655b4f67b7bde7f821650085c27744d96dc491e661919",
+    "scales.stdout.txt": "e61e451ccb2fb67726e86276dc212b8b8299875fa0f16a9c99367a66c24eedb1",
+    "checks.py": "3e861201b9afeb674f62c28e6634efdf4222cebd6f2df876e77a5884a46672bb",
+    "coverage.json": "db5f4799fce800cc867040f88e95f12a606a812e71ebf89e9631a8a88c99d526",
+    "tidal-map.png": "bac79e60c8ee5fd0e02b1ecdfd6d4ec9a7832559a3b60ac81406003f833cabaf",
+    "physical-controls.png": "c01c68b34165f1ba080b538267b4448e8d33c55ee5d8f3e1d283385398b9c5f3",
+    "reference-results.json": "6ef442a6ace4b567f0f098d208240c980b50420d7c1887009b51fee50dac3806",
+    "scales.png": "3c428a5d43da766ae4876fa05bd3ed074b33507a49b33c196d9f84a4e647df46",
+    "checks.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checks.stdout.txt": "34cfaaa5a8c7723a85ef92da4ccf3a71e62f3d91d9fbe73595e5114595ea88e6",
+    "../graph.json": "3b6d9261bd9ae88f0b082443f3c8e61e9bd4775ec0ba911a95505a1f9351d90c"
+  },
+  "reference_reproduction": "Input generators, programs and stdout for each five-case group are attached to their experiment as an immutable zip; original task identifiers and pinned dataset revisions are stored in record origin."
+}

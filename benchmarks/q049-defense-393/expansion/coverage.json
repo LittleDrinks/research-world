@@ -1,0 +1,527 @@
+{
+  "issue": 393,
+  "project_id": "project:40d0b33942d45f879c4335f9",
+  "records_by_type": {
+    "question": 9,
+    "source": 12,
+    "direction": 14,
+    "experiment": 17
+  },
+  "counts": {
+    "records": 52,
+    "relations": 41,
+    "joint_conditions": 5,
+    "need_review": 52,
+    "new_review_runs": 0
+  },
+  "source_tasks": [
+    "SGI_DeepResearch_0000",
+    "SGI_DeepResearch_0001",
+    "SGI_DeepResearch_0002",
+    "SGI_DeepResearch_0003",
+    "SGI_DeepResearch_0004",
+    "SGI_DryExperiment_0000",
+    "SGI_DryExperiment_0001",
+    "SGI_DryExperiment_0002",
+    "SGI_DryExperiment_0003",
+    "SGI_IdeaGeneration_0080",
+    "SGI_IdeaGeneration_0081",
+    "SGI_IdeaGeneration_0082",
+    "SGI_IdeaGeneration_0083",
+    "SGI_IdeaGeneration_0084"
+  ],
+  "node_urls": {
+    "detection": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A9cf867f4ac4da1aa73b94db5",
+    "calibration": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A70abc96e198139707a1c076c",
+    "glitch": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A13c2d7577dc60a1ebbcff5d8",
+    "catalog": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Afa947c0cd8f34298cd4104f5",
+    "flow": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A9edac4061a4c44c2432ee47e",
+    "bns": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A84ce74e8610e7873f94888a2",
+    "bns_update": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ab408c62e40bc03405a097a3f",
+    "q_mass": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A1805dae1d6a436b7623b2608",
+    "q_detect": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A786d65aff43316724327e79d",
+    "q_calibrate": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Aa03e77f4a754be3a76a22e5d",
+    "q_noise": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Acbafca514626ae251a1ba055",
+    "q_flow": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A35815d21f7afd5377debf329",
+    "q_tidal": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ae6197b8dba7feba6e466af88",
+    "q_population": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A8bbc5ab81fc648550158c26b",
+    "mass_old": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A978c5b4eee875bb595aa1a24",
+    "mass_frames": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ae56b546dadd44835297d1e80",
+    "signal": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A79f5dd95a99a396f1af2b11f",
+    "phase": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ac46fd17c680e0d5cfc123c59",
+    "noise": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A5b3cd9280e9610a26f48e595",
+    "flow_direction": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A66a668c14b13e36ab09248e9",
+    "tidal_old": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A2372af5305ec2e224027472a",
+    "tidal_version": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Acb27b89b738299437488b8ae",
+    "hierarchy": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A2a53f02aa91483c96d30af7d",
+    "selection": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ac989563a3db9fe8aef48a59e",
+    "mass_fit": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Aabaaa435e320e5e7b870e188",
+    "timing_scan": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A4dadb43b0ca05b0b68950d3f",
+    "noise_rates": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A95ee207a61cd1def4e7660a5",
+    "zero_background": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Aeae973daf108a305bb1c669f",
+    "tidal_scan": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A7972c600927f5f9651dbd7bd",
+    "chirp_generated": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A9e33e7b4c57caff5ba01fd45",
+    "noise_generated": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A198018a4c035aaa87cd2f3c9",
+    "calibration_generated": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A66d0e2781e6b8786336ce90b",
+    "catalog_generated": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ae97f616b85de12ea07fa06d3",
+    "flow_plan": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Afe1c75006c24faf73fbc6dee",
+    "q_scales": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A44a1752ee0926617c81df9ea",
+    "scales_direction": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A276f72c72b56909e700edea6",
+    "scales_compute": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A38ab51bfd8a5ff23d7ca5195"
+  },
+  "new_reference_executions": 10,
+  "earlier_reference_executions": 10,
+  "computed_checks": [
+    "chirp mass",
+    "timing phase",
+    "glitch rate arithmetic",
+    "zero-count Poisson bound",
+    "tidal radius dependence",
+    "binary scale comparison"
+  ],
+  "source_access": {
+    "detection": {
+      "doi": "10.1103/PhysRevLett.116.061102",
+      "arxiv": "1602.03837",
+      "metadata": "crossref",
+      "pdf_bytes": 935476
+    },
+    "calibration": {
+      "doi": "10.1103/PhysRevD.95.062003",
+      "arxiv": "1602.03845",
+      "metadata": "crossref",
+      "pdf_bytes": 747251
+    },
+    "glitch": {
+      "doi": "10.1088/1361-6382/acb633",
+      "arxiv": "2208.12849",
+      "crossref_error": "HTTP Error 429: Too Many Requests",
+      "metadata": "openalex",
+      "pdf_bytes": 7875617
+    },
+    "catalog": {
+      "doi": "10.3847/1538-4357/aca591",
+      "arxiv": "2112.06878",
+      "metadata": "crossref",
+      "pdf_bytes": 2841475
+    },
+    "flow": {
+      "doi": "10.1088/2632-2153/abfaed",
+      "arxiv": "2008.03312",
+      "metadata": "crossref",
+      "pdf_bytes": 1008480
+    },
+    "bns": {
+      "doi": "10.1103/PhysRevLett.119.161101",
+      "arxiv": "1710.05832",
+      "metadata": "crossref",
+      "pdf_bytes": 1599186
+    },
+    "bns_update": {
+      "doi": "10.1103/PhysRevX.9.011001",
+      "arxiv": "1805.11579",
+      "metadata": "crossref",
+      "pdf_bytes": 3839611
+    }
+  },
+  "artifact_readback": [
+    {
+      "id": "artifact:0fcadae9d35e72c6c903ce6466e105e6ea84358397384a88471080acfbd2d024",
+      "bytes": 1599186,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:117f64d82bc8b601154e04bc1bd21b888ef3d686d1c7f6df64240d2aff7c9d9d",
+      "bytes": 45345,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:125271161f3203dd5e73d838a3ebf2df604630343fae6a8e9690021d2b4dd708",
+      "bytes": 2019,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:1cc268b84fd1ec5eaa1c5e60f0cfed6966346e0c1ea2cb90ff9f66cc1da2809d",
+      "bytes": 97963,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:1e52458d978083d1a4c6902b11e720efcda016acf06277f2273571568d0de126",
+      "bytes": 100996,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:214d14ca814750c14b8f690078e97093352e3bcf343b7b5e52a67146311e9e2a",
+      "bytes": 1629,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:21c404fa85be82cdc2f5c7840f80c6dc77e34eb9ad6dae6a7de8644132595cd5",
+      "bytes": 9438,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:235980e91cc1892a322f09a81f203cebad0657a801c7e18f719d171ad95718f8",
+      "bytes": 21065,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:26d272fbd7228bf99ae1a263a0b4648104836f009ae644cfa4f2d13456185785",
+      "bytes": 236109,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:2975bed85dd3d1aa72d6106135804698f80e126822c2a20235a2bbd3b6dfd449",
+      "bytes": 123175,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:2a71f7c97bbc5b2c956d63e16830f85a213bf5b0a8092323febf38432cc9a89c",
+      "bytes": 5285,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:2d88190f727c77b8ba639dae6f9a998d3ae5bbeed5cf09c4c4d0ff231402a6b8",
+      "bytes": 1085315,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:2f24d65ecc64aab8afe8319bd13810a8818b9c036860a8de8298f0697d32033b",
+      "bytes": 53997,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:2fac6ca8af65372e528fc2a0b04af10de2406659cf66f5dcd2fa78ce75969132",
+      "bytes": 4181,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:2fbaa8dce26d328d35b32c6d4b2643b6e47ae18c7c75a9cd3badde2fe1398691",
+      "bytes": 2841475,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:34e29fc32832aa82b012300c75e20699a4e9113ce91c37fdfb2cfe4794298142",
+      "bytes": 1240,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+      "bytes": 18127,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:3a5eddf7247615a27ed4b032d83d39a0fbe1c6fbe9ea1628cbae329f5f9ac91d",
+      "bytes": 562,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:3d183ec68ae8fe0f5cc2a2057258ba00c7d43fbe899d2c0a5c99c1de4a0ca6e4",
+      "bytes": 12387,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+      "bytes": 5006,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:3e861201b9afeb674f62c28e6634efdf4222cebd6f2df876e77a5884a46672bb",
+      "bytes": 2659,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:4787e44f70788045529b88fe02d86eeed62040fa39dbe87ae07fa812e24711f1",
+      "bytes": 11671,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+      "bytes": 2964,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:58662b5c2d0a4a22d4f07b6d2e78a401e105e54fc82bc852386a4d7330fe05b4",
+      "bytes": 1008480,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:5b7e58fb5f99f9f68b6d508b2f1b2ba23f543cc0d8f4cd94853e9a989a36aaed",
+      "bytes": 407217,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:68a6dc04b7bdd7d26d6cf933998dde3c9e5c29b51fc7013cd3fde10e08f13e95",
+      "bytes": 220509,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:6e37343b845c72b6b2d11210a5a4854e5439837d664c01a7d336a41ffa3f35e9",
+      "bytes": 177782,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:6ed56db73c1e1aa059cc341b05ede22a9985dcb46a7564ad8eccb3c437a90326",
+      "bytes": 24385,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:6ef442a6ace4b567f0f098d208240c980b50420d7c1887009b51fee50dac3806",
+      "bytes": 5144,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:6f08b6c68cb90234310a702a07f98e0fac124aae495247c77fff1eaa21729313",
+      "bytes": 34194,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:72c6608574c61029eeb0d1e8fb7e846143cf4b11297ca346fbe41bb262790364",
+      "bytes": 402199,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+      "bytes": 10515,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:753dec0834dbff1d44d7eced4540b45e51e85c1203f48e5aa7afac9c9a9331de",
+      "bytes": 343415,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:76b20e37525b0f161610d9842efd9544c30ed260c15ed300bd1afc6b84f38869",
+      "bytes": 33135,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:7a2faa920b4dd7de0b1330a345accfcb10faa3472865cd8ea4c74cc6a8811d08",
+      "bytes": 1036,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:7bdd81959567b31d3cb8a7357ce454d67ee8e7b2ca1fc7adca16b41903e30937",
+      "bytes": 40809,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:7c2844990c8fa83a6f7754356b90cdd41bdfcf0b1e12c27ae65b446bd43c2eab",
+      "bytes": 464,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:7d4dfdc72cdd3a4731b1a4ef2e90a3a853b079ad9bd29eccf40fae7896ede708",
+      "bytes": 40081,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:852d9bfe6d05e16d892b856ac1ffabf0710ba94444a452005fc4b80d94999b94",
+      "bytes": 28874,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+      "bytes": 12840,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+      "bytes": 6925,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+      "bytes": 5314,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+      "bytes": 3753,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:abb84fc245dca17c16da64e10fd219caa7bef958c356cd86ea236c7ed26be7f8",
+      "bytes": 5831,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:c01c68b34165f1ba080b538267b4448e8d33c55ee5d8f3e1d283385398b9c5f3",
+      "bytes": 105787,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:c067e130a84233cffd74de590b26d161c9cab69aba8e2de3d4d28e56030e719a",
+      "bytes": 3839611,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+      "bytes": 13448,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
+      "bytes": 3718,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:cfdc863878d09ab371f02eee52d18c7be95fb666eef1239056bc0da7325f31e6",
+      "bytes": 126284,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:dab4dcd3796fde7271eea8c5981eec0a48e2034135b9ed95f7ea5a3ac23b354c",
+      "bytes": 747251,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:dc5e2c9ec7db57a861eb72570a5b96bd0b098b1d531830cbe5eb40e77bbc3dcb",
+      "bytes": 206,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+      "bytes": 12533,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:e5e864c23d015b69be17e5b5d51b5b462d2829353a867513414b6728f54589c4",
+      "bytes": 935476,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:e83c43463580b90de614a84cf9119eccd260d1a7f92ad4e0bf3b50a5ba0877c9",
+      "bytes": 11609,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:e8b693956c91e6d4ac88ae1a7bded781a1b7291d0c6d63e75cd66dc73b04aa45",
+      "bytes": 29627,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+      "bytes": 88944,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:f58001c971c5b34d3a5f9be77bc59cb13a5c3d36a368acb98348dcd6e2b857a9",
+      "bytes": 33793,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+      "bytes": 10582,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:f7fac3768b6e07731ae6ce7aec87f8822b6f34dedd6c082180d9341b43caa328",
+      "bytes": 8876,
+      "hash_matches": true
+    },
+    {
+      "id": "artifact:fef3aa571e1221c09a2c6925383932a0eb2549b5107b62faa792002719a05163",
+      "bytes": 49814,
+      "hash_matches": true
+    }
+  ],
+  "current_review": "All 52 records need-review; no new model run or six-dimensional approval.",
+  "dataset_inventory": [
+    {
+      "family": "deep",
+      "total": 318,
+      "discipline_counts": {
+        "astronomy": 17,
+        "chemistry": 11,
+        "earth": 54,
+        "energy": 10,
+        "information": 20,
+        "life": 87,
+        "material": 38,
+        "mathematics": 25,
+        "neuroscience": 24,
+        "physics": 32
+      },
+      "keyword_matches": [
+        "SGI_DeepResearch_0000",
+        "SGI_DeepResearch_0001",
+        "SGI_DeepResearch_0002",
+        "SGI_DeepResearch_0003",
+        "SGI_DeepResearch_0004",
+        "SGI_DeepResearch_0076",
+        "SGI_DeepResearch_0217",
+        "SGI_DeepResearch_0287",
+        "SGI_DeepResearch_0290"
+      ]
+    },
+    {
+      "family": "idea",
+      "total": 315,
+      "discipline_counts": {
+        "life": 87,
+        "astronomy": 17,
+        "material": 35,
+        "chemistry": 11,
+        "earth": 54,
+        "physics": 32,
+        "energy": 10,
+        "neuroscience": 24,
+        "information": 20,
+        "mathematics": 25
+      },
+      "keyword_matches": [
+        "SGI_IdeaGeneration_0080",
+        "SGI_IdeaGeneration_0081",
+        "SGI_IdeaGeneration_0082",
+        "SGI_IdeaGeneration_0083",
+        "SGI_IdeaGeneration_0084",
+        "SGI_IdeaGeneration_0101",
+        "SGI_IdeaGeneration_0127",
+        "SGI_IdeaGeneration_0168",
+        "SGI_IdeaGeneration_0172",
+        "SGI_IdeaGeneration_0173",
+        "SGI_IdeaGeneration_0174"
+      ]
+    },
+    {
+      "family": "dry",
+      "total": 271,
+      "discipline_counts": {
+        "astronomy": 16,
+        "chemistry": 5,
+        "earth": 48,
+        "energy": 10,
+        "information": 14,
+        "life": 80,
+        "material": 27,
+        "mathematics": 18,
+        "neuroscience": 24,
+        "physics": 29
+      },
+      "keyword_matches": [
+        "SGI_DryExperiment_0000",
+        "SGI_DryExperiment_0001",
+        "SGI_DryExperiment_0002",
+        "SGI_DryExperiment_0003",
+        "SGI_DryExperiment_0006",
+        "SGI_DryExperiment_0009",
+        "SGI_DryExperiment_0010",
+        "SGI_DryExperiment_0013",
+        "SGI_DryExperiment_0031",
+        "SGI_DryExperiment_0050",
+        "SGI_DryExperiment_0059",
+        "SGI_DryExperiment_0174",
+        "SGI_DryExperiment_0190",
+        "SGI_DryExperiment_0243",
+        "SGI_DryExperiment_0245",
+        "SGI_DryExperiment_0246",
+        "SGI_DryExperiment_0249",
+        "SGI_DryExperiment_0250",
+        "SGI_DryExperiment_0253",
+        "SGI_DryExperiment_0261",
+        "SGI_DryExperiment_0270"
+      ]
+    }
+  ]
+}

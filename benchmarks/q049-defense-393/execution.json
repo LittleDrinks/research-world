@@ -1,0 +1,40 @@
+{
+  "image_id": "sha256:0a32d7ed2e8d773dd3e3ea520d8ffe81727428efd8f5039ebc9c188b5201d476",
+  "environment": "3.10.12 (main, Aug 16 2023, 05:39:07) [GCC 12.2.0]\n1.24.3 1.10.1 3.7.2",
+  "execution": {
+    "commands": [
+      "python /work/q049_cpu.py",
+      "python /work/extension.py"
+    ],
+    "workdir": "/work",
+    "network": "none",
+    "cpus": 2,
+    "memory": "2g",
+    "exit_code": 0
+  },
+  "files": {
+    "q049_cpu.py": "cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
+    "extension.py": "dc5e2c9ec7db57a861eb72570a5b96bd0b098b1d531830cbe5eb40e77bbc3dcb",
+    "results.json": "4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+    "duration.json": "7c2844990c8fa83a6f7754356b90cdd41bdfcf0b1e12c27ae65b446bd43c2eab",
+    "stdout.txt": "4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+    "stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration.stdout.txt": "ae268a2c8580ff327e24000b9f39b361a5adce6f34cd6b115ab698fccd3c78cc",
+    "integration.csv": "3a5eddf7247615a27ed4b032d83d39a0fbe1c6fbe9ea1628cbae329f5f9ac91d",
+    "energy-drift.png": "f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755"
+  },
+  "inputs": {
+    "G_SI": 6.6743e-11,
+    "c_m_s": 299792458.0,
+    "solar_mass_kg": 1.98847e+30,
+    "earth_mass_kg": 5.9722e+24,
+    "a_m": 149597870700.0,
+    "eccentricity": 0
+  },
+  "integration_model": "GM=1; r0=1; v0=1; circular; no physical dissipation",
+  "limitations": [
+    "Budget is planning credits, not measured spend",
+    "Maximum energy error is sampled",
+    "No new LLM judge invoked"
+  ]
+}

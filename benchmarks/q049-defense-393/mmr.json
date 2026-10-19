@@ -1,0 +1,40 @@
+{
+  "selected": [
+    {
+      "id": "record:5f6ee7020bfe0ee1d3259398",
+      "relevance": 0.6,
+      "title": "ias15: a fast, adaptive, high-order integrator for gravitational dynamics, accurate to machine precision over a billion orbits"
+    },
+    {
+      "id": "record:e394ca06ee2216e58422a223",
+      "relevance": 0.6,
+      "title": "Gravitational Radiation from Point Masses in a Keplerian Orbit"
+    },
+    {
+      "id": "record:a5133e6857a624c33968429a",
+      "relevance": 0.4,
+      "title": "whfast: a fast and unbiased implementation of a symplectic Wisdom–Holman integrator for long-term gravitational simulations"
+    }
+  ],
+  "steps": [
+    {
+      "id": "record:5f6ee7020bfe0ee1d3259398",
+      "relevance": 0.6,
+      "redundancy": 0,
+      "score": 0.6
+    },
+    {
+      "id": "record:e394ca06ee2216e58422a223",
+      "relevance": 0.6,
+      "redundancy": 0.05555555555555555,
+      "score": 0.5638888888888889
+    },
+    {
+      "id": "record:a5133e6857a624c33968429a",
+      "relevance": 0.4,
+      "redundancy": 0.13636363636363635,
+      "score": 0.3113636363636364
+    }
+  ],
+  "diversity_weight": 0.65
+}

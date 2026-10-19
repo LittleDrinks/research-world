@@ -16,12 +16,12 @@ function Handles({ handleKind }) {
 export function ResearchNode({ data, selected }) {
   const kind = data.kind;
   const Icon = ICONS[kind] || Compass;
-  return <article className={`research-node kind-${kind} ${selected ? "selected" : ""}`}>
+  return <article className={`research-node kind-${kind} ${data.content?.status==='closed'?'record-closed':''} ${selected ? "selected" : ""}`}>
     <Handles handleKind="target" />
     <header><span className="node-kind-icon" role="img" aria-label={`${KIND_LABELS[kind] || kind}图标`}><Icon size={19} /></span>
       <div><span>{KIND_LABELS[kind] || kind}</span><h3>{recordText(data)}</h3></div></header>
     {data.labels?.length>0&&<div className="node-labels">{data.labels.slice(0,2).map(label=><LabelBadge key={label.id} label={label}/>)}{data.labels.length>2&&<span className="extra-labels">+{data.labels.length-2}</span>}</div>}
-    <footer><div className="node-meta"><span>{String(data.id || "").slice(0, 12)}</span></div></footer>
+    <footer>{data.content?.status==='closed'&&<b>Closed</b>}<div className="node-meta"><span>{String(data.id || "").slice(0, 12)}</span></div></footer>
     <Handles handleKind="source" />
   </article>;
 }
