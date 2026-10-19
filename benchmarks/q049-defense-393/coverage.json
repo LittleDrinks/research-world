@@ -12,17 +12,12 @@
     "physical": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A74de28a89259a9dd555a3a07",
     "numeric": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Afd1edffaf3b2560933757506",
     "old": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A90987c98529dafc91d79339a",
-    "corrected": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A6f2cb710e7b174a146ffdc70",
-    "diagnosis": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Aa6d8be0dab92cf1e4a99aa5e",
     "integrate": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A77162981fb2aee4b2e992290",
     "radiation": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A453d20811beeb1e76f282d97",
     "duration": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A64d971e33ff70d9018f3dc5a",
-    "budget": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A87534f41ece83aac929b7823",
     "resolution_plan": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A158e4ae8587a8dbad65db57b",
     "duration_plan": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Aaa400afc5a3fa6bc4c6e85fc",
-    "ensemble_plan": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A115f91b4ae82e796bc75b937",
-    "next": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A3a45cdb341aee9d12753dd00",
-    "citation_check": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A0bd92520b23640ad4671d197"
+    "ensemble_plan": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A115f91b4ae82e796bc75b937"
   },
   "audit_urls": {
     "v1": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
@@ -38,10 +33,9 @@
     "experiments": [
       "Peters radiation calculation",
       "Euler/Leapfrog at 100/200/400 steps per orbit",
-      "Leapfrog 30/300 orbits",
-      "budget enumeration"
+      "Leapfrog 30/300 orbits"
     ],
-    "review": "historical six-dimensional V1 9/12 and V3 12/12; original artifacts retained",
+    "review": "All 15 current records need-review. Only historical V1/V3 manuscripts have scores; no current graph approval.",
     "changes": [
       "revision",
       "comments",
@@ -52,7 +46,8 @@
     "document": "frontmatter plus Markdown read/export",
     "agent": "shared creation check and Change API; 409 includes candidates",
     "mmr": "actual deterministic candidate-selection API result; title words and Jaccard",
-    "automation": "need-review rule configured, disabled; no new model execution"
+    "automation": "need-review rule configured, disabled; no new model execution",
+    "planning": "Budget enumeration retained as an attachment; k-of-N targets the numerical-error direction."
   },
   "historical_cases": [
     {
@@ -100,5 +95,18 @@
       "passed": 255,
       "skipped": 12
     }
+  },
+  "qa": {
+    "active_records": 15,
+    "need_review": 15,
+    "removed_nodes": [
+      "record:6f2cb710e7b174a146ffdc70",
+      "record:3a45cdb341aee9d12753dd00",
+      "record:a6d8be0dab92cf1e4a99aa5e",
+      "record:0bd92520b23640ad4671d197",
+      "record:87534f41ece83aac929b7823"
+    ],
+    "new_review_runs": 0,
+    "snapshot_artifact": "artifact:f58001c971c5b34d3a5f9be77bc59cb13a5c3d36a368acb98348dcd6e2b857a9"
   }
 }

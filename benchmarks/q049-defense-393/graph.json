@@ -12,7 +12,7 @@
       "type": "question",
       "content": {
         "title": "行星为何没有迅速坠入太阳？",
-        "text": "**196.29 W · 1.069×10²³年 · 六维历史评审 9→12 / 12**\n\n功率不等于寿命，数值漂移也不等于物理耗散。沿下面六步查看证据与决策。\n\n|步骤|直接查看|看什么|\n|---|---|---|\n|1 文献可追溯|[功率公式原始论文](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ae394ca06ee2216e58422a223) · [错配DOI核验](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A0bd92520b23640ad4671d197)|规范链接、作者年份和返回元数据；可解析的DOI也可能被错引|\n|2 证据有联合条件|[两篇文献联合支持 AND](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A2581b3bb2584cc9abd1ba5db&view=focus) · [两条检查路线 OR](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A8ddb5a58bc02b805fc19f757&view=focus)|分别提供功率与演化关系；OR不表示互斥|\n|3 计算识别反常|[算法与步长对照](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A77162981fb2aee4b2e992290) · [耗散时间复算](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A453d20811beeb1e76f282d97)|代码、原始输出、图表与输入；同一无耗散模型仍会出现数值漂移|\n|4 评审推动修订|[V1 六维 9/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37) → [V3 六维 12/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422)|固定原件与评审依据；分数属于历史版本，V3之后仍继续修订|\n|5 人与Agent处置|[关闭的错误判据](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A90987c98529dafc91d79339a) · [修订后的方向](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A74de28a89259a9dd555a3a07)|操作Close/Reopen、评论与版本差异；可从方向页提出相近候选，查看创建前提醒|\n|6 选择下一轮工作|[至少选两项 k-of-N](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A6a144ebbaa12c5914caee29b&view=focus) · [预算枚举](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A87534f41ece83aac929b7823) · [可执行计划](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A158e4ae8587a8dbad65db57b)|数量条件与成本分别检查；ready-for-agent标注已有输入和目标|\n\n![无耗散模型的能量误差](/api/v1/projects/project:40d0b33942d45f879c4335f9/artifacts/artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755)\n\n**阅读顺序也可复算。** 在[文献列表](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map)点击“文献 → MMR选择阅读候选”，可调整主题、数量与多样性权重。附件保留本轮3篇的实际选择及逐步分数。\n\n**节点是一份研究文档。** 顶部可查看frontmatter和下载Markdown；来源规范链接、标签、Open/Closed与正文版本一起保存。need-review的独立复核规则已配置为关闭，现场不会自动启动付费模型；现有评分来自历史独立Session。\n\n**本轮已执行：** Peters公式复算、两种积分器的六组对照、30/300圈时长比较、预算组合枚举、书目元数据查询与MMR排序。完整太阳系N体、潮汐及太阳演化模拟仍待执行。",
+        "text": "研究范围：区分孤立双体的引力波耗散、数值积分误差与真实太阳系的多体动力学。\n\n**当前图谱待六维审核。** 历史V1/V3评分只适用于相应正文；新增节点和本轮计算尚未得到独立六维报告。\n\n|问题|已有证据|待核查|\n|---|---|---|\n|引力波耗散能否解释近期坠日？|[公式复算](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A453d20811beeb1e76f282d97)得到196.29 W、形式并合时间1.069×10²³年|原文公式、参数和适用条件|\n|无耗散模型为何仍有能量漂移？|[算法与步长对照](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A77162981fb2aee4b2e992290)、[30/300圈比较](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A64d971e33ff70d9018f3dc5a)|收敛性、初值敏感性及模型范围|\n|怎样安排进一步复核？|步长、时长和初值集合三项计划；规划配额3|成本输入与至少两项检查的充分性|\n\n[功率与演化公式的联合依据](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A2581b3bb2584cc9abd1ba5db&view=focus) · [两类轨道变化机制](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3Acb4d3c9601fbfc0927e4e829&view=focus) · [数值误差的联合检验](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3Ac1a2b81905ed066c52504e59&view=focus)\n\n[DOI错配核查原始数据](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A6ed56db73c1e1aa059cc341b05ede22a9985dcb46a7564ad8eccb3c437a90326) · [预算枚举与计算结果](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e)\n\n历史正文评审：[V1](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37)、[V3](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422)。历史错误判据与修订过程保留在[关闭节点](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A90987c98529dafc91d79339a)和[耗散方向](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A74de28a89259a9dd555a3a07)中。",
         "attachments": [
           {
             "id": "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
@@ -71,11 +71,22 @@
         "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
         "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
         "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
-        "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755"
+        "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+        "artifact:f58001c971c5b34d3a5f9be77bc59cb13a5c3d36a368acb98348dcd6e2b857a9",
+        "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+        "artifact:6ed56db73c1e1aa059cc341b05ede22a9985dcb46a7564ad8eccb3c437a90326",
+        "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c"
       ],
       "created_at": "2026-10-19T20:34:12.013100+00:00",
-      "revision": 14,
-      "labels": []
+      "revision": 20,
+      "labels": [
+        {
+          "id": "label:cb01efea711f24e81301928b",
+          "name": "need-review",
+          "color": "#8250df",
+          "description": "请求独立六维复核"
+        }
+      ]
     },
     {
       "id": "record:e394ca06ee2216e58422a223",
@@ -101,8 +112,15 @@
         "artifact:2fac6ca8af65372e528fc2a0b04af10de2406659cf66f5dcd2fa78ce75969132"
       ],
       "created_at": "2026-10-19T20:34:12.031389+00:00",
-      "revision": 1,
-      "labels": []
+      "revision": 2,
+      "labels": [
+        {
+          "id": "label:cb01efea711f24e81301928b",
+          "name": "need-review",
+          "color": "#8250df",
+          "description": "请求独立六维复核"
+        }
+      ]
     },
     {
       "id": "record:96a008ab08ee8af753f5544e",
@@ -128,8 +146,15 @@
         "artifact:abb84fc245dca17c16da64e10fd219caa7bef958c356cd86ea236c7ed26be7f8"
       ],
       "created_at": "2026-10-19T20:34:12.050031+00:00",
-      "revision": 1,
-      "labels": []
+      "revision": 2,
+      "labels": [
+        {
+          "id": "label:cb01efea711f24e81301928b",
+          "name": "need-review",
+          "color": "#8250df",
+          "description": "请求独立六维复核"
+        }
+      ]
     },
     {
       "id": "record:03f7c402bc90f5d4b79ac9a1",
@@ -160,8 +185,15 @@
         "artifact:2d88190f727c77b8ba639dae6f9a998d3ae5bbeed5cf09c4c4d0ff231402a6b8"
       ],
       "created_at": "2026-10-19T20:34:12.099252+00:00",
-      "revision": 1,
-      "labels": []
+      "revision": 2,
+      "labels": [
+        {
+          "id": "label:cb01efea711f24e81301928b",
+          "name": "need-review",
+          "color": "#8250df",
+          "description": "请求独立六维复核"
+        }
+      ]
     },
     {
       "id": "record:a5133e6857a624c33968429a",
@@ -187,8 +219,15 @@
         "artifact:852d9bfe6d05e16d892b856ac1ffabf0710ba94444a452005fc4b80d94999b94"
       ],
       "created_at": "2026-10-19T20:34:12.116374+00:00",
-      "revision": 2,
-      "labels": []
+      "revision": 3,
+      "labels": [
+        {
+          "id": "label:cb01efea711f24e81301928b",
+          "name": "need-review",
+          "color": "#8250df",
+          "description": "请求独立六维复核"
+        }
+      ]
     },
     {
       "id": "record:5f6ee7020bfe0ee1d3259398",
@@ -214,8 +253,15 @@
         "artifact:3d183ec68ae8fe0f5cc2a2057258ba00c7d43fbe899d2c0a5c99c1de4a0ca6e4"
       ],
       "created_at": "2026-10-19T20:34:12.132379+00:00",
-      "revision": 2,
-      "labels": []
+      "revision": 3,
+      "labels": [
+        {
+          "id": "label:cb01efea711f24e81301928b",
+          "name": "need-review",
+          "color": "#8250df",
+          "description": "请求独立六维复核"
+        }
+      ]
     },
     {
       "id": "record:74de28a89259a9dd555a3a07",
@@ -228,8 +274,15 @@
       },
       "artifact_ids": [],
       "created_at": "2026-10-19T20:34:12.143329+00:00",
-      "revision": 2,
-      "labels": []
+      "revision": 3,
+      "labels": [
+        {
+          "id": "label:cb01efea711f24e81301928b",
+          "name": "need-review",
+          "color": "#8250df",
+          "description": "请求独立六维复核"
+        }
+      ]
     },
     {
       "id": "record:fd1edffaf3b2560933757506",
@@ -242,8 +295,15 @@
       },
       "artifact_ids": [],
       "created_at": "2026-10-19T20:34:12.153575+00:00",
-      "revision": 1,
-      "labels": []
+      "revision": 2,
+      "labels": [
+        {
+          "id": "label:cb01efea711f24e81301928b",
+          "name": "need-review",
+          "color": "#8250df",
+          "description": "请求独立六维复核"
+        }
+      ]
     },
     {
       "id": "record:90987c98529dafc91d79339a",
@@ -258,43 +318,21 @@
       },
       "artifact_ids": [],
       "created_at": "2026-10-19T20:34:12.165998+00:00",
-      "revision": 3,
+      "revision": 4,
       "labels": [
         {
           "id": "label:0ebafc83f68c8be9ab884b4b",
           "name": "warning",
           "color": "#d97706",
           "description": "存在需核查的错误或约束"
+        },
+        {
+          "id": "label:cb01efea711f24e81301928b",
+          "name": "need-review",
+          "color": "#8250df",
+          "description": "请求独立六维复核"
         }
       ]
-    },
-    {
-      "id": "record:6f2cb710e7b174a146ffdc70",
-      "project_id": "project:40d0b33942d45f879c4335f9",
-      "type": "direction",
-      "content": {
-        "title": "以耗散时间尺度限定轨道结论",
-        "text": "功率大小不能单独判断轨道寿命。先计算时间尺度，并固定孤立圆轨道双体近似；太阳演化和多体混沌需要分别建模。",
-        "attachments": []
-      },
-      "artifact_ids": [],
-      "created_at": "2026-10-19T20:34:12.175582+00:00",
-      "revision": 1,
-      "labels": []
-    },
-    {
-      "id": "record:a6d8be0dab92cf1e4a99aa5e",
-      "project_id": "project:40d0b33942d45f879c4335f9",
-      "type": "direction",
-      "content": {
-        "title": "先排查数值误差，再加入物理耗散",
-        "text": "同一能量变化可能来自数值积分，也可能来自物理耗散。两条检查路线均可启动，且可同时存在。",
-        "attachments": []
-      },
-      "artifact_ids": [],
-      "created_at": "2026-10-19T20:34:12.185362+00:00",
-      "revision": 1,
-      "labels": []
     },
     {
       "id": "record:77162981fb2aee4b2e992290",
@@ -338,8 +376,15 @@
         "artifact:214d14ca814750c14b8f690078e97093352e3bcf343b7b5e52a67146311e9e2a"
       ],
       "created_at": "2026-10-19T20:34:12.195253+00:00",
-      "revision": 3,
-      "labels": []
+      "revision": 4,
+      "labels": [
+        {
+          "id": "label:cb01efea711f24e81301928b",
+          "name": "need-review",
+          "color": "#8250df",
+          "description": "请求独立六维复核"
+        }
+      ]
     },
     {
       "id": "record:453d20811beeb1e76f282d97",
@@ -373,8 +418,15 @@
         "artifact:214d14ca814750c14b8f690078e97093352e3bcf343b7b5e52a67146311e9e2a"
       ],
       "created_at": "2026-10-19T20:34:12.207398+00:00",
-      "revision": 3,
-      "labels": []
+      "revision": 4,
+      "labels": [
+        {
+          "id": "label:cb01efea711f24e81301928b",
+          "name": "need-review",
+          "color": "#8250df",
+          "description": "请求独立六维复核"
+        }
+      ]
     },
     {
       "id": "record:64d971e33ff70d9018f3dc5a",
@@ -409,39 +461,15 @@
         "artifact:214d14ca814750c14b8f690078e97093352e3bcf343b7b5e52a67146311e9e2a"
       ],
       "created_at": "2026-10-19T20:34:12.219542+00:00",
-      "revision": 3,
-      "labels": []
-    },
-    {
-      "id": "record:87534f41ece83aac929b7823",
-      "project_id": "project:40d0b33942d45f879c4335f9",
-      "type": "experiment",
-      "content": {
-        "title": "三项候选计算的配额可行性枚举",
-        "text": "**已执行：枚举所有两项组合。**\n\n本轮规划配额为3：分辨率复核1、积分时长复核2、初值扰动集合3。至少选择两项时，唯一满足预算的组合是前两项，总成本3。配额是规划输入。",
-        "attachments": [
-          {
-            "id": "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
-            "name": "轨道与耗散计算.py"
-          },
-          {
-            "id": "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
-            "name": "计算结果.json"
-          },
-          {
-            "id": "artifact:214d14ca814750c14b8f690078e97093352e3bcf343b7b5e52a67146311e9e2a",
-            "name": "执行环境与文件哈希.json"
-          }
-        ]
-      },
-      "artifact_ids": [
-        "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
-        "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
-        "artifact:214d14ca814750c14b8f690078e97093352e3bcf343b7b5e52a67146311e9e2a"
-      ],
-      "created_at": "2026-10-19T20:34:12.235383+00:00",
-      "revision": 3,
-      "labels": []
+      "revision": 4,
+      "labels": [
+        {
+          "id": "label:cb01efea711f24e81301928b",
+          "name": "need-review",
+          "color": "#8250df",
+          "description": "请求独立六维复核"
+        }
+      ]
     },
     {
       "id": "record:158e4ae8587a8dbad65db57b",
@@ -454,13 +482,19 @@
       },
       "artifact_ids": [],
       "created_at": "2026-10-19T20:34:12.247076+00:00",
-      "revision": 2,
+      "revision": 3,
       "labels": [
         {
           "id": "label:f7d1ae9045d542727a142516",
           "name": "ready-for-agent",
           "color": "#16a34a",
           "description": "输入、产物与停止条件明确，可执行"
+        },
+        {
+          "id": "label:cb01efea711f24e81301928b",
+          "name": "need-review",
+          "color": "#8250df",
+          "description": "请求独立六维复核"
         }
       ]
     },
@@ -475,13 +509,19 @@
       },
       "artifact_ids": [],
       "created_at": "2026-10-19T20:34:12.257107+00:00",
-      "revision": 2,
+      "revision": 3,
       "labels": [
         {
           "id": "label:f7d1ae9045d542727a142516",
           "name": "ready-for-agent",
           "color": "#16a34a",
           "description": "输入、产物与停止条件明确，可执行"
+        },
+        {
+          "id": "label:cb01efea711f24e81301928b",
+          "name": "need-review",
+          "color": "#8250df",
+          "description": "请求独立六维复核"
         }
       ]
     },
@@ -496,50 +536,21 @@
       },
       "artifact_ids": [],
       "created_at": "2026-10-19T20:34:12.266873+00:00",
-      "revision": 2,
+      "revision": 3,
       "labels": [
         {
           "id": "label:5152b47e8f43d716f3ed07d6",
           "name": "need-info",
           "color": "#0284c7",
           "description": "缺少继续研究所需输入"
+        },
+        {
+          "id": "label:cb01efea711f24e81301928b",
+          "name": "need-review",
+          "color": "#8250df",
+          "description": "请求独立六维复核"
         }
       ]
-    },
-    {
-      "id": "record:3a45cdb341aee9d12753dd00",
-      "project_id": "project:40d0b33942d45f879c4335f9",
-      "type": "direction",
-      "content": {
-        "title": "在本轮配额内完成至少两项复核",
-        "text": "同时满足至少两项检查和总配额不超过3；预算可行性由枚举结果提供，k-of-N仅表达数量要求。",
-        "attachments": []
-      },
-      "artifact_ids": [],
-      "created_at": "2026-10-19T20:34:12.277505+00:00",
-      "revision": 1,
-      "labels": []
-    },
-    {
-      "id": "record:0bd92520b23640ad4671d197",
-      "project_id": "project:40d0b33942d45f879c4335f9",
-      "type": "experiment",
-      "content": {
-        "title": "DOI存在但题名与作者错配",
-        "text": "**已核验：原引用不能通过书目信息匹配。**\n\nV1把10.1016/j.icarus.2014.04.029归给Deienno与Nesvorný的太阳系长期演化论文。Crossref返回的真实题名为 *The evolution of a Pluto-like system during the migration of the ice giants*。\n\n[查看出版物](https://doi.org/10.1016/j.icarus.2014.04.029)。标识符可解析，不代表引用归属正确。",
-        "attachments": [
-          {
-            "id": "artifact:6ed56db73c1e1aa059cc341b05ede22a9985dcb46a7564ad8eccb3c437a90326",
-            "name": "DOI返回元数据.json"
-          }
-        ]
-      },
-      "artifact_ids": [
-        "artifact:6ed56db73c1e1aa059cc341b05ede22a9985dcb46a7564ad8eccb3c437a90326"
-      ],
-      "created_at": "2026-10-19T20:34:12.295416+00:00",
-      "revision": 1,
-      "labels": []
     }
   ],
   "relations": [
@@ -560,44 +571,12 @@
       "created_at": "2026-10-19T20:34:12.317266+00:00"
     },
     {
-      "id": "relation:d2e5b6e5cc2364c924a76580",
-      "project_id": "project:40d0b33942d45f879c4335f9",
-      "source_id": "record:a6d8be0dab92cf1e4a99aa5e",
-      "target_id": "record:8e8eaeb59def8ed8bbc91552",
-      "type": "depends_on",
-      "created_at": "2026-10-19T20:34:12.326445+00:00"
-    },
-    {
-      "id": "relation:3cb9aa50eacbae81f1221d10",
-      "project_id": "project:40d0b33942d45f879c4335f9",
-      "source_id": "record:6f2cb710e7b174a146ffdc70",
-      "target_id": "record:8e8eaeb59def8ed8bbc91552",
-      "type": "depends_on",
-      "created_at": "2026-10-19T20:34:12.336125+00:00"
-    },
-    {
-      "id": "relation:dd81da0eafcd417cfde2d95b",
-      "project_id": "project:40d0b33942d45f879c4335f9",
-      "source_id": "record:3a45cdb341aee9d12753dd00",
-      "target_id": "record:8e8eaeb59def8ed8bbc91552",
-      "type": "depends_on",
-      "created_at": "2026-10-19T20:34:12.345537+00:00"
-    },
-    {
       "id": "relation:724f8976588151ada96aa2e6",
       "project_id": "project:40d0b33942d45f879c4335f9",
       "source_id": "record:77162981fb2aee4b2e992290",
       "target_id": "record:fd1edffaf3b2560933757506",
       "type": "supports",
       "created_at": "2026-10-19T20:34:12.356321+00:00"
-    },
-    {
-      "id": "relation:a414487fba4d832f86681cd9",
-      "project_id": "project:40d0b33942d45f879c4335f9",
-      "source_id": "record:77162981fb2aee4b2e992290",
-      "target_id": "record:a6d8be0dab92cf1e4a99aa5e",
-      "type": "supports",
-      "created_at": "2026-10-19T20:34:12.366663+00:00"
     },
     {
       "id": "relation:076122394f68fbe0502f9b63",
@@ -608,14 +587,6 @@
       "created_at": "2026-10-19T20:34:12.376298+00:00"
     },
     {
-      "id": "relation:cffb04b2d3d4c0c4fc5d6b0d",
-      "project_id": "project:40d0b33942d45f879c4335f9",
-      "source_id": "record:453d20811beeb1e76f282d97",
-      "target_id": "record:6f2cb710e7b174a146ffdc70",
-      "type": "supports",
-      "created_at": "2026-10-19T20:34:12.385145+00:00"
-    },
-    {
       "id": "relation:12585cdb576a71f4bb8987de",
       "project_id": "project:40d0b33942d45f879c4335f9",
       "source_id": "record:64d971e33ff70d9018f3dc5a",
@@ -624,28 +595,12 @@
       "created_at": "2026-10-19T20:34:12.396702+00:00"
     },
     {
-      "id": "relation:f05744051f2597285ef88d83",
+      "id": "relation:6f8ed50f01d88c655c4f782b",
       "project_id": "project:40d0b33942d45f879c4335f9",
-      "source_id": "record:87534f41ece83aac929b7823",
-      "target_id": "record:3a45cdb341aee9d12753dd00",
-      "type": "supports",
-      "created_at": "2026-10-19T20:34:12.407521+00:00"
-    },
-    {
-      "id": "relation:6992185f3a1c5f80564a2572",
-      "project_id": "project:40d0b33942d45f879c4335f9",
-      "source_id": "record:03f7c402bc90f5d4b79ac9a1",
-      "target_id": "record:a6d8be0dab92cf1e4a99aa5e",
-      "type": "supports",
-      "created_at": "2026-10-19T20:34:12.417600+00:00"
-    },
-    {
-      "id": "relation:1523bc43f35bfe4efe0600c1",
-      "project_id": "project:40d0b33942d45f879c4335f9",
-      "source_id": "record:6f2cb710e7b174a146ffdc70",
+      "source_id": "record:453d20811beeb1e76f282d97",
       "target_id": "record:74de28a89259a9dd555a3a07",
       "type": "supports",
-      "created_at": "2026-10-19T20:34:12.426847+00:00"
+      "created_at": "2026-10-19T23:08:32.621853+00:00"
     }
   ],
   "joint_conditions": [
@@ -678,7 +633,7 @@
       "unavailable_ids": []
     },
     {
-      "id": "joint:8ddb5a58bc02b805fc19f757",
+      "id": "joint:cb4d3c9601fbfc0927e4e829",
       "project_id": "project:40d0b33942d45f879c4335f9",
       "evidence": [
         {
@@ -697,16 +652,16 @@
           "role": "物理耗散检查"
         }
       ],
-      "rationale": "OR不是互斥，也不自动证明任一机制。",
+      "rationale": "OR表示任一路线均值得核查，不表示互斥或已成立。",
       "rule": "OR",
-      "statement": "任一路线发现异常均启动检查；两者可以同时成立。",
-      "target_id": "record:a6d8be0dab92cf1e4a99aa5e",
+      "statement": "数值误差或物理耗散均可能引起计算中的轨道变化；需要分别检查。",
+      "target_id": "record:8e8eaeb59def8ed8bbc91552",
       "title": "能量变化可触发两条检查路线",
-      "created_at": "2026-10-19T20:49:56.454772+00:00",
+      "created_at": "2026-10-19T23:08:32.519942+00:00",
       "unavailable_ids": []
     },
     {
-      "id": "joint:6a144ebbaa12c5914caee29b",
+      "id": "joint:c1a2b81905ed066c52504e59",
       "project_id": "project:40d0b33942d45f879c4335f9",
       "evidence": [
         {
@@ -729,12 +684,12 @@
           "role": "配额3"
         }
       ],
-      "rationale": "本轮配额3，唯一可行组合是分辨率与积分时长复核。",
+      "rationale": "规划配额3；步长复核1、时长复核2、初值集合3。预算可行组合是前两项，成本枚举保存在计算结果附件。",
       "rule": "k-of-N",
-      "statement": "至少选择两项检查，并由预算枚举另行验证总成本。",
-      "target_id": "record:3a45cdb341aee9d12753dd00",
+      "statement": "至少用步长、积分时长、初值扰动三项控制中的两项检验数值误差解释。",
+      "target_id": "record:fd1edffaf3b2560933757506",
       "title": "至少完成三项复核中的两项",
-      "created_at": "2026-10-19T20:49:56.472827+00:00",
+      "created_at": "2026-10-19T23:08:32.538648+00:00",
       "unavailable_ids": []
     }
   ],
@@ -2396,6 +2351,1811 @@
         ],
         "labels": [],
         "revision": 2
+      }
+    },
+    {
+      "id": "change:d978836e2eb50f0a800eb4a9",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:8e8eaeb59def8ed8bbc91552",
+      "revision": 15,
+      "kind": "attachment",
+      "author": "system",
+      "reason": "保存并关联不可变研究产物",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.454942+00:00",
+      "before": {
+        "content": {
+          "title": "行星为何没有迅速坠入太阳？",
+          "text": "**196.29 W · 1.069×10²³年 · 六维历史评审 9→12 / 12**\n\n功率不等于寿命，数值漂移也不等于物理耗散。沿下面六步查看证据与决策。\n\n|步骤|直接查看|看什么|\n|---|---|---|\n|1 文献可追溯|[功率公式原始论文](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ae394ca06ee2216e58422a223) · [错配DOI核验](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A0bd92520b23640ad4671d197)|规范链接、作者年份和返回元数据；可解析的DOI也可能被错引|\n|2 证据有联合条件|[两篇文献联合支持 AND](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A2581b3bb2584cc9abd1ba5db&view=focus) · [两条检查路线 OR](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A8ddb5a58bc02b805fc19f757&view=focus)|分别提供功率与演化关系；OR不表示互斥|\n|3 计算识别反常|[算法与步长对照](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A77162981fb2aee4b2e992290) · [耗散时间复算](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A453d20811beeb1e76f282d97)|代码、原始输出、图表与输入；同一无耗散模型仍会出现数值漂移|\n|4 评审推动修订|[V1 六维 9/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37) → [V3 六维 12/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422)|固定原件与评审依据；分数属于历史版本，V3之后仍继续修订|\n|5 人与Agent处置|[关闭的错误判据](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A90987c98529dafc91d79339a) · [修订后的方向](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A74de28a89259a9dd555a3a07)|操作Close/Reopen、评论与版本差异；可从方向页提出相近候选，查看创建前提醒|\n|6 选择下一轮工作|[至少选两项 k-of-N](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A6a144ebbaa12c5914caee29b&view=focus) · [预算枚举](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A87534f41ece83aac929b7823) · [可执行计划](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A158e4ae8587a8dbad65db57b)|数量条件与成本分别检查；ready-for-agent标注已有输入和目标|\n\n![无耗散模型的能量误差](/api/v1/projects/project:40d0b33942d45f879c4335f9/artifacts/artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755)\n\n**阅读顺序也可复算。** 在[文献列表](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map)点击“文献 → MMR选择阅读候选”，可调整主题、数量与多样性权重。附件保留本轮3篇的实际选择及逐步分数。\n\n**节点是一份研究文档。** 顶部可查看frontmatter和下载Markdown；来源规范链接、标签、Open/Closed与正文版本一起保存。need-review的独立复核规则已配置为关闭，现场不会自动启动付费模型；现有评分来自历史独立Session。\n\n**本轮已执行：** Peters公式复算、两种积分器的六组对照、30/300圈时长比较、预算组合枚举、书目元数据查询与MMR排序。完整太阳系N体、潮汐及太阳演化模拟仍待执行。",
+          "attachments": [
+            {
+              "id": "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+              "name": "研究正文-v1.md"
+            },
+            {
+              "id": "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+              "name": "独立评审-v1.md"
+            },
+            {
+              "id": "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+              "name": "六维评价-V1.json"
+            },
+            {
+              "id": "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+              "name": "研究正文-v3.md"
+            },
+            {
+              "id": "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+              "name": "独立评审-v3.md"
+            },
+            {
+              "id": "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+              "name": "六维评价-V3.json"
+            },
+            {
+              "id": "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+              "name": "最终研究正文-V8.md"
+            },
+            {
+              "id": "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+              "name": "最终独立评审-V8.md"
+            },
+            {
+              "id": "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+              "name": "历史运行账本.md"
+            },
+            {
+              "id": "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+              "name": "阅读顺序与MMR计算.json"
+            },
+            {
+              "id": "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+              "name": "能量漂移对照.png"
+            }
+          ]
+        },
+        "artifact_ids": [
+          "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+          "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+          "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+          "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+          "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+          "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+          "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+          "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+          "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+          "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+          "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755"
+        ],
+        "labels": [],
+        "revision": 14
+      },
+      "after": {
+        "content": {
+          "title": "行星为何没有迅速坠入太阳？",
+          "text": "**196.29 W · 1.069×10²³年 · 六维历史评审 9→12 / 12**\n\n功率不等于寿命，数值漂移也不等于物理耗散。沿下面六步查看证据与决策。\n\n|步骤|直接查看|看什么|\n|---|---|---|\n|1 文献可追溯|[功率公式原始论文](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ae394ca06ee2216e58422a223) · [错配DOI核验](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A0bd92520b23640ad4671d197)|规范链接、作者年份和返回元数据；可解析的DOI也可能被错引|\n|2 证据有联合条件|[两篇文献联合支持 AND](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A2581b3bb2584cc9abd1ba5db&view=focus) · [两条检查路线 OR](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A8ddb5a58bc02b805fc19f757&view=focus)|分别提供功率与演化关系；OR不表示互斥|\n|3 计算识别反常|[算法与步长对照](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A77162981fb2aee4b2e992290) · [耗散时间复算](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A453d20811beeb1e76f282d97)|代码、原始输出、图表与输入；同一无耗散模型仍会出现数值漂移|\n|4 评审推动修订|[V1 六维 9/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37) → [V3 六维 12/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422)|固定原件与评审依据；分数属于历史版本，V3之后仍继续修订|\n|5 人与Agent处置|[关闭的错误判据](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A90987c98529dafc91d79339a) · [修订后的方向](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A74de28a89259a9dd555a3a07)|操作Close/Reopen、评论与版本差异；可从方向页提出相近候选，查看创建前提醒|\n|6 选择下一轮工作|[至少选两项 k-of-N](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A6a144ebbaa12c5914caee29b&view=focus) · [预算枚举](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A87534f41ece83aac929b7823) · [可执行计划](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A158e4ae8587a8dbad65db57b)|数量条件与成本分别检查；ready-for-agent标注已有输入和目标|\n\n![无耗散模型的能量误差](/api/v1/projects/project:40d0b33942d45f879c4335f9/artifacts/artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755)\n\n**阅读顺序也可复算。** 在[文献列表](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map)点击“文献 → MMR选择阅读候选”，可调整主题、数量与多样性权重。附件保留本轮3篇的实际选择及逐步分数。\n\n**节点是一份研究文档。** 顶部可查看frontmatter和下载Markdown；来源规范链接、标签、Open/Closed与正文版本一起保存。need-review的独立复核规则已配置为关闭，现场不会自动启动付费模型；现有评分来自历史独立Session。\n\n**本轮已执行：** Peters公式复算、两种积分器的六组对照、30/300圈时长比较、预算组合枚举、书目元数据查询与MMR排序。完整太阳系N体、潮汐及太阳演化模拟仍待执行。",
+          "attachments": [
+            {
+              "id": "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+              "name": "研究正文-v1.md"
+            },
+            {
+              "id": "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+              "name": "独立评审-v1.md"
+            },
+            {
+              "id": "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+              "name": "六维评价-V1.json"
+            },
+            {
+              "id": "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+              "name": "研究正文-v3.md"
+            },
+            {
+              "id": "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+              "name": "独立评审-v3.md"
+            },
+            {
+              "id": "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+              "name": "六维评价-V3.json"
+            },
+            {
+              "id": "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+              "name": "最终研究正文-V8.md"
+            },
+            {
+              "id": "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+              "name": "最终独立评审-V8.md"
+            },
+            {
+              "id": "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+              "name": "历史运行账本.md"
+            },
+            {
+              "id": "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+              "name": "阅读顺序与MMR计算.json"
+            },
+            {
+              "id": "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+              "name": "能量漂移对照.png"
+            }
+          ]
+        },
+        "artifact_ids": [
+          "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+          "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+          "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+          "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+          "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+          "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+          "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+          "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+          "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+          "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+          "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+          "artifact:f58001c971c5b34d3a5f9be77bc59cb13a5c3d36a368acb98348dcd6e2b857a9"
+        ],
+        "labels": [],
+        "revision": 15
+      }
+    },
+    {
+      "id": "change:689b07c2638a447f1d4c6833",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:8e8eaeb59def8ed8bbc91552",
+      "revision": 16,
+      "kind": "attachment",
+      "author": "system",
+      "reason": "保存并关联不可变研究产物",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.473132+00:00",
+      "before": {
+        "content": {
+          "title": "行星为何没有迅速坠入太阳？",
+          "text": "**196.29 W · 1.069×10²³年 · 六维历史评审 9→12 / 12**\n\n功率不等于寿命，数值漂移也不等于物理耗散。沿下面六步查看证据与决策。\n\n|步骤|直接查看|看什么|\n|---|---|---|\n|1 文献可追溯|[功率公式原始论文](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ae394ca06ee2216e58422a223) · [错配DOI核验](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A0bd92520b23640ad4671d197)|规范链接、作者年份和返回元数据；可解析的DOI也可能被错引|\n|2 证据有联合条件|[两篇文献联合支持 AND](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A2581b3bb2584cc9abd1ba5db&view=focus) · [两条检查路线 OR](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A8ddb5a58bc02b805fc19f757&view=focus)|分别提供功率与演化关系；OR不表示互斥|\n|3 计算识别反常|[算法与步长对照](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A77162981fb2aee4b2e992290) · [耗散时间复算](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A453d20811beeb1e76f282d97)|代码、原始输出、图表与输入；同一无耗散模型仍会出现数值漂移|\n|4 评审推动修订|[V1 六维 9/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37) → [V3 六维 12/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422)|固定原件与评审依据；分数属于历史版本，V3之后仍继续修订|\n|5 人与Agent处置|[关闭的错误判据](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A90987c98529dafc91d79339a) · [修订后的方向](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A74de28a89259a9dd555a3a07)|操作Close/Reopen、评论与版本差异；可从方向页提出相近候选，查看创建前提醒|\n|6 选择下一轮工作|[至少选两项 k-of-N](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A6a144ebbaa12c5914caee29b&view=focus) · [预算枚举](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A87534f41ece83aac929b7823) · [可执行计划](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A158e4ae8587a8dbad65db57b)|数量条件与成本分别检查；ready-for-agent标注已有输入和目标|\n\n![无耗散模型的能量误差](/api/v1/projects/project:40d0b33942d45f879c4335f9/artifacts/artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755)\n\n**阅读顺序也可复算。** 在[文献列表](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map)点击“文献 → MMR选择阅读候选”，可调整主题、数量与多样性权重。附件保留本轮3篇的实际选择及逐步分数。\n\n**节点是一份研究文档。** 顶部可查看frontmatter和下载Markdown；来源规范链接、标签、Open/Closed与正文版本一起保存。need-review的独立复核规则已配置为关闭，现场不会自动启动付费模型；现有评分来自历史独立Session。\n\n**本轮已执行：** Peters公式复算、两种积分器的六组对照、30/300圈时长比较、预算组合枚举、书目元数据查询与MMR排序。完整太阳系N体、潮汐及太阳演化模拟仍待执行。",
+          "attachments": [
+            {
+              "id": "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+              "name": "研究正文-v1.md"
+            },
+            {
+              "id": "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+              "name": "独立评审-v1.md"
+            },
+            {
+              "id": "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+              "name": "六维评价-V1.json"
+            },
+            {
+              "id": "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+              "name": "研究正文-v3.md"
+            },
+            {
+              "id": "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+              "name": "独立评审-v3.md"
+            },
+            {
+              "id": "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+              "name": "六维评价-V3.json"
+            },
+            {
+              "id": "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+              "name": "最终研究正文-V8.md"
+            },
+            {
+              "id": "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+              "name": "最终独立评审-V8.md"
+            },
+            {
+              "id": "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+              "name": "历史运行账本.md"
+            },
+            {
+              "id": "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+              "name": "阅读顺序与MMR计算.json"
+            },
+            {
+              "id": "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+              "name": "能量漂移对照.png"
+            }
+          ]
+        },
+        "artifact_ids": [
+          "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+          "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+          "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+          "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+          "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+          "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+          "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+          "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+          "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+          "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+          "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+          "artifact:f58001c971c5b34d3a5f9be77bc59cb13a5c3d36a368acb98348dcd6e2b857a9"
+        ],
+        "labels": [],
+        "revision": 15
+      },
+      "after": {
+        "content": {
+          "title": "行星为何没有迅速坠入太阳？",
+          "text": "**196.29 W · 1.069×10²³年 · 六维历史评审 9→12 / 12**\n\n功率不等于寿命，数值漂移也不等于物理耗散。沿下面六步查看证据与决策。\n\n|步骤|直接查看|看什么|\n|---|---|---|\n|1 文献可追溯|[功率公式原始论文](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ae394ca06ee2216e58422a223) · [错配DOI核验](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A0bd92520b23640ad4671d197)|规范链接、作者年份和返回元数据；可解析的DOI也可能被错引|\n|2 证据有联合条件|[两篇文献联合支持 AND](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A2581b3bb2584cc9abd1ba5db&view=focus) · [两条检查路线 OR](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A8ddb5a58bc02b805fc19f757&view=focus)|分别提供功率与演化关系；OR不表示互斥|\n|3 计算识别反常|[算法与步长对照](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A77162981fb2aee4b2e992290) · [耗散时间复算](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A453d20811beeb1e76f282d97)|代码、原始输出、图表与输入；同一无耗散模型仍会出现数值漂移|\n|4 评审推动修订|[V1 六维 9/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37) → [V3 六维 12/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422)|固定原件与评审依据；分数属于历史版本，V3之后仍继续修订|\n|5 人与Agent处置|[关闭的错误判据](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A90987c98529dafc91d79339a) · [修订后的方向](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A74de28a89259a9dd555a3a07)|操作Close/Reopen、评论与版本差异；可从方向页提出相近候选，查看创建前提醒|\n|6 选择下一轮工作|[至少选两项 k-of-N](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A6a144ebbaa12c5914caee29b&view=focus) · [预算枚举](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A87534f41ece83aac929b7823) · [可执行计划](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A158e4ae8587a8dbad65db57b)|数量条件与成本分别检查；ready-for-agent标注已有输入和目标|\n\n![无耗散模型的能量误差](/api/v1/projects/project:40d0b33942d45f879c4335f9/artifacts/artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755)\n\n**阅读顺序也可复算。** 在[文献列表](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map)点击“文献 → MMR选择阅读候选”，可调整主题、数量与多样性权重。附件保留本轮3篇的实际选择及逐步分数。\n\n**节点是一份研究文档。** 顶部可查看frontmatter和下载Markdown；来源规范链接、标签、Open/Closed与正文版本一起保存。need-review的独立复核规则已配置为关闭，现场不会自动启动付费模型；现有评分来自历史独立Session。\n\n**本轮已执行：** Peters公式复算、两种积分器的六组对照、30/300圈时长比较、预算组合枚举、书目元数据查询与MMR排序。完整太阳系N体、潮汐及太阳演化模拟仍待执行。",
+          "attachments": [
+            {
+              "id": "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+              "name": "研究正文-v1.md"
+            },
+            {
+              "id": "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+              "name": "独立评审-v1.md"
+            },
+            {
+              "id": "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+              "name": "六维评价-V1.json"
+            },
+            {
+              "id": "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+              "name": "研究正文-v3.md"
+            },
+            {
+              "id": "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+              "name": "独立评审-v3.md"
+            },
+            {
+              "id": "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+              "name": "六维评价-V3.json"
+            },
+            {
+              "id": "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+              "name": "最终研究正文-V8.md"
+            },
+            {
+              "id": "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+              "name": "最终独立评审-V8.md"
+            },
+            {
+              "id": "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+              "name": "历史运行账本.md"
+            },
+            {
+              "id": "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+              "name": "阅读顺序与MMR计算.json"
+            },
+            {
+              "id": "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+              "name": "能量漂移对照.png"
+            }
+          ]
+        },
+        "artifact_ids": [
+          "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+          "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+          "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+          "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+          "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+          "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+          "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+          "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+          "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+          "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+          "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+          "artifact:f58001c971c5b34d3a5f9be77bc59cb13a5c3d36a368acb98348dcd6e2b857a9",
+          "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e"
+        ],
+        "labels": [],
+        "revision": 16
+      }
+    },
+    {
+      "id": "change:51fad2b8fd0e133f239cd0a3",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:8e8eaeb59def8ed8bbc91552",
+      "revision": 17,
+      "kind": "attachment",
+      "author": "system",
+      "reason": "保存并关联不可变研究产物",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.488644+00:00",
+      "before": {
+        "content": {
+          "title": "行星为何没有迅速坠入太阳？",
+          "text": "**196.29 W · 1.069×10²³年 · 六维历史评审 9→12 / 12**\n\n功率不等于寿命，数值漂移也不等于物理耗散。沿下面六步查看证据与决策。\n\n|步骤|直接查看|看什么|\n|---|---|---|\n|1 文献可追溯|[功率公式原始论文](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ae394ca06ee2216e58422a223) · [错配DOI核验](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A0bd92520b23640ad4671d197)|规范链接、作者年份和返回元数据；可解析的DOI也可能被错引|\n|2 证据有联合条件|[两篇文献联合支持 AND](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A2581b3bb2584cc9abd1ba5db&view=focus) · [两条检查路线 OR](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A8ddb5a58bc02b805fc19f757&view=focus)|分别提供功率与演化关系；OR不表示互斥|\n|3 计算识别反常|[算法与步长对照](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A77162981fb2aee4b2e992290) · [耗散时间复算](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A453d20811beeb1e76f282d97)|代码、原始输出、图表与输入；同一无耗散模型仍会出现数值漂移|\n|4 评审推动修订|[V1 六维 9/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37) → [V3 六维 12/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422)|固定原件与评审依据；分数属于历史版本，V3之后仍继续修订|\n|5 人与Agent处置|[关闭的错误判据](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A90987c98529dafc91d79339a) · [修订后的方向](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A74de28a89259a9dd555a3a07)|操作Close/Reopen、评论与版本差异；可从方向页提出相近候选，查看创建前提醒|\n|6 选择下一轮工作|[至少选两项 k-of-N](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A6a144ebbaa12c5914caee29b&view=focus) · [预算枚举](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A87534f41ece83aac929b7823) · [可执行计划](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A158e4ae8587a8dbad65db57b)|数量条件与成本分别检查；ready-for-agent标注已有输入和目标|\n\n![无耗散模型的能量误差](/api/v1/projects/project:40d0b33942d45f879c4335f9/artifacts/artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755)\n\n**阅读顺序也可复算。** 在[文献列表](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map)点击“文献 → MMR选择阅读候选”，可调整主题、数量与多样性权重。附件保留本轮3篇的实际选择及逐步分数。\n\n**节点是一份研究文档。** 顶部可查看frontmatter和下载Markdown；来源规范链接、标签、Open/Closed与正文版本一起保存。need-review的独立复核规则已配置为关闭，现场不会自动启动付费模型；现有评分来自历史独立Session。\n\n**本轮已执行：** Peters公式复算、两种积分器的六组对照、30/300圈时长比较、预算组合枚举、书目元数据查询与MMR排序。完整太阳系N体、潮汐及太阳演化模拟仍待执行。",
+          "attachments": [
+            {
+              "id": "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+              "name": "研究正文-v1.md"
+            },
+            {
+              "id": "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+              "name": "独立评审-v1.md"
+            },
+            {
+              "id": "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+              "name": "六维评价-V1.json"
+            },
+            {
+              "id": "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+              "name": "研究正文-v3.md"
+            },
+            {
+              "id": "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+              "name": "独立评审-v3.md"
+            },
+            {
+              "id": "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+              "name": "六维评价-V3.json"
+            },
+            {
+              "id": "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+              "name": "最终研究正文-V8.md"
+            },
+            {
+              "id": "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+              "name": "最终独立评审-V8.md"
+            },
+            {
+              "id": "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+              "name": "历史运行账本.md"
+            },
+            {
+              "id": "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+              "name": "阅读顺序与MMR计算.json"
+            },
+            {
+              "id": "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+              "name": "能量漂移对照.png"
+            }
+          ]
+        },
+        "artifact_ids": [
+          "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+          "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+          "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+          "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+          "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+          "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+          "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+          "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+          "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+          "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+          "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+          "artifact:f58001c971c5b34d3a5f9be77bc59cb13a5c3d36a368acb98348dcd6e2b857a9",
+          "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e"
+        ],
+        "labels": [],
+        "revision": 16
+      },
+      "after": {
+        "content": {
+          "title": "行星为何没有迅速坠入太阳？",
+          "text": "**196.29 W · 1.069×10²³年 · 六维历史评审 9→12 / 12**\n\n功率不等于寿命，数值漂移也不等于物理耗散。沿下面六步查看证据与决策。\n\n|步骤|直接查看|看什么|\n|---|---|---|\n|1 文献可追溯|[功率公式原始论文](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ae394ca06ee2216e58422a223) · [错配DOI核验](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A0bd92520b23640ad4671d197)|规范链接、作者年份和返回元数据；可解析的DOI也可能被错引|\n|2 证据有联合条件|[两篇文献联合支持 AND](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A2581b3bb2584cc9abd1ba5db&view=focus) · [两条检查路线 OR](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A8ddb5a58bc02b805fc19f757&view=focus)|分别提供功率与演化关系；OR不表示互斥|\n|3 计算识别反常|[算法与步长对照](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A77162981fb2aee4b2e992290) · [耗散时间复算](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A453d20811beeb1e76f282d97)|代码、原始输出、图表与输入；同一无耗散模型仍会出现数值漂移|\n|4 评审推动修订|[V1 六维 9/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37) → [V3 六维 12/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422)|固定原件与评审依据；分数属于历史版本，V3之后仍继续修订|\n|5 人与Agent处置|[关闭的错误判据](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A90987c98529dafc91d79339a) · [修订后的方向](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A74de28a89259a9dd555a3a07)|操作Close/Reopen、评论与版本差异；可从方向页提出相近候选，查看创建前提醒|\n|6 选择下一轮工作|[至少选两项 k-of-N](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A6a144ebbaa12c5914caee29b&view=focus) · [预算枚举](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A87534f41ece83aac929b7823) · [可执行计划](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A158e4ae8587a8dbad65db57b)|数量条件与成本分别检查；ready-for-agent标注已有输入和目标|\n\n![无耗散模型的能量误差](/api/v1/projects/project:40d0b33942d45f879c4335f9/artifacts/artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755)\n\n**阅读顺序也可复算。** 在[文献列表](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map)点击“文献 → MMR选择阅读候选”，可调整主题、数量与多样性权重。附件保留本轮3篇的实际选择及逐步分数。\n\n**节点是一份研究文档。** 顶部可查看frontmatter和下载Markdown；来源规范链接、标签、Open/Closed与正文版本一起保存。need-review的独立复核规则已配置为关闭，现场不会自动启动付费模型；现有评分来自历史独立Session。\n\n**本轮已执行：** Peters公式复算、两种积分器的六组对照、30/300圈时长比较、预算组合枚举、书目元数据查询与MMR排序。完整太阳系N体、潮汐及太阳演化模拟仍待执行。",
+          "attachments": [
+            {
+              "id": "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+              "name": "研究正文-v1.md"
+            },
+            {
+              "id": "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+              "name": "独立评审-v1.md"
+            },
+            {
+              "id": "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+              "name": "六维评价-V1.json"
+            },
+            {
+              "id": "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+              "name": "研究正文-v3.md"
+            },
+            {
+              "id": "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+              "name": "独立评审-v3.md"
+            },
+            {
+              "id": "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+              "name": "六维评价-V3.json"
+            },
+            {
+              "id": "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+              "name": "最终研究正文-V8.md"
+            },
+            {
+              "id": "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+              "name": "最终独立评审-V8.md"
+            },
+            {
+              "id": "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+              "name": "历史运行账本.md"
+            },
+            {
+              "id": "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+              "name": "阅读顺序与MMR计算.json"
+            },
+            {
+              "id": "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+              "name": "能量漂移对照.png"
+            }
+          ]
+        },
+        "artifact_ids": [
+          "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+          "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+          "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+          "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+          "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+          "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+          "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+          "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+          "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+          "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+          "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+          "artifact:f58001c971c5b34d3a5f9be77bc59cb13a5c3d36a368acb98348dcd6e2b857a9",
+          "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+          "artifact:6ed56db73c1e1aa059cc341b05ede22a9985dcb46a7564ad8eccb3c437a90326"
+        ],
+        "labels": [],
+        "revision": 17
+      }
+    },
+    {
+      "id": "change:aaa1b6196caacebb4d8ad500",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:8e8eaeb59def8ed8bbc91552",
+      "revision": 18,
+      "kind": "attachment",
+      "author": "system",
+      "reason": "保存并关联不可变研究产物",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.505022+00:00",
+      "before": {
+        "content": {
+          "title": "行星为何没有迅速坠入太阳？",
+          "text": "**196.29 W · 1.069×10²³年 · 六维历史评审 9→12 / 12**\n\n功率不等于寿命，数值漂移也不等于物理耗散。沿下面六步查看证据与决策。\n\n|步骤|直接查看|看什么|\n|---|---|---|\n|1 文献可追溯|[功率公式原始论文](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ae394ca06ee2216e58422a223) · [错配DOI核验](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A0bd92520b23640ad4671d197)|规范链接、作者年份和返回元数据；可解析的DOI也可能被错引|\n|2 证据有联合条件|[两篇文献联合支持 AND](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A2581b3bb2584cc9abd1ba5db&view=focus) · [两条检查路线 OR](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A8ddb5a58bc02b805fc19f757&view=focus)|分别提供功率与演化关系；OR不表示互斥|\n|3 计算识别反常|[算法与步长对照](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A77162981fb2aee4b2e992290) · [耗散时间复算](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A453d20811beeb1e76f282d97)|代码、原始输出、图表与输入；同一无耗散模型仍会出现数值漂移|\n|4 评审推动修订|[V1 六维 9/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37) → [V3 六维 12/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422)|固定原件与评审依据；分数属于历史版本，V3之后仍继续修订|\n|5 人与Agent处置|[关闭的错误判据](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A90987c98529dafc91d79339a) · [修订后的方向](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A74de28a89259a9dd555a3a07)|操作Close/Reopen、评论与版本差异；可从方向页提出相近候选，查看创建前提醒|\n|6 选择下一轮工作|[至少选两项 k-of-N](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A6a144ebbaa12c5914caee29b&view=focus) · [预算枚举](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A87534f41ece83aac929b7823) · [可执行计划](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A158e4ae8587a8dbad65db57b)|数量条件与成本分别检查；ready-for-agent标注已有输入和目标|\n\n![无耗散模型的能量误差](/api/v1/projects/project:40d0b33942d45f879c4335f9/artifacts/artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755)\n\n**阅读顺序也可复算。** 在[文献列表](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map)点击“文献 → MMR选择阅读候选”，可调整主题、数量与多样性权重。附件保留本轮3篇的实际选择及逐步分数。\n\n**节点是一份研究文档。** 顶部可查看frontmatter和下载Markdown；来源规范链接、标签、Open/Closed与正文版本一起保存。need-review的独立复核规则已配置为关闭，现场不会自动启动付费模型；现有评分来自历史独立Session。\n\n**本轮已执行：** Peters公式复算、两种积分器的六组对照、30/300圈时长比较、预算组合枚举、书目元数据查询与MMR排序。完整太阳系N体、潮汐及太阳演化模拟仍待执行。",
+          "attachments": [
+            {
+              "id": "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+              "name": "研究正文-v1.md"
+            },
+            {
+              "id": "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+              "name": "独立评审-v1.md"
+            },
+            {
+              "id": "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+              "name": "六维评价-V1.json"
+            },
+            {
+              "id": "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+              "name": "研究正文-v3.md"
+            },
+            {
+              "id": "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+              "name": "独立评审-v3.md"
+            },
+            {
+              "id": "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+              "name": "六维评价-V3.json"
+            },
+            {
+              "id": "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+              "name": "最终研究正文-V8.md"
+            },
+            {
+              "id": "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+              "name": "最终独立评审-V8.md"
+            },
+            {
+              "id": "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+              "name": "历史运行账本.md"
+            },
+            {
+              "id": "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+              "name": "阅读顺序与MMR计算.json"
+            },
+            {
+              "id": "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+              "name": "能量漂移对照.png"
+            }
+          ]
+        },
+        "artifact_ids": [
+          "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+          "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+          "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+          "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+          "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+          "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+          "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+          "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+          "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+          "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+          "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+          "artifact:f58001c971c5b34d3a5f9be77bc59cb13a5c3d36a368acb98348dcd6e2b857a9",
+          "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+          "artifact:6ed56db73c1e1aa059cc341b05ede22a9985dcb46a7564ad8eccb3c437a90326"
+        ],
+        "labels": [],
+        "revision": 17
+      },
+      "after": {
+        "content": {
+          "title": "行星为何没有迅速坠入太阳？",
+          "text": "**196.29 W · 1.069×10²³年 · 六维历史评审 9→12 / 12**\n\n功率不等于寿命，数值漂移也不等于物理耗散。沿下面六步查看证据与决策。\n\n|步骤|直接查看|看什么|\n|---|---|---|\n|1 文献可追溯|[功率公式原始论文](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ae394ca06ee2216e58422a223) · [错配DOI核验](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A0bd92520b23640ad4671d197)|规范链接、作者年份和返回元数据；可解析的DOI也可能被错引|\n|2 证据有联合条件|[两篇文献联合支持 AND](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A2581b3bb2584cc9abd1ba5db&view=focus) · [两条检查路线 OR](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A8ddb5a58bc02b805fc19f757&view=focus)|分别提供功率与演化关系；OR不表示互斥|\n|3 计算识别反常|[算法与步长对照](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A77162981fb2aee4b2e992290) · [耗散时间复算](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A453d20811beeb1e76f282d97)|代码、原始输出、图表与输入；同一无耗散模型仍会出现数值漂移|\n|4 评审推动修订|[V1 六维 9/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37) → [V3 六维 12/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422)|固定原件与评审依据；分数属于历史版本，V3之后仍继续修订|\n|5 人与Agent处置|[关闭的错误判据](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A90987c98529dafc91d79339a) · [修订后的方向](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A74de28a89259a9dd555a3a07)|操作Close/Reopen、评论与版本差异；可从方向页提出相近候选，查看创建前提醒|\n|6 选择下一轮工作|[至少选两项 k-of-N](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A6a144ebbaa12c5914caee29b&view=focus) · [预算枚举](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A87534f41ece83aac929b7823) · [可执行计划](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A158e4ae8587a8dbad65db57b)|数量条件与成本分别检查；ready-for-agent标注已有输入和目标|\n\n![无耗散模型的能量误差](/api/v1/projects/project:40d0b33942d45f879c4335f9/artifacts/artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755)\n\n**阅读顺序也可复算。** 在[文献列表](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map)点击“文献 → MMR选择阅读候选”，可调整主题、数量与多样性权重。附件保留本轮3篇的实际选择及逐步分数。\n\n**节点是一份研究文档。** 顶部可查看frontmatter和下载Markdown；来源规范链接、标签、Open/Closed与正文版本一起保存。need-review的独立复核规则已配置为关闭，现场不会自动启动付费模型；现有评分来自历史独立Session。\n\n**本轮已执行：** Peters公式复算、两种积分器的六组对照、30/300圈时长比较、预算组合枚举、书目元数据查询与MMR排序。完整太阳系N体、潮汐及太阳演化模拟仍待执行。",
+          "attachments": [
+            {
+              "id": "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+              "name": "研究正文-v1.md"
+            },
+            {
+              "id": "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+              "name": "独立评审-v1.md"
+            },
+            {
+              "id": "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+              "name": "六维评价-V1.json"
+            },
+            {
+              "id": "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+              "name": "研究正文-v3.md"
+            },
+            {
+              "id": "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+              "name": "独立评审-v3.md"
+            },
+            {
+              "id": "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+              "name": "六维评价-V3.json"
+            },
+            {
+              "id": "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+              "name": "最终研究正文-V8.md"
+            },
+            {
+              "id": "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+              "name": "最终独立评审-V8.md"
+            },
+            {
+              "id": "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+              "name": "历史运行账本.md"
+            },
+            {
+              "id": "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+              "name": "阅读顺序与MMR计算.json"
+            },
+            {
+              "id": "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+              "name": "能量漂移对照.png"
+            }
+          ]
+        },
+        "artifact_ids": [
+          "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+          "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+          "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+          "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+          "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+          "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+          "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+          "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+          "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+          "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+          "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+          "artifact:f58001c971c5b34d3a5f9be77bc59cb13a5c3d36a368acb98348dcd6e2b857a9",
+          "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+          "artifact:6ed56db73c1e1aa059cc341b05ede22a9985dcb46a7564ad8eccb3c437a90326",
+          "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c"
+        ],
+        "labels": [],
+        "revision": 18
+      }
+    },
+    {
+      "id": "change:c47421268032fc53330e490c",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:8e8eaeb59def8ed8bbc91552",
+      "revision": 19,
+      "kind": "revise",
+      "author": "user",
+      "reason": "移除流程占位节点；明确当前图谱没有独立六维审核结论",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.690428+00:00",
+      "before": {
+        "content": {
+          "title": "行星为何没有迅速坠入太阳？",
+          "text": "**196.29 W · 1.069×10²³年 · 六维历史评审 9→12 / 12**\n\n功率不等于寿命，数值漂移也不等于物理耗散。沿下面六步查看证据与决策。\n\n|步骤|直接查看|看什么|\n|---|---|---|\n|1 文献可追溯|[功率公式原始论文](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3Ae394ca06ee2216e58422a223) · [错配DOI核验](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A0bd92520b23640ad4671d197)|规范链接、作者年份和返回元数据；可解析的DOI也可能被错引|\n|2 证据有联合条件|[两篇文献联合支持 AND](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A2581b3bb2584cc9abd1ba5db&view=focus) · [两条检查路线 OR](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A8ddb5a58bc02b805fc19f757&view=focus)|分别提供功率与演化关系；OR不表示互斥|\n|3 计算识别反常|[算法与步长对照](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A77162981fb2aee4b2e992290) · [耗散时间复算](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A453d20811beeb1e76f282d97)|代码、原始输出、图表与输入；同一无耗散模型仍会出现数值漂移|\n|4 评审推动修订|[V1 六维 9/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37) → [V3 六维 12/12](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422)|固定原件与评审依据；分数属于历史版本，V3之后仍继续修订|\n|5 人与Agent处置|[关闭的错误判据](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A90987c98529dafc91d79339a) · [修订后的方向](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A74de28a89259a9dd555a3a07)|操作Close/Reopen、评论与版本差异；可从方向页提出相近候选，查看创建前提醒|\n|6 选择下一轮工作|[至少选两项 k-of-N](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A6a144ebbaa12c5914caee29b&view=focus) · [预算枚举](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A87534f41ece83aac929b7823) · [可执行计划](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A158e4ae8587a8dbad65db57b)|数量条件与成本分别检查；ready-for-agent标注已有输入和目标|\n\n![无耗散模型的能量误差](/api/v1/projects/project:40d0b33942d45f879c4335f9/artifacts/artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755)\n\n**阅读顺序也可复算。** 在[文献列表](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map)点击“文献 → MMR选择阅读候选”，可调整主题、数量与多样性权重。附件保留本轮3篇的实际选择及逐步分数。\n\n**节点是一份研究文档。** 顶部可查看frontmatter和下载Markdown；来源规范链接、标签、Open/Closed与正文版本一起保存。need-review的独立复核规则已配置为关闭，现场不会自动启动付费模型；现有评分来自历史独立Session。\n\n**本轮已执行：** Peters公式复算、两种积分器的六组对照、30/300圈时长比较、预算组合枚举、书目元数据查询与MMR排序。完整太阳系N体、潮汐及太阳演化模拟仍待执行。",
+          "attachments": [
+            {
+              "id": "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+              "name": "研究正文-v1.md"
+            },
+            {
+              "id": "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+              "name": "独立评审-v1.md"
+            },
+            {
+              "id": "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+              "name": "六维评价-V1.json"
+            },
+            {
+              "id": "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+              "name": "研究正文-v3.md"
+            },
+            {
+              "id": "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+              "name": "独立评审-v3.md"
+            },
+            {
+              "id": "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+              "name": "六维评价-V3.json"
+            },
+            {
+              "id": "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+              "name": "最终研究正文-V8.md"
+            },
+            {
+              "id": "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+              "name": "最终独立评审-V8.md"
+            },
+            {
+              "id": "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+              "name": "历史运行账本.md"
+            },
+            {
+              "id": "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+              "name": "阅读顺序与MMR计算.json"
+            },
+            {
+              "id": "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+              "name": "能量漂移对照.png"
+            }
+          ]
+        },
+        "artifact_ids": [
+          "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+          "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+          "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+          "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+          "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+          "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+          "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+          "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+          "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+          "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+          "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+          "artifact:f58001c971c5b34d3a5f9be77bc59cb13a5c3d36a368acb98348dcd6e2b857a9",
+          "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+          "artifact:6ed56db73c1e1aa059cc341b05ede22a9985dcb46a7564ad8eccb3c437a90326",
+          "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c"
+        ],
+        "labels": [],
+        "revision": 18
+      },
+      "after": {
+        "content": {
+          "title": "行星为何没有迅速坠入太阳？",
+          "text": "研究范围：区分孤立双体的引力波耗散、数值积分误差与真实太阳系的多体动力学。\n\n**当前图谱待六维审核。** 历史V1/V3评分只适用于相应正文；新增节点和本轮计算尚未得到独立六维报告。\n\n|问题|已有证据|待核查|\n|---|---|---|\n|引力波耗散能否解释近期坠日？|[公式复算](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A453d20811beeb1e76f282d97)得到196.29 W、形式并合时间1.069×10²³年|原文公式、参数和适用条件|\n|无耗散模型为何仍有能量漂移？|[算法与步长对照](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A77162981fb2aee4b2e992290)、[30/300圈比较](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A64d971e33ff70d9018f3dc5a)|收敛性、初值敏感性及模型范围|\n|怎样安排进一步复核？|步长、时长和初值集合三项计划；规划配额3|成本输入与至少两项检查的充分性|\n\n[功率与演化公式的联合依据](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A2581b3bb2584cc9abd1ba5db&view=focus) · [两类轨道变化机制](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3Acb4d3c9601fbfc0927e4e829&view=focus) · [数值误差的联合检验](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3Ac1a2b81905ed066c52504e59&view=focus)\n\n[DOI错配核查原始数据](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A6ed56db73c1e1aa059cc341b05ede22a9985dcb46a7564ad8eccb3c437a90326) · [预算枚举与计算结果](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e)\n\n历史正文评审：[V1](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37)、[V3](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422)。历史错误判据与修订过程保留在[关闭节点](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A90987c98529dafc91d79339a)和[耗散方向](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A74de28a89259a9dd555a3a07)中。",
+          "attachments": [
+            {
+              "id": "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+              "name": "研究正文-v1.md"
+            },
+            {
+              "id": "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+              "name": "独立评审-v1.md"
+            },
+            {
+              "id": "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+              "name": "六维评价-V1.json"
+            },
+            {
+              "id": "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+              "name": "研究正文-v3.md"
+            },
+            {
+              "id": "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+              "name": "独立评审-v3.md"
+            },
+            {
+              "id": "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+              "name": "六维评价-V3.json"
+            },
+            {
+              "id": "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+              "name": "最终研究正文-V8.md"
+            },
+            {
+              "id": "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+              "name": "最终独立评审-V8.md"
+            },
+            {
+              "id": "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+              "name": "历史运行账本.md"
+            },
+            {
+              "id": "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+              "name": "阅读顺序与MMR计算.json"
+            },
+            {
+              "id": "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+              "name": "能量漂移对照.png"
+            }
+          ]
+        },
+        "artifact_ids": [
+          "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+          "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+          "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+          "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+          "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+          "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+          "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+          "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+          "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+          "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+          "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+          "artifact:f58001c971c5b34d3a5f9be77bc59cb13a5c3d36a368acb98348dcd6e2b857a9",
+          "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+          "artifact:6ed56db73c1e1aa059cc341b05ede22a9985dcb46a7564ad8eccb3c437a90326",
+          "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c"
+        ],
+        "labels": [],
+        "revision": 19
+      }
+    },
+    {
+      "id": "change:2abed7b1a4e8e5cc361041a5",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:8e8eaeb59def8ed8bbc91552",
+      "revision": 20,
+      "kind": "labels",
+      "author": "user",
+      "reason": "当前内容没有对应六维报告，待逐维核验；历史正文评分不替代当前审核",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.709262+00:00",
+      "before": {
+        "content": {
+          "title": "行星为何没有迅速坠入太阳？",
+          "text": "研究范围：区分孤立双体的引力波耗散、数值积分误差与真实太阳系的多体动力学。\n\n**当前图谱待六维审核。** 历史V1/V3评分只适用于相应正文；新增节点和本轮计算尚未得到独立六维报告。\n\n|问题|已有证据|待核查|\n|---|---|---|\n|引力波耗散能否解释近期坠日？|[公式复算](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A453d20811beeb1e76f282d97)得到196.29 W、形式并合时间1.069×10²³年|原文公式、参数和适用条件|\n|无耗散模型为何仍有能量漂移？|[算法与步长对照](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A77162981fb2aee4b2e992290)、[30/300圈比较](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A64d971e33ff70d9018f3dc5a)|收敛性、初值敏感性及模型范围|\n|怎样安排进一步复核？|步长、时长和初值集合三项计划；规划配额3|成本输入与至少两项检查的充分性|\n\n[功率与演化公式的联合依据](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A2581b3bb2584cc9abd1ba5db&view=focus) · [两类轨道变化机制](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3Acb4d3c9601fbfc0927e4e829&view=focus) · [数值误差的联合检验](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3Ac1a2b81905ed066c52504e59&view=focus)\n\n[DOI错配核查原始数据](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A6ed56db73c1e1aa059cc341b05ede22a9985dcb46a7564ad8eccb3c437a90326) · [预算枚举与计算结果](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e)\n\n历史正文评审：[V1](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37)、[V3](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422)。历史错误判据与修订过程保留在[关闭节点](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A90987c98529dafc91d79339a)和[耗散方向](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A74de28a89259a9dd555a3a07)中。",
+          "attachments": [
+            {
+              "id": "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+              "name": "研究正文-v1.md"
+            },
+            {
+              "id": "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+              "name": "独立评审-v1.md"
+            },
+            {
+              "id": "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+              "name": "六维评价-V1.json"
+            },
+            {
+              "id": "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+              "name": "研究正文-v3.md"
+            },
+            {
+              "id": "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+              "name": "独立评审-v3.md"
+            },
+            {
+              "id": "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+              "name": "六维评价-V3.json"
+            },
+            {
+              "id": "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+              "name": "最终研究正文-V8.md"
+            },
+            {
+              "id": "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+              "name": "最终独立评审-V8.md"
+            },
+            {
+              "id": "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+              "name": "历史运行账本.md"
+            },
+            {
+              "id": "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+              "name": "阅读顺序与MMR计算.json"
+            },
+            {
+              "id": "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+              "name": "能量漂移对照.png"
+            }
+          ]
+        },
+        "artifact_ids": [
+          "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+          "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+          "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+          "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+          "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+          "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+          "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+          "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+          "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+          "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+          "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+          "artifact:f58001c971c5b34d3a5f9be77bc59cb13a5c3d36a368acb98348dcd6e2b857a9",
+          "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+          "artifact:6ed56db73c1e1aa059cc341b05ede22a9985dcb46a7564ad8eccb3c437a90326",
+          "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c"
+        ],
+        "labels": [],
+        "revision": 19
+      },
+      "after": {
+        "content": {
+          "title": "行星为何没有迅速坠入太阳？",
+          "text": "研究范围：区分孤立双体的引力波耗散、数值积分误差与真实太阳系的多体动力学。\n\n**当前图谱待六维审核。** 历史V1/V3评分只适用于相应正文；新增节点和本轮计算尚未得到独立六维报告。\n\n|问题|已有证据|待核查|\n|---|---|---|\n|引力波耗散能否解释近期坠日？|[公式复算](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A453d20811beeb1e76f282d97)得到196.29 W、形式并合时间1.069×10²³年|原文公式、参数和适用条件|\n|无耗散模型为何仍有能量漂移？|[算法与步长对照](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A77162981fb2aee4b2e992290)、[30/300圈比较](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A64d971e33ff70d9018f3dc5a)|收敛性、初值敏感性及模型范围|\n|怎样安排进一步复核？|步长、时长和初值集合三项计划；规划配额3|成本输入与至少两项检查的充分性|\n\n[功率与演化公式的联合依据](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3A2581b3bb2584cc9abd1ba5db&view=focus) · [两类轨道变化机制](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3Acb4d3c9601fbfc0927e4e829&view=focus) · [数值误差的联合检验](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map?node=joint%3Ac1a2b81905ed066c52504e59&view=focus)\n\n[DOI错配核查原始数据](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A6ed56db73c1e1aa059cc341b05ede22a9985dcb46a7564ad8eccb3c437a90326) · [预算枚举与计算结果](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e)\n\n历史正文评审：[V1](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37)、[V3](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/artifacts/artifact%3A9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422)。历史错误判据与修订过程保留在[关闭节点](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A90987c98529dafc91d79339a)和[耗散方向](http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/records/record%3A74de28a89259a9dd555a3a07)中。",
+          "attachments": [
+            {
+              "id": "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+              "name": "研究正文-v1.md"
+            },
+            {
+              "id": "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+              "name": "独立评审-v1.md"
+            },
+            {
+              "id": "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+              "name": "六维评价-V1.json"
+            },
+            {
+              "id": "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+              "name": "研究正文-v3.md"
+            },
+            {
+              "id": "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+              "name": "独立评审-v3.md"
+            },
+            {
+              "id": "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+              "name": "六维评价-V3.json"
+            },
+            {
+              "id": "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+              "name": "最终研究正文-V8.md"
+            },
+            {
+              "id": "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+              "name": "最终独立评审-V8.md"
+            },
+            {
+              "id": "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+              "name": "历史运行账本.md"
+            },
+            {
+              "id": "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+              "name": "阅读顺序与MMR计算.json"
+            },
+            {
+              "id": "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+              "name": "能量漂移对照.png"
+            }
+          ]
+        },
+        "artifact_ids": [
+          "artifact:74e43718d54c346a857f763ce1b3a9fbbac53937dc944a36b1007427306bcce5",
+          "artifact:96268a2457f613e15cec52a04fa2989568e24883db95906fe5d82568e949ae74",
+          "artifact:3dea318dbd20cc1464f97c65199683cfaecb694fbb420c7e2d5cf53a7c15de37",
+          "artifact:c7109c684c5b64e509f8018e61650a4b8af05b29efc2a9175328428ab435ba0f",
+          "artifact:f66d803febcdce3a483b09133b05d2ca19d26ab94862084927cea4e30f827472",
+          "artifact:9cec158f2fef5dd9ded976c92eb959df4197a070a9459c3124242bcfdd113422",
+          "artifact:e0a6d83a65ae80f11c585f2b0c63053923b9e60b1fc8240cfb0f6627ebe65643",
+          "artifact:987bc5c279da17f1bf157561bfbe6f62650bf97377206f4364810ee8351779e4",
+          "artifact:38e5ee1a70204627ea2042313a68d727d3c100b2b506c70e7861d44a6c7dc23c",
+          "artifact:aa9edcdb0e8b6aaa96cca8dccc92f8fd9c4cabbdd9587333fbc7f85a76195886",
+          "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+          "artifact:f58001c971c5b34d3a5f9be77bc59cb13a5c3d36a368acb98348dcd6e2b857a9",
+          "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+          "artifact:6ed56db73c1e1aa059cc341b05ede22a9985dcb46a7564ad8eccb3c437a90326",
+          "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c"
+        ],
+        "labels": [
+          {
+            "id": "label:cb01efea711f24e81301928b",
+            "name": "need-review",
+            "color": "#8250df",
+            "description": "请求独立六维复核"
+          }
+        ],
+        "revision": 20
+      }
+    },
+    {
+      "id": "change:de08bb9638fa7f4167717ea0",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:e394ca06ee2216e58422a223",
+      "revision": 2,
+      "kind": "labels",
+      "author": "user",
+      "reason": "当前内容没有对应六维报告，待逐维核验；历史正文评分不替代当前审核",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.719070+00:00",
+      "before": {
+        "content": {
+          "title": "Gravitational Radiation from Point Masses in a Keplerian Orbit",
+          "text": "给出开普勒双体引力辐射功率；本轮用圆轨道近似复算日地系统。",
+          "attachments": [
+            {
+              "id": "artifact:2fac6ca8af65372e528fc2a0b04af10de2406659cf66f5dcd2fa78ce75969132",
+              "name": "书目核验.json"
+            }
+          ],
+          "canonical_url": "https://doi.org/10.1103/physrev.131.435",
+          "doi": "10.1103/physrev.131.435",
+          "authors": "P. C. Peters; J. Mathews",
+          "year": 1963,
+          "venue": "Physical Review",
+          "verification": "书目信息已核对；出版商全文访问受限，保留原文链接"
+        },
+        "artifact_ids": [
+          "artifact:2fac6ca8af65372e528fc2a0b04af10de2406659cf66f5dcd2fa78ce75969132"
+        ],
+        "labels": [],
+        "revision": 1
+      },
+      "after": {
+        "content": {
+          "title": "Gravitational Radiation from Point Masses in a Keplerian Orbit",
+          "text": "给出开普勒双体引力辐射功率；本轮用圆轨道近似复算日地系统。",
+          "attachments": [
+            {
+              "id": "artifact:2fac6ca8af65372e528fc2a0b04af10de2406659cf66f5dcd2fa78ce75969132",
+              "name": "书目核验.json"
+            }
+          ],
+          "canonical_url": "https://doi.org/10.1103/physrev.131.435",
+          "doi": "10.1103/physrev.131.435",
+          "authors": "P. C. Peters; J. Mathews",
+          "year": 1963,
+          "venue": "Physical Review",
+          "verification": "书目信息已核对；出版商全文访问受限，保留原文链接"
+        },
+        "artifact_ids": [
+          "artifact:2fac6ca8af65372e528fc2a0b04af10de2406659cf66f5dcd2fa78ce75969132"
+        ],
+        "labels": [
+          {
+            "id": "label:cb01efea711f24e81301928b",
+            "name": "need-review",
+            "color": "#8250df",
+            "description": "请求独立六维复核"
+          }
+        ],
+        "revision": 2
+      }
+    },
+    {
+      "id": "change:dfc59a3061043a261c2686b4",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:96a008ab08ee8af753f5544e",
+      "revision": 2,
+      "kind": "labels",
+      "author": "user",
+      "reason": "当前内容没有对应六维报告，待逐维核验；历史正文评分不替代当前审核",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.729056+00:00",
+      "before": {
+        "content": {
+          "title": "Gravitational Radiation and the Motion of Two Point Masses",
+          "text": "给出引力辐射引起的双体轨道演化；形式并合时间与局部能量耗散时间需要区分。",
+          "attachments": [
+            {
+              "id": "artifact:abb84fc245dca17c16da64e10fd219caa7bef958c356cd86ea236c7ed26be7f8",
+              "name": "书目核验.json"
+            }
+          ],
+          "canonical_url": "https://doi.org/10.1103/physrev.136.b1224",
+          "doi": "10.1103/physrev.136.b1224",
+          "authors": "P. C. Peters",
+          "year": 1964,
+          "venue": "Physical Review",
+          "verification": "书目信息已核对；出版商全文访问受限，保留原文链接"
+        },
+        "artifact_ids": [
+          "artifact:abb84fc245dca17c16da64e10fd219caa7bef958c356cd86ea236c7ed26be7f8"
+        ],
+        "labels": [],
+        "revision": 1
+      },
+      "after": {
+        "content": {
+          "title": "Gravitational Radiation and the Motion of Two Point Masses",
+          "text": "给出引力辐射引起的双体轨道演化；形式并合时间与局部能量耗散时间需要区分。",
+          "attachments": [
+            {
+              "id": "artifact:abb84fc245dca17c16da64e10fd219caa7bef958c356cd86ea236c7ed26be7f8",
+              "name": "书目核验.json"
+            }
+          ],
+          "canonical_url": "https://doi.org/10.1103/physrev.136.b1224",
+          "doi": "10.1103/physrev.136.b1224",
+          "authors": "P. C. Peters",
+          "year": 1964,
+          "venue": "Physical Review",
+          "verification": "书目信息已核对；出版商全文访问受限，保留原文链接"
+        },
+        "artifact_ids": [
+          "artifact:abb84fc245dca17c16da64e10fd219caa7bef958c356cd86ea236c7ed26be7f8"
+        ],
+        "labels": [
+          {
+            "id": "label:cb01efea711f24e81301928b",
+            "name": "need-review",
+            "color": "#8250df",
+            "description": "请求独立六维复核"
+          }
+        ],
+        "revision": 2
+      }
+    },
+    {
+      "id": "change:c819a08cf94d84b6f63a418e",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:03f7c402bc90f5d4b79ac9a1",
+      "revision": 2,
+      "kind": "labels",
+      "author": "user",
+      "reason": "当前内容没有对应六维报告，待逐维核验；历史正文评分不替代当前审核",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.737099+00:00",
+      "before": {
+        "content": {
+          "title": "On the Dynamical Stability of the Solar System",
+          "text": "数值研究长期稳定性与分岔失稳轨迹；单条失稳轨迹不能直接作为事件概率。",
+          "attachments": [
+            {
+              "id": "artifact:e8b693956c91e6d4ac88ae1a7bded781a1b7291d0c6d63e75cd66dc73b04aa45",
+              "name": "书目核验.json"
+            },
+            {
+              "id": "artifact:2d88190f727c77b8ba639dae6f9a998d3ae5bbeed5cf09c4c4d0ff231402a6b8",
+              "name": "论文原文.pdf"
+            }
+          ],
+          "canonical_url": "https://doi.org/10.1086/589232",
+          "doi": "10.1086/589232",
+          "authors": "Konstantin Batygin; Gregory Laughlin",
+          "year": 2008,
+          "venue": "The Astrophysical Journal",
+          "verification": "书目信息已核对；已取得原文PDF"
+        },
+        "artifact_ids": [
+          "artifact:e8b693956c91e6d4ac88ae1a7bded781a1b7291d0c6d63e75cd66dc73b04aa45",
+          "artifact:2d88190f727c77b8ba639dae6f9a998d3ae5bbeed5cf09c4c4d0ff231402a6b8"
+        ],
+        "labels": [],
+        "revision": 1
+      },
+      "after": {
+        "content": {
+          "title": "On the Dynamical Stability of the Solar System",
+          "text": "数值研究长期稳定性与分岔失稳轨迹；单条失稳轨迹不能直接作为事件概率。",
+          "attachments": [
+            {
+              "id": "artifact:e8b693956c91e6d4ac88ae1a7bded781a1b7291d0c6d63e75cd66dc73b04aa45",
+              "name": "书目核验.json"
+            },
+            {
+              "id": "artifact:2d88190f727c77b8ba639dae6f9a998d3ae5bbeed5cf09c4c4d0ff231402a6b8",
+              "name": "论文原文.pdf"
+            }
+          ],
+          "canonical_url": "https://doi.org/10.1086/589232",
+          "doi": "10.1086/589232",
+          "authors": "Konstantin Batygin; Gregory Laughlin",
+          "year": 2008,
+          "venue": "The Astrophysical Journal",
+          "verification": "书目信息已核对；已取得原文PDF"
+        },
+        "artifact_ids": [
+          "artifact:e8b693956c91e6d4ac88ae1a7bded781a1b7291d0c6d63e75cd66dc73b04aa45",
+          "artifact:2d88190f727c77b8ba639dae6f9a998d3ae5bbeed5cf09c4c4d0ff231402a6b8"
+        ],
+        "labels": [
+          {
+            "id": "label:cb01efea711f24e81301928b",
+            "name": "need-review",
+            "color": "#8250df",
+            "description": "请求独立六维复核"
+          }
+        ],
+        "revision": 2
+      }
+    },
+    {
+      "id": "change:bd3b4757a3ee97ac8369dd2e",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:a5133e6857a624c33968429a",
+      "revision": 3,
+      "kind": "labels",
+      "author": "user",
+      "reason": "当前内容没有对应六维报告，待逐维核验；历史正文评分不替代当前审核",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.749171+00:00",
+      "before": {
+        "content": {
+          "title": "whfast: a fast and unbiased implementation of a symplectic Wisdom–Holman integrator for long-term gravitational simulations",
+          "text": "辛积分实现与长期数值误差控制；用于约束积分方法比较。",
+          "attachments": [
+            {
+              "id": "artifact:852d9bfe6d05e16d892b856ac1ffabf0710ba94444a452005fc4b80d94999b94",
+              "name": "书目核验.json"
+            }
+          ],
+          "canonical_url": "https://doi.org/10.1093/mnras/stv1257",
+          "doi": "10.1093/mnras/stv1257",
+          "authors": "Hanno Rein; Daniel Tamayo",
+          "year": 2015,
+          "venue": "Monthly Notices of the Royal Astronomical Society",
+          "verification": "书目信息已核对；全文尚未核验"
+        },
+        "artifact_ids": [
+          "artifact:852d9bfe6d05e16d892b856ac1ffabf0710ba94444a452005fc4b80d94999b94"
+        ],
+        "labels": [],
+        "revision": 2
+      },
+      "after": {
+        "content": {
+          "title": "whfast: a fast and unbiased implementation of a symplectic Wisdom–Holman integrator for long-term gravitational simulations",
+          "text": "辛积分实现与长期数值误差控制；用于约束积分方法比较。",
+          "attachments": [
+            {
+              "id": "artifact:852d9bfe6d05e16d892b856ac1ffabf0710ba94444a452005fc4b80d94999b94",
+              "name": "书目核验.json"
+            }
+          ],
+          "canonical_url": "https://doi.org/10.1093/mnras/stv1257",
+          "doi": "10.1093/mnras/stv1257",
+          "authors": "Hanno Rein; Daniel Tamayo",
+          "year": 2015,
+          "venue": "Monthly Notices of the Royal Astronomical Society",
+          "verification": "书目信息已核对；全文尚未核验"
+        },
+        "artifact_ids": [
+          "artifact:852d9bfe6d05e16d892b856ac1ffabf0710ba94444a452005fc4b80d94999b94"
+        ],
+        "labels": [
+          {
+            "id": "label:cb01efea711f24e81301928b",
+            "name": "need-review",
+            "color": "#8250df",
+            "description": "请求独立六维复核"
+          }
+        ],
+        "revision": 3
+      }
+    },
+    {
+      "id": "change:eb7dc9c26fea7e65ca3716fd",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:5f6ee7020bfe0ee1d3259398",
+      "revision": 3,
+      "kind": "labels",
+      "author": "user",
+      "reason": "当前内容没有对应六维报告，待逐维核验；历史正文评分不替代当前审核",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.758336+00:00",
+      "before": {
+        "content": {
+          "title": "ias15: a fast, adaptive, high-order integrator for gravitational dynamics, accurate to machine precision over a billion orbits",
+          "text": "高阶自适应引力积分器；作为后续独立积分基线的文献依据。",
+          "attachments": [
+            {
+              "id": "artifact:3d183ec68ae8fe0f5cc2a2057258ba00c7d43fbe899d2c0a5c99c1de4a0ca6e4",
+              "name": "书目核验.json"
+            }
+          ],
+          "canonical_url": "https://doi.org/10.1093/mnras/stu2164",
+          "doi": "10.1093/mnras/stu2164",
+          "authors": "Hanno Rein; David S. Spiegel",
+          "year": 2014,
+          "venue": "Monthly Notices of the Royal Astronomical Society",
+          "verification": "书目信息已核对；全文尚未核验"
+        },
+        "artifact_ids": [
+          "artifact:3d183ec68ae8fe0f5cc2a2057258ba00c7d43fbe899d2c0a5c99c1de4a0ca6e4"
+        ],
+        "labels": [],
+        "revision": 2
+      },
+      "after": {
+        "content": {
+          "title": "ias15: a fast, adaptive, high-order integrator for gravitational dynamics, accurate to machine precision over a billion orbits",
+          "text": "高阶自适应引力积分器；作为后续独立积分基线的文献依据。",
+          "attachments": [
+            {
+              "id": "artifact:3d183ec68ae8fe0f5cc2a2057258ba00c7d43fbe899d2c0a5c99c1de4a0ca6e4",
+              "name": "书目核验.json"
+            }
+          ],
+          "canonical_url": "https://doi.org/10.1093/mnras/stu2164",
+          "doi": "10.1093/mnras/stu2164",
+          "authors": "Hanno Rein; David S. Spiegel",
+          "year": 2014,
+          "venue": "Monthly Notices of the Royal Astronomical Society",
+          "verification": "书目信息已核对；全文尚未核验"
+        },
+        "artifact_ids": [
+          "artifact:3d183ec68ae8fe0f5cc2a2057258ba00c7d43fbe899d2c0a5c99c1de4a0ca6e4"
+        ],
+        "labels": [
+          {
+            "id": "label:cb01efea711f24e81301928b",
+            "name": "need-review",
+            "color": "#8250df",
+            "description": "请求独立六维复核"
+          }
+        ],
+        "revision": 3
+      }
+    },
+    {
+      "id": "change:ba7b997d138ecaa70624cc73",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:74de28a89259a9dd555a3a07",
+      "revision": 3,
+      "kind": "labels",
+      "author": "user",
+      "reason": "当前内容没有对应六维报告，待逐维核验；历史正文评分不替代当前审核",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.770999+00:00",
+      "before": {
+        "content": {
+          "title": "弱耗散需要通过时间尺度比较",
+          "text": "**复算后修正：日地引力波功率约196.29 W，形式并合时间约1.069×10²³年。**\n\n原先10⁻²⁰ W的功率数值错误。结论改为比较耗散时间与研究时间窗口，并将保守动力学、混沌及太阳演化分别讨论。",
+          "attachments": []
+        },
+        "artifact_ids": [],
+        "labels": [],
+        "revision": 2
+      },
+      "after": {
+        "content": {
+          "title": "弱耗散需要通过时间尺度比较",
+          "text": "**复算后修正：日地引力波功率约196.29 W，形式并合时间约1.069×10²³年。**\n\n原先10⁻²⁰ W的功率数值错误。结论改为比较耗散时间与研究时间窗口，并将保守动力学、混沌及太阳演化分别讨论。",
+          "attachments": []
+        },
+        "artifact_ids": [],
+        "labels": [
+          {
+            "id": "label:cb01efea711f24e81301928b",
+            "name": "need-review",
+            "color": "#8250df",
+            "description": "请求独立六维复核"
+          }
+        ],
+        "revision": 3
+      }
+    },
+    {
+      "id": "change:0a56a389a3c46da4eaf0f2da",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:fd1edffaf3b2560933757506",
+      "revision": 2,
+      "kind": "labels",
+      "author": "user",
+      "reason": "当前内容没有对应六维报告，待逐维核验；历史正文评分不替代当前审核",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.782633+00:00",
+      "before": {
+        "content": {
+          "title": "无耗散模型中的能量漂移来自数值误差",
+          "text": "固定模型、初值与积分时长，改变算法和步长。如果漂移随这些数值设置显著变化，则先检查离散误差。",
+          "attachments": []
+        },
+        "artifact_ids": [],
+        "labels": [],
+        "revision": 1
+      },
+      "after": {
+        "content": {
+          "title": "无耗散模型中的能量漂移来自数值误差",
+          "text": "固定模型、初值与积分时长，改变算法和步长。如果漂移随这些数值设置显著变化，则先检查离散误差。",
+          "attachments": []
+        },
+        "artifact_ids": [],
+        "labels": [
+          {
+            "id": "label:cb01efea711f24e81301928b",
+            "name": "need-review",
+            "color": "#8250df",
+            "description": "请求独立六维复核"
+          }
+        ],
+        "revision": 2
+      }
+    },
+    {
+      "id": "change:13e557c95ab7d85b68d98d91",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:90987c98529dafc91d79339a",
+      "revision": 4,
+      "kind": "labels",
+      "author": "user",
+      "reason": "当前内容没有对应六维报告，待逐维核验；历史正文评分不替代当前审核",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.795923+00:00",
+      "before": {
+        "content": {
+          "title": "用10⁻²⁰ W作为日地耗散忽略阈值",
+          "text": "历史V1的定量判据。独立评审指出功率数量级错误，该判据会误导后续实验。",
+          "attachments": [],
+          "status": "closed",
+          "close_reason": "not_planned"
+        },
+        "artifact_ids": [],
+        "labels": [
+          {
+            "id": "label:0ebafc83f68c8be9ab884b4b",
+            "name": "warning",
+            "color": "#d97706",
+            "description": "存在需核查的错误或约束"
+          }
+        ],
+        "revision": 3
+      },
+      "after": {
+        "content": {
+          "title": "用10⁻²⁰ W作为日地耗散忽略阈值",
+          "text": "历史V1的定量判据。独立评审指出功率数量级错误，该判据会误导后续实验。",
+          "attachments": [],
+          "status": "closed",
+          "close_reason": "not_planned"
+        },
+        "artifact_ids": [],
+        "labels": [
+          {
+            "id": "label:0ebafc83f68c8be9ab884b4b",
+            "name": "warning",
+            "color": "#d97706",
+            "description": "存在需核查的错误或约束"
+          },
+          {
+            "id": "label:cb01efea711f24e81301928b",
+            "name": "need-review",
+            "color": "#8250df",
+            "description": "请求独立六维复核"
+          }
+        ],
+        "revision": 4
+      }
+    },
+    {
+      "id": "change:445da52e9698f6a5cebaee32",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:77162981fb2aee4b2e992290",
+      "revision": 4,
+      "kind": "labels",
+      "author": "user",
+      "reason": "当前内容没有对应六维报告，待逐维核验；历史正文评分不替代当前审核",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.809126+00:00",
+      "before": {
+        "content": {
+          "title": "无耗散二体模型的算法与步长对照",
+          "text": "**已执行：2种算法 × 3种步长，均积分30个轨道周期。**\n\n|算法|每圈步数|采样最大相对能量误差|\n|---|---:|---:|\n|Euler|100|7.660e-01|\n|Euler|200|7.029e-01|\n|Euler|400|6.243e-01|\n|Leapfrog|100|3.873e-06|\n|Leapfrog|200|2.432e-07|\n|Leapfrog|400|1.521e-08|\n\nGM=1，初始圆轨道，未加入物理耗散。Euler误差为10⁻¹量级，Leapfrog误差随步长减半约缩小16倍。\n\n![同一无耗散模型的积分误差](/api/v1/projects/project:40d0b33942d45f879c4335f9/artifacts/artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755)",
+          "attachments": [
+            {
+              "id": "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
+              "name": "轨道与耗散计算.py"
+            },
+            {
+              "id": "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+              "name": "计算结果.json"
+            },
+            {
+              "id": "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+              "name": "执行输出.json"
+            },
+            {
+              "id": "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+              "name": "能量漂移对照.png"
+            },
+            {
+              "id": "artifact:3a5eddf7247615a27ed4b032d83d39a0fbe1c6fbe9ea1628cbae329f5f9ac91d",
+              "name": "积分轨迹.csv"
+            },
+            {
+              "id": "artifact:214d14ca814750c14b8f690078e97093352e3bcf343b7b5e52a67146311e9e2a",
+              "name": "执行环境与文件哈希.json"
+            }
+          ]
+        },
+        "artifact_ids": [
+          "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
+          "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+          "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+          "artifact:3a5eddf7247615a27ed4b032d83d39a0fbe1c6fbe9ea1628cbae329f5f9ac91d",
+          "artifact:214d14ca814750c14b8f690078e97093352e3bcf343b7b5e52a67146311e9e2a"
+        ],
+        "labels": [],
+        "revision": 3
+      },
+      "after": {
+        "content": {
+          "title": "无耗散二体模型的算法与步长对照",
+          "text": "**已执行：2种算法 × 3种步长，均积分30个轨道周期。**\n\n|算法|每圈步数|采样最大相对能量误差|\n|---|---:|---:|\n|Euler|100|7.660e-01|\n|Euler|200|7.029e-01|\n|Euler|400|6.243e-01|\n|Leapfrog|100|3.873e-06|\n|Leapfrog|200|2.432e-07|\n|Leapfrog|400|1.521e-08|\n\nGM=1，初始圆轨道，未加入物理耗散。Euler误差为10⁻¹量级，Leapfrog误差随步长减半约缩小16倍。\n\n![同一无耗散模型的积分误差](/api/v1/projects/project:40d0b33942d45f879c4335f9/artifacts/artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755)",
+          "attachments": [
+            {
+              "id": "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
+              "name": "轨道与耗散计算.py"
+            },
+            {
+              "id": "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+              "name": "计算结果.json"
+            },
+            {
+              "id": "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+              "name": "执行输出.json"
+            },
+            {
+              "id": "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+              "name": "能量漂移对照.png"
+            },
+            {
+              "id": "artifact:3a5eddf7247615a27ed4b032d83d39a0fbe1c6fbe9ea1628cbae329f5f9ac91d",
+              "name": "积分轨迹.csv"
+            },
+            {
+              "id": "artifact:214d14ca814750c14b8f690078e97093352e3bcf343b7b5e52a67146311e9e2a",
+              "name": "执行环境与文件哈希.json"
+            }
+          ]
+        },
+        "artifact_ids": [
+          "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
+          "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+          "artifact:f33d823b88de39bd797730c941e755c20b716c437cc146a948f56f82ef743755",
+          "artifact:3a5eddf7247615a27ed4b032d83d39a0fbe1c6fbe9ea1628cbae329f5f9ac91d",
+          "artifact:214d14ca814750c14b8f690078e97093352e3bcf343b7b5e52a67146311e9e2a"
+        ],
+        "labels": [
+          {
+            "id": "label:cb01efea711f24e81301928b",
+            "name": "need-review",
+            "color": "#8250df",
+            "description": "请求独立六维复核"
+          }
+        ],
+        "revision": 4
+      }
+    },
+    {
+      "id": "change:bbc8bc3b8d706ed32c2f45e1",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:453d20811beeb1e76f282d97",
+      "revision": 4,
+      "kind": "labels",
+      "author": "user",
+      "reason": "当前内容没有对应六维报告，待逐维核验；历史正文评分不替代当前审核",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.822083+00:00",
+      "before": {
+        "content": {
+          "title": "日地引力波功率与两种耗散时间复算",
+          "text": "**已执行：功率196.29056 W，形式并合时间1.06915×10²³年。**\n\n|量|结果|\n|---|---:|\n|辐射功率|196.29056 W|\n|形式并合时间|1.06915×10²³ 年|\n|局部能量时间 E/P|4.27662×10²³ 年|\n|两种时间之比|4.00000|\n\n$$P=\\frac{32G^4m_1^2m_2^2(m_1+m_2)}{5c^5a^5}$$\n\n固定当前日地质量、1 AU、偏心率0。这个形式时间来自孤立双体近似，太阳演化与多体扰动没有包含在内。",
+          "attachments": [
+            {
+              "id": "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
+              "name": "轨道与耗散计算.py"
+            },
+            {
+              "id": "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+              "name": "计算结果.json"
+            },
+            {
+              "id": "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+              "name": "执行输出.json"
+            },
+            {
+              "id": "artifact:214d14ca814750c14b8f690078e97093352e3bcf343b7b5e52a67146311e9e2a",
+              "name": "执行环境与文件哈希.json"
+            }
+          ]
+        },
+        "artifact_ids": [
+          "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
+          "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+          "artifact:214d14ca814750c14b8f690078e97093352e3bcf343b7b5e52a67146311e9e2a"
+        ],
+        "labels": [],
+        "revision": 3
+      },
+      "after": {
+        "content": {
+          "title": "日地引力波功率与两种耗散时间复算",
+          "text": "**已执行：功率196.29056 W，形式并合时间1.06915×10²³年。**\n\n|量|结果|\n|---|---:|\n|辐射功率|196.29056 W|\n|形式并合时间|1.06915×10²³ 年|\n|局部能量时间 E/P|4.27662×10²³ 年|\n|两种时间之比|4.00000|\n\n$$P=\\frac{32G^4m_1^2m_2^2(m_1+m_2)}{5c^5a^5}$$\n\n固定当前日地质量、1 AU、偏心率0。这个形式时间来自孤立双体近似，太阳演化与多体扰动没有包含在内。",
+          "attachments": [
+            {
+              "id": "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
+              "name": "轨道与耗散计算.py"
+            },
+            {
+              "id": "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+              "name": "计算结果.json"
+            },
+            {
+              "id": "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+              "name": "执行输出.json"
+            },
+            {
+              "id": "artifact:214d14ca814750c14b8f690078e97093352e3bcf343b7b5e52a67146311e9e2a",
+              "name": "执行环境与文件哈希.json"
+            }
+          ]
+        },
+        "artifact_ids": [
+          "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
+          "artifact:4a880b96c0412a697a0cc2087bd89ca5ca8ac737377d400b85098c5ec0b2389e",
+          "artifact:214d14ca814750c14b8f690078e97093352e3bcf343b7b5e52a67146311e9e2a"
+        ],
+        "labels": [
+          {
+            "id": "label:cb01efea711f24e81301928b",
+            "name": "need-review",
+            "color": "#8250df",
+            "description": "请求独立六维复核"
+          }
+        ],
+        "revision": 4
+      }
+    },
+    {
+      "id": "change:5557cd1279a80f9bbe5e8a8b",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:64d971e33ff70d9018f3dc5a",
+      "revision": 4,
+      "kind": "labels",
+      "author": "user",
+      "reason": "当前内容没有对应六维报告，待逐维核验；历史正文评分不替代当前审核",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.836307+00:00",
+      "before": {
+        "content": {
+          "title": "积分从30圈延长到300圈",
+          "text": "**已执行：Leapfrog，每圈200步。**\n\n- 30圈：采样最大相对能量误差 2.4316e-07。\n- 300圈：采样最大相对能量误差 2.4316e-07。\n\n长期误差仍需与多体模型、实际尺度分别核查。",
+          "attachments": [
+            {
+              "id": "artifact:dc5e2c9ec7db57a861eb72570a5b96bd0b098b1d531830cbe5eb40e77bbc3dcb",
+              "name": "延长积分.py"
+            },
+            {
+              "id": "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
+              "name": "轨道与耗散计算.py"
+            },
+            {
+              "id": "artifact:7c2844990c8fa83a6f7754356b90cdd41bdfcf0b1e12c27ae65b446bd43c2eab",
+              "name": "积分时长对照.json"
+            },
+            {
+              "id": "artifact:214d14ca814750c14b8f690078e97093352e3bcf343b7b5e52a67146311e9e2a",
+              "name": "执行环境与文件哈希.json"
+            }
+          ]
+        },
+        "artifact_ids": [
+          "artifact:dc5e2c9ec7db57a861eb72570a5b96bd0b098b1d531830cbe5eb40e77bbc3dcb",
+          "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
+          "artifact:7c2844990c8fa83a6f7754356b90cdd41bdfcf0b1e12c27ae65b446bd43c2eab",
+          "artifact:214d14ca814750c14b8f690078e97093352e3bcf343b7b5e52a67146311e9e2a"
+        ],
+        "labels": [],
+        "revision": 3
+      },
+      "after": {
+        "content": {
+          "title": "积分从30圈延长到300圈",
+          "text": "**已执行：Leapfrog，每圈200步。**\n\n- 30圈：采样最大相对能量误差 2.4316e-07。\n- 300圈：采样最大相对能量误差 2.4316e-07。\n\n长期误差仍需与多体模型、实际尺度分别核查。",
+          "attachments": [
+            {
+              "id": "artifact:dc5e2c9ec7db57a861eb72570a5b96bd0b098b1d531830cbe5eb40e77bbc3dcb",
+              "name": "延长积分.py"
+            },
+            {
+              "id": "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
+              "name": "轨道与耗散计算.py"
+            },
+            {
+              "id": "artifact:7c2844990c8fa83a6f7754356b90cdd41bdfcf0b1e12c27ae65b446bd43c2eab",
+              "name": "积分时长对照.json"
+            },
+            {
+              "id": "artifact:214d14ca814750c14b8f690078e97093352e3bcf343b7b5e52a67146311e9e2a",
+              "name": "执行环境与文件哈希.json"
+            }
+          ]
+        },
+        "artifact_ids": [
+          "artifact:dc5e2c9ec7db57a861eb72570a5b96bd0b098b1d531830cbe5eb40e77bbc3dcb",
+          "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
+          "artifact:7c2844990c8fa83a6f7754356b90cdd41bdfcf0b1e12c27ae65b446bd43c2eab",
+          "artifact:214d14ca814750c14b8f690078e97093352e3bcf343b7b5e52a67146311e9e2a"
+        ],
+        "labels": [
+          {
+            "id": "label:cb01efea711f24e81301928b",
+            "name": "need-review",
+            "color": "#8250df",
+            "description": "请求独立六维复核"
+          }
+        ],
+        "revision": 4
+      }
+    },
+    {
+      "id": "change:a53ce81a12acc7ecc3c08ae2",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:158e4ae8587a8dbad65db57b",
+      "revision": 3,
+      "kind": "labels",
+      "author": "user",
+      "reason": "当前内容没有对应六维报告，待逐维核验；历史正文评分不替代当前审核",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.846582+00:00",
+      "before": {
+        "content": {
+          "title": "复核下一组时间分辨率",
+          "text": "比较每圈800与1600步，固定30圈；检查能量误差的收敛趋势。规划配额1。",
+          "attachments": []
+        },
+        "artifact_ids": [],
+        "labels": [
+          {
+            "id": "label:f7d1ae9045d542727a142516",
+            "name": "ready-for-agent",
+            "color": "#16a34a",
+            "description": "输入、产物与停止条件明确，可执行"
+          }
+        ],
+        "revision": 2
+      },
+      "after": {
+        "content": {
+          "title": "复核下一组时间分辨率",
+          "text": "比较每圈800与1600步，固定30圈；检查能量误差的收敛趋势。规划配额1。",
+          "attachments": []
+        },
+        "artifact_ids": [],
+        "labels": [
+          {
+            "id": "label:f7d1ae9045d542727a142516",
+            "name": "ready-for-agent",
+            "color": "#16a34a",
+            "description": "输入、产物与停止条件明确，可执行"
+          },
+          {
+            "id": "label:cb01efea711f24e81301928b",
+            "name": "need-review",
+            "color": "#8250df",
+            "description": "请求独立六维复核"
+          }
+        ],
+        "revision": 3
+      }
+    },
+    {
+      "id": "change:c3dd1b3266da949da26395b1",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:aa400afc5a3fa6bc4c6e85fc",
+      "revision": 3,
+      "kind": "labels",
+      "author": "user",
+      "reason": "当前内容没有对应六维报告，待逐维核验；历史正文评分不替代当前审核",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.860178+00:00",
+      "before": {
+        "content": {
+          "title": "复核更长积分时长",
+          "text": "固定每圈200步，比较300与3000圈，记录最大与末端能量误差。规划配额2。",
+          "attachments": []
+        },
+        "artifact_ids": [],
+        "labels": [
+          {
+            "id": "label:f7d1ae9045d542727a142516",
+            "name": "ready-for-agent",
+            "color": "#16a34a",
+            "description": "输入、产物与停止条件明确，可执行"
+          }
+        ],
+        "revision": 2
+      },
+      "after": {
+        "content": {
+          "title": "复核更长积分时长",
+          "text": "固定每圈200步，比较300与3000圈，记录最大与末端能量误差。规划配额2。",
+          "attachments": []
+        },
+        "artifact_ids": [],
+        "labels": [
+          {
+            "id": "label:f7d1ae9045d542727a142516",
+            "name": "ready-for-agent",
+            "color": "#16a34a",
+            "description": "输入、产物与停止条件明确，可执行"
+          },
+          {
+            "id": "label:cb01efea711f24e81301928b",
+            "name": "need-review",
+            "color": "#8250df",
+            "description": "请求独立六维复核"
+          }
+        ],
+        "revision": 3
+      }
+    },
+    {
+      "id": "change:f88606904477ae22efdc7115",
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "record_id": "record:115f91b4ae82e796bc75b937",
+      "revision": 3,
+      "kind": "labels",
+      "author": "user",
+      "reason": "当前内容没有对应六维报告，待逐维核验；历史正文评分不替代当前审核",
+      "comment": "",
+      "reference_revision": null,
+      "created_at": "2026-10-19T23:08:32.878270+00:00",
+      "before": {
+        "content": {
+          "title": "检查初值扰动集合",
+          "text": "固定积分器，对初始速度施加对称扰动，比较轨道参数分布。规划配额3。",
+          "attachments": []
+        },
+        "artifact_ids": [],
+        "labels": [
+          {
+            "id": "label:5152b47e8f43d716f3ed07d6",
+            "name": "need-info",
+            "color": "#0284c7",
+            "description": "缺少继续研究所需输入"
+          }
+        ],
+        "revision": 2
+      },
+      "after": {
+        "content": {
+          "title": "检查初值扰动集合",
+          "text": "固定积分器，对初始速度施加对称扰动，比较轨道参数分布。规划配额3。",
+          "attachments": []
+        },
+        "artifact_ids": [],
+        "labels": [
+          {
+            "id": "label:5152b47e8f43d716f3ed07d6",
+            "name": "need-info",
+            "color": "#0284c7",
+            "description": "缺少继续研究所需输入"
+          },
+          {
+            "id": "label:cb01efea711f24e81301928b",
+            "name": "need-review",
+            "color": "#8250df",
+            "description": "请求独立六维复核"
+          }
+        ],
+        "revision": 3
       }
     }
   ]
