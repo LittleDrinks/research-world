@@ -6,6 +6,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, StringConstraints, model_validator
 
 from .artifacts import now
+from .node_language import validate_node_language
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1200)]
 Label = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=160)]
@@ -45,6 +46,9 @@ class JointConditionRequest(BaseModel):
 
     @model_validator(mode='after')
     def check_members(self):
+        validate_node_language({'title': self.title, 'text': self.statement, 'note': self.rationale})
+        for member in self.members:
+            validate_node_language({'text': member.role})
         ids = [member.record_id for member in self.members]
         if len(set(ids)) != len(ids) or self.target_id in ids:
             raise ValueError('members must be distinct and cannot include the target')

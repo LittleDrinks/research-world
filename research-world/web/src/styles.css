@@ -257,3 +257,4 @@ select { min-height: 38px; padding: 0 10px; }
 
 body{font-size:16px}.record-item>span{font-size:15px}.module-nav a{font-size:15px}.button{font-size:14px}.form-stack input,.form-stack select,.form-stack textarea{font-size:16px}.pi-messages{font-size:17px;line-height:1.85}.pi-role{font-size:14px}.pi-work{font-size:15px}.pi-status{font-size:15px}.pi-composer textarea{font-size:16px}
 .session-row{display:flex;align-items:center;min-width:0}.session-row .record-item{flex:1;min-width:0}.session-row .record-item>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.session-delete{opacity:.35;flex-shrink:0}.session-row:hover .session-delete,.session-delete:focus-visible{opacity:1}
+.node-body img{max-width:100%;height:auto}

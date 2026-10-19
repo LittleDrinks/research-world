@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Response
 from kernel_contract import LocalMapQuery
-from pydantic import BaseModel, ConfigDict, StrictInt
+from pydantic import BaseModel, ConfigDict, StrictInt, field_validator
 
 from .kernel_interface import KernelInterface
 from .joint_conditions import JointConditionRequest
 from .research_http import research_router
+from .node_language import validate_node_language
 
 __all__ = ["kernel_graph_router"]
 
@@ -16,6 +17,8 @@ class RecordRequest(BaseModel):
     type: str
     content: dict
     artifact_ids: tuple[str, ...] = ()
+
+    _language = field_validator('content')(validate_node_language)
 
 
 class RelationRequest(BaseModel):

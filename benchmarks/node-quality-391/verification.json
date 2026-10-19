@@ -1,0 +1,388 @@
+{
+  "issue": 391,
+  "preview": "http://localhost:8096/projects/project%3A506983119486f51ac4a1aaee/map",
+  "record_count": 19,
+  "direct_relation_count": 17,
+  "joint_condition_count": 2,
+  "source_revisions": {
+    "DeepResearch": "7fd657e84eba63447cb8956cdbcaa9b7834369a0",
+    "IdeaGeneration": "534e3c110780144c099dad08df95453ec0c9ca6f",
+    "DryExperiment": "7b5ee85d0a4a65f5adc46cda6f0503bd60687817"
+  },
+  "source_ids": [
+    "SGI_DeepResearch_0000",
+    "SGI_DeepResearch_0002",
+    "SGI_DryExperiment_0000",
+    "SGI_DryExperiment_0002",
+    "SGI_IdeaGeneration_0080",
+    "SGI_IdeaGeneration_0081",
+    "SGI_IdeaGeneration_0082"
+  ],
+  "backend_tests": {
+    "command": "uv run pytest -q tests/test_node_language.py tests/test_research_changes.py tests/test_kernel_http.py tests/test_joint_conditions.py",
+    "passed": 125
+  },
+  "browser": {
+    "errors": [],
+    "mobile_overflow": false,
+    "map_url": "http://localhost:8096/projects/project%3A506983119486f51ac4a1aaee/map"
+  },
+  "result_browser": {
+    "checks": [
+      "mass_check",
+      "noise_control",
+      "calibration_control"
+    ],
+    "mobile_image": "passed",
+    "errors": []
+  },
+  "deployed_guard": {
+    "status": 422,
+    "new_records": 0
+  },
+  "execution": {
+    "python": "3.10.12",
+    "numpy": "1.24.3",
+    "scipy": "1.10.1",
+    "image": "sha256:0a32d7ed2e8d773dd3e3ea520d8ffe81727428efd8f5039ebc9c188b5201d476",
+    "cpu_limit": 2,
+    "memory_bytes": 2147483648,
+    "commands": [
+      "python run_reference.py",
+      "python compute_checks.py",
+      "python plot_results.py"
+    ],
+    "network": "none",
+    "reference_runs": 10
+  },
+  "reference_runs": [
+    {
+      "case": "case0",
+      "input": "input1",
+      "exit_code": 0,
+      "seconds": 0.3891958909953246,
+      "prepare_seconds": 0.08811010800127406,
+      "expected": 27.173,
+      "observed": 27.173,
+      "absolute_error": 0.0,
+      "exact_stdout": true,
+      "data_sha256": {
+        "data/gw150914_synthetic_data.npz": "fbe33453f584edd83a6b1ac4c9cdab039e02f5acf1dbd59f0c9cbb1d06e88bde"
+      },
+      "code_sha256": "f7fac3768b6e07731ae6ce7aec87f8822b6f34dedd6c082180d9341b43caa328"
+    },
+    {
+      "case": "case0",
+      "input": "input2",
+      "exit_code": 0,
+      "seconds": 0.3397678460023599,
+      "prepare_seconds": 0.07824009300384205,
+      "expected": 29.8498,
+      "observed": 29.8498,
+      "absolute_error": 0.0,
+      "exact_stdout": true,
+      "data_sha256": {
+        "data/gw150914_synthetic_data.npz": "0aba2037f07c7cec128ed67fc1752d26cb89663a4b0c452ad83ba593b9105d72"
+      },
+      "code_sha256": "f7fac3768b6e07731ae6ce7aec87f8822b6f34dedd6c082180d9341b43caa328"
+    },
+    {
+      "case": "case0",
+      "input": "input3",
+      "exit_code": 0,
+      "seconds": 0.4269686640036525,
+      "prepare_seconds": 0.08094473600795027,
+      "expected": 29.2281,
+      "observed": 29.2281,
+      "absolute_error": 0.0,
+      "exact_stdout": true,
+      "data_sha256": {
+        "data/gw150914_synthetic_data.npz": "1b0de70db07bcff170ff56db12282c9d5ea742f9f0be52eb4d622314505d5dc4"
+      },
+      "code_sha256": "f7fac3768b6e07731ae6ce7aec87f8822b6f34dedd6c082180d9341b43caa328"
+    },
+    {
+      "case": "case0",
+      "input": "input4",
+      "exit_code": 0,
+      "seconds": 0.32482143699598964,
+      "prepare_seconds": 0.07977981099975295,
+      "expected": 29.3049,
+      "observed": 29.3049,
+      "absolute_error": 0.0,
+      "exact_stdout": true,
+      "data_sha256": {
+        "data/gw150914_synthetic_data.npz": "1905039328b1cfef9b9e6adcb209977b02cc056cc00e92463995da64ffc0ef23"
+      },
+      "code_sha256": "f7fac3768b6e07731ae6ce7aec87f8822b6f34dedd6c082180d9341b43caa328"
+    },
+    {
+      "case": "case0",
+      "input": "input5",
+      "exit_code": 0,
+      "seconds": 0.3442779200122459,
+      "prepare_seconds": 0.09052439700462855,
+      "expected": 25.1981,
+      "observed": 25.1981,
+      "absolute_error": 0.0,
+      "exact_stdout": true,
+      "data_sha256": {
+        "data/gw150914_synthetic_data.npz": "05dba067428cbac2d07f31ad1ff2825e67ea852f0b55cc1b82fc4aa3449a2715"
+      },
+      "code_sha256": "f7fac3768b6e07731ae6ce7aec87f8822b6f34dedd6c082180d9341b43caa328"
+    },
+    {
+      "case": "case2",
+      "input": "input1",
+      "exit_code": 0,
+      "seconds": 0.09407905300031416,
+      "prepare_seconds": 0.1269932169961976,
+      "expected": 0.5268462087882453,
+      "observed": 0.5268462087882453,
+      "absolute_error": 0.0,
+      "exact_stdout": true,
+      "data_sha256": {
+        "data/l1_detector_params.json": "3ec643cbde96c796004ffd6e0b9a71a71b5e42c2b97d87f796bca31fbbf9527a"
+      },
+      "code_sha256": "e83c43463580b90de614a84cf9119eccd260d1a7f92ad4e0bf3b50a5ba0877c9"
+    },
+    {
+      "case": "case2",
+      "input": "input2",
+      "exit_code": 0,
+      "seconds": 0.06898668999201618,
+      "prepare_seconds": 0.07507731700025033,
+      "expected": 0.5268462087882453,
+      "observed": 0.5268462087882453,
+      "absolute_error": 0.0,
+      "exact_stdout": true,
+      "data_sha256": {
+        "data/l1_detector_params.json": "3ec643cbde96c796004ffd6e0b9a71a71b5e42c2b97d87f796bca31fbbf9527a"
+      },
+      "code_sha256": "e83c43463580b90de614a84cf9119eccd260d1a7f92ad4e0bf3b50a5ba0877c9"
+    },
+    {
+      "case": "case2",
+      "input": "input3",
+      "exit_code": 0,
+      "seconds": 0.07366761700541247,
+      "prepare_seconds": 0.07142105700040702,
+      "expected": 0.5268462087882453,
+      "observed": 0.5268462087882453,
+      "absolute_error": 0.0,
+      "exact_stdout": true,
+      "data_sha256": {
+        "data/l1_detector_params.json": "3ec643cbde96c796004ffd6e0b9a71a71b5e42c2b97d87f796bca31fbbf9527a"
+      },
+      "code_sha256": "e83c43463580b90de614a84cf9119eccd260d1a7f92ad4e0bf3b50a5ba0877c9"
+    },
+    {
+      "case": "case2",
+      "input": "input4",
+      "exit_code": 0,
+      "seconds": 0.07424223999259993,
+      "prepare_seconds": 0.07344279700191692,
+      "expected": 0.5268462087882453,
+      "observed": 0.5268462087882453,
+      "absolute_error": 0.0,
+      "exact_stdout": true,
+      "data_sha256": {
+        "data/l1_detector_params.json": "3ec643cbde96c796004ffd6e0b9a71a71b5e42c2b97d87f796bca31fbbf9527a"
+      },
+      "code_sha256": "e83c43463580b90de614a84cf9119eccd260d1a7f92ad4e0bf3b50a5ba0877c9"
+    },
+    {
+      "case": "case2",
+      "input": "input5",
+      "exit_code": 0,
+      "seconds": 0.06961144600063562,
+      "prepare_seconds": 0.06863016600254923,
+      "expected": 0.5268462087882453,
+      "observed": 0.5268462087882453,
+      "absolute_error": 0.0,
+      "exact_stdout": true,
+      "data_sha256": {
+        "data/l1_detector_params.json": "3ec643cbde96c796004ffd6e0b9a71a71b5e42c2b97d87f796bca31fbbf9527a"
+      },
+      "code_sha256": "e83c43463580b90de614a84cf9119eccd260d1a7f92ad4e0bf3b50a5ba0877c9"
+    }
+  ],
+  "checks": {
+    "total_mass_solar": 64.32710821383328,
+    "reference_mass_solar": 62,
+    "phase_budget_percent": 3.6000000000000005,
+    "amplitude_controls": [
+      {
+        "signal_amplitude": 0.0,
+        "peak_snr": 5.792342159843251
+      },
+      {
+        "signal_amplitude": 0.5,
+        "peak_snr": 13.984675051061675
+      },
+      {
+        "signal_amplitude": 1.0,
+        "peak_snr": 27.17298941582822
+      },
+      {
+        "signal_amplitude": 2.0,
+        "peak_snr": 53.549618145361315
+      }
+    ],
+    "calibration_controls": [
+      {
+        "disabled": [],
+        "magnitude_percent": 0.5268462087882453,
+        "phase_deg": -1.488387744363633
+      },
+      {
+        "disabled": [
+          "k_T"
+        ],
+        "magnitude_percent": 0.4794761238757106,
+        "phase_deg": -1.4425929711934111
+      },
+      {
+        "disabled": [
+          "k_P"
+        ],
+        "magnitude_percent": 0.42546635837767965,
+        "phase_deg": -1.201168115811654
+      },
+      {
+        "disabled": [
+          "k_U"
+        ],
+        "magnitude_percent": 0.13652876968148764,
+        "phase_deg": -0.336121369877693
+      },
+      {
+        "disabled": [
+          "k_C"
+        ],
+        "magnitude_percent": 0.5268462085733283,
+        "phase_deg": -1.4883877439865363
+      },
+      {
+        "disabled": [
+          "dfc"
+        ],
+        "magnitude_percent": 0.5268462087049564,
+        "phase_deg": -1.4883877443175066
+      },
+      {
+        "disabled": [
+          "k_T",
+          "k_P",
+          "k_U",
+          "k_C",
+          "dfc"
+        ],
+        "magnitude_percent": -2.5443089946008968e-05,
+        "phase_deg": -3.413324306472026e-06
+      }
+    ]
+  },
+  "artifacts": {
+    "environment": {
+      "id": "artifact:526d841ded7716c3f57b5584090f5cbb81e2d10104c94a1d96821c8c3d7266f5",
+      "name": "运行环境与命令.json"
+    },
+    "runner": {
+      "id": "artifact:dacbb7e1ccaa41a3822655b4f67b7bde7f821650085c27744d96dc491e661919",
+      "name": "五组输入复算.py"
+    },
+    "checks": {
+      "id": "artifact:f5cba486e20a86a39b94ac953dbd49e0b26f495149482b28dd5c886d713df84a",
+      "name": "独立复算与对照.py"
+    },
+    "reference-results": {
+      "id": "artifact:2a71f7c97bbc5b2c956d63e16830f85a213bf5b0a8092323febf38432cc9a89c",
+      "name": "完整执行结果.json"
+    },
+    "controls": {
+      "id": "artifact:a330d7edc7ff05eefb71947d3cb0810ada0238d7ebcc9f80b8ffa1006deedfd1",
+      "name": "对照实验结果.json"
+    },
+    "comparison": {
+      "id": "artifact:c25f1428ef7c17c7b2bf95735d3f6bb5b8d661cae8a8c675006e9a6593454e31",
+      "name": "预期与实测对比.csv"
+    },
+    "signal-control.png": {
+      "id": "artifact:c74787d0322ec1cb5d9b7ed2b48235c7e313c9bc34e59e3638a272b0be300119",
+      "name": "signal-control.png"
+    },
+    "response-correction.png": {
+      "id": "artifact:e5487f2386ad84197e06e01614605f2b12bb2c8f96f4c227025b5f850bd65755",
+      "name": "response-correction.png"
+    },
+    "mass-fit.png": {
+      "id": "artifact:df0da412525562dfc10f57d01d80ca3be9a3f9846fe183de97e7e54c42b672e4",
+      "name": "mass-fit.png"
+    },
+    "0-1-log": {
+      "id": "artifact:97efa57aa39d164d77db36df55f18e28670dbc5adf223703799f0740696f403b",
+      "name": "输入1执行日志.txt"
+    },
+    "0-2-log": {
+      "id": "artifact:a2b3bf41c436ce5eab30194280035df232de8f2cf37ae820045d15da11993d94",
+      "name": "输入2执行日志.txt"
+    },
+    "0-3-log": {
+      "id": "artifact:2cef6e3c49fc630a23d778fe4e26dd34761dfe2f0022b25966405806720f9540",
+      "name": "输入3执行日志.txt"
+    },
+    "0-4-log": {
+      "id": "artifact:0fcee0471e6a1a41d27313362a0d40387a9a6f4e92def99b43d11846394f6690",
+      "name": "输入4执行日志.txt"
+    },
+    "0-5-log": {
+      "id": "artifact:577c0283e8eec4f8e2159c2eea2f6851b8bd2d6d02d37c93c7e42332ce4845b7",
+      "name": "输入5执行日志.txt"
+    },
+    "2-1-log": {
+      "id": "artifact:fbc96b479003d903ddbea3732be4a7746140e14f3d1d1c35ddd911505acfc326",
+      "name": "输入1执行日志.txt"
+    },
+    "2-2-log": {
+      "id": "artifact:fbc96b479003d903ddbea3732be4a7746140e14f3d1d1c35ddd911505acfc326",
+      "name": "输入2执行日志.txt"
+    },
+    "2-3-log": {
+      "id": "artifact:fbc96b479003d903ddbea3732be4a7746140e14f3d1d1c35ddd911505acfc326",
+      "name": "输入3执行日志.txt"
+    },
+    "2-4-log": {
+      "id": "artifact:fbc96b479003d903ddbea3732be4a7746140e14f3d1d1c35ddd911505acfc326",
+      "name": "输入4执行日志.txt"
+    },
+    "2-5-log": {
+      "id": "artifact:fbc96b479003d903ddbea3732be4a7746140e14f3d1d1c35ddd911505acfc326",
+      "name": "输入5执行日志.txt"
+    },
+    "ablation-csv": {
+      "id": "artifact:e312b9ca082fdfabad781a460dbbaaa0ae477f30d2f9e45529fbf9ac668f16bf",
+      "name": "修正项消融.csv"
+    }
+  },
+  "record_urls": {
+    "mass_check": "http://localhost:8096/projects/project%3A506983119486f51ac4a1aaee/records/record%3Aab41fe4a446e8bade3275f9c",
+    "phase_check": "http://localhost:8096/projects/project%3A506983119486f51ac4a1aaee/records/record%3A9ecfa09a061a1bc8762ca0a4",
+    "noise_control": "http://localhost:8096/projects/project%3A506983119486f51ac4a1aaee/records/record%3A1a8a7b7f0f20d2cff758501a",
+    "calibration_control": "http://localhost:8096/projects/project%3A506983119486f51ac4a1aaee/records/record%3Acd6651fe549fe3e22b0829e0",
+    "mass_claim": "http://localhost:8096/projects/project%3A506983119486f51ac4a1aaee/records/record%3A0711ad23ec331681c8549128",
+    "mass_revision": "http://localhost:8096/projects/project%3A506983119486f51ac4a1aaee/records/record%3A4d7701d5c238932e7892097e"
+  },
+  "local_evidence_hashes": {
+    "run_reference.py": "dacbb7e1ccaa41a3822655b4f67b7bde7f821650085c27744d96dc491e661919",
+    "compute_checks.py": "f5cba486e20a86a39b94ac953dbd49e0b26f495149482b28dd5c886d713df84a",
+    "plot_results.py": "210117686896a08028efa43a62ad096884686280507139847de5112b75a58641",
+    "reference-results.json": "2a71f7c97bbc5b2c956d63e16830f85a213bf5b0a8092323febf38432cc9a89c",
+    "control-results.json": "a330d7edc7ff05eefb71947d3cb0810ada0238d7ebcc9f80b8ffa1006deedfd1"
+  },
+  "not_executed": [
+    "双站真实数据搜索与时间平移背景估计",
+    "标定参数协方差传播",
+    "百万波形条件样条流训练"
+  ]
+}

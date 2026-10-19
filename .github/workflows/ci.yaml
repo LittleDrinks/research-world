@@ -27,6 +27,9 @@ jobs:
         run: |
           uv sync --frozen --dev
           uv run pytest -q
+      - name: Node research language
+        working-directory: research-world
+        run: uv run pytest -q tests/test_node_language.py
       - name: Test agent runtime
         working-directory: runtime
         run: |
