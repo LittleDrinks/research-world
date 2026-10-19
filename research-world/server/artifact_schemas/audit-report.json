@@ -6,7 +6,9 @@
     "target_artifact_id",
     "summary",
     "sections",
-    "conclusion"
+    "conclusion",
+    "dimensions",
+    "execution"
   ],
   "properties": {
     "title": {
@@ -326,11 +328,234 @@
           "pattern": "\\S"
         }
       }
+    },
+    "dimensions": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/dimension"
+            }
+          ],
+          "properties": {
+            "id": {
+              "const": "understanding"
+            },
+            "title": {
+              "const": "问题理解"
+            },
+            "action": {
+              "const": "check"
+            },
+            "result": {
+              "enum": [
+                "scored",
+                "unverified"
+              ]
+            }
+          },
+          "x-score-anchors": [
+            "对象、范围或关键前提错误。",
+            "对象明确，但边界或关键变量缺失。",
+            "对象、范围、变量与前提明确，区分问题和假设。"
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/dimension"
+            }
+          ],
+          "properties": {
+            "id": {
+              "const": "evidence"
+            },
+            "title": {
+              "const": "文献证据"
+            }
+          },
+          "x-score-anchors": [
+            "关键引文错误或不支持主张。",
+            "部分证据已核查，仍有承重主张缺依据。",
+            "承重主张均有核查过的证据及定位，引用内容与结论一致。"
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/dimension"
+            }
+          ],
+          "properties": {
+            "id": {
+              "const": "directions"
+            },
+            "title": {
+              "const": "方向质量"
+            }
+          },
+          "x-score-anchors": [
+            "方向重复、无依据或不可检验。",
+            "有不同解释，但缺少可区分预测或反证。",
+            "方向机制可区分，明确依据、反证和可检验预测。"
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/dimension"
+            }
+          ],
+          "properties": {
+            "id": {
+              "const": "reasoning"
+            },
+            "title": {
+              "const": "科学推理"
+            },
+            "action": {
+              "const": "check"
+            },
+            "result": {
+              "enum": [
+                "scored",
+                "unverified"
+              ]
+            }
+          },
+          "x-score-anchors": [
+            "关键推导、单位、数量级或因果推断错误。",
+            "主要推理成立，但存在未闭合假设或外推。",
+            "关键推导、单位、量级及适用条件核查一致，结论强度匹配证据。"
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/dimension"
+            }
+          ],
+          "properties": {
+            "id": {
+              "const": "plan"
+            },
+            "title": {
+              "const": "研究计划"
+            }
+          },
+          "x-score-anchors": [
+            "缺少可执行步骤，或判据错误导致实施失效。",
+            "有方法和步骤，但缺基线、对照、资源或停止判据。",
+            "输入、方法、基线、对照、判据和资源明确，计划与执行分开。"
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/dimension"
+            }
+          ],
+          "properties": {
+            "id": {
+              "const": "traceability"
+            },
+            "title": {
+              "const": "表达与追溯"
+            },
+            "action": {
+              "const": "check"
+            },
+            "result": {
+              "enum": [
+                "scored",
+                "unverified"
+              ]
+            }
+          },
+          "x-score-anchors": [
+            "关键结论无法追到来源或执行产物。",
+            "主线可读，但部分版本、定位或执行依据缺失。",
+            "表达简明，结论可追到固定版本、来源和实际执行依据。"
+          ]
+        }
+      ],
+      "items": false,
+      "minItems": 6,
+      "maxItems": 6
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "reason",
+        "evidence"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "executed",
+            "not_executed",
+            "unverified",
+            "not_applicable"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240,
+          "pattern": "\\S"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "artifact_id",
+              "locator"
+            ],
+            "properties": {
+              "artifact_id": {
+                "type": "string",
+                "pattern": "^artifact:[a-f0-9]{64}$"
+              },
+              "locator": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "pattern": "\\S"
+              }
+            }
+          },
+          "minItems": 0,
+          "maxItems": 3
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "executed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "evidence": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
     }
   },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "审计报告",
-  "description": "结构化审计记录；格式校验不判定科学结论。",
+  "title": "六维审计",
+  "description": "固定六维评分判据；check须核查，skip仅表示不适用。未核验不记分，评分不代表实验已执行。逐维证据必须来自被审材料或本次实际核验。",
   "x-max-reading-chars": 5000,
   "allOf": [
     {
@@ -375,6 +600,53 @@
                 }
               }
             ]
+          },
+          "dimensions": {
+            "items": {
+              "properties": {
+                "result": {
+                  "enum": [
+                    "scored",
+                    "not_applicable"
+                  ]
+                },
+                "score": {
+                  "enum": [
+                    2,
+                    null
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "dimensions": {
+            "contains": {
+              "properties": {
+                "score": {
+                  "enum": [
+                    0,
+                    1
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "conclusion": {
+            "properties": {
+              "verdict": {
+                "const": "revise"
+              }
+            }
           }
         }
       }
@@ -417,7 +689,248 @@
       "conclusion": {
         "verdict": "inconclusive",
         "markdown": "仍有检查未完成，暂不能给出通过结论。"
+      },
+      "dimensions": [
+        {
+          "id": "understanding",
+          "title": "问题理解",
+          "action": "check",
+          "result": "unverified",
+          "score": null,
+          "reason": "尚未核验该维度。",
+          "improvement": "按量表判据检查固定输入并补充证据定位。",
+          "evidence": []
+        },
+        {
+          "id": "evidence",
+          "title": "文献证据",
+          "action": "check",
+          "result": "unverified",
+          "score": null,
+          "reason": "尚未核验该维度。",
+          "improvement": "按量表判据检查固定输入并补充证据定位。",
+          "evidence": []
+        },
+        {
+          "id": "directions",
+          "title": "方向质量",
+          "action": "check",
+          "result": "unverified",
+          "score": null,
+          "reason": "尚未核验该维度。",
+          "improvement": "按量表判据检查固定输入并补充证据定位。",
+          "evidence": []
+        },
+        {
+          "id": "reasoning",
+          "title": "科学推理",
+          "action": "check",
+          "result": "unverified",
+          "score": null,
+          "reason": "尚未核验该维度。",
+          "improvement": "按量表判据检查固定输入并补充证据定位。",
+          "evidence": []
+        },
+        {
+          "id": "plan",
+          "title": "研究计划",
+          "action": "check",
+          "result": "unverified",
+          "score": null,
+          "reason": "尚未核验该维度。",
+          "improvement": "按量表判据检查固定输入并补充证据定位。",
+          "evidence": []
+        },
+        {
+          "id": "traceability",
+          "title": "表达与追溯",
+          "action": "check",
+          "result": "unverified",
+          "score": null,
+          "reason": "尚未核验该维度。",
+          "improvement": "按量表判据检查固定输入并补充证据定位。",
+          "evidence": []
+        }
+      ],
+      "execution": {
+        "status": "unverified",
+        "reason": "尚未核对执行记录。",
+        "evidence": []
       }
     }
-  ]
+  ],
+  "$defs": {
+    "dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "action",
+        "result",
+        "score",
+        "reason",
+        "improvement",
+        "evidence"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "action": {
+          "enum": [
+            "check",
+            "skip"
+          ]
+        },
+        "result": {
+          "enum": [
+            "scored",
+            "unverified",
+            "not_applicable"
+          ]
+        },
+        "score": {
+          "enum": [
+            0,
+            1,
+            2,
+            null
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 260,
+          "pattern": "\\S"
+        },
+        "improvement": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "artifact_id",
+              "locator"
+            ],
+            "properties": {
+              "artifact_id": {
+                "type": "string",
+                "pattern": "^artifact:[a-f0-9]{64}$"
+              },
+              "locator": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "pattern": "\\S"
+              }
+            }
+          },
+          "minItems": 0,
+          "maxItems": 3
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "scored"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "action": {
+                "const": "check"
+              },
+              "score": {
+                "enum": [
+                  0,
+                  1,
+                  2
+                ]
+              },
+              "evidence": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "unverified"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "action": {
+                "const": "check"
+              },
+              "score": {
+                "const": null
+              },
+              "improvement": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "pattern": "\\S"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "not_applicable"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "action": {
+                "const": "skip"
+              },
+              "score": {
+                "const": null
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "score": {
+                "enum": [
+                  0,
+                  1
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "improvement": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "pattern": "\\S"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
 }

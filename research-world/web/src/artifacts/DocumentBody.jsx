@@ -1,3 +1,5 @@
+import './artifacts.css';
+import {DimensionReview} from './DimensionReview';
 import {ChatMarkdown} from '../chat/ChatMarkdown';
 import {artifactViewUrl} from '../api';
 
@@ -11,8 +13,9 @@ export function EvidenceLinks({items,projectId}){
   </li>)}</ul>;
 }
 
-export function DocumentBody({data,projectId}){
+export function DocumentBody({data,projectId,schema}){
   return <><div className="document-summary"><ChatMarkdown projectId={projectId}>{data.summary}</ChatMarkdown></div>
+    <DimensionReview data={data} projectId={projectId} schema={schema}/>
     {data.sections.map(section=><section key={section.id} id={section.id} className="document-section">
       <h2>{section.title}</h2><ChatMarkdown projectId={projectId}>{section.markdown}</ChatMarkdown>
       <EvidenceLinks items={section.evidence} projectId={projectId}/>

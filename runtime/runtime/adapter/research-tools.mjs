@@ -24,7 +24,7 @@ const definitions = {
     Type.Object({operation:Type.Literal('submit'),record_id:text,kind:Type.Union(['revise','comment','labels'].map(Type.Literal)),base_revision:Type.Integer({minimum:1}),reason:text,
       title:Type.Optional(text),text:Type.Optional(text),comment:Type.Optional(text),reference_revision:Type.Optional(Type.Integer({minimum:1})),label_ids:Type.Optional(Type.Array(text))}),
   ])],
-  artifact: ['读取或保存不可变产物。operation=read通过artifact_id读取项目内原文；templates获取报告模板与示例；结构化报告选择schema_id、record_id，content/path提供模板数据JSON；validate仅校验，capture校验后保存并关联对象。全文等已有UTF-8文件用path原样捕获。',
+  artifact: ['读取或保存不可变产物。报告必须使用模板schema_id提交结构化JSON，禁止用自由Markdown替代；六维评分按模板逐分判据填写。原始文献用text/plain，代码与数据用实际格式。operation=read通过artifact_id读取项目内原文；templates获取报告模板与示例；结构化报告选择schema_id、record_id，content/path提供模板数据JSON；validate仅校验，capture校验后保存并关联对象。全文等已有UTF-8文件用path原样捕获。',
     Type.Object({operation:Type.Optional(Type.Union(['capture','validate','templates','read'].map(Type.Literal))),artifact_id:Type.Optional(text),
       content:Type.Optional(text),path:Type.Optional(text),media_type:Type.Optional(text),schema_id:Type.Optional(text),record_id:Type.Optional(text)})],
   connect: ['连接关系：supports/refutes必须由证据支持，Question不能作为supports/refutes的任一端点；方向依赖问题时用 source=Direction、target=Question、type=depends_on', Type.Object({source_id: text, target_id: text,

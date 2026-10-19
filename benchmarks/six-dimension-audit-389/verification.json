@@ -1,0 +1,26 @@
+{
+  "issue": 389,
+  "branch": "feat/389-six-dimension-audit",
+  "backend_targeted": {
+    "passed": 54
+  },
+  "browser": {
+    "passed": 8,
+    "url": "http://127.0.0.1:8096"
+  },
+  "runtime_transport": {
+    "passed": 2,
+    "environment": "runtime image"
+  },
+  "production_snapshot_sha256": "992befdf2425a11f47ea0e4d972f04065e8549c81b2c2a3420cefe01dded76c6",
+  "model_calls": 0,
+  "preview_source": "q049 V1 historical independent review; scores transcribed, no new scientific evaluation",
+  "clean_environment": "http://localhost:8095",
+  "preview_environment": "http://localhost:8096",
+  "local_backups": [
+    ".scratch/rubric-cleanup/local-before-kernel.tgz",
+    ".scratch/rubric-cleanup/local-before-runtime.tgz",
+    ".scratch/rubric-cleanup/local-before-projects.tgz"
+  ],
+  "cleanup": "Browser tests stop workspaces and assert project deletion; no QA projects remain on either port."
+}

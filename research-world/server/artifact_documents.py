@@ -96,6 +96,9 @@ def schema_error(error):
 
 
 def references(data):
+    yield from data['execution']['evidence']
+    for dimension in data['dimensions']:
+        yield from dimension['evidence']
     for section in data['sections']:
         yield from section['evidence']
         for check in section.get('checks', []):

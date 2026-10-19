@@ -68,7 +68,7 @@ def target_record(kernel, project_id, record_id):
 
 def markdown(document, project_id):
     data = document['data']
-    lines = [f"# {data['title']}", data['summary']]
+    lines = [f"# {data['title']}", data['summary'], rubric_markdown(data, project_id)]
     for section in data['sections']:
         lines.extend([f"## {section['title']}", section['markdown'], evidence_markdown(section['evidence'], project_id)])
         for check in section.get('checks', []):
@@ -81,3 +81,16 @@ def markdown(document, project_id):
 
 def evidence_markdown(evidence, project_id):
     return '\n'.join(f"- [{ref['artifact_id']}]({view_url(project_id, ref['artifact_id'])}) — {ref['locator']}" for ref in evidence)
+
+
+def rubric_markdown(data, project_id):
+    scores = [item['score'] for item in data['dimensions'] if item['result'] == 'scored']
+    total = f'{sum(scores)} / 12' if len(scores) == 6 else f'已评 {len(scores)} / 6 维'
+    states = {'executed':'有执行证据','not_executed':'未执行','unverified':'执行未核验','not_applicable':'无执行事项'}
+    lines = [f'## 六维评价 · {total}', f"执行证据：{states[data['execution']['status']]} · {data['execution']['reason']}",
+             evidence_markdown(data['execution']['evidence'], project_id)]
+    for item in data['dimensions']:
+        score = f"{item['score']}/2" if item['result'] == 'scored' else {'unverified':'未核验','not_applicable':'不适用'}[item['result']]
+        lines.extend([f"### {item['title']} · {score}", item['reason'],
+                      f"改进：{item['improvement']}" if item['improvement'] else '', evidence_markdown(item['evidence'], project_id)])
+    return '\n\n'.join(filter(None, lines))
