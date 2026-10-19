@@ -17,38 +17,15 @@ async function seed(request){
   return {project,root,original,record,template,data};
 }
 
-test('publish from node validates schema and renders immutable report, evidence and mobile',async({page,request})=>{
+test('captured reports render evidence and mobile without a manual upload form',async({page,request})=>{
   const f=await seed(request),errors=[];page.on('pageerror',e=>errors.push(e.message));
   try{
-    await page.addInitScript(id=>localStorage.setItem('rw.active_project',id),f.project.id);
-    await page.goto(`/map?node=${encodeURIComponent(f.record.id)}`);
-    await page.getByRole('button',{name:'发布审计报告'}).click();
-    await expect(page.getByRole('button',{name:'下载填写示例'})).toBeEnabled();
-    await uploadAndValidate(page,{...f.data,summary:'x'.repeat(401)},false);
-    await assertPublishDialogScroll(page);
-    await uploadAndValidate(page,f.data,true);
-    await page.getByRole('button',{name:'校验并发布',exact:true}).click();
-    const href=await page.getByRole('link',{name:'阅读已发布报告'}).getAttribute('href');
-    await page.goto(href);await verifyReading(page,request,f);
-    expect(errors).toEqual([]);
+    const invalid=await request.post(f.root+'/artifacts',{data:{content:JSON.stringify({...f.data,summary:'x'.repeat(401)}),schema_id:f.template.id,record_id:f.record.id}});
+    expect(invalid.status()).toBe(422);
+    const report=await post(request,f.root+'/artifacts',{content:JSON.stringify(f.data),schema_id:f.template.id,record_id:f.record.id});
+    await page.goto(report.view_url);await verifyReading(page,request,f);expect(errors).toEqual([]);
   }finally{await page.close();await request.delete(f.root);}
 });
-
-async function uploadAndValidate(page,data,valid){
-  await page.getByLabel('选择已填写的报告').setInputFiles({name:'audit.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(data))});
-  await page.getByRole('button',{name:'校验',exact:true}).click();
-  if(valid)await expect(page.getByRole('status')).toContainText('校验通过');
-  else {await expect(page.getByRole('alert')).toContainText('summary');await expect(page.getByRole('alert')).toContainText('400');}
-}
-
-async function assertPublishDialogScroll(page){
-  await page.setViewportSize({width:390,height:650});
-  const dialog=page.getByRole('dialog'),box=await dialog.boundingBox();
-  expect(box.y).toBeGreaterThanOrEqual(0);expect(box.y+box.height).toBeLessThanOrEqual(650);
-  await page.mouse.move(220,400);await page.mouse.wheel(0,100000);
-  await expect(page.getByRole('button',{name:'校验并发布',exact:true})).toBeInViewport({ratio:1});
-  await page.setViewportSize({width:1100,height:800});
-}
 
 async function verifyReading(page,request,f){
   await expect(page.getByRole('heading',{name:f.data.title})).toBeVisible();

@@ -3,10 +3,12 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { useWorld } from "./context/WorldContext";
 import { WorkspaceProvider } from "./context/WorkspaceContext";
+import {ProjectScope} from './components/ProjectScope';
 
 
 const WorkspaceFilePage = lazy(() => import("./pages/WorkspaceFilePage").then(value=>({default:value.WorkspaceFilePage})));
 const ArtifactPage = lazy(() => import('./pages/ArtifactPage').then(value=>({default:value.ArtifactPage})));
+const RecordPage = lazy(() => import('./pages/RecordPage').then(value=>({default:value.RecordPage})));
 const MapPage = lazy(() => import("./pages/MapPage").then((value) => ({ default: value.MapPage })));
 const ChatPage = lazy(() => import("./pages/ChatPage").then((value) => ({ default: value.ChatPage })));
 const TracesPage = lazy(() => import("./pages/TracesPage").then((value) => ({ default: value.TracesPage })));
@@ -33,6 +35,10 @@ export function App() {
     <Route path="projects" element={<View component={ProjectsPage} />} />
     <Route path="projects/:projectId/artifacts/:artifactId" element={<View component={ArtifactPage} />} />
     <Route path="workspace/:file/*" element={<View component={WorkspaceFilePage} />} />
+    <Route path="projects/:projectId" element={<ProjectScope><ProjectRequired/></ProjectScope>}>
+      <Route path="map" element={<View component={MapPage}/>}/>
+      <Route path="records/:recordId" element={<View component={RecordPage}/>}/>
+    </Route>
     <Route element={<ProjectRequired />}>
       <Route path="map" element={<View component={MapPage} />} />
       <Route path="chat" element={<View component={ChatPage} />} />

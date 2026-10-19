@@ -18,7 +18,7 @@ test('manage labels and versioned research changes inside existing map',async({p
     await page.addInitScript(id=>localStorage.setItem('rw.active_project',id),f.project);
     await page.goto('/map?node='+encodeURIComponent(f.record.id));
     await manageAndAssign(page);await reviseAndDiscuss(page);await renameAndDelete(page);
-    await page.locator('.map-toolbar-actions').getByRole('button',{name:'Changes',exact:true}).click();
+    await page.locator('.project-tools').getByRole('button',{name:'Changes',exact:true}).click();
     await expect(page.getByRole('dialog',{name:'项目 Changes'})).toContainText('删除项目标签并移除关联');
     await page.getByRole('button',{name:'关闭',exact:true}).click();
     await page.setViewportSize({width:390,height:844});
@@ -46,12 +46,12 @@ async function reviseAndDiscuss(page){
   await page.getByLabel('修订原因',{exact:true}).fill('明确适用条件');await page.getByRole('button',{name:'保存修订'}).click();
   await expect(page.locator('.inspector-header')).toContainText('限定后的解释');
   await page.getByRole('button',{name:'初始版本',exact:true}).click();await expect(page.locator('.node-body')).toContainText('初稿');
-  await page.locator('.record-workspace-tabs').getByRole('button',{name:'讨论',exact:true}).click();
-  await page.getByLabel('评论 · 引用 r1',{exact:true}).fill('这条评论固定针对初稿，尚需补信息。');await page.getByRole('button',{name:'发表评论'}).click();
-  await expect(page.locator('.record-discussion article')).toContainText('引用 r1');
+
+  await page.getByLabel('评论正文',{exact:true}).fill('这条评论固定针对初稿，尚需补信息。');await page.getByRole('button',{name:'发表评论'}).click();
+  await expect(page.locator('.timeline-comment')).toContainText('引用 r1');
   await page.getByRole('button',{name:'返回当前',exact:true}).click();
-  await page.locator('.record-workspace-tabs').getByRole('button',{name:'Changes',exact:true}).click();
-  await expect(page.locator('.record-changes')).toContainText('明确适用条件');
+
+  await expect(page.locator('.research-timeline')).toContainText('明确适用条件');
 }
 
 async function renameAndDelete(page){
@@ -62,7 +62,7 @@ async function renameAndDelete(page){
   await page.locator('.label-manager-list li').filter({hasText:'需核查'}).getByRole('button',{name:'删除',exact:true}).click();
   await page.getByRole('button',{name:'确认删除标签'}).click();await expect(page.locator('.label-manager-list')).not.toContainText('需核查');
   await page.getByRole('button',{name:'关闭',exact:true}).click();await expect(page.locator('.record-label-badges .research-label')).toHaveCount(1);
-  await page.getByRole('button',{name:'r2',exact:true}).click();await expect(page.locator('.fixed-record')).toContainText('warning');
+  await page.getByRole('button',{name:'初始版本',exact:true}).click();await expect(page.locator('.fixed-record')).toContainText('待核查的解释');
 }
 
 test('concurrent edit reports conflict and retains the local draft',async({page,request})=>{
@@ -74,5 +74,23 @@ test('concurrent edit reports conflict and retains the local draft',async({page,
     await post(request,f.root+`/records/${f.record.id}/changes`,{kind:'revise',base_revision:1,reason:'另一处修改',title:'服务端新版本',text:'服务端内容'});
     await page.getByRole('button',{name:'保存修订'}).click();await expect(page.getByRole('dialog').getByRole('alert')).toContainText('记录已更新');
     await expect(page.getByLabel('正文（Markdown）',{exact:true})).toHaveValue('不能被覆盖的本地草稿');
+  }finally{await page.close();await request.post(f.root+'/workspace/stop');await request.delete(f.root);}
+});
+
+test('switching nodes never accumulates labels and issue comments provide preview',async({page,request})=>{
+  const f=await seed(request);
+  try{
+    const other=await post(request,f.root+'/records',{type:'question',content:{title:'第二个问题',text:'需要哪些输入？'},artifact_ids:[]});
+    await page.goto(`/projects/${encodeURIComponent(f.project)}/map`);
+    for(const id of [f.record.id,other.id,f.record.id,other.id,f.record.id,other.id]){
+      await page.locator(`.react-flow__node[data-id="${id}"]`).click();
+      await expect(page.locator('.inspector .record-labels')).toHaveCount(1);
+      await expect(page.locator('.inspector .record-workspace')).toHaveCount(1);
+    }
+    await page.goto(`/projects/${encodeURIComponent(f.project)}/records/${encodeURIComponent(other.id)}`);
+    await page.getByLabel('评论正文').fill('**需要：**输入参数');
+    await page.locator('.record-discussion').getByRole('button',{name:'预览',exact:true}).click();
+    await expect(page.locator('.record-discussion .markdown-preview strong')).toHaveText('需要：');
+    await expect(page.getByRole('button',{name:/发布审计报告|添加报告/})).toHaveCount(0);
   }finally{await page.close();await request.post(f.root+'/workspace/stop');await request.delete(f.root);}
 });

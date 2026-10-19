@@ -56,3 +56,16 @@ test('graph bubbles stay visible and moving on ordinary and joint edges',{tag:'@
   await page.emulateMedia({reducedMotion:'no-preference'});
   await expectMovingBubble(page.locator('.polarity-joint .signal-flow-path').first());
 });
+
+test('dragging a record moves connected routes and preserves bubble colors',async({page})=>{
+  await graphFixture(page);
+  const node=page.locator('.react-flow__node').filter({has:page.locator('.research-node')}).first();
+  const before=await node.getAttribute('style');
+  const paths=()=>page.locator('.signal-flow-path').evaluateAll(ns=>ns.map(n=>n.getAttribute('d')));
+  const routes=await paths(),box=await node.boundingBox();
+  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);
+  await page.mouse.down();await page.mouse.move(box.x+box.width/2+60,box.y+box.height/2+45,{steps:15});await page.mouse.up();
+  await expect(node).not.toHaveAttribute('style',before);
+  await expect.poll(paths).not.toEqual(routes);
+  for(const type of ['supports','refutes','depends_on','joint'])await expectMovingBubble(page.locator(`.polarity-${type} .signal-flow-path`).first());
+});

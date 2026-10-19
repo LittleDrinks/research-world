@@ -31,6 +31,10 @@ export const removeLabel = (projectId,id) => fetch(`/api/v1/projects/${enc(proje
 export const listChanges = (projectId,recordId) => fetch(`/api/v1/projects/${enc(projectId)}/changes${recordId?'?record_id='+enc(recordId):''}`).then(decode);
 export const changeRecord = (projectId,recordId,body) => fetch(`/api/v1/projects/${enc(projectId)}/records/${enc(recordId)}/changes`,json('POST',body)).then(decode);
 export const getRecordRevision = (projectId,recordId,revision) => fetch(`/api/v1/projects/${enc(projectId)}/records/${enc(recordId)}/revisions/${revision}`).then(decode);
+export const getRecord = (projectId,recordId) => fetch(`/api/v1/projects/${enc(projectId)}/records/${enc(recordId)}`).then(decode);
+export const recordUrl = (projectId,recordId) => `/projects/${enc(projectId)}/records/${enc(recordId)}`;
+export const projectMapUrl = projectId => `/projects/${enc(projectId)}/map`;
+export const selectCandidates = (projectId,body) => fetch(`/api/v1/projects/${enc(projectId)}/candidate-selection`,json('POST',body)).then(decode);
 export const deleteRecord = (projectId, recordId) => fetch(`/api/v1/projects/${enc(projectId)}/records/${enc(recordId)}`, { method: "DELETE" }).then(decode);
 export const deleteRelation = (projectId, relationId) => fetch(`/api/v1/projects/${enc(projectId)}/relations/${enc(relationId)}`, { method: "DELETE" }).then(decode);
 export const listAgents = () => fetch("/api/v1/agents").then(decode);

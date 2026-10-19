@@ -1,12 +1,11 @@
 import { JointLinks } from './JointCondition';
-import { recordImpact } from '../api';
+import { recordImpact, recordUrl } from '../api';
 import { useWorld } from '../context/WorldContext';
 import { Check, Copy, GitBranch, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Modal } from "../components/Modal";
-import { ArtifactDownload } from "../components/map/ArtifactDownload";
+import {RecordAssets} from './RecordAssets';
 import { KIND_LABELS, recordText } from "../utils/labels";
-import {PublishDocument} from '../artifacts/PublishDocument';
 import {RecordLabels} from './Labels';
 import {RecordWorkspace} from './RecordWorkspace';
 
@@ -15,18 +14,18 @@ export function Inspector({ node, nodes, edges, artifacts = [], conditions = [],
   const {pending,setPending,busy,requestRemoval,confirm} = useRemoval(node,onDeleteRecord,onDeleteRelation);
   if (!node) return <aside className="inspector inspector-empty">选择节点查看上下文。</aside>;
   return <aside className="inspector"><div className="inspector-scroll"><NodeHeader node={node} />
-    <RecordLabels key={node.id} node={node}/><RecordWorkspace key={node.id} node={node}/><RecordActions node={node} onRequest={requestRemoval} />
+    <RecordLabels key={`labels:${node.id}`} node={node}/><RecordWorkspace key={`workspace:${node.id}`} node={node}/>
     <Relations node={node} nodes={nodes} edges={edges} onSelect={onSelect} onDelete={(edge) => setPending({ kind: "Relation", id: edge.id })} />
     <JointLinks conditions={conditions} recordId={node.id} onSelect={onSelect} />
-    <section className="inspector-section"><PublishDocument node={node}/></section>
-    <Artifacts node={node} artifacts={artifacts} /><details className="node-details"><summary>详情</summary><NodeIdEntry node={node} /></details>
+    <RecordAssets key={`assets:${node.id}`} node={node} artifacts={artifacts} /><details className="node-details"><summary>记录标识与撤销</summary><NodeIdEntry node={node} /><RecordActions node={node} onRequest={requestRemoval}/></details>
   </div><DeleteDialog pending={pending} busy={busy} onClose={() => setPending(null)} onConfirm={confirm} /></aside>;
 }
 
 
 function NodeHeader({ node }) {
+  const {projectId}=useWorld();
   return <header className="inspector-header"><div className="eyebrow"><span>{KIND_LABELS[node.kind] || node.kind}</span></div>
-    <h1>{recordText(node)}</h1></header>;
+    <h1>{recordText(node)}</h1><a className="record-open" href={recordUrl(projectId,node.id)} target="_blank" rel="noreferrer">打开完整记录 ↗</a></header>;
 }
 
 
@@ -69,17 +68,6 @@ function relationLabel(edge,node,record) {
   if(['supports','refutes'].includes(edge.polarity)&&[node.kind,record?.kind].includes('question'))return '关系无效：问题不是证据';
   const labels={supports:['支持该节点','被该节点支持'],refutes:['反驳该节点','被该节点反驳'],depends_on:['依赖该节点','被该节点依赖']};
   return labels[edge.polarity]?.[outgoing?0:1]||edge.polarity;
-}
-
-
-function Artifacts({ node, artifacts }) {
-  const byId = new Map(artifacts.map((artifact) => [artifact.id, artifact]));
-  const names = new Map((Array.isArray(node.content.attachments) ? node.content.attachments : []).filter(value=>value && typeof value === "object").map(value => [value.id,value.name]));
-  const linked = node.artifact_ids.map((id) => ({ id, name:names.get(id), artifact: byId.get(id) }));
-  if (!linked.length) return null;
-  return <details className="inspector-section node-details"><summary>研究资料（{linked.length}）</summary><ul className="audit-evidence">
-    {linked.map(({ id, name, artifact }) => <li key={id}><span className="mono">{name || (artifact ? `${artifact.media_type} · ${id}` : id)}</span>{artifact && <ArtifactDownload artifact={artifact} />}</li>)}
-  </ul></details>;
 }
 
 

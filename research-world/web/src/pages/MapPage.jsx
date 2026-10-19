@@ -4,8 +4,6 @@ import { useSearchParams } from "react-router-dom";
 import { deleteRecord, deleteRelation, getLocalMap } from "../api";
 import { useWorld } from "../context/WorldContext";
 import { MapView } from "../graph/MapView";
-import {LabelManager} from '../graph/Labels';
-import {ProjectChanges} from '../graph/ProjectChanges';
 import "../map.css";
 
 
@@ -37,7 +35,7 @@ function MapContent({ data, setError }) {
 
   return <section className="map-page">
     <MapToolbar count={localMap.records.length} relationCount={localMap.relations.length + localMap.joint_conditions.length}
-      text={text} setParams={setParams} />
+      text={text} setParams={setParams}/>
     <MapView localMap={localMap} selectedId={recordId} onSelect={(id) => selectRecord(setParams, id)} onDeleteRecord={removeRecord} onDeleteRelation={removeRelation} />
   </section>;
 }
@@ -94,9 +92,9 @@ function MapToolbar({ count, relationCount, text, setParams }) {
   };
   return <header className="map-toolbar"><div><b><MapIcon size={17} />研究地图</b>
     <span>{count} 个记录 · {relationCount} 条关系</span></div>
-    <div className="map-toolbar-actions"><ProjectChanges onSelect={id=>setParams({node:id})}/><LabelManager/><form className="map-search" onSubmit={search}>
+    <form className="map-search" onSubmit={search}>
       <input aria-label="检索局部地图" name="text" type="search" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="检索记录" />
       <button className="icon-button" type="submit" aria-label="检索" title="检索"><Search size={16} /></button>
-    </form></div>
+    </form>
   </header>;
 }
