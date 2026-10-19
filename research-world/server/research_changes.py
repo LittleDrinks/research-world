@@ -4,6 +4,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, StringConstraints, model_validator
 
 from .change_store import ChangeConflict, append, root_record, snapshot
+from .node_language import validate_node_language
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
 Identifier = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
@@ -28,6 +29,8 @@ class ChangeRequest(BaseModel):
             raise ValueError('变更字段与类型不匹配')
         if self.label_ids is not None and len(set(self.label_ids)) != len(self.label_ids):
             raise ValueError('标签不能重复')
+        if self.kind == 'revise':
+            validate_node_language({'title': self.title, 'text': self.text})
         return self
 
 
