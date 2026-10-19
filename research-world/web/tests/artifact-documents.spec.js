@@ -10,7 +10,7 @@ async function seed(request){
   const project=await post(request,'/api/v1/projects',{name:`报告验收 ${Date.now()}-${Math.random()}`,question:'范围明确的研究'});
   const root=`/api/v1/projects/${project.id}`;
   const original=await post(request,root+'/artifacts',{content:'## 原始依据\n**范围：**孤立模型。\n\n\\[\nP=196.29\\,W\n\\]\n\n<script>window.reportExecuted=true</script>'});
-  const record=await post(request,root+'/records',{type:'experiment',content:{title:'历史计算',text:'限定条件下的计算'},artifact_ids:[original.id]});
+  const record=await post(request,root+'/records',{type:'experiment',content:{title:'历史计算',text:'限定条件下的计算',attachments:[{id:original.id,name:'原文.md'}]},artifact_ids:[original.id]});
   const template=(await (await request.get(root+'/artifact-templates')).json())[0];
   const data={...template.example,title:'q049 审计阅读验收',target_artifact_id:original.id,summary:'**检查范围：**本次整理历史证据。\\(P=196.29\\,W\\)'};
   data.sections[1].checks[0].evidence=[{artifact_id:original.id,locator:'原文第 1 节'}];
@@ -24,11 +24,13 @@ test('captured reports render evidence and mobile without a manual upload form',
     expect(invalid.status()).toBe(422);
     const report=await post(request,f.root+'/artifacts',{content:JSON.stringify(f.data),schema_id:f.template.id,record_id:f.record.id});
     await page.goto(report.view_url);await verifyReading(page,request,f);expect(errors).toEqual([]);
-  }finally{await page.close();await request.delete(f.root);}
+  }finally{await page.close();expect((await request.post(f.root+'/workspace/stop')).ok()).toBeTruthy();expect((await request.delete(f.root)).status()).toBe(204);}
 });
 
 async function verifyReading(page,request,f){
   await expect(page.getByRole('heading',{name:f.data.title})).toBeVisible();
+  await expect(page.getByRole('region',{name:'六维评价'})).toContainText('已评 0 / 6 维');
+  await expect(page.locator('.dimension-item')).toHaveCount(6);
   await expect(page.locator('.document-summary strong')).toHaveText('检查范围：');
   await expect(page.locator('.katex')).toHaveCount(1);
   await page.locator('.document-check summary').click();
@@ -53,7 +55,7 @@ test('reader uses URL project independently of active selection and preserves un
     await expect(page.getByRole('heading',{name:f.data.title})).toBeVisible();
     await expect(page.locator('.document-context')).toContainText('对象已不可用');
     const unavailable=await request.get(f.root+'/artifacts/artifact:missing/reading');expect(unavailable.status()).toBe(404);
-  }finally{await page.close();await request.delete(f.root);}
+  }finally{await page.close();expect((await request.post(f.root+'/workspace/stop')).ok()).toBeTruthy();expect((await request.delete(f.root)).status()).toBe(204);}
 });
 
 for(const width of [1100,390])test(`artifact scroll reaches bottom with wheel and keyboard at ${width}px`,async({page,request})=>{
@@ -66,7 +68,7 @@ for(const width of [1100,390])test(`artifact scroll reaches bottom with wheel an
     const schema=`/projects/${encodeURIComponent(f.project.id)}/artifacts/${encodeURIComponent(f.template.id)}`;
     for(const url of [report.view_url,markdown.view_url,schema])await assertReaderScroll(page,url);
     await page.reload();await assertScrollInputs(page);
-  }finally{await page.close();await request.delete(f.root);}
+  }finally{await page.close();expect((await request.post(f.root+'/workspace/stop')).ok()).toBeTruthy();expect((await request.delete(f.root)).status()).toBe(204);}
 });
 
 async function assertReaderScroll(page,url){
@@ -104,5 +106,5 @@ test('named Markdown stored as plain text renders tables, math and raw source wi
     await page.setViewportSize({width:390,height:650});await expect(page.locator('.artifact-markdown table')).toHaveCount(1);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
     expect(await page.evaluate(()=>window.markdownExecuted)).toBeUndefined();
-  }finally{await page.close();await request.delete(f.root);}
+  }finally{await page.close();expect((await request.post(f.root+'/workspace/stop')).ok()).toBeTruthy();expect((await request.delete(f.root)).status()).toBe(204);}
 });

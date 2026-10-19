@@ -21,7 +21,7 @@ function ArtifactContent({view,projectId}){
   const structured=view.kind==='document';
   return <article className="artifact-paper"><header><p className="eyebrow">{structured?view.schema.title:'研究资料'}</p>
     <h1>{structured?view.data.title:view.name||'产物预览'}</h1><ArtifactActions view={view} projectId={projectId}/></header>
-    {structured?<><DocumentContext view={view} projectId={projectId}/><DocumentBody data={view.data} projectId={projectId}/></>:
+    {structured?<><DocumentContext view={view} projectId={projectId}/><DocumentBody schema={view.schema} data={view.data} projectId={projectId}/></>:
       <ArtifactText key={view.artifact.id} view={view} projectId={projectId}/>}
     <details className="document-provenance"><summary>版本与校验信息</summary><p>产物：{view.artifact.id}</p>
       {structured&&<><p>正文 {view.reading_chars} / {view.schema['x-max-reading-chars']} 字符；结构已校验。</p>

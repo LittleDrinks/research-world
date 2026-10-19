@@ -9,3 +9,22 @@
 .artifact-paper pre,.artifact-paper .katex-display{overflow-x:auto;max-width:100%}.artifact-paper pre{white-space:pre-wrap;font-size:13px}.artifact-paper img{max-width:100%}
 .artifact-reading-mode{margin:4px 0 24px}.artifact-markdown h1{margin:8px 0 24px}.artifact-markdown h2{margin:30px 0 14px}.artifact-markdown h3{margin:24px 0 12px}.artifact-markdown li{margin:6px 0}.artifact-markdown blockquote{margin:16px 0;padding:2px 16px;border-left:3px solid var(--line);color:var(--text-muted)}.artifact-raw{padding:16px;border:1px solid var(--line);border-radius:8px;background:var(--surface-muted);tab-size:4}
 @media(max-width:600px){.artifact-page{padding:16px 10px 32px}.artifact-paper{padding:20px 16px;border-radius:12px}.artifact-paper h1{font-size:23px}.document-check{padding:12px}.document-context{display:block}.document-context a{display:block}.document-check summary{flex-wrap:wrap}.document-check-status{white-space:normal}}
+
+.dimension-review {margin:24px 0;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.dimension-review>header,.dimension-item>header {display:flex;justify-content:space-between;align-items:center;gap:12px}
+.dimension-review>header {padding:16px;background:var(--surface-muted,#f4f7fa)}
+.dimension-review h2,.dimension-review h3 {margin:0;font-size:1.05rem}
+.dimension-item {padding:16px;border-top:1px solid var(--line);overflow-wrap:anywhere}
+.dimension-item header strong {white-space:nowrap;color:var(--text-muted)}
+.dimension-item p {margin:8px 0;line-height:1.65}
+.dimension-item details {font-size:.85rem;color:var(--text-muted)}
+.dimension-item li {margin:6px 0}
+.execution-evidence {padding:14px 16px;border-top:1px solid var(--line)}
+.execution-evidence p {margin:6px 0}
+.dimension-improvement {border-left:3px solid #c78b29;padding-left:10px}
+
+.dimension-overview {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:16px;border-top:1px solid var(--line)}
+.dimension-overview>div {display:flex;flex-direction:column;gap:6px;font-size:.85rem}
+.dimension-overview strong {font-size:1rem}
+@media(max-width:600px){.dimension-overview{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.asset-preview .dimension-overview {grid-template-columns:repeat(2,minmax(0,1fr))}

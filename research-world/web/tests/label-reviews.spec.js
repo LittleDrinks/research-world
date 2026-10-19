@@ -11,7 +11,7 @@ async function seed(request){
 async function cleanup(request,f){
   const rules=await json(await request.get(f.root+'/review-rules'));
   for(const rule of rules)await request.put(f.root+'/review-rules/'+rule.label_id,{data:{enabled:false,agent_id:rule.config.agent.id,schema_id:rule.config.schema_id}});
-  await request.post(f.root+'/workspace/stop');await request.delete(f.root);
+  expect((await request.post(f.root+'/workspace/stop')).ok()).toBeTruthy();expect((await request.delete(f.root)).status()).toBe(204);
 }
 
 // Binding and label interactions use the real control API. No model is started.
