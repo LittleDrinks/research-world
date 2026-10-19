@@ -251,10 +251,15 @@ def test_lifespan_dispatches_public_agent_change_and_writes_back(case):
 
 def test_change_and_enqueued_task_roll_back_together(case,monkeypatch):
     import server.change_store as module
+    from server.agent_profiles import default_profile
+    from server.artifact_documents import published_schemas
     _,kernel,_,project,record,label=case
+    case[0].state.reviews.store.save_rule(project,label['id'],{'agent':default_profile('test/model'),
+        'schema_id':next(iter(published_schemas()))},True)
     original=module.enqueue
     def fail(connection,change):
         original(connection,change)
+        assert connection.execute('SELECT count(*) FROM review_tasks').fetchone()[0]==1
         raise ValueError('storage failure')
     monkeypatch.setattr(module,'enqueue',fail)
     with pytest.raises(ValueError,match='storage failure'):
