@@ -262,3 +262,16 @@ def test_change_and_enqueued_task_roll_back_together(case,monkeypatch):
     assert kernel.get_record(project,record.id).revision==1
     assert not kernel.list_changes(project,record.id)
     assert not case[0].state.reviews.store.pending()
+
+
+@pytest.mark.asyncio
+async def test_binding_can_be_disabled_after_agent_config_is_deleted(case):
+    from server.agent_profiles import default_profile
+    app,_,_,project,_,label=case
+    profiles=app.state.reviews.control.profiles
+    profiles.save(default_profile('test/model')|{'id':'reviewer','name':'Reviewer'})
+    async with client_for(app) as client:
+        await bind(client,project,label,agent_id='reviewer')
+        profiles.delete('reviewer')
+        await bind(client,project,label,agent_id='reviewer',enabled=False)
+        assert not app.state.reviews.store.rules(project)[0]['enabled']

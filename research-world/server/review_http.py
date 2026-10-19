@@ -29,15 +29,22 @@ def rule_routes(router, worker):
         worker.kernel.get_project(project_id)
         if label_id not in {label['id'] for label in worker.kernel.list_labels(project_id)}:
             raise KeyError(label_id)
+        existing = next((rule for rule in worker.store.rules(project_id) if rule['label_id'] == label_id), None)
+        if existing and not body.enabled:
+            return worker.store.save_rule(project_id, label_id, existing['config'], False)
         if body.schema_id not in published_schemas():
             raise ValueError('请选择已发布的报告模板')
-        catalog = await worker.runtime.catalog()
-        agent = worker.control.profiles.get(body.agent_id, catalog['default_model'])
-        if not {'artifact', 'change'} <= set(agent['tools']):
-            raise ValueError('复核 Agent 需要启用 artifact 和 change 工具')
-        prepared = await worker.runtime.validate(agent)
-        config = {'agent': agent | {'instructions': prepared['instructions']}, 'schema_id': body.schema_id}
+        config = await prepare_agent(worker, body)
         return worker.store.save_rule(project_id, label_id, config, body.enabled)
+
+
+async def prepare_agent(worker, body):
+    catalog = await worker.runtime.catalog()
+    agent = worker.control.profiles.get(body.agent_id, catalog['default_model'])
+    if not {'artifact', 'change'} <= set(agent['tools']):
+        raise ValueError('复核 Agent 需要启用 artifact 和 change 工具')
+    prepared = await worker.runtime.validate(agent)
+    return {'agent': agent | {'instructions': prepared['instructions']}, 'schema_id': body.schema_id}
 
 
 def task_routes(router, worker):
