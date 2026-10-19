@@ -37,5 +37,20 @@
       "graph"
     ]
   },
-  "independent_review": "pending"
+  "independent_review": {
+    "reviewer": "Descartes",
+    "agent_id": "01a1530c-1696-7153-8dfb-6db422461820",
+    "code_head": "52179cd24db380dc2e227b284ad1b106bd6ef2a5",
+    "standards": "PASS",
+    "spec": "PASS",
+    "verdict": "APPROVED",
+    "coverage": [
+      "old CSS negative control",
+      "wheel, Tab, PageDown, Ctrl+End",
+      "q049, structured report, Markdown, schema JSON",
+      "1100px and 390px, expanded details and reload",
+      "mobile publish dialog",
+      "map scroll and synthetic-history chat scroll"
+    ]
+  }
 }
