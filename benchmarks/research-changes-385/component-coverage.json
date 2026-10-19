@@ -1,0 +1,128 @@
+[
+  {
+    "id": "labels",
+    "component": "用户标签",
+    "scenario": "创建、贴标、改名、删除",
+    "preview": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:8c1ec2ce9a80113fd903e396",
+    "verification": "research-changes.spec.js"
+  },
+  {
+    "id": "switching",
+    "component": "节点切换",
+    "scenario": "连续切换只保留一组标签",
+    "preview": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/map?node=record:82b05b00d0bd1bac6385778b",
+    "verification": "research-changes.spec.js"
+  },
+  {
+    "id": "markdown",
+    "component": "正文与预览",
+    "scenario": "编辑、预览、保存",
+    "preview": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:8c1ec2ce9a80113fd903e396",
+    "verification": "research-changes.spec.js"
+  },
+  {
+    "id": "comments",
+    "component": "评论时间线",
+    "scenario": "预览评论，固定引用版本",
+    "preview": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:8c1ec2ce9a80113fd903e396",
+    "verification": "research-changes.spec.js"
+  },
+  {
+    "id": "changes",
+    "component": "变更历史",
+    "scenario": "查看原版本与并发冲突",
+    "preview": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:8c1ec2ce9a80113fd903e396",
+    "verification": "research-changes.spec.js"
+  },
+  {
+    "id": "sources",
+    "component": "文献库",
+    "scenario": "核对身份与原文定位",
+    "preview": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:7e0eb94681ccbbbaeb2d5bdc",
+    "verification": "component-coverage.spec.js"
+  },
+  {
+    "id": "mmr",
+    "component": "MMR",
+    "scenario": "主题、数量、权重与逐步得分",
+    "preview": "http://localhost:8095/projects/project%3Abc524d1d221ec0dcf82f72a2/artifacts/artifact%3Aee78a7af3b396d5c6bfddc8992f9433fedda3633b2aa525340945f7f502d0d29",
+    "verification": "component-coverage.spec.js"
+  },
+  {
+    "id": "and",
+    "component": "AND联合依据",
+    "scenario": "两篇论文共同约束方法",
+    "preview": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/map?node=joint:b2a0d30e9d50ec93547f11a5",
+    "verification": "component-coverage.spec.js"
+  },
+  {
+    "id": "or",
+    "component": "OR竞争解释",
+    "scenario": "同一现象的两种解释",
+    "preview": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/map?node=joint:cb994d05ef511ed251671353",
+    "verification": "component-coverage.spec.js"
+  },
+  {
+    "id": "kofn",
+    "component": "预算下的k-of-N",
+    "scenario": "配额3内选两项",
+    "preview": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/map?node=joint:77a21190e4f57adfef6858bd",
+    "verification": "component-coverage.spec.js"
+  },
+  {
+    "id": "code",
+    "component": "代码",
+    "scenario": "查看可运行Python文件",
+    "preview": "http://localhost:8095/projects/project%3Abc524d1d221ec0dcf82f72a2/artifacts/artifact%3Acc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
+    "verification": "test_artifact_documents.py"
+  },
+  {
+    "id": "data",
+    "component": "数据表",
+    "scenario": "查看6组方法与步长结果",
+    "preview": "http://localhost:8095/projects/project%3Abc524d1d221ec0dcf82f72a2/artifacts/artifact%3A49535590e0618d02554c9f2dda80835385896bfced2b1cf786f12b65c614a1ee",
+    "verification": "component-coverage.spec.js"
+  },
+  {
+    "id": "plot",
+    "component": "结果图",
+    "scenario": "查看能量误差曲线",
+    "preview": "http://localhost:8095/projects/project%3Abc524d1d221ec0dcf82f72a2/artifacts/artifact%3A85bb0a5ffe06e5b92715a4c54e23074adfe3f7f3fc1db0cb092de10f1e68a4bd",
+    "verification": "test_artifact_documents.py"
+  },
+  {
+    "id": "radiation",
+    "component": "数值复算",
+    "scenario": "功率和两类时标",
+    "preview": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:40f99ce4e2defc8d16103369",
+    "verification": "q049_cpu.py"
+  },
+  {
+    "id": "budget",
+    "component": "规划输入",
+    "scenario": "候选成本与可行组合",
+    "preview": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:c4dea509d2cdc289d4bf7635",
+    "verification": "q049_cpu.py"
+  },
+  {
+    "id": "missing",
+    "component": "研究缺口",
+    "scenario": "待补资料与适用范围",
+    "preview": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:9cf6211e68f5c0228b23f942",
+    "verification": "research-changes.spec.js"
+  },
+  {
+    "id": "agent-operations",
+    "component": "Agent研究操作",
+    "scenario": "当前/历史版本、评论、修订和标签管理；跨项目拒绝",
+    "preview": "http://localhost:8095/agents/research-assistant",
+    "verification": "test_research_changes.py"
+  },
+  {
+    "id": "layout-drag",
+    "component": "地图布局与拖动",
+    "scenario": "问题到检查的阅读顺序；拖动后连线与气泡颜色保持",
+    "preview": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/map?node=record:82b05b00d0bd1bac6385778b",
+    "verification": "graph-motion.spec.js"
+  }
+]

@@ -1,0 +1,10 @@
+{
+  "project_id": "project:a249a835f57573c14eac994b",
+  "container": "research-world-lab-08685ff6901a4123eaa9a27a",
+  "command": [
+    "python",
+    "/workspace/q049-components/q049_cpu.py"
+  ],
+  "exit_code": 0,
+  "script_sha256": "cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c"
+}

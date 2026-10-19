@@ -1,0 +1,42 @@
+{
+  "backend": {
+    "full_suite_passed": 256,
+    "candidate_selection_additional_passed": 6
+  },
+  "runtime": {
+    "passed": 254,
+    "skipped": 12
+  },
+  "browser": {
+    "distinct_passed": 13,
+    "suites": [
+      "research-changes",
+      "component-coverage",
+      "artifact-documents",
+      "joint-conditions",
+      "graph-motion"
+    ]
+  },
+  "services": {
+    "control": "healthy",
+    "runtime": "healthy"
+  },
+  "model_calls": 0,
+  "qa": "user",
+  "agent_operations": [
+    "read",
+    "history",
+    "labels",
+    "label_create",
+    "label_update",
+    "label_delete",
+    "submit"
+  ],
+  "mmr_representation": "candidate-selection tool and attached artifacts; no Experiment node",
+  "map": {
+    "research_nodes": 12,
+    "joint_conditions": 3,
+    "total_records": 22,
+    "literature": 12
+  }
+}

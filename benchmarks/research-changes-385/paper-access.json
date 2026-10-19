@@ -1,0 +1,30 @@
+[
+  {
+    "name": "whfast",
+    "url": "https://arxiv.org/pdf/1506.01084",
+    "sha256": "c27c7d5ce7732cb80d031e216974f625a9704a6a2f7d47b7df9a748a73fbd42e",
+    "bytes": 800834,
+    "status": "downloaded",
+    "reviewed_pages": [
+      1,
+      2
+    ],
+    "review_scope": "abstract and method/error discussion",
+    "text_extractor": "pdftotext",
+    "whole_paper_reviewed": false
+  },
+  {
+    "name": "ias15",
+    "url": "https://arxiv.org/pdf/1409.4779",
+    "sha256": "8097c8e50d16edc1527ec05e6680fc68d6f91e4d027dec16c762a6ce7e69033d",
+    "bytes": 546964,
+    "status": "downloaded",
+    "reviewed_pages": [
+      1,
+      2
+    ],
+    "review_scope": "abstract and method/error discussion",
+    "text_extractor": "pdftotext",
+    "whole_paper_reviewed": false
+  }
+]
