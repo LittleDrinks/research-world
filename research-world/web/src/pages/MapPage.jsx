@@ -4,6 +4,8 @@ import { useSearchParams } from "react-router-dom";
 import { deleteRecord, deleteRelation, getLocalMap } from "../api";
 import { useWorld } from "../context/WorldContext";
 import { MapView } from "../graph/MapView";
+import {LabelManager} from '../graph/Labels';
+import {ProjectChanges} from '../graph/ProjectChanges';
 import "../map.css";
 
 
@@ -72,8 +74,8 @@ function normalizeLocalMap(value) {
 }
 
 
-function mapRecord({ id, type: kind, content, artifact_ids }) {
-  return { id, kind, content, artifact_ids };
+function mapRecord({ id, type: kind, content, artifact_ids, revision, labels }) {
+  return { id, kind, content, artifact_ids, revision, labels };
 }
 
 
@@ -92,9 +94,9 @@ function MapToolbar({ count, relationCount, text, setParams }) {
   };
   return <header className="map-toolbar"><div><b><MapIcon size={17} />研究地图</b>
     <span>{count} 个记录 · {relationCount} 条关系</span></div>
-    <form className="map-search" onSubmit={search}>
+    <div className="map-toolbar-actions"><ProjectChanges onSelect={id=>setParams({node:id})}/><LabelManager/><form className="map-search" onSubmit={search}>
       <input aria-label="检索局部地图" name="text" type="search" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="检索记录" />
       <button className="icon-button" type="submit" aria-label="检索" title="检索"><Search size={16} /></button>
-    </form>
+    </form></div>
   </header>;
 }

@@ -1,5 +1,4 @@
 import { JointLinks } from './JointCondition';
-import ReactMarkdown from 'react-markdown';
 import { recordImpact } from '../api';
 import { useWorld } from '../context/WorldContext';
 import { Check, Copy, GitBranch, Trash2 } from "lucide-react";
@@ -8,13 +7,15 @@ import { Modal } from "../components/Modal";
 import { ArtifactDownload } from "../components/map/ArtifactDownload";
 import { KIND_LABELS, recordText } from "../utils/labels";
 import {PublishDocument} from '../artifacts/PublishDocument';
+import {RecordLabels} from './Labels';
+import {RecordWorkspace} from './RecordWorkspace';
 
 
 export function Inspector({ node, nodes, edges, artifacts = [], conditions = [], onSelect, onDeleteRecord, onDeleteRelation }) {
   const {pending,setPending,busy,requestRemoval,confirm} = useRemoval(node,onDeleteRecord,onDeleteRelation);
   if (!node) return <aside className="inspector inspector-empty">选择节点查看上下文。</aside>;
   return <aside className="inspector"><div className="inspector-scroll"><NodeHeader node={node} />
-    <NodeRecord node={node} /><RecordActions node={node} onRequest={requestRemoval} />
+    <RecordLabels key={node.id} node={node}/><RecordWorkspace key={node.id} node={node}/><RecordActions node={node} onRequest={requestRemoval} />
     <Relations node={node} nodes={nodes} edges={edges} onSelect={onSelect} onDelete={(edge) => setPending({ kind: "Relation", id: edge.id })} />
     <JointLinks conditions={conditions} recordId={node.id} onSelect={onSelect} />
     <section className="inspector-section"><PublishDocument node={node}/></section>
@@ -26,20 +27,6 @@ export function Inspector({ node, nodes, edges, artifacts = [], conditions = [],
 function NodeHeader({ node }) {
   return <header className="inspector-header"><div className="eyebrow"><span>{KIND_LABELS[node.kind] || node.kind}</span></div>
     <h1>{recordText(node)}</h1></header>;
-}
-
-
-function NodeRecord({ node }) {
-  const extra = Object.entries(node.content).filter(([key]) => !['title','text','attachments','origin','note'].includes(key));
-  return <section className="inspector-section node-body">
-    <ReactMarkdown>{String(node.content.text || '')}</ReactMarkdown>
-    {node.content.note&&<p className="muted">{String(node.content.note)}</p>}
-    {extra.length>0&&<details className="node-details"><summary>来源与记录信息</summary><dl className="node-record">{extra.map(([key,value])=><div key={key}><dt>{key}</dt><dd>{formatContent(value)}</dd></div>)}</dl></details>}
-  </section>;
-}
-
-function formatContent(value) {
-  return typeof value === "string" ? value : JSON.stringify(value);
 }
 
 
