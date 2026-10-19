@@ -1,7 +1,7 @@
 import {useEffect,useState} from 'react';
 import {useParams} from 'react-router-dom';
 import {artifactUrl,artifactViewUrl,getArtifactReading} from '../api';
-import {ChatMarkdown} from '../chat/ChatMarkdown';
+import {ArtifactText} from '../artifacts/ArtifactText';
 import {DocumentBody} from '../artifacts/DocumentBody';
 import '../artifacts/artifacts.css';
 
@@ -20,10 +20,9 @@ export function ArtifactPage(){
 function ArtifactContent({view,projectId}){
   const structured=view.kind==='document';
   return <article className="artifact-paper"><header><p className="eyebrow">{structured?view.schema.title:'研究资料'}</p>
-    <h1>{structured?view.data.title:'产物预览'}</h1><ArtifactActions view={view} projectId={projectId}/></header>
+    <h1>{structured?view.data.title:view.name||'产物预览'}</h1><ArtifactActions view={view} projectId={projectId}/></header>
     {structured?<><DocumentContext view={view} projectId={projectId}/><DocumentBody data={view.data} projectId={projectId}/></>:
-      view.kind==='markdown'?<ChatMarkdown projectId={projectId}>{view.text}</ChatMarkdown>:
-        view.kind==='text'?<pre>{view.text}</pre>:<p>此格式请下载原件查看。</p>}
+      <ArtifactText key={view.artifact.id} view={view} projectId={projectId}/>}
     <details className="document-provenance"><summary>版本与校验信息</summary><p>产物：{view.artifact.id}</p>
       {structured&&<><p>正文 {view.reading_chars} / {view.schema['x-max-reading-chars']} 字符；结构已校验。</p>
         <a href={artifactViewUrl(projectId,view.schema_id)}>查看固定模板版本</a><p>结构校验不判定科学结论。</p></>}

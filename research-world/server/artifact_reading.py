@@ -1,5 +1,6 @@
 """Read immutable documents and derive Markdown without a second stored copy."""
 from dataclasses import asdict
+from pathlib import PurePosixPath
 from urllib.parse import quote
 
 from .artifact_documents import DOCUMENT_TYPE, MAX_BYTES, parse, reading_chars
@@ -23,9 +24,32 @@ def reading(kernel, project_id, artifact_id):
         schema = parse(kernel.read_artifact(project_id, document['schema_id']))
         return value | document | {'kind': 'document', 'schema': schema, 'reading_chars': reading_chars(document['data']),
                                     'target': target_record(kernel, project_id, document['record_id'])}
-    if artifact.media_type.split(';')[0] in {'text/markdown', 'text/plain', 'application/json', 'application/schema+json'}:
-        return value | {'kind': 'markdown' if artifact.media_type.startswith('text/markdown') else 'text', 'text': content.decode('utf-8')}
-    return value
+    return text_reading(kernel, project_id, artifact, content, value)
+
+
+def text_reading(kernel, project_id, artifact, content, value):
+    media_type = artifact.media_type.split(';')[0].strip().lower()
+    if media_type not in {'text/markdown', 'text/plain', 'application/json', 'application/schema+json'}:
+        return value
+    names = attachment_names(kernel, project_id, artifact.id)
+    markdown_file = bool(names) and all(PurePosixPath(name).suffix.lower() in {'.md', '.markdown'} for name in names)
+    kind = 'markdown' if media_type == 'text/markdown' or media_type == 'text/plain' and markdown_file else 'text'
+    return value | {'kind': kind, 'name': names[0] if names else None, 'text': content.decode('utf-8')}
+
+
+def attachment_names(kernel, project_id, artifact_id):
+    names = set()
+    for record in kernel.list_records(project_id):
+        attachments = record.content.get('attachments')
+        if artifact_id not in record.artifact_ids or not isinstance(attachments, list):
+            continue
+        for item in attachments:
+            if not isinstance(item, dict) or item.get('id') != artifact_id:
+                continue
+            name = item.get('name')
+            if isinstance(name, str) and name.strip():
+                names.add(PurePosixPath(name).name)
+    return sorted(names)
 
 
 def target_record(kernel, project_id, record_id):

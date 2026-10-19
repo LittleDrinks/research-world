@@ -109,3 +109,23 @@ async function assertScrollInputs(page){
   await page.keyboard.press('Control+End');await expect(end).toBeInViewport({ratio:1});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
 }
+
+test('named Markdown stored as plain text renders tables, math and raw source without altering bytes',async({page,request})=>{
+  const f=await seed(request);
+  const text='# 文献审查\n\n**局限：**尚未取得全文。\n\n- 核验来源\n- 保留缺口\n\n| 检查 | 结果 |\n| --- | --- |\n| DOI | 待核查 |\n\n\\[\nP=196.29\\,W\n\\]\n\n```python\nprint("**literal**")\n```\n\n<script>window.markdownExecuted=true</script>';
+  try{
+    const artifact=await post(request,f.root+'/artifacts',{content:text,media_type:'text/plain'});
+    await post(request,f.root+'/records',{type:'source',content:{title:'文献',attachments:[{id:artifact.id,name:'review.md'}]},artifact_ids:[artifact.id]});
+    await page.goto(artifact.view_url);
+    await expect(page.getByRole('heading',{name:'文献审查',exact:true})).toBeVisible();
+    await expect(page.locator('.artifact-markdown strong')).toHaveText('局限：');
+    await expect(page.locator('.artifact-markdown table')).toHaveCount(1);await expect(page.locator('.katex')).toHaveCount(1);
+    await page.getByRole('button',{name:'原文',exact:true}).click();
+    await expect(page.locator('.artifact-raw')).toHaveText(text);
+    expect(await (await request.get(f.root+'/artifacts/'+artifact.id+'?download=true')).text()).toBe(text);
+    await page.getByRole('button',{name:'阅读',exact:true}).click();await page.reload();
+    await page.setViewportSize({width:390,height:650});await expect(page.locator('.artifact-markdown table')).toHaveCount(1);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+    expect(await page.evaluate(()=>window.markdownExecuted)).toBeUndefined();
+  }finally{await page.close();await request.delete(f.root);}
+});

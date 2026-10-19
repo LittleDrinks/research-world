@@ -190,3 +190,40 @@ class FileWorkspace:
         assert values['path'] == 'paper.json'
         yield json.dumps({'data': base64.b64encode(self.content).decode()})
         yield json.dumps({'exitCode': 0})
+
+
+@pytest.mark.parametrize(('media_type', 'name', 'linked', 'expected'), [
+    ('text/plain', 'v3.md', True, 'markdown'), ('text/plain; charset=utf-8', 'V3.MD', True, 'markdown'),
+    ('text/plain', 'log.txt', True, 'text'), ('text/plain', 'v3.md', False, 'text'),
+    ('application/json', 'v3.md', True, 'text'), ('text/markdown', 'log.txt', True, 'markdown'),
+])
+def test_text_reading_uses_linked_filename_without_changing_original(case, media_type, name, linked, expected):
+    kernel, _, client, root, record, _, _ = case
+    raw = b'# Research title\n\n**Evidence**'
+    artifact = kernel.capture_artifact(record.project_id, raw, media_type)
+    content = {'title': 'named evidence', 'attachments': [{'id': artifact.id, 'name': name}]}
+    kernel.record(record.project_id, 'source', content, (artifact.id,) if linked else ())
+    view = client.get(root + f'/artifacts/{artifact.id}/reading').json()
+    assert view['kind'] == expected
+    assert view['text'].encode() == raw and view['artifact']['media_type'] == media_type
+    assert client.get(root + f'/artifacts/{artifact.id}?download=true').content == raw
+
+
+def test_unrelated_project_filename_cannot_change_reading_mode(case):
+    kernel, _, client, root, record, _, _ = case
+    raw = b'# Literal text'
+    artifact = kernel.capture_artifact(record.project_id, raw, 'text/plain')
+    other = kernel.create_project('other-names', 'other')
+    other_artifact = kernel.capture_artifact(other.id, raw, 'text/plain')
+    kernel.record(other.id, 'source', {'attachments': [{'id': other_artifact.id, 'name': 'paper.md'}]}, (other_artifact.id,))
+    assert client.get(root + f'/artifacts/{artifact.id}/reading').json()['kind'] == 'text'
+
+
+def test_conflicting_attachment_formats_keep_plain_text_and_ignore_malformed_metadata(case):
+    kernel, _, client, root, record, _, _ = case
+    artifact = kernel.capture_artifact(record.project_id, b'# Ambiguous content', 'text/plain')
+    for name in ['report.md', 'report.py']:
+        kernel.record(record.project_id, 'source', {'attachments': [{'id': artifact.id, 'name': name}]}, (artifact.id,))
+    kernel.record(record.project_id, 'source', {'attachments': [None, {'id': artifact.id, 'name': 4}]}, (artifact.id,))
+    view = client.get(root + f'/artifacts/{artifact.id}/reading').json()
+    assert view['kind'] == 'text'
