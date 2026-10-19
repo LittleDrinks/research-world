@@ -13,6 +13,7 @@ from kernel_contract import LocalMapQuery
 
 from .artifacts import ArtifactIntegrityError, ArtifactStore, now
 from .artifact_documents import validate_capture
+from . import change_store, research_changes, research_labels
 from .joint_conditions import SCHEMA as JOINT_SCHEMA, create_condition, list_conditions, remove_condition, local_conditions, condition_artifacts
 
 __all__ = [
@@ -117,6 +118,8 @@ class Record:
     content: dict
     artifact_ids: tuple[str, ...]
     created_at: str
+    revision: int = 1
+    labels: tuple[dict, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -198,6 +201,18 @@ class KernelInterface(Protocol):
     def get_record(self, project_id: str, record_id: str) -> Record: ...
 
     def list_records(self, project_id: str) -> list[Record]: ...
+
+    def change_record(self, project_id, record_id, values, author='user') -> dict: ...
+
+    def list_changes(self, project_id, record_id=None) -> list[dict]: ...
+
+    def record_revision(self, project_id, record_id, revision) -> Record: ...
+
+    def list_labels(self, project_id) -> list[dict]: ...
+
+    def save_label(self, project_id, values, label_id=None) -> dict: ...
+
+    def delete_label(self, project_id, label_id) -> None: ...
 
     def remove_record(self, project_id: str, record_id: str) -> None: ...
 
@@ -382,14 +397,7 @@ class _SQLiteKernel(KernelInterface):
         self.get_artifact(project_id, artifact_id)
         with self._connect() as connection:
             connection.execute('BEGIN IMMEDIATE')
-            row = connection.execute('SELECT * FROM kernel_records WHERE id=? AND project_id=? '
-                                     'AND id NOT IN (SELECT object_id FROM kernel_revocations)', (record_id, project_id)).fetchone()
-            if row is None:
-                raise KeyError(record_id)
-            identifiers = json.loads(row['artifact_ids'])
-            if artifact_id not in identifiers:
-                identifiers.append(artifact_id)
-                connection.execute('UPDATE kernel_records SET artifact_ids=? WHERE id=?', (json.dumps(identifiers), record_id))
+            research_changes.attach(connection, project_id, record_id, artifact_id)
         return self.get_record(project_id, record_id)
 
     def get_artifact(self, project_id: str, artifact_id: str) -> Artifact:
@@ -432,14 +440,8 @@ class _SQLiteKernel(KernelInterface):
     def get_record(self, project_id: str, record_id: str) -> Record:
         self.get_project(project_id)
         with self._connect() as connection:
-            row = connection.execute(
-                "SELECT * FROM kernel_records WHERE id=? AND id NOT IN (SELECT object_id FROM kernel_revocations)", (record_id,)
-            ).fetchone()
-        if row is None:
-            raise KeyError(record_id)
-        if row["project_id"] != project_id:
-            raise PermissionError("record belongs to another project")
-        return _record_from_row(row)
+            row = change_store.root_record(connection, project_id, record_id)
+            return _record_projection(row, change_store.snapshot(connection, row))
 
     def list_records(self, project_id: str) -> list[Record]:
         self.get_project(project_id)
@@ -449,7 +451,43 @@ class _SQLiteKernel(KernelInterface):
                 "ORDER BY created_at,id",
                 (project_id,),
             ).fetchall()
-        return list(map(_record_from_row, rows))
+            return [_record_projection(row, change_store.snapshot(connection, row)) for row in rows]
+
+    def change_record(self, project_id, record_id, values, author='user'):
+        self.get_project(project_id)
+        with self._connect() as connection:
+            connection.execute('BEGIN IMMEDIATE')
+            return research_changes.submit_change(connection, project_id, record_id, values, author)
+
+    def list_changes(self, project_id, record_id=None):
+        self.get_project(project_id)
+        with self._connect() as connection:
+            return change_store.history(connection, project_id, record_id)
+
+    def record_revision(self, project_id, record_id, revision):
+        if isinstance(revision, bool) or not isinstance(revision, int) or revision < 1:
+            raise ValueError('版本必须是正整数')
+        self.get_project(project_id)
+        with self._connect() as connection:
+            row = change_store.root_record(connection, project_id, record_id, active=False)
+            return _record_projection(row, change_store.snapshot(connection, row, revision))
+
+    def list_labels(self, project_id):
+        self.get_project(project_id)
+        with self._connect() as connection:
+            return research_labels.labels(connection, project_id)
+
+    def save_label(self, project_id, values, label_id=None):
+        self.get_project(project_id)
+        with self._connect() as connection:
+            connection.execute('BEGIN IMMEDIATE')
+            return research_labels.save_label(connection, project_id, values, label_id)
+
+    def delete_label(self, project_id, label_id):
+        self.get_project(project_id)
+        with self._connect() as connection:
+            connection.execute('BEGIN IMMEDIATE')
+            return research_labels.delete_label(connection, project_id, label_id)
 
     def revocation_impact(self, project_id, record_id):
         self.get_record(project_id, record_id)
@@ -557,7 +595,7 @@ class _SQLiteKernel(KernelInterface):
 
     def _initialize(self) -> None:
         with self._connect() as connection:
-            connection.executescript(_SCHEMA + ";" + JOINT_SCHEMA)
+            connection.executescript(_SCHEMA + ";" + JOINT_SCHEMA + ';' + change_store.SCHEMA)
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self._database, timeout=30)
@@ -617,7 +655,8 @@ def _validate_local_map_query(query: LocalMapQuery) -> None:
 
 
 def _record_matches(record: Record, text: str | None) -> bool:
-    return text is None or text.strip().casefold() in _content_text(record.content).casefold()
+    searchable = _content_text(record.content) + ' ' + ' '.join(label['name'] for label in record.labels)
+    return text is None or text.strip().casefold() in searchable.casefold()
 
 
 def _content_text(value) -> str:
@@ -681,15 +720,9 @@ def _record_values(record: Record) -> tuple:
     )
 
 
-def _record_from_row(row: sqlite3.Row) -> Record:
-    return Record(
-        row["id"],
-        row["project_id"],
-        row["type"],
-        json.loads(row["content"]),
-        tuple(json.loads(row["artifact_ids"])),
-        row["created_at"],
-    )
+def _record_projection(row, snapshot):
+    return Record(row['id'], row['project_id'], row['type'], snapshot['content'],
+                  tuple(snapshot['artifact_ids']), row['created_at'], snapshot['revision'], tuple(snapshot['labels']))
 
 
 def _relation_from_row(row: sqlite3.Row) -> Relation:

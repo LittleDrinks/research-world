@@ -10,6 +10,11 @@ const definitions = {
     content: Type.Object({title: text, text}),
     artifact_ids: Type.Optional(Type.Array(text)),
   })],
+  change: ['获取项目标签(operation=labels)，或提交研究变更(operation=submit)：先从graph获取当前revision，再提供base_revision、原因。revise提供title/text，comment提供comment及引用版本reference_revision，labels提供label_ids。标签不代表科学判真。', Type.Object({
+    operation:Type.Union(['labels','submit'].map(Type.Literal)),record_id:Type.Optional(text),
+    kind:Type.Optional(Type.Union(['revise','comment','labels'].map(Type.Literal))),base_revision:Type.Optional(Type.Integer({minimum:1})),
+    reason:Type.Optional(text),title:Type.Optional(text),text:Type.Optional(text),comment:Type.Optional(text),reference_revision:Type.Optional(Type.Integer({minimum:1})),label_ids:Type.Optional(Type.Array(text)),
+  })],
   artifact: ['保存不可变产物并返回阅读链接。operation=templates获取报告模板与示例；结构化报告选择schema_id、record_id，content/path提供模板数据JSON；validate仅校验，capture校验后保存并关联对象。全文等已有UTF-8文件用path原样捕获。',
     Type.Object({operation:Type.Optional(Type.Union(['capture','validate','templates'].map(Type.Literal))),
       content:Type.Optional(text),path:Type.Optional(text),media_type:Type.Optional(text),schema_id:Type.Optional(text),record_id:Type.Optional(text)})],

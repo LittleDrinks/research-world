@@ -46,6 +46,8 @@ class ToolBridge:
             return await self.delegate(request, values)
         if tool == 'literature':
             return await _literature(values)
+        if tool == 'change':
+            return await _change(request, values)
         if tool == 'artifact':
             if values.get('operation') == 'templates':
                 return await _graph(request.agent_snapshot['project_id'], tool, values)
@@ -102,8 +104,8 @@ def bridge_router(bridge):
         except PermissionError as error:
             raise HTTPException(403, str(error)) from None
         except httpx.HTTPStatusError as error:
-            if body['tool'] == 'artifact' and error.response.status_code == 422:
-                raise HTTPException(422, error.response.json().get('detail')) from None
+            if body['tool'] in {'artifact', 'change'} and error.response.status_code in {409, 422}:
+                raise HTTPException(error.response.status_code, error.response.json().get('detail')) from None
             raise HTTPException(422, 'Tool operation failed; verify arguments or source availability') from None
         except (ValueError, KeyError, httpx.HTTPError):
             raise HTTPException(422, 'Tool operation failed; verify arguments or source availability') from None
@@ -129,3 +131,21 @@ async def _literature(values):
     result = await sources[values.get('source', 'crossref')]({
         'action': 'search', 'query': values['query'], 'limit': 5})
     return json.loads(result)
+
+
+async def _change(request, values):
+    root = f"/api/v1/projects/{request.agent_snapshot['project_id']}"
+    async with httpx.AsyncClient(base_url=os.environ['CONTROL_URL'], timeout=30) as client:
+        if values.get('operation') == 'labels':
+            response = await client.get(root + '/labels')
+        elif values.get('operation') == 'submit':
+            identifier = values['record_id']
+            if not isinstance(identifier, str) or not identifier.startswith('record:') or any(c in identifier for c in '/?#'):
+                raise ValueError('研究对象标识无效')
+            payload = {k: v for k, v in values.items() if k not in {'operation', 'record_id'}}
+            response = await client.post(root + f'/records/{identifier}/changes', json=payload,
+                                         headers={'x-research-author': 'agent:' + request.run_id})
+        else:
+            raise ValueError('变更操作无效')
+        response.raise_for_status()
+        return response.json()

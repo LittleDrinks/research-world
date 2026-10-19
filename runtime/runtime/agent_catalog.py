@@ -8,6 +8,7 @@ TOOLS = {
     'workspace': '读写、编辑和运行项目工作区文件，与 JupyterLab 共享',
     'graph': '查询当前项目的研究图谱',
     'record': '将研究方向或实验结果写入当前项目',
+    'change': '修订研究对象、追加评论或设置项目标签，保留版本与变更原因',
     'artifact': '保存不可变研究报告或实验产物',
     'joint_condition': '记录 AND、OR 或 k-of-N 联合条件及其证据，不代表科学判真',
     'connect': '连接支持、反驳或依赖关系',
