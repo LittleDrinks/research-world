@@ -6,6 +6,7 @@ import { WorkspaceProvider } from "./context/WorkspaceContext";
 
 
 const WorkspaceFilePage = lazy(() => import("./pages/WorkspaceFilePage").then(value=>({default:value.WorkspaceFilePage})));
+const ArtifactPage = lazy(() => import('./pages/ArtifactPage').then(value=>({default:value.ArtifactPage})));
 const MapPage = lazy(() => import("./pages/MapPage").then((value) => ({ default: value.MapPage })));
 const ChatPage = lazy(() => import("./pages/ChatPage").then((value) => ({ default: value.ChatPage })));
 const TracesPage = lazy(() => import("./pages/TracesPage").then((value) => ({ default: value.TracesPage })));
@@ -30,6 +31,7 @@ export function App() {
   return <Routes>
     <Route index element={<Navigate to="/projects" replace />} />
     <Route path="projects" element={<View component={ProjectsPage} />} />
+    <Route path="projects/:projectId/artifacts/:artifactId" element={<View component={ArtifactPage} />} />
     <Route path="workspace/:file/*" element={<View component={WorkspaceFilePage} />} />
     <Route element={<ProjectRequired />}>
       <Route path="map" element={<View component={MapPage} />} />
