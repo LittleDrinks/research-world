@@ -1,4 +1,6 @@
 from dataclasses import asdict
+import base64
+import binascii
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
@@ -13,6 +15,7 @@ class CaptureRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     operation: Literal['capture', 'validate', 'templates'] = 'capture'
     content: str | None = None
+    content_base64: str | None = None
     path: str | None = None
     media_type: str = 'text/markdown'
     schema_id: str | None = None
@@ -38,10 +41,7 @@ def artifact_router(kernel, runtime):
 async def capture_request(kernel, runtime, project_id, body):
     if body.operation == 'templates':
         return templates(kernel, project_id)
-    if (body.content is None) == (body.path is None):
-        raise ValueError('必须且只能提供 content 或工作区 path')
-    content = body.content if body.path is None else await runtime.workspace_file(project_id, body.path)
-    raw, media_type = content.encode('utf-8'), body.media_type
+    raw, media_type = await capture_bytes(runtime, project_id, body), body.media_type
     if len(raw) > MAX_BYTES:
         raise ValueError('Artifact 超过 4 MiB')
     if body.schema_id:
@@ -52,6 +52,20 @@ async def capture_request(kernel, runtime, project_id, body):
     elif media_type.strip() == DOCUMENT_TYPE:
         raise ValueError('请通过 schema_id 和 record_id 发布结构化报告')
     return finish_capture(kernel, project_id, body, raw, media_type)
+
+
+async def capture_bytes(runtime, project_id, body):
+    if sum(value is not None for value in (body.content, body.path, body.content_base64)) != 1:
+        raise ValueError('必须且只能提供 content、content_base64 或工作区 path')
+    if body.content_base64 is not None:
+        if len(body.content_base64) > MAX_BYTES * 4 // 3 + 4:
+            raise ValueError('Artifact 超过 4 MiB')
+        try:
+            return base64.b64decode(body.content_base64, validate=True)
+        except binascii.Error:
+            raise ValueError('产物编码无效') from None
+    content = body.content if body.path is None else await runtime.workspace_file(project_id, body.path)
+    return content.encode('utf-8')
 
 
 def check_selected_target(raw, expected):

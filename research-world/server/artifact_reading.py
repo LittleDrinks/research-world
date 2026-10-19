@@ -2,6 +2,8 @@
 from dataclasses import asdict
 from pathlib import PurePosixPath
 from urllib.parse import quote
+import csv
+import io
 
 from .artifact_documents import DOCUMENT_TYPE, MAX_BYTES, parse, reading_chars
 
@@ -19,6 +21,8 @@ def reading(kernel, project_id, artifact_id):
     if artifact.size > MAX_BYTES:
         return value
     content = kernel.read_artifact(project_id, artifact_id)
+    if artifact.media_type in {'image/png', 'image/jpeg', 'image/webp'}:
+        return value | {'kind': 'image'}
     if artifact.media_type == DOCUMENT_TYPE:
         document = parse(content)
         schema = parse(kernel.read_artifact(project_id, document['schema_id']))
@@ -29,9 +33,12 @@ def reading(kernel, project_id, artifact_id):
 
 def text_reading(kernel, project_id, artifact, content, value):
     media_type = artifact.media_type.split(';')[0].strip().lower()
-    if media_type not in {'text/markdown', 'text/plain', 'application/json', 'application/schema+json'}:
+    if media_type not in {'text/markdown', 'text/plain', 'text/x-python', 'text/csv', 'application/json', 'application/schema+json'}:
         return value
     names = attachment_names(kernel, project_id, artifact.id)
+    if media_type == 'text/csv':
+        rows = list(csv.reader(io.StringIO(content.decode('utf-8'))))
+        return value | {'kind': 'table', 'columns': rows[0] if rows else [], 'rows': rows[1:], 'name': names[0] if names else None}
     markdown_file = bool(names) and all(PurePosixPath(name).suffix.lower() in {'.md', '.markdown'} for name in names)
     kind = 'markdown' if media_type == 'text/markdown' or media_type == 'text/plain' and markdown_file else 'text'
     return value | {'kind': kind, 'name': names[0] if names else None, 'text': content.decode('utf-8')}
