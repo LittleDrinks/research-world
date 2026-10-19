@@ -54,10 +54,10 @@ jobs:
           docker compose up --build -d --wait
           cd web
           npx playwright install --with-deps chromium
-          RW_WORKSPACE_LIVE=1 npm test -- --grep-invert @graph-motion
+          RW_WORKSPACE_LIVE=1 RW_TEST_URL=http://127.0.0.1:8095 npm test -- --grep-invert @graph-motion
       - name: Graph bubble animation regression
         working-directory: research-world/web
-        run: npm test -- --grep @graph-motion
+        run: RW_TEST_URL=http://127.0.0.1:8095 npm test -- --grep @graph-motion
       - name: Upload browser failure evidence
         if: failure()
         uses: actions/upload-artifact@v4
