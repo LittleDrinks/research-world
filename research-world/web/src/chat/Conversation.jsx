@@ -1,4 +1,5 @@
 import {ChatMarkdown} from './ChatMarkdown';
+import {ChildResult} from './ChildResult';
 import {mergeEvents,timeline} from './timeline';
 
 const TOOL_NAMES={graph:'查询研究地图',record:'保存研究方向',connect:'连接证据',artifact:'保存研究产物',literature:'检索文献',delegate:'委派独立 Agent',read:'读取文件',write:'写入文件',edit:'编辑文件',bash:'执行命令'};
@@ -31,7 +32,7 @@ function Message({message,turn,events,active,connection,projectId}){
 
 function Part({part,status,projectId}){
   if(part.type==='tool')return <ToolCall tool={part.tool} status={status}/>;
-  if(part.type==='child')return <div className="pi-child"><b>独立 Agent 的结果</b><ChatMarkdown projectId={projectId}>{part.result_text||part.status}</ChatMarkdown></div>;
+  if(part.type==='child')return <ChildResult result={part} projectId={projectId}/>;
   return <div className="pi-text"><ChatMarkdown projectId={projectId}>{part.text}</ChatMarkdown></div>;
 }
 
