@@ -99,3 +99,14 @@ def _score(candidate, selected, similarities, weight) -> float:
         default=0.0,
     )
     return float(candidate["relevance"]) - weight * penalty
+
+
+def explain_mmr(values):
+    selected = select_mmr(values)
+    steps = []
+    for index, item in enumerate(selected):
+        prior = selected[:index]
+        penalty = max((values['similarities'][item['id']][p['id']] for p in prior), default=0)
+        steps.append({'id': item['id'], 'relevance': item['relevance'], 'redundancy': penalty,
+                      'score': _score(item, prior, values['similarities'], values['diversity_weight'])})
+    return {'selected': selected, 'steps': steps, 'diversity_weight': values['diversity_weight']}

@@ -30,6 +30,7 @@ def create_product(kernel, runtime, profiles, workspace):
     _errors(app)
     _agent_routes(app, runtime, profiles)
     _project_routes(app, kernel, runtime)
+    _selection_route(app, kernel, runtime)
     app.include_router(artifact_router(kernel, runtime))
     control=SessionControl(kernel, runtime, profiles, workspace)
     app.include_router(session_router(control))
@@ -58,6 +59,7 @@ def _errors(app):
 
 
 def _agent_routes(app, runtime, profiles):
+    _agent_removal(app, profiles)
     @app.get('/api/v1/runtime/catalog')
     async def catalog():
         return await runtime.catalog()
@@ -73,6 +75,13 @@ def _agent_routes(app, runtime, profiles):
             raise ValueError('Agent id 不匹配')
         await runtime.validate(value)
         return profiles.save(value)
+
+
+def _agent_removal(app, profiles):
+    @app.delete('/api/v1/agents/{agent_id}', status_code=204)
+    def remove(agent_id: str):
+        profiles.delete(agent_id)
+        return Response(status_code=204)
 
 
 def _project_routes(app, kernel, runtime):
@@ -96,6 +105,20 @@ def _project_routes(app, kernel, runtime):
 
 def _project_view(kernel, project):
     return {**asdict(project), 'node_count':len(kernel.list_records(project.id))}
+
+
+def _selection_route(app, kernel, runtime):
+    @app.post('/api/v1/projects/{project_id}/candidate-selection')
+    async def select(project_id: str, request: Request):
+        kernel.get_project(project_id)
+        values = await request.json()
+        if not isinstance(values, dict) or not isinstance(values.get('candidates'), list):
+            raise ValueError('需要候选列表')
+        for candidate in values['candidates']:
+            if not isinstance(candidate, dict) or not isinstance(candidate.get('id'), str):
+                raise ValueError('候选需要研究对象 id')
+            kernel.get_record(project_id, candidate['id'])
+        return await runtime.select_candidates(values)
 
 
 def _frontend(app):

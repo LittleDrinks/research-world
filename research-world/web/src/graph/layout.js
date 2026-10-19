@@ -26,8 +26,9 @@ function validEdges(edges, nodeMap) {
   return edges.flatMap((edge,index)=>{
     if(!nodeMap.has(edge.source)||!nodeMap.has(edge.target))return [];
     const handles=edgeHandles(edge,nodeMap);
-    return [{id:`edge-${index}`,sources:[`${edge.source}:${handles.sourceHandle.split('-')[1]}`],
-      targets:[`${edge.target}:${handles.targetHandle.split('-')[1]}`]}];
+    const source=`${edge.source}:${handles.sourceHandle.split('-')[1]}`,target=`${edge.target}:${handles.targetHandle.split('-')[1]}`;
+    const reverse=reverseLayoutEdge(edge,nodeMap);
+    return [{id:`edge-${index}`,sources:[reverse?target:source],targets:[reverse?source:target]}];
   });
 }
 
@@ -40,7 +41,7 @@ function ports(node){
 function inputGraph(nodes, edges, aspectRatio) {
   const nodeMap=new Map(nodes.map(node=>[node.id,node]));
   return {id:'research-graph',layoutOptions:{...OPTIONS,'elk.aspectRatio':String(aspectRatio)},
-    children:nodes.map(node=>({id:node.id,...dimensions(node),ports:ports(node),
+    children:[...nodes].sort((a,b)=>KIND_ORDER.indexOf(a.kind)-KIND_ORDER.indexOf(b.kind)).map(node=>({id:node.id,...dimensions(node),ports:ports(node),
       layoutOptions:{'elk.portConstraints':'FIXED_POS'}})),
     edges:validEdges(edges,nodeMap)};
 }
@@ -58,15 +59,17 @@ function routePoints(edge) {
 }
 
 
-function edgeRoutes(edges) {
-  return new Map((edges || []).map((edge) => [edge.id, routePoints(edge)]).filter(([, points]) => points.length > 1));
+function edgeRoutes(edges,original,nodes) {
+  const nodeMap=new Map(nodes.map(n=>[n.id,n]));
+  return new Map((edges||[]).map(edge=>{const points=routePoints(edge),source=original[Number(edge.id.slice(5))];
+    return [edge.id,reverseLayoutEdge(source,nodeMap)?points.reverse():points];}).filter(([,points])=>points.length>1));
 }
 
 
 export async function layoutGraph(nodes, edges, aspectRatio = 1.3) {
   if (!nodes.length) return { nodes: [], routes: new Map() };
   const result = await layoutComponents(await engine(), inputGraph(nodes, edges, aspectRatio), nodes, edges, aspectRatio);
-  return { nodes: result.children.map(child => flowNode(child, nodes.find(node => node.id === child.id))), routes: edgeRoutes(result.edges) };
+  return { nodes: result.children.map(child => flowNode(child, nodes.find(node => node.id === child.id))), routes: edgeRoutes(result.edges,edges,nodes) };
 }
 
 
@@ -79,11 +82,23 @@ function flowNode(layout, node) {
 }
 
 export function edgeHandles(edge, nodeMap) {
-  if (edge.polarity === 'joint') return {sourceHandle:'source-right',targetHandle:'target-left'};
+  if (edge.polarity === 'joint') return reverseLayoutEdge(edge,nodeMap)?{sourceHandle:'source-left',targetHandle:'target-right'}:{sourceHandle:'source-right',targetHandle:'target-left'};
   const source=nodeMap.get(edge.source),target=nodeMap.get(edge.target);
   if(!source||!target)return {};
   const sourceRank=KIND_ORDER.indexOf(source.kind||source.data?.kind);
   const targetRank=KIND_ORDER.indexOf(target.kind||target.data?.kind);
   const side=sourceRank===targetRank?'bottom':sourceRank<targetRank?'right':'left';
   return {sourceHandle:`source-${side}`,targetHandle:`target-${OPPOSITE[side]}`};
+}
+
+function kind(node){return node?.kind||node?.data?.kind;}
+
+export function reverseLayoutEdge(edge,nodeMap){
+  if(edge.polarity==='depends_on')return true;
+  const source=nodeMap.get(edge.source),target=nodeMap.get(edge.target);
+  if(edge.polarity!=='joint')return kind(source)==='experiment'&&kind(target)==='direction';
+  const joint=kind(source)==='joint'?source:target,condition=joint?.condition||joint?.data?.condition;
+  if(!condition)return false;
+  const targetKind=kind(nodeMap.get(condition.target_id));
+  return targetKind==='question'||targetKind==='direction'&&condition.members.every(m=>kind(nodeMap.get(m.record_id))==='experiment');
 }

@@ -1,0 +1,277 @@
+{
+  "input": {
+    "candidates": [
+      {
+        "id": "record:5452907a143f6001e19d6e30",
+        "title": "On the Dynamical Stability of the Solar System",
+        "relevance": 0.2222222222222222
+      },
+      {
+        "id": "record:b64ab65133f599c84691eb20",
+        "title": "Existence of collisional trajectories of Mercury, Mars and Venus with the Earth",
+        "relevance": 0.0
+      },
+      {
+        "id": "record:2fa0cfa31aa188aaefcdfae9",
+        "title": "DYNAMIC STABILITY OF THE SOLAR SYSTEM: STATISTICALLY INCONCLUSIVE RESULTS FROM ENSEMBLE INTEGRATIONS",
+        "relevance": 0.2222222222222222
+      },
+      {
+        "id": "record:4f0602a3933b58794927fa62",
+        "title": "The Long-Term Dynamical Evolution of the Solar System",
+        "relevance": 0.2222222222222222
+      },
+      {
+        "id": "record:6106c8c49ca2d16a9ee7b0f8",
+        "title": "Distant future of the Sun and Earth revisited",
+        "relevance": 0.0
+      },
+      {
+        "id": "record:84f1034d3a296f241fac23c3",
+        "title": "Tidal Decay of Close Planetary Orbits",
+        "relevance": 0.1111111111111111
+      },
+      {
+        "id": "record:404a66a323216beaa77b2dae",
+        "title": "Gravitational Radiation and the Motion of Two Point Masses",
+        "relevance": 0.1111111111111111
+      },
+      {
+        "id": "record:3c6d71b7a3f34ad9da769356",
+        "title": "Gravitational Radiation from Point Masses in a Keplerian Orbit",
+        "relevance": 0.2222222222222222
+      },
+      {
+        "id": "record:b7a71b418c31018d74450914",
+        "title": "whfast: a fast and unbiased implementation of a symplectic Wisdom–Holman integrator for long-term gravitational simulations",
+        "relevance": 0.3333333333333333
+      },
+      {
+        "id": "record:393452b3b3c1ae5a185ba72f",
+        "title": "ias15: a fast, adaptive, high-order integrator for gravitational dynamics, accurate to machine precision over a billion orbits",
+        "relevance": 0.4444444444444444
+      },
+      {
+        "id": "record:4c981fe6e9310fa47952ca6b",
+        "title": "REBOUND: an open-source multi-purposeN-body code for collisional dynamics",
+        "relevance": 0.1111111111111111
+      },
+      {
+        "id": "record:aafdc7acb9375ebad2774919",
+        "title": "On the accuracy of symplectic integrators for secularly evolving planetary systems",
+        "relevance": 0.1111111111111111
+      }
+    ],
+    "similarities": {
+      "record:5452907a143f6001e19d6e30": {
+        "record:b64ab65133f599c84691eb20": 0.0,
+        "record:2fa0cfa31aa188aaefcdfae9": 0.3,
+        "record:4f0602a3933b58794927fa62": 0.42857142857142855,
+        "record:6106c8c49ca2d16a9ee7b0f8": 0.0,
+        "record:84f1034d3a296f241fac23c3": 0.0,
+        "record:404a66a323216beaa77b2dae": 0.0,
+        "record:3c6d71b7a3f34ad9da769356": 0.0,
+        "record:b7a71b418c31018d74450914": 0.0,
+        "record:393452b3b3c1ae5a185ba72f": 0.0,
+        "record:4c981fe6e9310fa47952ca6b": 0.0,
+        "record:aafdc7acb9375ebad2774919": 0.0
+      },
+      "record:b64ab65133f599c84691eb20": {
+        "record:5452907a143f6001e19d6e30": 0.0,
+        "record:2fa0cfa31aa188aaefcdfae9": 0.0,
+        "record:4f0602a3933b58794927fa62": 0.0,
+        "record:6106c8c49ca2d16a9ee7b0f8": 0.09090909090909091,
+        "record:84f1034d3a296f241fac23c3": 0.0,
+        "record:404a66a323216beaa77b2dae": 0.0,
+        "record:3c6d71b7a3f34ad9da769356": 0.0,
+        "record:b7a71b418c31018d74450914": 0.0,
+        "record:393452b3b3c1ae5a185ba72f": 0.0,
+        "record:4c981fe6e9310fa47952ca6b": 0.06666666666666667,
+        "record:aafdc7acb9375ebad2774919": 0.0
+      },
+      "record:2fa0cfa31aa188aaefcdfae9": {
+        "record:5452907a143f6001e19d6e30": 0.3,
+        "record:b64ab65133f599c84691eb20": 0.0,
+        "record:4f0602a3933b58794927fa62": 0.15384615384615385,
+        "record:6106c8c49ca2d16a9ee7b0f8": 0.0,
+        "record:84f1034d3a296f241fac23c3": 0.0,
+        "record:404a66a323216beaa77b2dae": 0.0,
+        "record:3c6d71b7a3f34ad9da769356": 0.0,
+        "record:b7a71b418c31018d74450914": 0.0,
+        "record:393452b3b3c1ae5a185ba72f": 0.0,
+        "record:4c981fe6e9310fa47952ca6b": 0.0,
+        "record:aafdc7acb9375ebad2774919": 0.0
+      },
+      "record:4f0602a3933b58794927fa62": {
+        "record:5452907a143f6001e19d6e30": 0.42857142857142855,
+        "record:b64ab65133f599c84691eb20": 0.0,
+        "record:2fa0cfa31aa188aaefcdfae9": 0.15384615384615385,
+        "record:6106c8c49ca2d16a9ee7b0f8": 0.0,
+        "record:84f1034d3a296f241fac23c3": 0.0,
+        "record:404a66a323216beaa77b2dae": 0.0,
+        "record:3c6d71b7a3f34ad9da769356": 0.0,
+        "record:b7a71b418c31018d74450914": 0.125,
+        "record:393452b3b3c1ae5a185ba72f": 0.0,
+        "record:4c981fe6e9310fa47952ca6b": 0.0,
+        "record:aafdc7acb9375ebad2774919": 0.0
+      },
+      "record:6106c8c49ca2d16a9ee7b0f8": {
+        "record:5452907a143f6001e19d6e30": 0.0,
+        "record:b64ab65133f599c84691eb20": 0.09090909090909091,
+        "record:2fa0cfa31aa188aaefcdfae9": 0.0,
+        "record:4f0602a3933b58794927fa62": 0.0,
+        "record:84f1034d3a296f241fac23c3": 0.0,
+        "record:404a66a323216beaa77b2dae": 0.0,
+        "record:3c6d71b7a3f34ad9da769356": 0.0,
+        "record:b7a71b418c31018d74450914": 0.0,
+        "record:393452b3b3c1ae5a185ba72f": 0.0,
+        "record:4c981fe6e9310fa47952ca6b": 0.0,
+        "record:aafdc7acb9375ebad2774919": 0.0
+      },
+      "record:84f1034d3a296f241fac23c3": {
+        "record:5452907a143f6001e19d6e30": 0.0,
+        "record:b64ab65133f599c84691eb20": 0.0,
+        "record:2fa0cfa31aa188aaefcdfae9": 0.0,
+        "record:4f0602a3933b58794927fa62": 0.0,
+        "record:6106c8c49ca2d16a9ee7b0f8": 0.0,
+        "record:404a66a323216beaa77b2dae": 0.0,
+        "record:3c6d71b7a3f34ad9da769356": 0.0,
+        "record:b7a71b418c31018d74450914": 0.0,
+        "record:393452b3b3c1ae5a185ba72f": 0.058823529411764705,
+        "record:4c981fe6e9310fa47952ca6b": 0.0,
+        "record:aafdc7acb9375ebad2774919": 0.09090909090909091
+      },
+      "record:404a66a323216beaa77b2dae": {
+        "record:5452907a143f6001e19d6e30": 0.0,
+        "record:b64ab65133f599c84691eb20": 0.0,
+        "record:2fa0cfa31aa188aaefcdfae9": 0.0,
+        "record:4f0602a3933b58794927fa62": 0.0,
+        "record:6106c8c49ca2d16a9ee7b0f8": 0.0,
+        "record:84f1034d3a296f241fac23c3": 0.0,
+        "record:3c6d71b7a3f34ad9da769356": 0.5,
+        "record:b7a71b418c31018d74450914": 0.058823529411764705,
+        "record:393452b3b3c1ae5a185ba72f": 0.05555555555555555,
+        "record:4c981fe6e9310fa47952ca6b": 0.0,
+        "record:aafdc7acb9375ebad2774919": 0.0
+      },
+      "record:3c6d71b7a3f34ad9da769356": {
+        "record:5452907a143f6001e19d6e30": 0.0,
+        "record:b64ab65133f599c84691eb20": 0.0,
+        "record:2fa0cfa31aa188aaefcdfae9": 0.0,
+        "record:4f0602a3933b58794927fa62": 0.0,
+        "record:6106c8c49ca2d16a9ee7b0f8": 0.0,
+        "record:84f1034d3a296f241fac23c3": 0.0,
+        "record:404a66a323216beaa77b2dae": 0.5,
+        "record:b7a71b418c31018d74450914": 0.058823529411764705,
+        "record:393452b3b3c1ae5a185ba72f": 0.05555555555555555,
+        "record:4c981fe6e9310fa47952ca6b": 0.0,
+        "record:aafdc7acb9375ebad2774919": 0.0
+      },
+      "record:b7a71b418c31018d74450914": {
+        "record:5452907a143f6001e19d6e30": 0.0,
+        "record:b64ab65133f599c84691eb20": 0.0,
+        "record:2fa0cfa31aa188aaefcdfae9": 0.0,
+        "record:4f0602a3933b58794927fa62": 0.125,
+        "record:6106c8c49ca2d16a9ee7b0f8": 0.0,
+        "record:84f1034d3a296f241fac23c3": 0.0,
+        "record:404a66a323216beaa77b2dae": 0.058823529411764705,
+        "record:3c6d71b7a3f34ad9da769356": 0.058823529411764705,
+        "record:393452b3b3c1ae5a185ba72f": 0.13636363636363635,
+        "record:4c981fe6e9310fa47952ca6b": 0.0,
+        "record:aafdc7acb9375ebad2774919": 0.05555555555555555
+      },
+      "record:393452b3b3c1ae5a185ba72f": {
+        "record:5452907a143f6001e19d6e30": 0.0,
+        "record:b64ab65133f599c84691eb20": 0.0,
+        "record:2fa0cfa31aa188aaefcdfae9": 0.0,
+        "record:4f0602a3933b58794927fa62": 0.0,
+        "record:6106c8c49ca2d16a9ee7b0f8": 0.0,
+        "record:84f1034d3a296f241fac23c3": 0.058823529411764705,
+        "record:404a66a323216beaa77b2dae": 0.05555555555555555,
+        "record:3c6d71b7a3f34ad9da769356": 0.05555555555555555,
+        "record:b7a71b418c31018d74450914": 0.13636363636363635,
+        "record:4c981fe6e9310fa47952ca6b": 0.047619047619047616,
+        "record:aafdc7acb9375ebad2774919": 0.0
+      },
+      "record:4c981fe6e9310fa47952ca6b": {
+        "record:5452907a143f6001e19d6e30": 0.0,
+        "record:b64ab65133f599c84691eb20": 0.06666666666666667,
+        "record:2fa0cfa31aa188aaefcdfae9": 0.0,
+        "record:4f0602a3933b58794927fa62": 0.0,
+        "record:6106c8c49ca2d16a9ee7b0f8": 0.0,
+        "record:84f1034d3a296f241fac23c3": 0.0,
+        "record:404a66a323216beaa77b2dae": 0.0,
+        "record:3c6d71b7a3f34ad9da769356": 0.0,
+        "record:b7a71b418c31018d74450914": 0.0,
+        "record:393452b3b3c1ae5a185ba72f": 0.047619047619047616,
+        "record:aafdc7acb9375ebad2774919": 0.0
+      },
+      "record:aafdc7acb9375ebad2774919": {
+        "record:5452907a143f6001e19d6e30": 0.0,
+        "record:b64ab65133f599c84691eb20": 0.0,
+        "record:2fa0cfa31aa188aaefcdfae9": 0.0,
+        "record:4f0602a3933b58794927fa62": 0.0,
+        "record:6106c8c49ca2d16a9ee7b0f8": 0.0,
+        "record:84f1034d3a296f241fac23c3": 0.09090909090909091,
+        "record:404a66a323216beaa77b2dae": 0.0,
+        "record:3c6d71b7a3f34ad9da769356": 0.0,
+        "record:b7a71b418c31018d74450914": 0.05555555555555555,
+        "record:393452b3b3c1ae5a185ba72f": 0.0,
+        "record:4c981fe6e9310fa47952ca6b": 0.0
+      }
+    },
+    "count": 4,
+    "diversity_weight": 0.65
+  },
+  "output": {
+    "selected": [
+      {
+        "id": "record:393452b3b3c1ae5a185ba72f",
+        "title": "ias15: a fast, adaptive, high-order integrator for gravitational dynamics, accurate to machine precision over a billion orbits",
+        "relevance": 0.4444444444444444
+      },
+      {
+        "id": "record:b7a71b418c31018d74450914",
+        "title": "whfast: a fast and unbiased implementation of a symplectic Wisdom–Holman integrator for long-term gravitational simulations",
+        "relevance": 0.3333333333333333
+      },
+      {
+        "id": "record:2fa0cfa31aa188aaefcdfae9",
+        "title": "DYNAMIC STABILITY OF THE SOLAR SYSTEM: STATISTICALLY INCONCLUSIVE RESULTS FROM ENSEMBLE INTEGRATIONS",
+        "relevance": 0.2222222222222222
+      },
+      {
+        "id": "record:3c6d71b7a3f34ad9da769356",
+        "title": "Gravitational Radiation from Point Masses in a Keplerian Orbit",
+        "relevance": 0.2222222222222222
+      }
+    ],
+    "steps": [
+      {
+        "id": "record:393452b3b3c1ae5a185ba72f",
+        "relevance": 0.4444444444444444,
+        "redundancy": 0,
+        "score": 0.4444444444444444
+      },
+      {
+        "id": "record:b7a71b418c31018d74450914",
+        "relevance": 0.3333333333333333,
+        "redundancy": 0.13636363636363635,
+        "score": 0.2446969696969697
+      },
+      {
+        "id": "record:2fa0cfa31aa188aaefcdfae9",
+        "relevance": 0.2222222222222222,
+        "redundancy": 0.0,
+        "score": 0.2222222222222222
+      },
+      {
+        "id": "record:3c6d71b7a3f34ad9da769356",
+        "relevance": 0.2222222222222222,
+        "redundancy": 0.058823529411764705,
+        "score": 0.18398692810457515
+      }
+    ],
+    "diversity_weight": 0.65
+  }
+}

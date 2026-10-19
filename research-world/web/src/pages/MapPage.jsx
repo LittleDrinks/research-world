@@ -35,7 +35,7 @@ function MapContent({ data, setError }) {
 
   return <section className="map-page">
     <MapToolbar count={localMap.records.length} relationCount={localMap.relations.length + localMap.joint_conditions.length}
-      text={text} setParams={setParams} />
+      text={text} setParams={setParams}/>
     <MapView localMap={localMap} selectedId={recordId} onSelect={(id) => selectRecord(setParams, id)} onDeleteRecord={removeRecord} onDeleteRelation={removeRelation} />
   </section>;
 }
@@ -72,8 +72,8 @@ function normalizeLocalMap(value) {
 }
 
 
-function mapRecord({ id, type: kind, content, artifact_ids }) {
-  return { id, kind, content, artifact_ids };
+function mapRecord({ id, type: kind, content, artifact_ids, revision, labels }) {
+  return { id, kind, content, artifact_ids, revision, labels };
 }
 
 

@@ -1,6 +1,7 @@
 import { BookOpen, CircleHelp, Compass, FlaskConical } from "lucide-react";
 import { Handle, Position } from "@xyflow/react";
 import { KIND_LABELS, recordText } from "../utils/labels";
+import {LabelBadge} from './Labels';
 
 
 const ICONS = { question: CircleHelp, source: BookOpen, direction: Compass, experiment: FlaskConical };
@@ -19,6 +20,7 @@ export function ResearchNode({ data, selected }) {
     <Handles handleKind="target" />
     <header><span className="node-kind-icon" role="img" aria-label={`${KIND_LABELS[kind] || kind}图标`}><Icon size={19} /></span>
       <div><span>{KIND_LABELS[kind] || kind}</span><h3>{recordText(data)}</h3></div></header>
+    {data.labels?.length>0&&<div className="node-labels">{data.labels.slice(0,2).map(label=><LabelBadge key={label.id} label={label}/>)}{data.labels.length>2&&<span className="extra-labels">+{data.labels.length-2}</span>}</div>}
     <footer><div className="node-meta"><span>{String(data.id || "").slice(0, 12)}</span></div></footer>
     <Handles handleKind="source" />
   </article>;

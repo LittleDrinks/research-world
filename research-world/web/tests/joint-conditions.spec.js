@@ -43,7 +43,7 @@ async function checkJunctionAndRefresh(page,request) {
     await expect(page.locator('.joint-inspector')).toContainText('全部 3 项共同满足');
     await expect(page.locator('.joint-inspector')).toContainText('不同条件分别承担解释的一部分。');
     const href=await page.getByRole('link',{name:'查看原文'}).getAttribute('href');
-    expect(await (await request.get(href)).text()).toContain('q049 引用内容');
+    expect((await (await request.get('/api/v1'+decodeURI(href)+'/reading')).json()).text).toContain('q049 引用内容');
     await page.reload();
     await expect(page.locator('.joint-inspector')).toContainText('AND 关系示例');
 }

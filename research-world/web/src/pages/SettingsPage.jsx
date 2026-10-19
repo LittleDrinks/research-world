@@ -4,6 +4,8 @@ import { projectExportUrl } from "../api";
 import { EmptyState } from "../components/bits";
 import { useWorld } from "../context/WorldContext";
 import { formatDate } from "../utils/labels";
+import {LabelManager} from '../graph/Labels';
+import {ResultsPreview} from '../graph/ResultsPreview';
 import "../settings.css";
 
 
@@ -18,7 +20,7 @@ export function SettingsPage() {
       <div><dt>项目 ID</dt><dd className="mono">{project.id}</dd></div>
       <div><dt>创建时间</dt><dd>{formatDate(project.created_at)}</dd></div>
     </dl>
-    <ProjectExport projectId={project.id} />
+    <div className="settings-actions"><ResultsPreview/><LabelManager/><ProjectExport projectId={project.id}/></div>
     <ExitProject /></section>;
 }
 

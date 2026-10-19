@@ -5,11 +5,25 @@ import {requestTool} from './bridge-request.mjs';
 const text = Type.String();
 const definitions = {
   graph: ['查询当前研究项目的图谱', Type.Object({query: Type.Optional(text)})],
+  mmr: ['确定性选择候选：提供可追溯的相关性和成对相似度（同一尺度），返回选择顺序与重复性扣分。',Type.Object({
+    candidates:Type.Array(Type.Object({id:text,relevance:Type.Number(),title:Type.Optional(text)}),{minItems:1,maxItems:100}),
+    similarities:Type.Record(text,Type.Record(text,Type.Number())),count:Type.Integer({minimum:1,maximum:100}),diversity_weight:Type.Number({minimum:0,maximum:1}),
+  })],
   record: ['保存研究对象。未验证方向必须注明不确定性。', Type.Object({
     type: Type.Union(['question','source','direction','experiment'].map(Type.Literal)),
     content: Type.Object({title: text, text}),
     artifact_ids: Type.Optional(Type.Array(text)),
   })],
+  change: ['管理当前项目的研究记录：读取正文/固定版本、查看变更历史、评论/修订/贴标及管理标签定义。先read取得当前revision，submit使用base_revision防止覆盖他人修改。', Type.Union([
+    Type.Object({operation:Type.Literal('read'),record_id:text,revision:Type.Optional(Type.Integer({minimum:1}))}),
+    Type.Object({operation:Type.Literal('history'),record_id:Type.Optional(text)}),
+    Type.Object({operation:Type.Literal('labels')}),
+    Type.Object({operation:Type.Literal('label_create'),name:text,color:text,description:Type.Optional(text)}),
+    Type.Object({operation:Type.Literal('label_update'),label_id:text,name:text,color:text,description:Type.Optional(text)}),
+    Type.Object({operation:Type.Literal('label_delete'),label_id:text}),
+    Type.Object({operation:Type.Literal('submit'),record_id:text,kind:Type.Union(['revise','comment','labels'].map(Type.Literal)),base_revision:Type.Integer({minimum:1}),reason:text,
+      title:Type.Optional(text),text:Type.Optional(text),comment:Type.Optional(text),reference_revision:Type.Optional(Type.Integer({minimum:1})),label_ids:Type.Optional(Type.Array(text))}),
+  ])],
   artifact: ['保存不可变产物并返回阅读链接。operation=templates获取报告模板与示例；结构化报告选择schema_id、record_id，content/path提供模板数据JSON；validate仅校验，capture校验后保存并关联对象。全文等已有UTF-8文件用path原样捕获。',
     Type.Object({operation:Type.Optional(Type.Union(['capture','validate','templates'].map(Type.Literal))),
       content:Type.Optional(text),path:Type.Optional(text),media_type:Type.Optional(text),schema_id:Type.Optional(text),record_id:Type.Optional(text)})],

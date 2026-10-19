@@ -1,0 +1,13 @@
+{
+  "code_head": "331973f3d7d3632c5b1b5f156110778c274f8453",
+  "backend_passed": 247,
+  "runtime_passed": 246,
+  "runtime_skipped": 12,
+  "latest_browser_passed": 11,
+  "artifact_browser_passed": 5,
+  "model_calls": 0,
+  "openalex_queries": 12,
+  "selected_sources": 12,
+  "qa": "User requested direct QA; no independent review launched",
+  "preserved_user_work": "Named stash: preserve preexisting prototype cleanup and research evidence before issue refactor"
+}

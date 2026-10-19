@@ -227,3 +227,16 @@ def test_conflicting_attachment_formats_keep_plain_text_and_ignore_malformed_met
     kernel.record(record.project_id, 'source', {'attachments': [None, {'id': artifact.id, 'name': 4}]}, (artifact.id,))
     view = client.get(root + f'/artifacts/{artifact.id}/reading').json()
     assert view['kind'] == 'text'
+
+
+def test_image_and_code_results_are_readable_without_a_manual_upload_ui(case):
+    import io
+    from PIL import Image
+    _, _, client, root, _, _, _ = case
+    buffer=io.BytesIO();Image.new('RGB',(4,4),'blue').save(buffer,format='PNG')
+    result=client.post(root+'/artifacts',json={'content_base64':base64.b64encode(buffer.getvalue()).decode(),'media_type':'image/png'})
+    assert result.status_code==201
+    assert client.get(root+'/artifacts/'+result.json()['id']+'/reading').json()['kind']=='image'
+    assert client.get(root+'/artifacts/'+result.json()['id']).content==buffer.getvalue()
+    code=client.post(root+'/artifacts',json={'content':'print(42)','media_type':'text/x-python'}).json()
+    assert client.get(root+'/artifacts/'+code['id']+'/reading').json()['text']=='print(42)'

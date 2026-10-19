@@ -1,7 +1,7 @@
 # Research World
 围绕单个科学问题积累可审核、可复现、可追溯的研究对象与 Agent 工作过程。
 ## Language
-**Project**：一个科学问题及其研究状态；id 是稳定、不承载业务语义的标识符。
+**Project**：一个研究范围及其研究状态，可包含多个相关 Question；id 是稳定、不承载业务语义的标识符。
 _Avoid_: 课题、任务
 **Q001-Q125 Project corpus**：用于展示系统研究状态的固定科学问题集合；“125 问”与“《Science》125 个前沿科学问题”均指此集合。
 _Avoid_: Benchmark
@@ -9,6 +9,8 @@ _Avoid_: Benchmark
 _Avoid_: Fact Graph、事实图谱、Research Kernel
 **研究地图**：Research Graph 的可视化投影。
 _Avoid_: Research Graph（页面名称）
+**标签（Label）**：用户管理的项目内名称、颜色与描述，可同时关联多个研究对象；warning、need-info、need-grill 是可编辑示例，不代表流程阶段或科学判定。
+**变更（Change）**：针对研究对象的追加式修改或讨论记录，保存作者、原因和前后版本快照。正文、标签及附件变动和评论均可追溯；当前对象由初始记录与变更投影，固定版本可回读。
 **Question**：Research Graph 中定义研究对象、范围与约束的节点；不能作为 supports/refutes 的起点或终点。Direction 对 Question 的关系使用 Direction→Question 的 depends_on。
 **Source**：Research Graph 中描述一份外部资料及其可用范围的节点。
 **Direction**：Research Graph 中记录待探索解释、路线或反例的节点；赛题中的候选假设、机制解释、数学结构和研究路线均投影为 Direction，不是已证实结论。

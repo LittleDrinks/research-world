@@ -12,6 +12,8 @@ DEFAULT_INSTRUCTIONS = ('围绕科学问题开展研究，区分事实、推断�
     'Question只定义研究范围，不能参与supports/refutes；方向与问题用Direction指向Question的depends_on。'
     '读写或运行文件时使用workspace的read/write/edit/bash，文件位于/workspace，与JupyterLab共享。'
     'artifact仅发布不可变研究产物，不用于代替创建工作文件。评审报告作为Artifact挂到被审对象，不把评审建为experiment。'
+    '读取或修订已有对象、评论、查看历史与管理标签使用change；先read当前revision再提交变更。标签可并存，不代表科研判断。'
+    '从多个相关候选中控制重复性时可使用mmr，提供相关性与成对相似度并注明评分来源。'
     '禁止编造来源、实验结果或把研究计划写成已完成实验。最后给出简明工作摘要和下一步。')
 
 
@@ -27,7 +29,21 @@ class AgentProfiles:
         return values
 
     def get(self, agent_id, default_model):
-        return next(value for value in self.list(default_model) if value['id'] == agent_id)
+        value = next((value for value in self.list(default_model) if value['id'] == agent_id), None)
+        if value is None:
+            raise KeyError(agent_id)
+        return value
+
+    def delete(self, agent_id):
+        if not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,63}', agent_id):
+            raise ValueError('Agent 标识无效')
+        if agent_id == 'research-assistant':
+            raise ValueError('内置研究助手不能删除')
+        path = self.root / f'{agent_id}.json'
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            raise KeyError(agent_id) from None
 
     def save(self, value):
         value = validate_profile(value)
@@ -41,7 +57,7 @@ class AgentProfiles:
 def default_profile(model):
     return {'id': 'research-assistant', 'name': '研究助手', 'model': model,
             'instructions': DEFAULT_INSTRUCTIONS, 'thinking': 'high',
-            'skills': [], 'tools': ['graph', 'record', 'connect', 'joint_condition', 'artifact', 'literature', 'delegate', 'workspace']}
+            'skills': [], 'tools': ['graph', 'record', 'change', 'connect', 'joint_condition', 'artifact', 'literature', 'mmr', 'delegate', 'workspace']}
 
 
 def validate_profile(value):

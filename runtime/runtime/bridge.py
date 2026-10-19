@@ -11,6 +11,8 @@ from fastapi import APIRouter, HTTPException, Request
 from . import literature
 from .agent_catalog import has_workspace
 from .artifact_files import read_text
+from .selection import select_candidates
+from .research_operations import operation as research_operation
 
 
 class ToolBridge:
@@ -46,6 +48,10 @@ class ToolBridge:
             return await self.delegate(request, values)
         if tool == 'literature':
             return await _literature(values)
+        if tool == 'change':
+            return await _change(request, values)
+        if tool == 'mmr':
+            return select_candidates(values)
         if tool == 'artifact':
             if values.get('operation') == 'templates':
                 return await _graph(request.agent_snapshot['project_id'], tool, values)
@@ -102,8 +108,8 @@ def bridge_router(bridge):
         except PermissionError as error:
             raise HTTPException(403, str(error)) from None
         except httpx.HTTPStatusError as error:
-            if body['tool'] == 'artifact' and error.response.status_code == 422:
-                raise HTTPException(422, error.response.json().get('detail')) from None
+            if body['tool'] in {'artifact', 'change'} and error.response.status_code in {409, 422}:
+                raise HTTPException(error.response.status_code, error.response.json().get('detail')) from None
             raise HTTPException(422, 'Tool operation failed; verify arguments or source availability') from None
         except (ValueError, KeyError, httpx.HTTPError):
             raise HTTPException(422, 'Tool operation failed; verify arguments or source availability') from None
@@ -129,3 +135,13 @@ async def _literature(values):
     result = await sources[values.get('source', 'crossref')]({
         'action': 'search', 'query': values['query'], 'limit': 5})
     return json.loads(result)
+
+
+async def _change(request, values):
+    root = f"/api/v1/projects/{request.agent_snapshot['project_id']}"
+    method, path, payload = research_operation(values)
+    async with httpx.AsyncClient(base_url=os.environ['CONTROL_URL'], timeout=30) as client:
+        response = await client.request(method, root + path, json=payload,
+                                        headers={'x-research-author': 'agent:' + request.run_id})
+        response.raise_for_status()
+        return {'deleted': True} if response.status_code == 204 else response.json()

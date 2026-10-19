@@ -1,0 +1,151 @@
+{
+  "project_id": "project:bc524d1d221ec0dcf82f72a2",
+  "records": {
+    "question": "record:82b05b00d0bd1bac6385778b",
+    "methods": "record:7e0eb94681ccbbbaeb2d5bdc",
+    "radiation": "record:40f99ce4e2defc8d16103369",
+    "drift": "record:993853352bbc1e66bdce8438",
+    "numeric": "record:8c1ec2ce9a80113fd903e396",
+    "physical": "record:9cf6211e68f5c0228b23f942",
+    "budget": "record:c4dea509d2cdc289d4bf7635",
+    "resolution": "record:d883b32525d090b766309e50",
+    "duration": "record:efc301c07f6f67312f3905b0",
+    "ensemble": "record:3cc38b6f7e6c88010bc7eb15"
+  },
+  "conditions": {
+    "AND": "joint:b2a0d30e9d50ec93547f11a5",
+    "OR": "joint:cb994d05ef511ed251671353",
+    "k-of-N": "joint:77a21190e4f57adfef6858bd"
+  },
+  "documents": {
+    "radiation": {
+      "id": "artifact:86ce609cda1301e03f2ba27108dcb6afc5a6eb5fd22e096e339e4a151da134f5",
+      "project_id": "project:bc524d1d221ec0dcf82f72a2",
+      "sha256": "86ce609cda1301e03f2ba27108dcb6afc5a6eb5fd22e096e339e4a151da134f5",
+      "media_type": "text/markdown",
+      "size": 600,
+      "created_at": "2026-10-19T14:32:42.637244+00:00",
+      "download_url": "/api/v1/projects/project:bc524d1d221ec0dcf82f72a2/artifacts/artifact:86ce609cda1301e03f2ba27108dcb6afc5a6eb5fd22e096e339e4a151da134f5?download=true",
+      "view_url": "/projects/project%3Abc524d1d221ec0dcf82f72a2/artifacts/artifact%3A86ce609cda1301e03f2ba27108dcb6afc5a6eb5fd22e096e339e4a151da134f5"
+    },
+    "integration": {
+      "id": "artifact:2134ef42d09a0914bf3a4077c8c53505d27b3f7318dec31ac96648f1040df590",
+      "project_id": "project:bc524d1d221ec0dcf82f72a2",
+      "sha256": "2134ef42d09a0914bf3a4077c8c53505d27b3f7318dec31ac96648f1040df590",
+      "media_type": "text/markdown",
+      "size": 803,
+      "created_at": "2026-10-19T14:32:42.641225+00:00",
+      "download_url": "/api/v1/projects/project:bc524d1d221ec0dcf82f72a2/artifacts/artifact:2134ef42d09a0914bf3a4077c8c53505d27b3f7318dec31ac96648f1040df590?download=true",
+      "view_url": "/projects/project%3Abc524d1d221ec0dcf82f72a2/artifacts/artifact%3A2134ef42d09a0914bf3a4077c8c53505d27b3f7318dec31ac96648f1040df590"
+    },
+    "budget": {
+      "id": "artifact:7a4d1eb240b55fc9efa5e235f6e84ba61af8c704da654e8011fff52552329945",
+      "project_id": "project:bc524d1d221ec0dcf82f72a2",
+      "sha256": "7a4d1eb240b55fc9efa5e235f6e84ba61af8c704da654e8011fff52552329945",
+      "media_type": "text/markdown",
+      "size": 578,
+      "created_at": "2026-10-19T14:32:42.644711+00:00",
+      "download_url": "/api/v1/projects/project:bc524d1d221ec0dcf82f72a2/artifacts/artifact:7a4d1eb240b55fc9efa5e235f6e84ba61af8c704da654e8011fff52552329945?download=true",
+      "view_url": "/projects/project%3Abc524d1d221ec0dcf82f72a2/artifacts/artifact%3A7a4d1eb240b55fc9efa5e235f6e84ba61af8c704da654e8011fff52552329945"
+    },
+    "papers": {
+      "id": "artifact:62e5e6bd8823730b46d15a7a289de51c2798433b135c5ce80635acd59b6d3e5d",
+      "project_id": "project:bc524d1d221ec0dcf82f72a2",
+      "sha256": "62e5e6bd8823730b46d15a7a289de51c2798433b135c5ce80635acd59b6d3e5d",
+      "media_type": "text/markdown",
+      "size": 901,
+      "created_at": "2026-10-19T14:32:42.648622+00:00",
+      "download_url": "/api/v1/projects/project:bc524d1d221ec0dcf82f72a2/artifacts/artifact:62e5e6bd8823730b46d15a7a289de51c2798433b135c5ce80635acd59b6d3e5d?download=true",
+      "view_url": "/projects/project%3Abc524d1d221ec0dcf82f72a2/artifacts/artifact%3A62e5e6bd8823730b46d15a7a289de51c2798433b135c5ce80635acd59b6d3e5d"
+    }
+  },
+  "files": {
+    "q049_cpu.py": {
+      "id": "artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
+      "project_id": "project:bc524d1d221ec0dcf82f72a2",
+      "sha256": "cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c",
+      "media_type": "text/x-python",
+      "size": 3718,
+      "created_at": "2026-10-19T14:32:42.651963+00:00",
+      "download_url": "/api/v1/projects/project:bc524d1d221ec0dcf82f72a2/artifacts/artifact:cc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c?download=true",
+      "view_url": "/projects/project%3Abc524d1d221ec0dcf82f72a2/artifacts/artifact%3Acc0375b85cd98db6db1159bbf3d7a183bf6f1d008c85e0540da329621120f29c"
+    },
+    "results.json": {
+      "id": "artifact:cc8544b68691c03f621d4da48edfb6eee21b3e0b75eaff4772cf5fc465f1426a",
+      "project_id": "project:bc524d1d221ec0dcf82f72a2",
+      "sha256": "cc8544b68691c03f621d4da48edfb6eee21b3e0b75eaff4772cf5fc465f1426a",
+      "media_type": "application/json",
+      "size": 2962,
+      "created_at": "2026-10-19T14:32:42.655327+00:00",
+      "download_url": "/api/v1/projects/project:bc524d1d221ec0dcf82f72a2/artifacts/artifact:cc8544b68691c03f621d4da48edfb6eee21b3e0b75eaff4772cf5fc465f1426a?download=true",
+      "view_url": "/projects/project%3Abc524d1d221ec0dcf82f72a2/artifacts/artifact%3Acc8544b68691c03f621d4da48edfb6eee21b3e0b75eaff4772cf5fc465f1426a"
+    },
+    "integration.csv": {
+      "id": "artifact:49535590e0618d02554c9f2dda80835385896bfced2b1cf786f12b65c614a1ee",
+      "project_id": "project:bc524d1d221ec0dcf82f72a2",
+      "sha256": "49535590e0618d02554c9f2dda80835385896bfced2b1cf786f12b65c614a1ee",
+      "media_type": "text/csv",
+      "size": 553,
+      "created_at": "2026-10-19T14:32:42.658304+00:00",
+      "download_url": "/api/v1/projects/project:bc524d1d221ec0dcf82f72a2/artifacts/artifact:49535590e0618d02554c9f2dda80835385896bfced2b1cf786f12b65c614a1ee?download=true",
+      "view_url": "/projects/project%3Abc524d1d221ec0dcf82f72a2/artifacts/artifact%3A49535590e0618d02554c9f2dda80835385896bfced2b1cf786f12b65c614a1ee"
+    },
+    "stdout.txt": {
+      "id": "artifact:cc8544b68691c03f621d4da48edfb6eee21b3e0b75eaff4772cf5fc465f1426a",
+      "project_id": "project:bc524d1d221ec0dcf82f72a2",
+      "sha256": "cc8544b68691c03f621d4da48edfb6eee21b3e0b75eaff4772cf5fc465f1426a",
+      "media_type": "application/json",
+      "size": 2962,
+      "created_at": "2026-10-19T14:32:42.655327+00:00",
+      "download_url": "/api/v1/projects/project:bc524d1d221ec0dcf82f72a2/artifacts/artifact:cc8544b68691c03f621d4da48edfb6eee21b3e0b75eaff4772cf5fc465f1426a?download=true",
+      "view_url": "/projects/project%3Abc524d1d221ec0dcf82f72a2/artifacts/artifact%3Acc8544b68691c03f621d4da48edfb6eee21b3e0b75eaff4772cf5fc465f1426a"
+    },
+    "energy-drift.png": {
+      "id": "artifact:85bb0a5ffe06e5b92715a4c54e23074adfe3f7f3fc1db0cb092de10f1e68a4bd",
+      "project_id": "project:bc524d1d221ec0dcf82f72a2",
+      "sha256": "85bb0a5ffe06e5b92715a4c54e23074adfe3f7f3fc1db0cb092de10f1e68a4bd",
+      "media_type": "image/png",
+      "size": 92822,
+      "created_at": "2026-10-19T14:33:22.305382+00:00",
+      "download_url": "/api/v1/projects/project:bc524d1d221ec0dcf82f72a2/artifacts/artifact:85bb0a5ffe06e5b92715a4c54e23074adfe3f7f3fc1db0cb092de10f1e68a4bd?download=true",
+      "view_url": "/projects/project%3Abc524d1d221ec0dcf82f72a2/artifacts/artifact%3A85bb0a5ffe06e5b92715a4c54e23074adfe3f7f3fc1db0cb092de10f1e68a4bd"
+    }
+  },
+  "mmr": [
+    {
+      "id": "artifact:ee78a7af3b396d5c6bfddc8992f9433fedda3633b2aa525340945f7f502d0d29",
+      "project_id": "project:bc524d1d221ec0dcf82f72a2",
+      "sha256": "ee78a7af3b396d5c6bfddc8992f9433fedda3633b2aa525340945f7f502d0d29",
+      "media_type": "text/markdown",
+      "size": 841,
+      "created_at": "2026-10-19T14:34:41.259942+00:00",
+      "download_url": "/api/v1/projects/project:bc524d1d221ec0dcf82f72a2/artifacts/artifact:ee78a7af3b396d5c6bfddc8992f9433fedda3633b2aa525340945f7f502d0d29?download=true",
+      "view_url": "/projects/project%3Abc524d1d221ec0dcf82f72a2/artifacts/artifact%3Aee78a7af3b396d5c6bfddc8992f9433fedda3633b2aa525340945f7f502d0d29"
+    },
+    {
+      "id": "artifact:4182f003ac3559a1922f29c33f025b6bb8e8aeba31f8ebfefd67601f5bbb5d5b",
+      "project_id": "project:bc524d1d221ec0dcf82f72a2",
+      "sha256": "4182f003ac3559a1922f29c33f025b6bb8e8aeba31f8ebfefd67601f5bbb5d5b",
+      "media_type": "application/json",
+      "size": 9519,
+      "created_at": "2026-10-19T14:34:41.264509+00:00",
+      "download_url": "/api/v1/projects/project:bc524d1d221ec0dcf82f72a2/artifacts/artifact:4182f003ac3559a1922f29c33f025b6bb8e8aeba31f8ebfefd67601f5bbb5d5b?download=true",
+      "view_url": "/projects/project%3Abc524d1d221ec0dcf82f72a2/artifacts/artifact%3A4182f003ac3559a1922f29c33f025b6bb8e8aeba31f8ebfefd67601f5bbb5d5b"
+    }
+  ],
+  "coverage_url": "http://localhost:8095/projects/project%3Abc524d1d221ec0dcf82f72a2/artifacts/artifact%3A55f212eb2cc2b5a132a69c034e1bb8e55f3c4847989719058cdfea6211f61a24",
+  "map_url": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/map?node=record:82b05b00d0bd1bac6385778b",
+  "preview_links": {
+    "question": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:82b05b00d0bd1bac6385778b",
+    "methods": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:7e0eb94681ccbbbaeb2d5bdc",
+    "radiation": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:40f99ce4e2defc8d16103369",
+    "drift": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:993853352bbc1e66bdce8438",
+    "numeric": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:8c1ec2ce9a80113fd903e396",
+    "physical": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:9cf6211e68f5c0228b23f942",
+    "budget": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:c4dea509d2cdc289d4bf7635",
+    "resolution": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:d883b32525d090b766309e50",
+    "duration": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:efc301c07f6f67312f3905b0",
+    "ensemble": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:3cc38b6f7e6c88010bc7eb15",
+    "mmr": "http://localhost:8095/projects/project%3Abc524d1d221ec0dcf82f72a2/artifacts/artifact%3Aee78a7af3b396d5c6bfddc8992f9433fedda3633b2aa525340945f7f502d0d29"
+  }
+}

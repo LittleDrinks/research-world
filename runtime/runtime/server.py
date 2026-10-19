@@ -11,6 +11,7 @@ from .bridge import bridge_router
 from .workspace.manager import Workspaces
 from .workspace.http import workspace_router
 from .workspace.tools import WorkspaceTools, workspace_tools_router
+from .selection import selection_router
 
 
 def create_app(runtime: Runtime, bridge=None, workspaces=None) -> FastAPI:
@@ -19,6 +20,7 @@ def create_app(runtime: Runtime, bridge=None, workspaces=None) -> FastAPI:
     _input_errors(app)
     app.include_router(runtime_router(runtime))
     app.include_router(product_router(runtime))
+    app.include_router(selection_router())
     workspaces = workspaces or Workspaces()
     app.include_router(workspace_router(runtime,workspaces))
     if bridge is not None:

@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, StrictInt
 
 from .kernel_interface import KernelInterface
 from .joint_conditions import JointConditionRequest
+from .research_http import research_router
 
 __all__ = ["kernel_graph_router"]
 
@@ -46,6 +47,7 @@ def kernel_graph_router(kernel: KernelInterface) -> APIRouter:
     _add_local_map_route(router, kernel)
     _add_history_routes(router, kernel)
     _add_joint_routes(router, kernel)
+    router.include_router(research_router(kernel))
     return router
 
 

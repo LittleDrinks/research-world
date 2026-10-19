@@ -7,7 +7,7 @@ export async function requestTool(name, args, signal) {
     body: JSON.stringify({tool: name, arguments: args}),
   });
   if (response.statusCode < 200 || response.statusCode >= 300) {
-    if(name==='artifact'&&response.statusCode===422){
+    if(['artifact','change'].includes(name)&&[409,422].includes(response.statusCode)){
       const body=await response.body.json();
       throw new Error(JSON.stringify(body.detail));
     }

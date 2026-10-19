@@ -11,7 +11,8 @@ async def export_project(kernel, runtime, project_id):
                 'records':[asdict(v) for v in kernel.list_records(project_id)],
                 'relations':[asdict(v) for v in kernel.list_relations(project_id)],
                 'joint_conditions':kernel.list_joint_conditions(project_id),
-                'sessions':[asdict(v) for v in sessions], 'revocations':kernel.history(project_id)}
+                'sessions':[asdict(v) for v in sessions], 'revocations':kernel.history(project_id),
+                'labels':kernel.list_labels(project_id), 'changes':kernel.list_changes(project_id)}
     files = {'project.json':_json(snapshot)}
     for artifact in kernel.list_artifacts(project_id):
         files[f'artifacts/{artifact.sha256}'] = kernel.read_artifact(project_id, artifact.id)
