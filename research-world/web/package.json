@@ -21,6 +21,7 @@
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "latest",
+    "remark-cjk-friendly": "2.3.2",
     "vite": "latest"
   },
   "devDependencies": {

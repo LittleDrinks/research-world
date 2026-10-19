@@ -1,4 +1,5 @@
 import ReactMarkdown from 'react-markdown';
+import remarkCjkFriendly from 'remark-cjk-friendly/parseOnly';
 import {workspaceFileLink} from './workspaceLinks';
 
 export function ChatMarkdown({children,projectId}){
@@ -6,5 +7,5 @@ export function ChatMarkdown({children,projectId}){
     const target=workspaceFileLink(href,projectId);
     return <a href={target}>{children}</a>;
   };
-  return <ReactMarkdown components={{a:Link}}>{children}</ReactMarkdown>;
+  return <ReactMarkdown remarkPlugins={[remarkCjkFriendly]} components={{a:Link}}>{children}</ReactMarkdown>;
 }
