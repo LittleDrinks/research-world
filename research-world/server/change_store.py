@@ -3,6 +3,7 @@ import json
 import secrets
 
 from .artifacts import now
+from .review_store import enqueue
 
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS research_labels(
@@ -55,6 +56,7 @@ def append(connection, row, before, after, kind, author, reason, comment='', ref
     connection.execute('INSERT INTO research_changes VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',
                        tuple(value[k] for k in ('id', 'project_id', 'record_id', 'revision', 'kind', 'author', 'reason', 'comment', 'reference_revision')) +
                        (json.dumps(value['before'], ensure_ascii=False), json.dumps(value['after'], ensure_ascii=False), value['created_at']))
+    enqueue(connection, value)
     return value
 
 

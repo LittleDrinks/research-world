@@ -172,7 +172,7 @@ async def test_agent_workspace_capture_reaches_real_product_validation(case, mon
     request_type = httpx.AsyncClient
     monkeypatch.setattr(module.httpx, 'AsyncClient', lambda **kw: request_type(transport=httpx.ASGITransport(app=client.app), **kw))
     monkeypatch.setenv('CONTROL_URL', 'http://test')
-    bridge = ToolBridge(); binding = SimpleNamespace(agent_snapshot={'tools': ['artifact'], 'project_id': record.project_id})
+    bridge = ToolBridge(); binding = SimpleNamespace(run_id='artifact-test-run', agent_snapshot={'tools': ['artifact'], 'project_id': record.project_id})
     token = bridge.bind(binding); bridge.workspace_tools = FileWorkspace(json.dumps(data).encode())
     values = {k: v for k, v in body.items() if k != 'content'} | {'path': 'paper.json'}
     assert (await bridge.invoke(token, 'artifact', values))['view_url'].startswith('/projects/')

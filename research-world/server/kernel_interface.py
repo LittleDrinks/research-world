@@ -14,6 +14,7 @@ from kernel_contract import LocalMapQuery
 from .artifacts import ArtifactIntegrityError, ArtifactStore, now
 from .artifact_documents import validate_capture
 from . import change_store, research_changes, research_labels
+from .review_store import SCHEMA as REVIEW_SCHEMA
 from .joint_conditions import SCHEMA as JOINT_SCHEMA, create_condition, list_conditions, remove_condition, local_conditions, condition_artifacts
 
 __all__ = [
@@ -595,7 +596,7 @@ class _SQLiteKernel(KernelInterface):
 
     def _initialize(self) -> None:
         with self._connect() as connection:
-            connection.executescript(_SCHEMA + ";" + JOINT_SCHEMA + ';' + change_store.SCHEMA)
+            connection.executescript(_SCHEMA + ";" + JOINT_SCHEMA + ';' + change_store.SCHEMA + ';' + REVIEW_SCHEMA)
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self._database, timeout=30)

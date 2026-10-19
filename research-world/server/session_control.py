@@ -20,6 +20,10 @@ class SessionControl:
         agent = self.profiles.get(agent_id, catalog['default_model'])
         prepared = await self.runtime.validate(agent)
         agent = {**agent, "instructions": prepared["instructions"]}
+        return await self.create_prepared(project_id, title, agent, session_id)
+
+    async def create_prepared(self, project_id, title, agent, session_id):
+        project = self.kernel.get_project(project_id)
         workspace = self.workspace / project_id
         workspace.mkdir(parents=True, exist_ok=True)
         spec = _snapshot(agent, project, workspace)

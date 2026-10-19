@@ -26,7 +26,7 @@ async def test_bridge_rejects_unselected_tools_and_expired_bindings():
 async def test_bridge_binds_project_server_side(monkeypatch):
     import runtime.bridge as module
     captured=[]
-    async def graph(project,tool,values):
+    async def graph(project,tool,values,run_id):
         captured.append(project)
         return {}
     monkeypatch.setattr(module,'_graph',graph)
@@ -205,7 +205,7 @@ class FileWorkspace:
 async def test_artifact_captures_file_bytes_without_model_transcription(monkeypatch):
     import runtime.bridge as module
     captured = []
-    async def graph(project, tool, values):
+    async def graph(project, tool, values, run_id):
         captured.append((project, tool, values))
         return {'id': 'artifact:stored'}
     monkeypatch.setattr(module, '_graph', graph)
@@ -241,3 +241,18 @@ async def test_file_artifact_rejects_ambiguous_content_and_child_access(values):
     child = bridge.bind(request(['graph', 'literature']))
     with pytest.raises(PermissionError):
         await bridge.invoke(child, 'artifact', {'path': 'paper.json'})
+
+
+@pytest.mark.asyncio
+async def test_artifact_read_and_capture_use_bound_run_identity(monkeypatch):
+    import httpx
+    import respx
+    monkeypatch.setenv('CONTROL_URL', 'http://control')
+    bridge = ToolBridge()
+    token = bridge.bind(request(['artifact']))
+    with respx.mock as router:
+        route = router.post('http://control/api/v1/projects/project-a/artifacts').mock(return_value=httpx.Response(200,json={'kind':'text','text':'evidence'}))
+        assert (await bridge.invoke(token,'artifact',{'operation':'read','artifact_id':'artifact:fixed'}))['text']=='evidence'
+        assert route.calls.last.request.headers['x-research-author']=='agent:run'
+        await bridge.invoke(token,'artifact',{'content':'report'})
+        assert route.calls.last.request.headers['x-research-author']=='agent:run'
