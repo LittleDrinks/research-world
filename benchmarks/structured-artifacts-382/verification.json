@@ -1,9 +1,11 @@
 {
   "issue": 382,
-  "code_head": "a39bd1a531df4efa15b30b4c6530ae5e3cf6d581",
+  "code_head": "f4c8aa98997fb460930bf35688c31736cff75261",
   "backend": {
     "passed": 217,
-    "new_document_tests": 18
+    "new_document_tests": 18,
+    "full_suite_head": "a39bd1a531df4efa15b30b4c6530ae5e3cf6d581",
+    "final_document_tests": 20
   },
   "runtime": {
     "passed": 246,
@@ -19,9 +21,28 @@
       "chat-math"
     ],
     "q049_mobile_overflow": false,
-    "q049_formula_count": 1
+    "q049_formula_count": 1,
+    "final_document_tests": 2
   },
   "agent_transport": "422 schema error paths preserved by real bridge-request.mjs with MockAgent",
   "demo": "Historical V3/review-v3 presentation only; no new scientific execution or independent audit",
-  "review": "pending"
+  "review": {
+    "reviewer": "Zeno",
+    "agent_id": "01a152f3-31f5-7411-b0b4-3ef2957c25d8",
+    "head": "f4c8aa98997fb460930bf35688c31736cff75261",
+    "standards": "PASS",
+    "spec": "PASS",
+    "acceptance": "PASS",
+    "verdict": "APPROVED",
+    "independent_probes": [
+      "72 evidence locators × 160 chars: 11952 total, validate and capture both 422",
+      "5000 Unicode chars accepted, 5001 rejected",
+      "401-char summary: path summary, actual 401, limit 400; 13 checks limit 12",
+      "Concurrent attachment append preserves all references",
+      "Real Compose workspace path and read UI verified"
+    ],
+    "limitations": [
+      "No paid real-model Agent session; ToolBridge and actual workspace path independently exercised"
+    ]
+  }
 }
