@@ -6,5 +6,18 @@
   "rawExact": true,
   "mobileOverflow": false,
   "bottom": 791.046875,
-  "viewport": 844
+  "viewport": 844,
+  "code_head": "53d03aec7995fe892eaeacb6d6eb6043bc48304d",
+  "backend_tests": 28,
+  "browser_tests": 18,
+  "independent_review": {
+    "reviewer": "Bernoulli",
+    "agent_id": "01a15402-2d04-7a63-8da4-14561f60ec37",
+    "standards": "PASS",
+    "spec": "PASS",
+    "verdict": "APPROVED",
+    "http_boundary_probes": 18,
+    "original_bytes": 13448,
+    "sha256_matches_artifact": true
+  }
 }
