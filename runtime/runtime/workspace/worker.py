@@ -19,7 +19,11 @@ def file_operation(request):
     operation = request['operation']
     if operation == 'read':
         if not path.is_file(): raise ValueError('Not a regular file')
-        sys.stdout.buffer.write(path.read_bytes())
+        with path.open('rb') as source:
+            content = source.read(request['max_bytes'] + 1) if 'max_bytes' in request else source.read()
+        if 'max_bytes' in request and len(content) > request['max_bytes']:
+            raise ValueError('File exceeds capture limit')
+        sys.stdout.buffer.write(content)
     elif operation == 'write': path.write_text(request['content'], encoding='utf-8')
     elif operation == 'mkdir': path.mkdir(parents=True, exist_ok=True)
     elif operation == 'access':

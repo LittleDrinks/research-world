@@ -4,6 +4,8 @@ from fastapi import APIRouter,HTTPException,Response
 from pydantic import BaseModel,ConfigDict
 from ..errors import RuntimeConflictError
 from .operations import settle
+from .execution import Execution
+from ..artifact_files import read_text
 
 
 class StartWorkspace(BaseModel):
@@ -15,6 +17,7 @@ def workspace_router(runtime,workspaces):
     router=APIRouter(prefix='/api/v1/runtime')
     projects=APIRouter(prefix='/projects/{project_id}')
     _workspace_routes(projects,workspaces)
+    _file_route(projects,workspaces)
     _delete_route(projects,runtime,workspaces)
     _proxy_route(projects,workspaces)
     router.include_router(projects)
@@ -24,6 +27,19 @@ def workspace_router(runtime,workspaces):
         return await _call(asyncio.to_thread(workspaces.statuses))
 
     return router
+
+
+def _file_route(router,workspaces):
+    @router.get('/workspace/file')
+    async def file(project_id: str, path: str):
+        container = await asyncio.to_thread(workspaces.container, project_id)
+        if container is None or container.status != 'running':
+            raise HTTPException(409, '请先启动实验工作区')
+        try:
+            job = Execution(container, {'operation': 'read', 'path': path, 'max_bytes': 4 * 1024 * 1024, 'timeout': 30})
+            return {'content': await read_text(job.events())}
+        except ValueError:
+            raise HTTPException(422, '无法读取工作区 UTF-8 文件；请检查路径、文件大小及是否越出工作区') from None
 
 
 def _workspace_routes(router,workspaces):

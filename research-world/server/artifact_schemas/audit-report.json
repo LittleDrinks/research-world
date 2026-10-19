@@ -1,0 +1,423 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "target_artifact_id",
+    "summary",
+    "sections",
+    "conclusion"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "\\S"
+    },
+    "target_artifact_id": {
+      "type": "string",
+      "pattern": "^artifact:[a-f0-9]{64}$"
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 400,
+      "pattern": "\\S"
+    },
+    "sections": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "title",
+            "markdown",
+            "evidence"
+          ],
+          "properties": {
+            "id": {
+              "const": "scope"
+            },
+            "title": {
+              "const": "范围与方法"
+            },
+            "markdown": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1200,
+              "pattern": "\\S"
+            },
+            "evidence": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "artifact_id",
+                  "locator"
+                ],
+                "properties": {
+                  "artifact_id": {
+                    "type": "string",
+                    "pattern": "^artifact:[a-f0-9]{64}$"
+                  },
+                  "locator": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160,
+                    "pattern": "\\S"
+                  }
+                }
+              },
+              "minItems": 0,
+              "maxItems": 8
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "title",
+            "markdown",
+            "evidence",
+            "checks"
+          ],
+          "properties": {
+            "id": {
+              "const": "checks"
+            },
+            "title": {
+              "const": "检查项"
+            },
+            "markdown": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1200,
+              "pattern": "\\S"
+            },
+            "evidence": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "artifact_id",
+                  "locator"
+                ],
+                "properties": {
+                  "artifact_id": {
+                    "type": "string",
+                    "pattern": "^artifact:[a-f0-9]{64}$"
+                  },
+                  "locator": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160,
+                    "pattern": "\\S"
+                  }
+                }
+              },
+              "minItems": 0,
+              "maxItems": 8
+            },
+            "checks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "action",
+                  "reason",
+                  "result",
+                  "evidence"
+                ],
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "pattern": "\\S"
+                  },
+                  "action": {
+                    "enum": [
+                      "check",
+                      "skip"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 240,
+                    "pattern": "\\S"
+                  },
+                  "result": {
+                    "enum": [
+                      "pass",
+                      "partial",
+                      "fail",
+                      "unverified",
+                      "not_applicable"
+                    ]
+                  },
+                  "evidence": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "artifact_id",
+                        "locator"
+                      ],
+                      "properties": {
+                        "artifact_id": {
+                          "type": "string",
+                          "pattern": "^artifact:[a-f0-9]{64}$"
+                        },
+                        "locator": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 160,
+                          "pattern": "\\S"
+                        }
+                      }
+                    },
+                    "minItems": 0,
+                    "maxItems": 4
+                  }
+                },
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "action": {
+                          "const": "skip"
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "result": {
+                          "const": "not_applicable"
+                        },
+                        "evidence": {
+                          "maxItems": 0
+                        }
+                      }
+                    },
+                    "else": {
+                      "properties": {
+                        "result": {
+                          "enum": [
+                            "pass",
+                            "partial",
+                            "fail",
+                            "unverified"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "result": {
+                          "enum": [
+                            "pass",
+                            "partial",
+                            "fail"
+                          ]
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "evidence": {
+                          "minItems": 1
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 12
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "title",
+            "markdown",
+            "evidence"
+          ],
+          "properties": {
+            "id": {
+              "const": "limitations"
+            },
+            "title": {
+              "const": "缺口与下一步"
+            },
+            "markdown": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1200,
+              "pattern": "\\S"
+            },
+            "evidence": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "artifact_id",
+                  "locator"
+                ],
+                "properties": {
+                  "artifact_id": {
+                    "type": "string",
+                    "pattern": "^artifact:[a-f0-9]{64}$"
+                  },
+                  "locator": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160,
+                    "pattern": "\\S"
+                  }
+                }
+              },
+              "minItems": 0,
+              "maxItems": 8
+            }
+          }
+        }
+      ],
+      "items": false,
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "conclusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verdict",
+        "markdown"
+      ],
+      "properties": {
+        "verdict": {
+          "enum": [
+            "pass",
+            "revise",
+            "inconclusive"
+          ]
+        },
+        "markdown": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400,
+          "pattern": "\\S"
+        }
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "审计报告",
+  "description": "结构化审计记录；格式校验不判定科学结论。",
+  "x-max-reading-chars": 5000,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "conclusion": {
+            "properties": {
+              "verdict": {
+                "const": "pass"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "sections": {
+            "prefixItems": [
+              {},
+              {
+                "properties": {
+                  "checks": {
+                    "items": {
+                      "properties": {
+                        "result": {
+                          "enum": [
+                            "pass",
+                            "not_applicable"
+                          ]
+                        }
+                      }
+                    },
+                    "contains": {
+                      "properties": {
+                        "action": {
+                          "const": "check"
+                        }
+                      }
+                    },
+                    "minContains": 1
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "examples": [
+    {
+      "title": "待填写的审计报告",
+      "target_artifact_id": "artifact:0000000000000000000000000000000000000000000000000000000000000000",
+      "summary": "说明审计范围、主要发现和仍未核验的部分。",
+      "sections": [
+        {
+          "id": "scope",
+          "title": "范围与方法",
+          "markdown": "填写本节内容，详细证据另附并在下方定位。",
+          "evidence": []
+        },
+        {
+          "id": "checks",
+          "title": "检查项",
+          "markdown": "填写本节内容，详细证据另附并在下方定位。",
+          "evidence": [],
+          "checks": [
+            {
+              "label": "关键结论核验",
+              "action": "check",
+              "reason": "尚未执行核验；请补充实际检查过程与结果。",
+              "result": "unverified",
+              "evidence": []
+            }
+          ]
+        },
+        {
+          "id": "limitations",
+          "title": "缺口与下一步",
+          "markdown": "填写本节内容，详细证据另附并在下方定位。",
+          "evidence": []
+        }
+      ],
+      "conclusion": {
+        "verdict": "inconclusive",
+        "markdown": "仍有检查未完成，暂不能给出通过结论。"
+      }
+    }
+  ]
+}

@@ -10,8 +10,9 @@ const definitions = {
     content: Type.Object({title: text, text}),
     artifact_ids: Type.Optional(Type.Array(text)),
   })],
-  artifact: ['保存不可变文本产物；全文等已有UTF-8文件用path直接捕获，避免重写内容。返回可下载的Artifact。',
-    Type.Object({content:Type.Optional(text),path:Type.Optional(text),media_type:Type.Optional(text)})],
+  artifact: ['保存不可变产物并返回阅读链接。operation=templates获取报告模板与示例；结构化报告选择schema_id、record_id，content/path提供模板数据JSON；validate仅校验，capture校验后保存并关联对象。全文等已有UTF-8文件用path原样捕获。',
+    Type.Object({operation:Type.Optional(Type.Union(['capture','validate','templates'].map(Type.Literal))),
+      content:Type.Optional(text),path:Type.Optional(text),media_type:Type.Optional(text),schema_id:Type.Optional(text),record_id:Type.Optional(text)})],
   connect: ['连接关系：supports/refutes必须由证据支持，Question不能作为supports/refutes的任一端点；方向依赖问题时用 source=Direction、target=Question、type=depends_on', Type.Object({source_id: text, target_id: text,
     type: Type.Union(['supports','refutes','depends_on'].map(Type.Literal))})],
   joint_condition: ['记录联合条件，必须说明各成员角色、目标陈述、联合理由与Artifact原文定位；不要用关系数量冒充进展或自动判真。', Type.Object({

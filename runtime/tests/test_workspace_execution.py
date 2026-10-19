@@ -26,6 +26,20 @@ async def execute(container, **values):
 
 
 @pytest.mark.asyncio
+async def test_artifact_file_read_is_bounded_and_rejects_escape(container):
+    from runtime.artifact_files import read_text
+    await execute(container, operation='write', path='report.json', content='{"summary":"范围"}')
+    value = await read_text(Execution(container, {'operation':'read','path':'report.json','max_bytes':100}).events())
+    assert value == '{"summary":"范围"}'
+    for path, limit in [('report.json', 2), ('/etc/passwd', 100), ('../secret', 100)]:
+        with pytest.raises(ValueError):
+            await read_text(Execution(container, {'operation':'read','path':path,'max_bytes':limit}).events())
+    await execute(container, operation='bash', command='ln -s /etc/passwd /workspace/escape')
+    with pytest.raises(ValueError):
+        await read_text(Execution(container, {'operation':'read','path':'escape','max_bytes':100}).events())
+
+
+@pytest.mark.asyncio
 async def test_files_commands_and_user_edits_share_one_directory(container):
     content='print("hello-world")\n'+'# 中文\n'*40000
     events,_=await execute(container,operation='write',path='/workspace/hello.py',content=content)

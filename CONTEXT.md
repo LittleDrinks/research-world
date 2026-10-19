@@ -14,6 +14,7 @@ _Avoid_: Research Graph（页面名称）
 **Direction**：Research Graph 中记录待探索解释、路线或反例的节点；赛题中的候选假设、机制解释、数学结构和研究路线均投影为 Direction，不是已证实结论。
 **Experiment**：Research Graph 中记录一次可复查研究操作及其结果的节点。
 **Artifact**：Project 内按内容寻址的不可变产物；由 Research Graph 节点引用。审计报告作为 Artifact 挂到被审对象，不建立评审节点。
+结构化报告以 JSON 原件固定引用平台发布的 Schema Artifact、被审对象及产物版本；正文允许 Markdown。发布校验结构、Unicode 字符预算与项目内证据引用，阅读页和 Markdown 导出由同一原件派生。格式通过不等于科学结论通过。
 _Avoid_: 裸路径、覆盖写
 **Claim**：由 Source、Experiment 或 Artifact 支持、削弱或反驳的可审核陈述；报告只使用具有证据闭包的 Claim。
 _Avoid_: Claim 节点、Direction 等于结论
