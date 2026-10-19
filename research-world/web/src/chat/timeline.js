@@ -1,3 +1,5 @@
+import {thinkingParts} from './thinking';
+
 export function mergeEvents(saved,live){
   return [...new Map([...saved,...live].map(event=>[event.seq,event])).values()].sort((a,b)=>a.seq-b.seq);
 }
@@ -15,5 +17,5 @@ export function timeline(events){
       Object.assign(tools.get(event.data.id).tool,event.data);
     }else if(event.type==='child_result')parts.push({type:'child',id:event.seq,...event.data});
   }
-  return parts;
+  return thinkingParts(parts);
 }

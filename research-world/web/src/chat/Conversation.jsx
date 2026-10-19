@@ -1,4 +1,5 @@
 import {ChatMarkdown} from './ChatMarkdown';
+import {Thinking,AssistantMarkdown} from './Thinking';
 import {ChildResult} from './ChildResult';
 import {mergeEvents,timeline} from './timeline';
 
@@ -18,11 +19,11 @@ export function Conversation({detail,events,active,connection,sending}){
 
 function Message({message,turn,events,active,connection,projectId}){
   const parts=timeline(events);
-  const answer=parts.some(part=>part.type==='text')?'':message.assistant_response;
+  const answer=parts.some(part=>['text','thinking'].includes(part.type))?'':message.assistant_response;
   return <article data-turn-id={turn?.id}><div className="pi-user"><span className="pi-role">你</span><ChatMarkdown projectId={projectId}>{message.content}</ChatMarkdown></div>
     {(parts.length>0||answer)&&<div className="pi-assistant"><span className="pi-role">研究助手</span>
       {parts.map(part=><Part projectId={projectId} key={`${part.type}:${part.id}`} part={part} status={turn?.status}/>)}
-      {answer&&<ChatMarkdown projectId={projectId}>{answer}</ChatMarkdown>}
+      {answer&&<AssistantMarkdown projectId={projectId}>{answer}</AssistantMarkdown>}
     </div>}
     {active&&<p className="pi-status" role="status"><span className="pi-spinner"/>{statusText(events,connection)}</p>}
     {turn?.status==='error'&&<p className="pi-failure" role="alert">本轮执行失败，请查看轨迹中的错误后重试。</p>}
@@ -32,6 +33,7 @@ function Message({message,turn,events,active,connection,projectId}){
 
 function Part({part,status,projectId}){
   if(part.type==='tool')return <ToolCall tool={part.tool} status={status}/>;
+  if(part.type==='thinking')return <Thinking text={part.text} projectId={projectId}/>;
   if(part.type==='child')return <ChildResult result={part} projectId={projectId}/>;
   return <div className="pi-text"><ChatMarkdown projectId={projectId}>{part.text}</ChatMarkdown></div>;
 }
