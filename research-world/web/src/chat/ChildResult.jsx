@@ -1,6 +1,6 @@
 import {ChatMarkdown} from './ChatMarkdown';
 
-const STATUS={completed:'完成',error:'失败',failed:'失败',cancelled:'已取消',running:'进行中'};
+const STATUS={completed:'完成',limit:'达到执行上限',error:'失败',failed:'失败',cancelled:'已取消',running:'进行中'};
 
 export function ChildResult({result,projectId}) {
   return <details className="pi-child" open>

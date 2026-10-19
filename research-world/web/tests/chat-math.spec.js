@@ -72,3 +72,11 @@ test('invalid TeX stays local, fenced math stays literal and unsafe math links r
   await expect(page.locator('a[href^="javascript:"]')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test('execution-limit child status and math-tagged code fences remain explicit',async({page})=>{
+  const source='```math\nx^2 + y^2\n```\n\n'+String.raw`\(z^2\)`;
+  await fixture(page,[child(1,'limit',source)]);
+  await expect(page.locator('.pi-child summary')).toContainText('达到执行上限');
+  await expect(page.locator('.pi-child pre code')).toHaveText('x^2 + y^2\n');
+  await expect(page.locator('.pi-child .katex')).toHaveCount(1);
+});

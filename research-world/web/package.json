@@ -25,6 +25,7 @@
     "rehype-katex": "7.0.1",
     "remark-cjk-friendly": "2.3.2",
     "remark-math-extended": "6.1.1",
+    "unist-util-visit": "5.1.0",
     "vite": "latest"
   },
   "devDependencies": {
