@@ -1,0 +1,14 @@
+{
+  "source": "szh production snapshot",
+  "tables": {
+    "kernel_projects": 125,
+    "kernel_sessions": 3,
+    "kernel_messages": 3,
+    "kernel_records": 876,
+    "kernel_relations": 430,
+    "kernel_revocations": 17,
+    "kernel_session_archives": 1
+  },
+  "artifacts_verified": 1933,
+  "production_modified": false
+}
