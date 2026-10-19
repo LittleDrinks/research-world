@@ -11,6 +11,8 @@ from fastapi import APIRouter, HTTPException, Request
 from . import literature
 from .agent_catalog import has_workspace
 from .artifact_files import read_text
+from .selection import select_candidates
+from .research_operations import operation as research_operation
 
 
 class ToolBridge:
@@ -48,6 +50,8 @@ class ToolBridge:
             return await _literature(values)
         if tool == 'change':
             return await _change(request, values)
+        if tool == 'mmr':
+            return select_candidates(values)
         if tool == 'artifact':
             if values.get('operation') == 'templates':
                 return await _graph(request.agent_snapshot['project_id'], tool, values)
@@ -135,17 +139,9 @@ async def _literature(values):
 
 async def _change(request, values):
     root = f"/api/v1/projects/{request.agent_snapshot['project_id']}"
+    method, path, payload = research_operation(values)
     async with httpx.AsyncClient(base_url=os.environ['CONTROL_URL'], timeout=30) as client:
-        if values.get('operation') == 'labels':
-            response = await client.get(root + '/labels')
-        elif values.get('operation') == 'submit':
-            identifier = values['record_id']
-            if not isinstance(identifier, str) or not identifier.startswith('record:') or any(c in identifier for c in '/?#'):
-                raise ValueError('研究对象标识无效')
-            payload = {k: v for k, v in values.items() if k not in {'operation', 'record_id'}}
-            response = await client.post(root + f'/records/{identifier}/changes', json=payload,
-                                         headers={'x-research-author': 'agent:' + request.run_id})
-        else:
-            raise ValueError('变更操作无效')
+        response = await client.request(method, root + path, json=payload,
+                                        headers={'x-research-author': 'agent:' + request.run_id})
         response.raise_for_status()
-        return response.json()
+        return {'deleted': True} if response.status_code == 204 else response.json()

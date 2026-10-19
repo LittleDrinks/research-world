@@ -155,3 +155,69 @@ async def test_agent_change_uses_bound_project_and_real_validation(case, monkeyp
     with pytest.raises(httpx.HTTPStatusError):
         await bridge.invoke(token, 'change', {'operation': 'submit', 'record_id': record.id, **revise()})
     assert kernel.get_record(project, record.id).revision == 2
+
+
+@pytest.fixture
+def agent_change(case, monkeypatch):
+    from runtime.bridge import ToolBridge
+    import runtime.bridge as module
+    original = httpx.AsyncClient
+    monkeypatch.setattr(module.httpx, 'AsyncClient', lambda **kw: original(transport=httpx.ASGITransport(app=case[2].app), **kw))
+    monkeypatch.setenv('CONTROL_URL', 'http://test')
+    bridge = ToolBridge()
+    token = bridge.bind(SimpleNamespace(run_id='qa-run', agent_snapshot={'project_id': case[3], 'tools': ['change']}))
+    async def invoke(operation, **values):
+        return await bridge.invoke(token, 'change', {'operation': operation, **values})
+    return invoke
+
+
+@pytest.mark.asyncio
+async def test_agent_reads_versions_comments_and_project_history(case, agent_change):
+    rid = case[4].id
+    assert (await agent_change('read', record_id=rid))['revision'] == 1
+    await agent_change('submit', record_id=rid, **revise())
+    await agent_change('submit', record_id=rid, kind='comment', base_revision=2,
+                       reference_revision=1, reason='Compare scope', comment='The original scope needs evidence.')
+    old = await agent_change('read', record_id=rid, revision=1)
+    assert old['content']['text'] == 'Initial'
+    history = await agent_change('history', record_id=rid)
+    assert [c['kind'] for c in history] == ['revise', 'comment']
+    assert all(c['author'] == 'agent:qa-run' for c in history)
+    assert await agent_change('history') == history
+
+
+@pytest.mark.asyncio
+async def test_agent_manages_labels_without_rewriting_old_versions(case, agent_change):
+    rid = case[4].id
+    label = await agent_change('label_create', name='need-info', color='#123456')
+    await agent_change('submit', record_id=rid, kind='labels', base_revision=1,
+                       reason='Missing source', label_ids=[label['id']])
+    await agent_change('label_update', label_id=label['id'], name='needs-source', color='#654321')
+    assert (await agent_change('read', record_id=rid))['labels'][0]['name'] == 'needs-source'
+    await agent_change('label_delete', label_id=label['id'])
+    assert (await agent_change('read', record_id=rid))['labels'] == []
+    assert (await agent_change('read', record_id=rid, revision=2))['labels'][0]['name'] == 'need-info'
+    assert all(c['author'] == 'agent:qa-run' for c in await agent_change('history'))
+
+
+@pytest.mark.asyncio
+async def test_agent_cannot_access_other_project_records_or_labels(case, agent_change):
+    kernel = case[0]
+    other = kernel.create_project('Other', 'Scope')
+    record = kernel.record(other.id, 'question', {'title': 'Private'}, ())
+    label = kernel.save_label(other.id, {'name': 'private', 'color': '#123456'})
+    for operation, values in [('read', {'record_id': record.id}), ('label_delete', {'label_id': label['id']})]:
+        with pytest.raises(httpx.HTTPStatusError) as error:
+            await agent_change(operation, **values)
+        assert error.value.response.status_code == 404
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('operation,values', [
+    ('read', {'record_id': '../other'}), ('history', {'project_id': 'another'}),
+    ('read', {'record_id': 'record:' + 'a' * 24, 'revision': True}),
+    ('labels', {'project_id': 'another'}), ('label_delete', {'label_id': '../../projects'}),
+])
+async def test_agent_rejects_scope_override_and_path_injection(agent_change, operation, values):
+    with pytest.raises(ValueError):
+        await agent_change(operation, **values)

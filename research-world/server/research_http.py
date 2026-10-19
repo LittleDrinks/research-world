@@ -29,20 +29,24 @@ def label_routes(router, kernel):
         return call(kernel.list_labels, project_id)
 
     @router.post('/labels', status_code=201)
-    def create(project_id: str, body: LabelRequest):
-        return call(kernel.save_label, project_id, body.model_dump())
+    def create(project_id: str, body: LabelRequest, request: Request):
+        return call(kernel.save_label, project_id, body.model_dump(), None, author(request))
 
     @router.put('/labels/{label_id}')
-    def edit(project_id: str, label_id: str, body: LabelRequest):
-        return call(kernel.save_label, project_id, body.model_dump(), label_id)
+    def edit(project_id: str, label_id: str, body: LabelRequest, request: Request):
+        return call(kernel.save_label, project_id, body.model_dump(), label_id, author(request))
 
     @router.delete('/labels/{label_id}', status_code=204)
-    def remove(project_id: str, label_id: str):
-        call(kernel.delete_label, project_id, label_id)
+    def remove(project_id: str, label_id: str, request: Request):
+        call(kernel.delete_label, project_id, label_id, author(request))
         return Response(status_code=204)
 
 
 def change_routes(router, kernel):
+    @router.get('/records/{record_id}')
+    def current(project_id: str, record_id: str):
+        return call(kernel.get_record, project_id, record_id)
+
     @router.get('/changes')
     def list_all(project_id: str, record_id: str | None = None):
         return call(kernel.list_changes, project_id, record_id)
@@ -53,7 +57,11 @@ def change_routes(router, kernel):
 
     @router.post('/records/{record_id}/changes', status_code=201)
     def change(project_id: str, record_id: str, body: ChangeRequest, request: Request):
-        author = request.headers.get('x-research-author', 'user')
-        if len(author) > 120 or not author.strip():
-            raise HTTPException(422, '变更作者标识无效')
-        return call(kernel.change_record, project_id, record_id, body.model_dump(exclude_none=True), author)
+        return call(kernel.change_record, project_id, record_id, body.model_dump(exclude_none=True), author(request))
+
+
+def author(request):
+    value = request.headers.get('x-research-author', 'user')
+    if len(value) > 120 or not value.strip():
+        raise HTTPException(422, '变更作者标识无效')
+    return value

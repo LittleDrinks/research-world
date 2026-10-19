@@ -100,6 +100,9 @@ class RuntimeHttpClient:
     async def workspaces(self):
         return _response_json(await self._client.get('/api/v1/runtime/workspaces'))
 
+    async def select_candidates(self, values):
+        return _response_json(await self._client.post('/api/v1/runtime/mmr', json=values))
+
     async def workspace_file(self, project_id, path):
         response = await self._client.get(f'/api/v1/runtime/projects/{project_id}/workspace/file', params={'path': path})
         return _response_json(response)['content']

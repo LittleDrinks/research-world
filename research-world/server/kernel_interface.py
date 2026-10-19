@@ -210,9 +210,9 @@ class KernelInterface(Protocol):
 
     def list_labels(self, project_id) -> list[dict]: ...
 
-    def save_label(self, project_id, values, label_id=None) -> dict: ...
+    def save_label(self, project_id, values, label_id=None, author='user') -> dict: ...
 
-    def delete_label(self, project_id, label_id) -> None: ...
+    def delete_label(self, project_id, label_id, author='user') -> None: ...
 
     def remove_record(self, project_id: str, record_id: str) -> None: ...
 
@@ -477,17 +477,17 @@ class _SQLiteKernel(KernelInterface):
         with self._connect() as connection:
             return research_labels.labels(connection, project_id)
 
-    def save_label(self, project_id, values, label_id=None):
+    def save_label(self, project_id, values, label_id=None, author='user'):
         self.get_project(project_id)
         with self._connect() as connection:
             connection.execute('BEGIN IMMEDIATE')
-            return research_labels.save_label(connection, project_id, values, label_id)
+            return research_labels.save_label(connection, project_id, values, label_id, author)
 
-    def delete_label(self, project_id, label_id):
+    def delete_label(self, project_id, label_id, author='user'):
         self.get_project(project_id)
         with self._connect() as connection:
             connection.execute('BEGIN IMMEDIATE')
-            return research_labels.delete_label(connection, project_id, label_id)
+            return research_labels.delete_label(connection, project_id, label_id, author)
 
     def revocation_impact(self, project_id, record_id):
         self.get_record(project_id, record_id)

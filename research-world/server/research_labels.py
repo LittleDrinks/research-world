@@ -19,7 +19,7 @@ def labels(connection, project_id):
     return [dict(row) for row in rows]
 
 
-def save_label(connection, project_id, values, identifier=None):
+def save_label(connection, project_id, values, identifier=None, author='user'):
     value = LabelRequest.model_validate(values).model_dump()
     value['color'] = value['color'].lower()
     if identifier:
@@ -34,7 +34,7 @@ def save_label(connection, project_id, values, identifier=None):
     except sqlite3.IntegrityError:
         raise ChangeConflict('当前项目已有同名标签') from None
     if identifier:
-        update_assigned(connection, project_id, identifier, result)
+        update_assigned(connection, project_id, identifier, result, author)
     return result
 
 
@@ -44,13 +44,13 @@ def require_label(connection, project_id, identifier):
         raise KeyError(identifier)
 
 
-def delete_label(connection, project_id, identifier):
+def delete_label(connection, project_id, identifier, author='user'):
     require_label(connection, project_id, identifier)
-    update_assigned(connection, project_id, identifier, None)
+    update_assigned(connection, project_id, identifier, None, author)
     connection.execute('DELETE FROM research_labels WHERE id=? AND project_id=?', (identifier, project_id))
 
 
-def update_assigned(connection, project_id, identifier, replacement):
+def update_assigned(connection, project_id, identifier, replacement, author):
     rows = connection.execute('SELECT * FROM kernel_records WHERE project_id=?', (project_id,)).fetchall()
     for row in rows:
         before = snapshot(connection, row)
@@ -60,4 +60,4 @@ def update_assigned(connection, project_id, identifier, replacement):
         after = {**before, 'labels': [label for label in updated if label is not None]}
         if after != before:
             reason = '更新项目标签定义' if replacement else '删除项目标签并移除关联'
-            append(connection, row, before, after, 'labels', 'user', reason)
+            append(connection, row, before, after, 'labels', author, reason)
