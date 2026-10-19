@@ -12,6 +12,7 @@ from typing import Protocol
 from kernel_contract import LocalMapQuery
 
 from .artifacts import ArtifactIntegrityError, ArtifactStore, now
+from .artifact_documents import validate_capture
 from .joint_conditions import SCHEMA as JOINT_SCHEMA, create_condition, list_conditions, remove_condition, local_conditions, condition_artifacts
 
 __all__ = [
@@ -365,13 +366,31 @@ class _SQLiteKernel(KernelInterface):
         if not isinstance(content, bytes):
             raise TypeError("artifact content must be bytes")
         _require_text(media_type, "artifact media type")
+        document = validate_capture(self, project_id, content, media_type.strip())
         try:
             record = ArtifactStore(self._artifacts, project_id).add(
                 content, media_type.strip()
             )
         except ArtifactIntegrityError:
             raise ValueError("artifact operation failed") from None
-        return _artifact_from_record(record)
+        artifact = _artifact_from_record(record)
+        if document:
+            self.attach_artifact(project_id, document['record_id'], artifact.id)
+        return artifact
+
+    def attach_artifact(self, project_id, record_id, artifact_id):
+        self.get_artifact(project_id, artifact_id)
+        with self._connect() as connection:
+            connection.execute('BEGIN IMMEDIATE')
+            row = connection.execute('SELECT * FROM kernel_records WHERE id=? AND project_id=? '
+                                     'AND id NOT IN (SELECT object_id FROM kernel_revocations)', (record_id, project_id)).fetchone()
+            if row is None:
+                raise KeyError(record_id)
+            identifiers = json.loads(row['artifact_ids'])
+            if artifact_id not in identifiers:
+                identifiers.append(artifact_id)
+                connection.execute('UPDATE kernel_records SET artifact_ids=? WHERE id=?', (json.dumps(identifiers), record_id))
+        return self.get_record(project_id, record_id)
 
     def get_artifact(self, project_id: str, artifact_id: str) -> Artifact:
         self.get_project(project_id)

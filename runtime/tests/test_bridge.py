@@ -195,7 +195,7 @@ class FileWorkspace:
     async def execute(self, token, values):
         import base64
         import json
-        assert values == {'operation': 'read', 'path': 'paper.json'}
+        assert values == {'operation': 'read', 'path': 'paper.json', 'max_bytes': 4 * 1024 * 1024}
         for chunk in (self.content[:1], self.content[1:]):
             yield json.dumps({'data': base64.b64encode(chunk).decode()}) + '\n'
         yield json.dumps({'exitCode': self.exit_code}) + '\n'

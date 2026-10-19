@@ -1,0 +1,56 @@
+{
+  "code_head": "52179cd24db380dc2e227b284ad1b106bd6ef2a5",
+  "cause": "body overflow:hidden with no bounded scroll container on ArtifactPage",
+  "reproduction": {
+    "viewport_height": 700,
+    "before_fix": {
+      "bottom_before_wheel": 1397.484375,
+      "bottom_after_wheel": 1397.484375
+    },
+    "after_fix": {
+      "bottom_before_wheel": 1397.484375,
+      "bottom_after_wheel": 599.484375
+    }
+  },
+  "regression": {
+    "before_fix": "2 new desktop/mobile tests failed",
+    "after_fix": "12 browser tests passed",
+    "widths": [
+      1100,
+      390
+    ],
+    "inputs": [
+      "mouse wheel",
+      "Control+Home",
+      "Control+End"
+    ],
+    "formats": [
+      "structured document",
+      "Markdown",
+      "schema JSON"
+    ],
+    "additional_coverage": [
+      "expanded checks",
+      "reload",
+      "mobile publish dialog",
+      "chat",
+      "graph"
+    ]
+  },
+  "independent_review": {
+    "reviewer": "Descartes",
+    "agent_id": "01a1530c-1696-7153-8dfb-6db422461820",
+    "code_head": "52179cd24db380dc2e227b284ad1b106bd6ef2a5",
+    "standards": "PASS",
+    "spec": "PASS",
+    "verdict": "APPROVED",
+    "coverage": [
+      "old CSS negative control",
+      "wheel, Tab, PageDown, Ctrl+End",
+      "q049, structured report, Markdown, schema JSON",
+      "1100px and 390px, expanded details and reload",
+      "mobile publish dialog",
+      "map scroll and synthetic-history chat scroll"
+    ]
+  }
+}

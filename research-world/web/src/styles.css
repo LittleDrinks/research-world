@@ -112,6 +112,7 @@
 }
 * { box-sizing: border-box; }
 html, body, #root { width: 100%; height: 100%; }
+.markdown-table-scroll{max-width:100%;overflow-x:auto;margin:16px 0}.markdown-table-scroll table{width:100%;border-collapse:collapse;font-size:14px}.markdown-table-scroll th,.markdown-table-scroll td{border:1px solid var(--line);padding:8px 12px;text-align:left;vertical-align:top}.markdown-table-scroll th{background:var(--surface-muted);font-weight:600}
 body { margin: 0; min-width: 320px; overflow: hidden; color: var(--text); background: var(--app-shell); }
 button, input, select, textarea { color: inherit; font: inherit; font-size: 14px; letter-spacing: 0; }
 button, a, select { -webkit-tap-highlight-color: transparent; }

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import base64
 import json
 import os
 import secrets
@@ -11,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Request
 
 from . import literature
 from .agent_catalog import has_workspace
+from .artifact_files import read_text
 
 
 class ToolBridge:
@@ -47,6 +47,8 @@ class ToolBridge:
         if tool == 'literature':
             return await _literature(values)
         if tool == 'artifact':
+            if values.get('operation') == 'templates':
+                return await _graph(request.agent_snapshot['project_id'], tool, values)
             if ('path' in values) == ('content' in values):
                 raise ValueError('artifact requires exactly one of content or path')
             if 'path' in values:
@@ -58,21 +60,10 @@ class ToolBridge:
         if 'content' in values or not isinstance(path, str) or not path.strip():
             raise ValueError('artifact requires either content or a non-empty path')
         content = await self._workspace_text(token, path)
-        return {'content': content, 'media_type': values.get('media_type', 'text/plain')}
+        return {key: value for key, value in values.items() if key != 'path'} | {'content': content, 'media_type': values.get('media_type', 'text/plain')}
 
     async def _workspace_text(self, token, path):
-        chunks, exit_code = [], None
-        async for line in self.workspace_tools.execute(token, {'operation': 'read', 'path': path}):
-            event = json.loads(line)
-            if event.get('error'):
-                raise ValueError('Artifact file could not be read')
-            if 'data' in event:
-                chunks.append(base64.b64decode(event['data'], validate=True))
-            if 'exitCode' in event:
-                exit_code = event['exitCode']
-        if exit_code != 0:
-            raise ValueError('Artifact file read did not complete successfully')
-        return b''.join(chunks).decode('utf-8')
+        return await read_text(self.workspace_tools.execute(token, {'operation': 'read', 'path': path, 'max_bytes': 4 * 1024 * 1024}))
 
     async def delegate(self, request, values):
         tasks = values.get('tasks')
@@ -110,6 +101,10 @@ def bridge_router(bridge):
             return await bridge.invoke(request.headers.get('x-tool-token'), body['tool'], body['arguments'])
         except PermissionError as error:
             raise HTTPException(403, str(error)) from None
+        except httpx.HTTPStatusError as error:
+            if body['tool'] == 'artifact' and error.response.status_code == 422:
+                raise HTTPException(422, error.response.json().get('detail')) from None
+            raise HTTPException(422, 'Tool operation failed; verify arguments or source availability') from None
         except (ValueError, KeyError, httpx.HTTPError):
             raise HTTPException(422, 'Tool operation failed; verify arguments or source availability') from None
 

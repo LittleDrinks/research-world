@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Modal } from "../components/Modal";
 import { ArtifactDownload } from "../components/map/ArtifactDownload";
 import { KIND_LABELS, recordText } from "../utils/labels";
+import {PublishDocument} from '../artifacts/PublishDocument';
 
 
 export function Inspector({ node, nodes, edges, artifacts = [], conditions = [], onSelect, onDeleteRecord, onDeleteRelation }) {
@@ -16,6 +17,7 @@ export function Inspector({ node, nodes, edges, artifacts = [], conditions = [],
     <NodeRecord node={node} /><RecordActions node={node} onRequest={requestRemoval} />
     <Relations node={node} nodes={nodes} edges={edges} onSelect={onSelect} onDelete={(edge) => setPending({ kind: "Relation", id: edge.id })} />
     <JointLinks conditions={conditions} recordId={node.id} onSelect={onSelect} />
+    <section className="inspector-section"><PublishDocument node={node}/></section>
     <Artifacts node={node} artifacts={artifacts} /><details className="node-details"><summary>详情</summary><NodeIdEntry node={node} /></details>
   </div><DeleteDialog pending={pending} busy={busy} onClose={() => setPending(null)} onConfirm={confirm} /></aside>;
 }

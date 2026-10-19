@@ -17,6 +17,7 @@ from .session_control import SessionControl
 from .project_export import export_project
 from .project_control import project_deletion_router
 from .project_workspace import workspace_router
+from .artifact_http import artifact_router
 
 
 def create_product(kernel, runtime, profiles, workspace):
@@ -29,7 +30,7 @@ def create_product(kernel, runtime, profiles, workspace):
     _errors(app)
     _agent_routes(app, runtime, profiles)
     _project_routes(app, kernel, runtime)
-    _artifact_routes(app, kernel)
+    app.include_router(artifact_router(kernel, runtime))
     control=SessionControl(kernel, runtime, profiles, workspace)
     app.include_router(session_router(control))
     app.include_router(project_deletion_router(control))
@@ -91,17 +92,6 @@ def _project_routes(app, kernel, runtime):
     async def export(project_id: str):
         return Response(await export_project(kernel, runtime, project_id), media_type='application/zip',
                         headers={'Content-Disposition':f'attachment; filename="{project_id}.zip"'})
-
-
-def _artifact_routes(app, kernel):
-    @app.post('/api/v1/projects/{project_id}/artifacts', status_code=201)
-    async def capture(project_id: str, request: Request):
-        body = await request.json()
-        content = body['content'].encode('utf-8')
-        if len(content) > 4 * 1024 * 1024:
-            raise ValueError('Artifact 超过 4 MiB')
-        artifact = kernel.capture_artifact(project_id, content, body.get('media_type', 'text/markdown'))
-        return {**asdict(artifact), 'download_url':f'/api/v1/projects/{project_id}/artifacts/{artifact.id}?download=true'}
 
 
 def _project_view(kernel, project):

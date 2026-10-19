@@ -2,7 +2,9 @@ async function decode(response) {
   const text = await response.text();
   const body = text ? JSON.parse(text) : null;
   if (!response.ok) {
-    const error = new Error(body?.detail || `请求失败（${response.status}）`);
+    const detail = body?.detail;
+    const error = new Error(typeof detail==='string'?detail:detail?.message || `请求失败（${response.status}）`);
+    error.errors = detail?.errors || [];
     error.code = body?.code;
     throw error;
   }
@@ -19,6 +21,10 @@ export const createProject = (body) => fetch("/api/v1/projects", json("POST", bo
 export const projectExportUrl = (projectId) => `/api/v1/projects/${enc(projectId)}/export`;
 export const getLocalMap = (projectId, query) => fetch(`/api/v1/projects/${enc(projectId)}/local-map`, json("POST", query)).then(decode);
 export const artifactUrl = (projectId, artifactId, download = false) => `/api/v1/projects/${enc(projectId)}/artifacts/${enc(artifactId)}${download ? "?download=true" : ""}`;
+export const artifactViewUrl = (projectId, artifactId) => `/projects/${enc(projectId)}/artifacts/${enc(artifactId)}`;
+export const getArtifactReading = (projectId, artifactId) => fetch(artifactUrl(projectId,artifactId)+'/reading').then(decode);
+export const getArtifactTemplates = projectId => fetch(`/api/v1/projects/${enc(projectId)}/artifact-templates`).then(decode);
+export const captureArtifact = (projectId, body) => fetch(`/api/v1/projects/${enc(projectId)}/artifacts`,json('POST',body)).then(decode);
 export const deleteRecord = (projectId, recordId) => fetch(`/api/v1/projects/${enc(projectId)}/records/${enc(recordId)}`, { method: "DELETE" }).then(decode);
 export const deleteRelation = (projectId, relationId) => fetch(`/api/v1/projects/${enc(projectId)}/relations/${enc(relationId)}`, { method: "DELETE" }).then(decode);
 export const listAgents = () => fetch("/api/v1/agents").then(decode);
