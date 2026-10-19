@@ -25,6 +25,7 @@ test('publish from node validates schema and renders immutable report, evidence 
     await page.getByRole('button',{name:'发布审计报告'}).click();
     await expect(page.getByRole('button',{name:'下载填写示例'})).toBeEnabled();
     await uploadAndValidate(page,{...f.data,summary:'x'.repeat(401)},false);
+    await assertPublishDialogScroll(page);
     await uploadAndValidate(page,f.data,true);
     await page.getByRole('button',{name:'校验并发布',exact:true}).click();
     const href=await page.getByRole('link',{name:'阅读已发布报告'}).getAttribute('href');
@@ -38,6 +39,15 @@ async function uploadAndValidate(page,data,valid){
   await page.getByRole('button',{name:'校验',exact:true}).click();
   if(valid)await expect(page.getByRole('status')).toContainText('校验通过');
   else {await expect(page.getByRole('alert')).toContainText('summary');await expect(page.getByRole('alert')).toContainText('400');}
+}
+
+async function assertPublishDialogScroll(page){
+  await page.setViewportSize({width:390,height:650});
+  const dialog=page.getByRole('dialog'),box=await dialog.boundingBox();
+  expect(box.y).toBeGreaterThanOrEqual(0);expect(box.y+box.height).toBeLessThanOrEqual(650);
+  await page.mouse.move(220,400);await page.mouse.wheel(0,100000);
+  await expect(page.getByRole('button',{name:'校验并发布',exact:true})).toBeInViewport({ratio:1});
+  await page.setViewportSize({width:1100,height:800});
 }
 
 async function verifyReading(page,request,f){
@@ -68,3 +78,34 @@ test('reader uses URL project independently of active selection and preserves un
     const unavailable=await request.get(f.root+'/artifacts/artifact:missing/reading');expect(unavailable.status()).toBe(404);
   }finally{await page.close();await request.delete(f.root);}
 });
+
+for(const width of [1100,390])test(`artifact scroll reaches bottom with wheel and keyboard at ${width}px`,async({page,request})=>{
+  const f=await seed(request);
+  try{
+    await page.setViewportSize({width,height:650});
+    f.data.sections[0].markdown='研究范围需要保留限定条件。\n\n'.repeat(35);
+    const report=await post(request,f.root+'/artifacts',{content:JSON.stringify(f.data),schema_id:f.template.id,record_id:f.record.id});
+    const markdown=await post(request,f.root+'/artifacts',{content:'## 原文\n\n'+('可追溯的研究证据。\n\n'.repeat(80))});
+    const schema=`/projects/${encodeURIComponent(f.project.id)}/artifacts/${encodeURIComponent(f.template.id)}`;
+    for(const url of [report.view_url,markdown.view_url,schema])await assertReaderScroll(page,url);
+    await page.reload();await assertScrollInputs(page);
+  }finally{await page.close();await request.delete(f.root);}
+});
+
+async function assertReaderScroll(page,url){
+  await page.goto(url);await page.locator('.document-provenance').waitFor();
+  for(const summary of await page.locator('.document-check summary').all())await summary.evaluate(e=>e.click());
+  await assertScrollInputs(page);
+}
+
+async function assertScrollInputs(page){
+  const reader=page.locator('.artifact-page'),end=page.locator('.document-provenance');
+  const box=await reader.boundingBox();expect(box.y+box.height).toBeLessThanOrEqual(page.viewportSize().height);
+  expect(await reader.evaluate(e=>e.scrollHeight>e.clientHeight)).toBeTruthy();
+  await page.mouse.move(page.viewportSize().width/2,400);await page.mouse.wheel(0,100000);
+  await expect(end).toBeInViewport({ratio:1});
+  await reader.focus();await page.keyboard.press('Control+Home');
+  await expect.poll(()=>reader.evaluate(e=>e.scrollTop)).toBe(0);
+  await page.keyboard.press('Control+End');await expect(end).toBeInViewport({ratio:1});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+}

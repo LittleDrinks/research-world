@@ -12,7 +12,7 @@ export function ArtifactPage(){
     getArtifactReading(projectId,artifactId).then(v=>{if(current)setView(v);}).catch(e=>{if(current)setError(e.message);});
     return()=>{current=false;};
   },[projectId,artifactId]);
-  return <main className="artifact-page"><nav><a href="/projects">研究世界</a><span> / 研究产物</span></nav>
+  return <main className="artifact-page" tabIndex={0} aria-label="研究产物阅读"><nav><a href="/projects">研究世界</a><span> / 研究产物</span></nav>
     {error?<p role="alert">{error}</p>:view?<ArtifactContent view={view} projectId={projectId}/>:<p role="status">正在读取产物…</p>}
   </main>;
 }
