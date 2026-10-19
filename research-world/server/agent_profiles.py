@@ -11,6 +11,7 @@ DEFAULT_INSTRUCTIONS = ('围绕科学问题开展研究，区分事实、推断�
     '多个研究对象共同构成条件时用joint_condition，明确AND/OR/k-of-N、角色、目标陈述、理由与证据定位；关系不代表已证实。'
     'Question只定义研究范围，不能参与supports/refutes；方向与问题用Direction指向Question的depends_on。'
     '读写或运行文件时使用workspace的read/write/edit/bash，文件位于/workspace，与JupyterLab共享。'
+    '报告须先读取artifact templates并按schema_id提交结构化JSON，六维评分逐项引用证据；代码、数据和来源原文作为证据附件。'
     'artifact仅发布不可变研究产物，不用于代替创建工作文件。评审报告作为Artifact挂到被审对象，不把评审建为experiment。'
     '读取或修订已有对象、评论、查看历史与管理标签使用change；先read当前revision再提交变更。标签可并存，不代表科研判断。'
     '从多个相关候选中控制重复性时可使用mmr，提供相关性与成对相似度并注明评分来源。'

@@ -20,7 +20,7 @@ class CaptureRequest(BaseModel):
     content: str | None = None
     content_base64: str | None = None
     path: str | None = None
-    media_type: str = 'text/markdown'
+    media_type: str = 'text/plain'
     schema_id: str | None = None
     record_id: str | None = None
     target_artifact_id: str | None = None
@@ -52,6 +52,8 @@ async def capture_request(kernel, runtime, project_id, body, author='user'):
     if body.schema_id:
         check_selected_target(raw, body.target_artifact_id)
         raw, media_type = prepare(kernel, project_id, raw, body.schema_id, body.record_id), DOCUMENT_TYPE
+    elif media_type.split(';')[0].strip().lower() == 'text/markdown':
+        invalid('schema_id', '报告必须选择平台模板；原始文献和执行文件请按证据文件格式保存')
     elif body.operation == 'validate':
         raise ValueError('结构化校验需要选择模板')
     elif media_type.strip() == DOCUMENT_TYPE:

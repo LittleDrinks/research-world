@@ -144,7 +144,7 @@ def test_raw_capture_cannot_bypass_schema_and_plain_markdown_can_be_read(case):
     response = client.post(root + '/artifacts', json={'content': '## 数学\n\\[x^2\\]', 'record_id': record.id})
     assert response.status_code == 201
     view = client.get(root + f"/artifacts/{response.json()['id']}/reading").json()
-    assert view['kind'] == 'markdown' and '\\[x^2\\]' in view['text']
+    assert view['kind'] == 'text' and '\\[x^2\\]' in view['text']
 
 
 def test_workspace_publication_uses_same_contract(case):
@@ -240,3 +240,43 @@ def test_image_and_code_results_are_readable_without_a_manual_upload_ui(case):
     assert client.get(root+'/artifacts/'+result.json()['id']).content==buffer.getvalue()
     code=client.post(root+'/artifacts',json={'content':'print(42)','media_type':'text/x-python'}).json()
     assert client.get(root+'/artifacts/'+code['id']+'/reading').json()['text']=='print(42)'
+
+
+@pytest.mark.parametrize('mutation', ['missing', 'duplicate', 'no_evidence', 'skip_score', 'no_correction', 'false_pass', 'bad_execution'])
+def test_six_dimensions_reject_unsubstantiated_scores(case, mutation):
+    data = copy.deepcopy(case[5])
+    dimension = data['dimensions'][1]
+    data['conclusion']['verdict'] = 'revise'
+    data['sections'][1]['checks'][0].update(result='pass', evidence=[{'artifact_id':case[4].artifact_ids[0],'locator':'L1'}])
+    if mutation == 'missing': data['dimensions'].pop()
+    if mutation == 'duplicate': data['dimensions'][1] = data['dimensions'][0]
+    if mutation == 'no_evidence': dimension.update(result='scored', score=2)
+    if mutation == 'skip_score': dimension.update(action='skip', result='not_applicable', score=2)
+    if mutation == 'no_correction': dimension.update(result='scored', score=1, improvement='', evidence=[{'artifact_id':case[4].artifact_ids[0],'locator':'L1'}])
+    if mutation == 'false_pass': data['conclusion']['verdict'] = 'pass'
+    if mutation == 'bad_execution': data['execution']['status'] = 'executed'
+    assert post(case, data).status_code == 422
+
+
+def test_dimension_evidence_is_project_scoped_and_exported(case):
+    kernel, _, client, root, record, data, _ = case
+    dimension = data['dimensions'][0]
+    dimension.update(result='scored', score=1, reason='缺少范围', improvement='补充研究范围')
+    foreign = kernel.create_project('foreign', 'evidence')
+    artifact = kernel.capture_artifact(foreign.id, b'other', 'text/plain')
+    dimension['evidence'] = [{'artifact_id':artifact.id,'locator':'L1'}]
+    data['conclusion']['verdict'] = 'revise'
+    assert post(case).status_code == 404
+    dimension['evidence'][0]['artifact_id'] = record.artifact_ids[0]
+    data['conclusion']['verdict'] = 'revise'
+    response = post(case)
+    assert response.status_code == 201, response.text
+    exported = client.get(root + '/artifacts/' + response.json()['id'] + '/markdown').text
+    assert '问题理解 · 1/2' in exported and '补充研究范围' in exported
+
+
+@pytest.mark.parametrize('media_type', ['text/markdown', 'text/markdown; charset=utf-8'])
+def test_freeform_reports_cannot_use_capture_instead_of_rubric(case, media_type):
+    response = case[2].post(case[3] + '/artifacts', json={'content':'# 全部通过', 'media_type':media_type})
+    assert response.status_code == 422
+    assert response.json()['detail']['errors'][0]['path'] == 'schema_id'
