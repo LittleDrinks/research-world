@@ -136,5 +136,9 @@
 .pi-messages .katex-display{max-width:100%;overflow-x:auto;overflow-y:hidden;padding:8px 0;margin:16px 0}
 .pi-messages .katex-display>.katex{display:block;width:max-content;min-width:100%;text-align:center}
 .pi-messages .katex-error{white-space:pre-wrap;overflow-wrap:anywhere}
-.pi-text,.pi-assistant,.pi-user,.pi-transcript{min-width:0;max-width:100%}
+.pi-text,.pi-assistant,.pi-user{min-width:0;max-width:100%}
 @media(max-width:640px){.child-result-body{padding:4px 12px 14px}.pi-child>summary{padding:10px 12px}}
+
+.pi-thinking{margin:10px 0 16px;color:var(--text-muted);font-size:14px}
+.pi-thinking>summary{cursor:pointer;padding:6px 0;font-weight:500}
+.thinking-body{padding:4px 14px;border-left:2px solid var(--line);line-height:1.7;overflow-wrap:anywhere}
