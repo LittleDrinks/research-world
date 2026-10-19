@@ -7,14 +7,13 @@ import { Modal } from "../components/Modal";
 import {RecordAssets} from './RecordAssets';
 import { KIND_LABELS, recordText } from "../utils/labels";
 import {RecordLabels} from './Labels';
-import {RecordWorkspace} from './RecordWorkspace';
 
 
 export function Inspector({ node, nodes, edges, artifacts = [], conditions = [], onSelect, onDeleteRecord, onDeleteRelation }) {
   const {pending,setPending,busy,requestRemoval,confirm} = useRemoval(node,onDeleteRecord,onDeleteRelation);
   if (!node) return <aside className="inspector inspector-empty">选择节点查看上下文。</aside>;
   return <aside className="inspector"><div className="inspector-scroll"><NodeHeader node={node} />
-    <RecordLabels key={`labels:${node.id}`} node={node}/><RecordWorkspace key={`workspace:${node.id}`} node={node}/>
+    <RecordLabels key={`labels:${node.id}`} node={node}/>
     <Relations node={node} nodes={nodes} edges={edges} onSelect={onSelect} onDelete={(edge) => setPending({ kind: "Relation", id: edge.id })} />
     <JointLinks conditions={conditions} recordId={node.id} onSelect={onSelect} />
     <RecordAssets key={`assets:${node.id}`} node={node} artifacts={artifacts} /><details className="node-details"><summary>记录标识与撤销</summary><NodeIdEntry node={node} /><RecordActions node={node} onRequest={requestRemoval}/></details>

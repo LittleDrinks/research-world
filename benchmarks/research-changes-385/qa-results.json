@@ -38,5 +38,27 @@
     "joint_conditions": 3,
     "total_records": 22,
     "literature": 12
+  },
+  "latest_ui_qa": {
+    "passed": 6,
+    "suites": [
+      "research-changes",
+      "component-coverage",
+      "joint-conditions"
+    ],
+    "inspector_issue_forms": 0,
+    "project_settings": [
+      "研究成果",
+      "管理标签",
+      "下载研究包"
+    ],
+    "ready_for_agent": [
+      "duration",
+      "resolution"
+    ],
+    "need_info": [
+      "ensemble"
+    ],
+    "model_calls": 0
   }
 }

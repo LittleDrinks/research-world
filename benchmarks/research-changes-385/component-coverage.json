@@ -2,8 +2,8 @@
   {
     "id": "labels",
     "component": "用户标签",
-    "scenario": "创建、贴标、改名、删除",
-    "preview": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:8c1ec2ce9a80113fd903e396",
+    "scenario": "项目设置管理标签，节点贴标",
+    "preview": "http://localhost:8095/settings",
     "verification": "research-changes.spec.js"
   },
   {
@@ -30,7 +30,7 @@
   {
     "id": "changes",
     "component": "变更历史",
-    "scenario": "查看原版本与并发冲突",
+    "scenario": "完整记录详情查看变更、固定版本与并发冲突",
     "preview": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/records/record:8c1ec2ce9a80113fd903e396",
     "verification": "research-changes.spec.js"
   },
@@ -124,5 +124,19 @@
     "scenario": "问题到检查的阅读顺序；拖动后连线与气泡颜色保持",
     "preview": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/map?node=record:82b05b00d0bd1bac6385778b",
     "verification": "graph-motion.spec.js"
+  },
+  {
+    "id": "ready-for-agent",
+    "component": "执行就绪标签",
+    "scenario": "参数、代码和产物要求明确的两项计划标为ready-for-agent；初值集合保留need-info",
+    "preview": "http://localhost:8095/projects/project:bc524d1d221ec0dcf82f72a2/map?node=record:efc301c07f6f67312f3905b0",
+    "verification": "public API readback and components-map.png"
+  },
+  {
+    "id": "project-settings",
+    "component": "项目设置",
+    "scenario": "研究成果、标签管理与研究包下载；侧栏无Changes入口",
+    "preview": "http://localhost:8095/settings",
+    "verification": "research-changes.spec.js and component-coverage.spec.js"
   }
 ]

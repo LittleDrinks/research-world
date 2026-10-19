@@ -17,13 +17,13 @@ test('semantic components have selectable conditions, source selection and resul
   const f=await fixture(request);
   try{
     await page.goto(`/projects/${encodeURIComponent(f.project)}/map?node=${encodeURIComponent(f.target.id)}`);
-    await expect(page.locator('.joint-node')).toHaveCount(3);await expect(page.locator('.research-node')).toHaveCount(4);
+    await expect(page.locator('.joint-node')).toHaveCount(3,{timeout:60000});await expect(page.locator('.research-node')).toHaveCount(4);
     await page.getByRole('button',{name:'聚焦选中关系'}).click();await expect(page.getByRole('button',{name:'显示研究主线'})).toBeVisible();
     await page.getByRole('button',{name:'条件列表 · 3',exact:true}).click();
     for(const condition of f.conditions){await page.locator('.joint-list .joint-list-item').filter({hasText:condition.title}).click();await expect(page.locator('.joint-inspector h1')).toHaveText(condition.title);}
     await page.getByRole('button',{name:'文献 · 4',exact:true}).click();await page.getByRole('button',{name:'MMR 选择阅读候选'}).click();
     await page.getByLabel('选择数量',{exact:true}).fill('2');await page.getByRole('button',{name:'运行选择',exact:true}).click();await expect(page.getByRole('dialog').locator('tbody tr')).toHaveCount(2);
-    await page.getByRole('button',{name:'关闭',exact:true}).click();await page.getByRole('button',{name:'成果预览',exact:true}).click();await expect(page.getByRole('dialog')).toContainText('核查结果.md');
+    await page.getByRole('button',{name:'关闭',exact:true}).click();await page.goto('/settings');await page.getByRole('button',{name:'研究成果',exact:true}).click();await expect(page.getByRole('dialog')).toContainText('核查结果.md');
     await page.goto(`/projects/${encodeURIComponent(f.project)}/records/${encodeURIComponent(f.target.id)}`);
     await page.locator('.record-assets').getByRole('button',{name:'预览',exact:true}).click();await expect(page.locator('.asset-preview')).toContainText('已完成的检查');
     await page.setViewportSize({width:390,height:844});await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();

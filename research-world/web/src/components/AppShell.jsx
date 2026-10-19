@@ -4,7 +4,6 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useWorld } from "../context/WorldContext";
 import { RecordList } from "./RecordList";
 import { useWorkspace, WorkspaceReady } from "../context/WorkspaceContext";
-import {ProjectTools} from './ProjectTools';
 
 
 export const MODULES = [
@@ -59,7 +58,7 @@ function Sidebar({ open, close }) {
   const { pathname } = useLocation();
   return <aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
     <button className="icon-button sidebar-close" onClick={close} title="关闭导航"><X size={19} /></button>
-    <Brand /><div><ModuleNav close={close} /><ProjectTools close={close}/></div><RecordList module={moduleOf(pathname)} close={close} /><ProjectDock close={close} /></aside>;
+    <Brand /><ModuleNav close={close} /><RecordList module={moduleOf(pathname)} close={close} /><ProjectDock close={close} /></aside>;
 }
 
 

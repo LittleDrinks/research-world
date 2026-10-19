@@ -54,7 +54,7 @@ function AssignLabels({node,onClose}){
   return <Modal title="设置研究标签" open onClose={busy?()=>{}:onClose}><form onSubmit={submit} className="label-form">
     <p className="muted">基于 r{base} · 不同标签可同时使用。</p><div className="label-options">{labels.map(label=><label key={label.id}>
       <input type="checkbox" checked={ids.includes(label.id)} onChange={e=>setIds(e.target.checked?[...ids,label.id]:ids.filter(id=>id!==label.id))}/><LabelBadge label={label}/><small>{label.description}</small></label>)}</div>
-    {!labels.length&&<p>尚无标签，请先在地图工具栏创建。</p>}<label>变更原因<input name="reason" required maxLength={500} placeholder="为什么添加或移除这些标签？"/></label>
+    {!labels.length&&<p>尚无标签，请先在项目设置中创建。</p>}<label>变更原因<input name="reason" required maxLength={500} placeholder="为什么添加或移除这些标签？"/></label>
     {error&&<p role="alert">{error}</p>}<button className="button primary" disabled={busy}>保存标签关联</button>
   </form></Modal>;
 }
