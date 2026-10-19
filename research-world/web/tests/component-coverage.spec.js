@@ -7,7 +7,7 @@ async function post(request,path,data){
 async function fixture(request){
   const p=await post(request,'/api/v1/projects',{name:`Coverage ${Date.now()}`,question:'Compare methods'}),root='/api/v1/projects/'+p.id;
   const artifact=await post(request,root+'/artifacts',{content:'## 已完成的检查\n输入和结果可回查。'});
-  const records=[];for(const title of ['solar orbit dynamics','solar orbit integrator','tidal energy','stellar evolution'])records.push(await post(request,root+'/records',{type:'source',content:{title,text:'来源'},artifact_ids:[]}));
+  const records=[];for(const title of ['solar orbit dynamics','solar orbit integrator','tidal energy','stellar evolution'])records.push(await post(request,root+'/records',{type:'source',content:{title,text:'来源',canonical_url:'https://example.org/'+encodeURIComponent(title)},artifact_ids:[]}));
   const target=await post(request,root+'/records',{type:'direction',content:{title:'方法比较',text:'比较范围与结果',attachments:[{id:artifact.id,name:'核查结果.md'}]},artifact_ids:[artifact.id]});
   const conditions=[];for(const rule of ['AND','OR','k-of-N'])conditions.push(await post(request,root+'/joint-conditions',{title:rule+' 条件',rule,k:rule==='k-of-N'?2:null,target_id:target.id,members:records.slice(0,3).map(r=>({record_id:r.id,role:r.content.title})),statement:'比较条件',rationale:'共同约束目标',evidence:[{artifact_id:artifact.id,locator:'检查结果'}]}));
   return {project:p.id,root,records,target,conditions};

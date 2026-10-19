@@ -94,7 +94,7 @@ test('named Markdown stored as plain text renders tables, math and raw source wi
   const text='# 文献审查\n\n**局限：**尚未取得全文。\n\n- 核验来源\n- 保留缺口\n\n| 检查 | 结果 |\n| --- | --- |\n| DOI | 待核查 |\n\n\\[\nP=196.29\\,W\n\\]\n\n```python\nprint("**literal**")\n```\n\n<script>window.markdownExecuted=true</script>';
   try{
     const artifact=await post(request,f.root+'/artifacts',{content:text,media_type:'text/plain'});
-    await post(request,f.root+'/records',{type:'source',content:{title:'文献',attachments:[{id:artifact.id,name:'review.md'}]},artifact_ids:[artifact.id]});
+    await post(request,f.root+'/records',{type:'source',content:{title:'文献',canonical_url:'https://example.org/paper',attachments:[{id:artifact.id,name:'review.md'}]},artifact_ids:[artifact.id]});
     await page.goto(artifact.view_url);
     await expect(page.getByRole('heading',{name:'文献审查',exact:true})).toBeVisible();
     await expect(page.locator('.artifact-markdown strong')).toHaveText('局限：');

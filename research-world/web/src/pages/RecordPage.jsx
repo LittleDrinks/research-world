@@ -6,6 +6,9 @@ import {RecordLabels} from '../graph/Labels';
 import {RecordAssets} from '../graph/RecordAssets';
 import {KIND_LABELS} from '../utils/labels';
 import '../graph/changes.css';
+import {RecordStatus} from '../graph/RecordStatus';
+import {RecordDocument,SourceIdentity} from '../graph/RecordDocument';
+import {CreateRecord} from '../graph/CreateRecord';
 
 export function RecordPage(){
   const {projectId,recordId}=useParams(),[node,setNode]=useState(null),[artifacts,setArtifacts]=useState([]),[error,setError]=useState('');
@@ -13,7 +16,7 @@ export function RecordPage(){
   if(error)return <p role="alert">{error}</p>;
   if(!node)return <p role="status">正在读取研究记录…</p>;
   return <main className="research-record-page"><nav><a href={projectMapUrl(projectId)+'?node='+encodeURIComponent(recordId)}>返回研究地图</a><span>{KIND_LABELS[node.kind]}</span></nav>
-    <header><h1>{node.content.title}</h1><RecordLabels key={`labels:${node.id}`} node={node}/></header>
-    <div className="research-record-columns"><RecordWorkspace key={`workspace:${node.id}`} node={node}/><aside><RecordAssets node={node} artifacts={artifacts}/></aside></div>
+    <header><h1>{node.content.title}</h1><SourceIdentity node={node}/><RecordStatus node={node}/><RecordLabels key={`labels:${node.id}`} node={node}/></header>
+    <RecordDocument node={node}/><CreateRecord seed={node.content}/><div className="research-record-columns"><RecordWorkspace key={`workspace:${node.id}`} node={node}/><aside><RecordAssets node={node} artifacts={artifacts}/></aside></div>
   </main>;
 }

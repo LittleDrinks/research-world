@@ -5,6 +5,7 @@ async function decode(response) {
     const detail = body?.detail;
     const error = new Error(typeof detail==='string'?detail:detail?.message || `请求失败（${response.status}）`);
     error.errors = detail?.errors || [];
+    error.detail = detail;
     error.code = body?.code;
     throw error;
   }
@@ -48,3 +49,7 @@ export const getWorkspace = id => fetch(`/api/v1/projects/${enc(id)}/workspace`)
 export const startWorkspace = id => fetch(`/api/v1/projects/${enc(id)}/workspace`,{method:'POST'}).then(decode);
 export const stopWorkspace = id => fetch(`/api/v1/projects/${enc(id)}/workspace/stop`,{method:'POST'}).then(decode);
 export const getWorkspaces = () => fetch('/api/v1/workspaces').then(decode);
+
+export const createRecord = (projectId,body) => fetch(`/api/v1/projects/${enc(projectId)}/records`,json('POST',body)).then(decode);
+export const preflightRecord = (projectId,body) => fetch(`/api/v1/projects/${enc(projectId)}/records/preflight`,json('POST',body)).then(decode);
+export const recordDocumentUrl = (projectId,recordId) => `/api/v1/projects/${enc(projectId)}/records/${enc(recordId)}/document`;

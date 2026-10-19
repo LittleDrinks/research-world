@@ -7,7 +7,7 @@ import {LabelBadge} from './Labels';
 import {CandidateSelection} from './CandidateSelection';
 
 export function MapView({ localMap, selectedId, onSelect, onDeleteRecord, onDeleteRelation }) {
-  const [mode, setMode] = useState('graph');
+  const [mode, setMode] = useState(()=>new URLSearchParams(location.search).get('view')==='focus'?'focus':'graph');
   const conditions = localMap.joint_conditions;
   const selectedCondition = conditions.find(c => c.id === selectedId);
   const selected = localMap.records.find(record => record.id === selectedId) || localMap.records[0];
