@@ -342,7 +342,10 @@ def test_local_map_node_reference_returns_relations_and_artifacts(tmp_path):
         project.id, LocalMapQuery(record_id=direction.id, limit=5)
     )
 
-    assert result == LocalMap((direction,), (relation,), (artifact,))
+    assert result.records == (direction,)
+    assert result.relations == (relation,)
+    assert result.artifacts == (artifact,)
+    assert result.selection['mode'] == 'record'
 
 
 @pytest.mark.parametrize(

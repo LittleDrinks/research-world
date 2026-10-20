@@ -42,6 +42,9 @@ def test_http_roundtrip_and_local_map_closure(setup, rule, k):
     assert {r.id for r in result.records} == {r.id for r in records}
     assert result.joint_conditions == (value,)
     assert result.artifacts[0].id == request['evidence'][0]['artifact_id']
+    assert result.selection['matched_records'] == 1
+    assert result.selection['returned_records'] == 3
+    assert result.selection['truncated'] is False
 
 
 @pytest.mark.parametrize('patch', [

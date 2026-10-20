@@ -11,7 +11,8 @@ async function graphFixture(page) {
   await page.route('**/api/v1/bootstrap**',r=>r.fulfill({json:{active_project_id:'motion',projects:[{id:'motion',name:'动画测试'}],sessions:[]}}));
   await page.route('**/api/v1/agents',r=>r.fulfill({json:[]}));
   await page.route('**/api/v1/projects/*/workspace',r=>r.fulfill({json:{status:'ready',url:'/lab'}}));
-  await page.route('**/api/v1/projects/*/local-map',r=>r.fulfill({json:{records,relations,joint_conditions,artifacts:[]}}));
+  await page.route('**/api/v1/projects/*/local-map',r=>r.fulfill({json:{records,relations,joint_conditions,artifacts:[],
+    project_summary:{project_id:'motion',records:3},selection:{mode:'overview',matched_records:3,returned_records:3,truncated:false}}}));
   await page.goto('/map');
   await expect(page.locator('.joint-node')).toHaveCount(3);
   await expect(page.locator('.signal-flow-path')).toHaveCount(12);

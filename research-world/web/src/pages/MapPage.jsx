@@ -2,14 +2,14 @@ import {CreateRecord} from '../graph/CreateRecord';
 import { Map as MapIcon, Search } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { deleteRecord, deleteRelation, getLocalMap } from "../api";
+import { deleteRecord, deleteRelation, getCompleteLocalMap } from "../api";
 import { useWorld } from "../context/WorldContext";
 import { MapView } from "../graph/MapView";
 import "../map.css";
 
 
 const LOCAL_MAP_LIMIT = 50;
-const EMPTY_MAP = { records: [], relations: [], artifacts: [], joint_conditions: [] };
+const EMPTY_MAP = { records: [], relations: [], artifacts: [], joint_conditions: [], project_summary:{records:0}, selection:{matched_records:0,truncated:false} };
 
 
 export function MapPage() {
@@ -36,7 +36,7 @@ function MapContent({ data, setError }) {
 
   return <section className="map-page">
     <MapToolbar count={localMap.records.length} relationCount={localMap.relations.length + localMap.joint_conditions.length}
-      text={text} setParams={setParams}/>
+      text={text} setParams={setParams} total={localMap.project_summary.records} selection={localMap.selection}/>
     <MapView localMap={localMap} selectedId={recordId} onSelect={(id) => selectRecord(setParams, id)} onDeleteRecord={removeRecord} onDeleteRelation={removeRelation} />
   </section>;
 }
@@ -51,7 +51,7 @@ function useLocalMap(projectId, text, recordId, setMap, setError, setParams) {
   return useCallback(async (requested = { text, recordId }) => {
     if (!projectId) return;
     const query = { text: requested.text || null, limit: LOCAL_MAP_LIMIT };
-    try { setMap(normalizeLocalMap(await getLocalMap(projectId, query))); setError(""); }
+    try { setMap(normalizeLocalMap(await getCompleteLocalMap(projectId, query))); setError(""); }
     catch (error) { if (requested.recordId) setParams(text ? { text } : {}); else setError(error.message); throw error; }
   }, [projectId, text, recordId, setMap, setError, setParams]);
 }
@@ -69,7 +69,7 @@ function selectRecord(setParams, id) {
 
 
 function normalizeLocalMap(value) {
-  return { records: value.records.map(mapRecord), relations: value.relations.map(mapRelation), artifacts: value.artifacts, joint_conditions: value.joint_conditions };
+  return { ...value, records: value.records.map(mapRecord), relations: value.relations.map(mapRelation) };
 }
 
 
@@ -83,16 +83,16 @@ function mapRelation({ id, source_id: source, target_id: target, type: polarity 
 }
 
 
-function MapToolbar({ count, relationCount, text, setParams }) {
+function MapToolbar({ count, relationCount, text, setParams, total, selection }) {
   const [draft, setDraft] = useState(text);
   useEffect(() => setDraft(text), [text]);
   const search = (event) => {
     event.preventDefault();
-    const value = draft.trim() || text;
+    const value = draft.trim();
     setParams(value ? { text: value } : {});
   };
   return <header className="map-toolbar"><div><b><MapIcon size={17} />研究地图</b>
-    <span>{count} 个记录 · {relationCount} 条关系</span></div>
+    <span>{count} 个记录 · {relationCount} 条关系{text&&` · 匹配 ${selection.matched_records} / 项目 ${total}`}{selection.truncated&&' · 结果未完整载入'}</span></div>
     <CreateRecord/><form className="map-search" onSubmit={search}>
       <input aria-label="检索局部地图" name="text" type="search" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="检索记录" />
       <button className="icon-button" type="submit" aria-label="检索" title="检索"><Search size={16} /></button>

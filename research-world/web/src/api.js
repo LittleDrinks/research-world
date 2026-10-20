@@ -21,6 +21,12 @@ export const deleteProject = (id) => fetch(`/api/v1/projects/${enc(id)}`, {metho
 export const createProject = (body) => fetch("/api/v1/projects", json("POST", body)).then(decode);
 export const projectExportUrl = (projectId) => `/api/v1/projects/${enc(projectId)}/export`;
 export const getLocalMap = (projectId, query) => fetch(`/api/v1/projects/${enc(projectId)}/local-map`, json("POST", query)).then(decode);
+export async function getCompleteLocalMap(projectId, query) {
+  const result = await getLocalMap(projectId, query);
+  return result.selection.truncated
+    ? getLocalMap(projectId, {...query, limit: result.selection.matched_records})
+    : result;
+}
 export const artifactUrl = (projectId, artifactId, download = false) => `/api/v1/projects/${enc(projectId)}/artifacts/${enc(artifactId)}${download ? "?download=true" : ""}`;
 export const artifactViewUrl = (projectId, artifactId) => `/projects/${enc(projectId)}/artifacts/${enc(artifactId)}`;
 export const getArtifactReading = (projectId, artifactId) => fetch(artifactUrl(projectId,artifactId)+'/reading').then(decode);

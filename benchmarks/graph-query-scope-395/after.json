@@ -1,0 +1,83 @@
+[
+  {
+    "arguments": {
+      "query": "当前研究项目所有对象与关系"
+    },
+    "project_summary": {
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "records": 52,
+      "records_by_type": {
+        "question": 9,
+        "source": 12,
+        "direction": 14,
+        "experiment": 17
+      },
+      "relations": 41,
+      "joint_conditions": 5,
+      "artifacts": 61
+    },
+    "selection": {
+      "mode": "search",
+      "text": "当前研究项目所有对象与关系",
+      "record_id": null,
+      "limit": 30,
+      "matched_records": 0,
+      "returned_records": 0,
+      "truncated": false
+    }
+  },
+  {
+    "arguments": {
+      "limit": 3
+    },
+    "project_summary": {
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "records": 52,
+      "records_by_type": {
+        "question": 9,
+        "source": 12,
+        "direction": 14,
+        "experiment": 17
+      },
+      "relations": 41,
+      "joint_conditions": 5,
+      "artifacts": 61
+    },
+    "selection": {
+      "mode": "overview",
+      "text": null,
+      "record_id": null,
+      "limit": 3,
+      "matched_records": 52,
+      "returned_records": 14,
+      "truncated": true
+    }
+  },
+  {
+    "arguments": {
+      "limit": 52
+    },
+    "project_summary": {
+      "project_id": "project:40d0b33942d45f879c4335f9",
+      "records": 52,
+      "records_by_type": {
+        "question": 9,
+        "source": 12,
+        "direction": 14,
+        "experiment": 17
+      },
+      "relations": 41,
+      "joint_conditions": 5,
+      "artifacts": 61
+    },
+    "selection": {
+      "mode": "overview",
+      "text": null,
+      "record_id": null,
+      "limit": 52,
+      "matched_records": 52,
+      "returned_records": 52,
+      "truncated": false
+    }
+  }
+]
