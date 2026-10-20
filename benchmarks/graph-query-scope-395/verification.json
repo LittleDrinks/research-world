@@ -1,0 +1,29 @@
+{
+  "issue": 395,
+  "preview": "http://localhost:8096/projects/project%3A40d0b33942d45f879c4335f9/map",
+  "reproduction": "graph(query=\"当前研究项目所有对象与关系\") returns zero literal matches in a nonempty project.",
+  "before": {
+    "project_records": 52,
+    "matches": 0,
+    "project_summary_present": false,
+    "map_records": 50
+  },
+  "after": {
+    "project_records": 52,
+    "matches": 0,
+    "project_summary_present": true,
+    "map_records": 52,
+    "need_review": 52
+  },
+  "checks": {
+    "backend": 343,
+    "runtime_passed": 255,
+    "runtime_skipped": 12,
+    "targeted_browser_passed": 11,
+    "joint_condition_final": 22,
+    "web_build": "passed",
+    "adapter_syntax": "passed"
+  },
+  "live_verification": "Deployed Runtime ToolBridge invoked directly without a model call; keyword miss, bounded overview and complete 52-record overview checked. Real browser verified last record and empty-query scope.",
+  "limitations": "Existing assistant reply is retained as history. No new LLM response was generated or evaluated. Full map requests can exceed the first batch and cost more on large projects."
+}

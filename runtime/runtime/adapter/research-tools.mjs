@@ -4,7 +4,10 @@ import {requestTool} from './bridge-request.mjs';
 
 const text = Type.String();
 const definitions = {
-  graph: ['查询当前研究项目的图谱', Type.Object({query: Type.Optional(text)})],
+  graph: ['读取当前项目的研究图谱。总结进度时先省略query读取概览。query仅做关键词字面子串检索，不接受“查询全部”等自然语言指令。project_summary为项目总量；selection说明匹配数、返回数及是否截断。0条匹配不代表项目为空，截断结果不能当作全集；可用limit读取更多。工作区文件与图谱Artifact分别保存。', Type.Object({
+    query: Type.Optional(Type.String({minLength:1,description:'可选关键词；省略时读取项目概览，不要填写查询指令。'})),
+    limit: Type.Optional(Type.Integer({minimum:1,description:'最多选择多少条匹配记录，默认30；联合条件可能补入相关节点。'})),
+  })],
   mmr: ['确定性选择候选：提供可追溯的相关性和成对相似度（同一尺度），返回选择顺序与重复性扣分。',Type.Object({
     candidates:Type.Array(Type.Object({id:text,relevance:Type.Number(),title:Type.Optional(text)}),{minItems:1,maxItems:100}),
     similarities:Type.Record(text,Type.Record(text,Type.Number())),count:Type.Integer({minimum:1,maximum:100}),diversity_weight:Type.Number({minimum:0,maximum:1}),

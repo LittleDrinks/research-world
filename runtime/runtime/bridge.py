@@ -119,7 +119,7 @@ def bridge_router(bridge):
 
 async def _graph(project_id, tool, values, run_id=None):
     root = f'/api/v1/projects/{project_id}'
-    operations = {'graph': ('local-map', {'text': values.get('query'), 'limit': 30}),
+    operations = {'graph': ('local-map', {'text': values.get('query'), 'limit': values.get('limit', 30)}),
                   'joint_condition': ('joint-conditions', values),
                   'artifact': ('artifacts', values), 'record': ('records', values), 'connect': ('relations', values)}
     path, payload = operations[tool]

@@ -118,6 +118,11 @@ def _assert_local_map(response, direction, relation, artifact):
         "relations": [relation],
         "artifacts": [_artifact_view(artifact)],
         "joint_conditions": [],
+        "project_summary": {"project_id": direction['project_id'], "records": 2,
+            "records_by_type": {"source": 1, "direction": 1}, "relations": 1,
+            "artifacts": 1, "joint_conditions": 0},
+        "selection": {"mode": "record", "text": None, "record_id": direction['id'],
+            "limit": 5, "matched_records": 1, "returned_records": 1, "truncated": False},
     }
 
 

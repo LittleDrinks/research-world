@@ -6,6 +6,7 @@ import hashlib
 import shutil
 import sqlite3
 from dataclasses import dataclass
+from collections import Counter
 from pathlib import Path
 from typing import Protocol
 
@@ -138,7 +139,9 @@ class LocalMap:
     records: tuple[Record, ...]
     relations: tuple[Relation, ...]
     artifacts: tuple[Artifact, ...]
-    joint_conditions: tuple[dict, ...] = ()
+    joint_conditions: tuple[dict, ...]
+    project_summary: dict
+    selection: dict
 
 
 @dataclass(frozen=True, slots=True)
@@ -607,12 +610,16 @@ class _SQLiteKernel(KernelInterface):
     def local_map(self, project_id: str, query: LocalMapQuery) -> LocalMap:
         self.get_project(project_id)
         _validate_local_map_query(query)
-        records = _local_map_records(self, project_id, query)
+        all_records = self.list_records(project_id)
+        matches = _local_map_matches(self, project_id, all_records, query)
+        records = matches[:query.limit]
         records, conditions = local_conditions(self, project_id, records, query)
         relations = _local_map_relations(self, project_id, records)
         artifacts = _local_map_artifacts(self, project_id, records)
         artifacts = condition_artifacts(self, project_id, conditions, artifacts)
-        return LocalMap(records, relations, artifacts, conditions)
+        summary = _project_map_summary(self, project_id, all_records)
+        selection = _map_selection(query, matches, records)
+        return LocalMap(records, relations, artifacts, conditions, summary, selection)
 
     def _initialize(self) -> None:
         with self._connect() as connection:
@@ -688,13 +695,26 @@ def _content_text(value) -> str:
     return str(value) if value is not None else ""
 
 
-def _local_map_records(kernel, project_id: str, query: LocalMapQuery) -> tuple[Record, ...]:
+def _local_map_matches(kernel, project_id, records, query):
     if isinstance(query.record_id, str) and query.record_id.strip():
         return (kernel.get_record(project_id, query.record_id),)
-    records = kernel.list_records(project_id)
-    return tuple(record for record in records if _record_matches(record, query.text))[
-        : query.limit
-    ]
+    return tuple(record for record in records if _record_matches(record, query.text))
+
+
+def _project_map_summary(kernel, project_id, records):
+    return {'project_id': project_id, 'records': len(records),
+            'records_by_type': dict(Counter(record.type for record in records)),
+            'relations': len(kernel.list_relations(project_id)),
+            'joint_conditions': len(kernel.list_joint_conditions(project_id)),
+            'artifacts': len(kernel.list_artifacts(project_id))}
+
+
+def _map_selection(query, matches, records):
+    missing = {record.id for record in matches} - {record.id for record in records}
+    return {'mode': 'record' if query.record_id else 'search' if query.text else 'overview',
+            'text': query.text, 'record_id': query.record_id, 'limit': query.limit,
+            'matched_records': len(matches), 'returned_records': len(records),
+            'truncated': bool(missing)}
 
 
 def _local_map_relations(kernel, project_id: str, records: tuple[Record, ...]) -> tuple[Relation, ...]:
